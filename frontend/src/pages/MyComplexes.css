@@ -1,0 +1,1033 @@
+/* =====================================================
+   MY COMPLEXES PAGE - Azarean Network
+   Современный fluid/responsive дизайн без breakpoints
+   Работает на экранах от 320px до 4K
+   ===================================================== */
+
+.my-complexes-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+/* =====================================================
+   PAGE HEADER
+   ===================================================== */
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: clamp(20px, 4vw, 32px);
+  gap: clamp(12px, 2vw, 16px);
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  margin: 0 0 8px 0;
+  color: #1a202c;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 12px);
+}
+
+.page-icon {
+  flex-shrink: 0;
+  stroke-width: 1.8;
+}
+
+.page-header p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+/* =====================================================
+   LOADING & ERROR
+   ===================================================== */
+
+.loading {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) 20px;
+  font-size: clamp(16px, 3vw, 18px);
+  color: #718096;
+}
+
+.error-message {
+  background: #fed7d7;
+  color: #c53030;
+  padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 24px);
+  border-radius: 8px;
+  text-align: center;
+  margin: clamp(20px, 4vw, 32px) 0;
+  font-size: clamp(13px, 2vw, 14px);
+}
+
+/* =====================================================
+   EMPTY STATE
+   ===================================================== */
+
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon {
+  margin-bottom: clamp(16px, 3vw, 20px);
+  opacity: 0.3;
+  color: #a0aec0;
+  font-size: clamp(48px, 10vw, 64px);
+}
+
+.empty-state h3 {
+  font-size: clamp(18px, 3vw, 22px);
+  color: #4a5568;
+  margin: 0 0 clamp(8px, 2vw, 12px) 0;
+}
+
+.empty-state p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0 0 clamp(20px, 4vw, 24px) 0;
+}
+
+/* =====================================================
+   FILTERS - Адаптивная панель фильтров
+   ===================================================== */
+
+.filters-bar {
+  display: flex;
+  gap: clamp(10px, 2vw, 12px);
+  margin-bottom: clamp(16px, 3vw, 24px);
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1 1 min(300px, 100%);
+}
+
+.search-icon {
+  position: absolute;
+  left: clamp(12px, 2vw, 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: clamp(14px, 2vw, 16px);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px) clamp(8px, 1.5vw, 10px) clamp(35px, 6vw, 40px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filter-select {
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(12px, 2vw, 14px);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* =====================================================
+   STATS - Адаптивные статистические карточки
+   ===================================================== */
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+  margin-bottom: clamp(20px, 4vw, 24px);
+}
+
+.stat-card {
+  background: white;
+  padding: clamp(14px, 3vw, 20px);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 12px);
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+  font-size: clamp(28px, 5vw, 36px);
+  flex-shrink: 0;
+  stroke-width: 1.8;
+}
+
+.stat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-value {
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: clamp(12px, 2vw, 13px);
+  color: #718096;
+}
+
+/* =====================================================
+   COMPLEXES GRID - Адаптивная сетка карточек
+   ===================================================== */
+
+.complexes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: clamp(16px, 3vw, 20px);
+}
+
+.complex-card {
+  background: white;
+  border-radius: clamp(12px, 2vw, 14px);
+  padding: clamp(16px, 3vw, 20px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vw, 12px);
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.complex-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border-color: #667eea;
+}
+
+.complex-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.complex-patient {
+  flex: 1;
+  min-width: 0;
+}
+
+.complex-patient-name {
+  font-size: clamp(16px, 3vw, 18px);
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0 0 4px 0;
+  word-break: break-word;
+}
+
+.complex-diagnosis {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #667eea;
+  background: #ebf4ff;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.complex-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: clamp(11px, 1.5vw, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.complex-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.complex-info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(12px, 2vw, 13px);
+  color: #4a5568;
+}
+
+.complex-info-row svg {
+  flex-shrink: 0;
+  color: #667eea;
+  stroke-width: 2;
+}
+
+.complex-date {
+  color: #718096;
+  font-size: clamp(12px, 2vw, 13px);
+  margin-top: 4px;
+}
+
+.complex-actions {
+  display: inline-grid;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: clamp(8px, 2vw, 12px);
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-action {
+  flex: 1;
+  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+  border: none;
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-view {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-view:hover {
+  background: #e2e8f0;
+}
+
+.btn-edit {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+.btn-edit:hover {
+  background: #90cdf4;
+}
+
+.btn-progress {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.btn-progress:hover {
+  background: #9ae6b4;
+}
+
+.btn-delete {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.btn-delete:hover {
+  background: #fc8181;
+  color: white;
+}
+
+/* =====================================================
+   PAGINATION
+   ===================================================== */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 8px);
+  margin-top: clamp(20px, 4vw, 32px);
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 14px);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: clamp(32px, 5vw, 36px);
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: #667eea;
+  background: #f7fafc;
+}
+
+.pagination button.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   MODAL - Адаптивный
+   ===================================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: clamp(16px, 3vw, 20px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: clamp(12px, 2vw, 16px);
+  padding: clamp(20px, 4vw, 24px);
+  max-width: min(400px, 90vw);
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  margin-bottom: clamp(16px, 3vw, 20px);
+}
+
+.modal-header h2 {
+  font-size: clamp(18px, 3vw, 20px);
+  color: #1a202c;
+  margin: 0 0 8px 0;
+}
+
+.modal-header p {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #718096;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: clamp(10px, 2vw, 12px);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.modal-actions button {
+  padding: clamp(8px, 1.5vw, 10px) clamp(16px, 3vw, 20px);
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  flex: 1 1 auto;
+  min-width: min-content;
+}
+
+.btn-cancel {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.btn-confirm-delete {
+  background: #c53030;
+  color: white;
+}
+
+.btn-confirm-delete:hover {
+  background: #9b2c2c;
+}
+
+/* На узких экранах кнопки на всю ширину */
+@media (max-width: 500px) {
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-actions button {
+    width: 100%;
+  }
+}
+/* =====================================================
+   МАССОВОЕ ВЫДЕЛЕНИЕ
+   ===================================================== */
+
+   .bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: clamp(12px, 2vw, 16px);
+    background: #f7fafc;
+    border-radius: 12px;
+    margin-bottom: clamp(16px, 3vw, 20px);
+    flex-wrap: wrap;
+  }
+  
+  .btn-select-all {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-select-all:hover {
+    border-color: #667eea;
+    color: #667eea;
+  }
+  
+  .bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  
+  .selected-count {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 14px;
+  }
+  
+  .btn-bulk-delete {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: #fff5f5;
+    border: 2px solid #feb2b2;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #c53030;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-bulk-delete:hover {
+    background: #c53030;
+    border-color: #c53030;
+    color: white;
+  }
+  
+  .btn-clear-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: #edf2f7;
+    border: none;
+    border-radius: 8px;
+    color: #718096;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-clear-selection:hover {
+    background: #e2e8f0;
+    color: #1a202c;
+  }
+  
+  /* Чекбокс на карточке */
+  .card-checkbox {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    cursor: pointer;
+    color: #cbd5e0;
+    transition: all 0.2s;
+    z-index: 2;
+  }
+  
+  .card-checkbox:hover {
+    color: #667eea;
+  }
+  
+  .card-checkbox .checked {
+    color: #667eea;
+  }
+  
+  /* Выделенная карточка */
+  .complex-card {
+    position: relative;
+  }
+  
+  .complex-card.selected {
+    border-color: #667eea;
+    background: #eef2ff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  /* Сдвигаем контент карточки чтобы не перекрывал чекбокс 
+  .complex-card .complex-header {
+    padding-left: 32px;
+  } */
+
+  /* =====================================================
+   ВКЛАДКИ
+   ===================================================== */
+
+.tabs-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: clamp(16px, 3vw, 20px);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.tab-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+/* =====================================================
+   ПОИСК И СОРТИРОВКА
+   ===================================================== */
+
+.filters-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: clamp(16px, 3vw, 20px);
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 14px;
+  color: #a0aec0;
+  pointer-events: none;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box .clear-search {
+  position: absolute;
+  right: 10px;
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.search-box .clear-search:hover {
+  background: #cbd5e0;
+}
+
+.sort-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #718096;
+}
+
+.sort-box select {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sort-box select:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+/* =====================================================
+   ПАГИНАЦИЯ
+   ===================================================== */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: clamp(20px, 4vw, 30px);
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.pagination-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.search-results-count {
+  text-align: center;
+  color: #718096;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+/* =====================================================
+   ШАБЛОНЫ
+   ===================================================== */
+
+.templates-section {
+  margin-top: 20px;
+}
+
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.template-card {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 20px);
+  transition: all 0.2s;
+}
+
+.template-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.template-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.template-icon {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+.template-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  color: #1a202c;
+}
+
+.template-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #718096;
+}
+
+.template-meta {
+  font-size: 13px;
+  color: #718096;
+  margin-bottom: 12px;
+}
+
+.template-meta span {
+  margin-right: 8px;
+}
+
+.template-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.template-actions .btn-view,
+.template-actions .btn-edit,
+.template-actions .btn-delete {
+  flex: 1 1 0;
+  min-width: 0;          /* важно: разрешает сжиматься */
+  justify-content: center;
+  white-space: nowrap;   /* чтобы не ломало слова */
+}
+
+
+.template-actions .btn-delete {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
+  border-radius: 8px;
+  color: #c53030;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-actions .btn-delete:hover {
+  background: #c53030;
+  border-color: #c53030;
+  color: white;
+}
+
+/* Кнопка просмотра шаблона */
+.template-actions .btn-view {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #ebf8ff;
+  border: 2px solid #bee3f8;
+  border-radius: 8px;
+  color: #3182ce;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-actions .btn-view:hover {
+  background: #3182ce;
+  border-color: #3182ce;
+  color: white;
+}
+
+/* Детали комплекса */
+.complex-details {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.detail-row + .detail-row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.detail-label {
+  color: #718096;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1a202c;
+  font-weight: 600;
+}
+
+/* Иконки-кнопки в строке */
+.template-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.template-actions .icon-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+}
+
+.template-actions .btn-edit {
+  background: #ebf8ff;
+  border: 2px solid #bee3f8;
+  color: #3182ce;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.template-actions .btn-edit:hover {
+  background: #3182ce;
+  border-color: #3182ce;
+  color: white;
+}
+/* =====================================================
+   PATCH: ровные кнопки в карточке комплекса
+   ===================================================== */
+
+   .complex-card .complex-actions {
+    display: flex;          /* вместо inline-grid */
+    flex-wrap: wrap;
+    gap: 8px;
+  
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .complex-card .complex-actions button {
+    border: none;
+    border-radius: 10px;
+    height: 40px;
+  
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  
+    padding: 0 12px;
+    box-sizing: border-box;
+    cursor: pointer;
+  }
+  
+  /* Две главные кнопки: занимают место и красиво переносятся */
+  .complex-card .complex-actions .btn-primary-action {
+    flex: 1 1 180px;     /* <= магия: без breakpoint, само переносится */
+    min-width: 0;
+    white-space: nowrap; /* текст в одну строку */
+  }
+  
+  /* Иконки-кнопки: фиксированный квадрат */
+  .complex-card .complex-actions .icon-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    padding: 0;
+  }
+  
+  /* Если у тебя не было стилей для этих двух — добавим */
+  .complex-card .complex-actions .btn-composition {
+    background: #ebf8ff;
+    color: #3182ce;
+  }
+  .complex-card .complex-actions .btn-composition:hover {
+    background: #3182ce;
+    color: #fff;
+  }
+  
+  .complex-card .complex-actions .btn-copy-link {
+    background: #fffbea;
+    color: #744210;
+  }
+  .complex-card .complex-actions .btn-copy-link:hover {
+    background: #f6e05e;
+    color: #1a202c;
+  }
+  

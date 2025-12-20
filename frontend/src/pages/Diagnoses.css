@@ -1,0 +1,567 @@
+/* =====================================================
+   DIAGNOSES PAGE - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+   .diagnoses-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: clamp(16px, 3vw, 24px);
+  }
+  
+  /* =====================================================
+     PAGE HEADER
+     ===================================================== */
+  
+  .page-header {
+    margin-bottom: clamp(20px, 4vw, 32px);
+  }
+  
+  .page-header h1 {
+    font-size: clamp(24px, 5vw, 32px);
+    color: #1a202c;
+    margin: 0 0 clamp(8px, 2vw, 12px) 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2vw, 12px);
+  }
+  
+  .page-icon {
+    color: #667eea;
+    flex-shrink: 0;
+  }
+  
+  .page-subtitle {
+    font-size: clamp(14px, 2vw, 16px);
+    color: #718096;
+    margin: 0;
+  }
+  
+  /* =====================================================
+     ADD BUTTON
+     ===================================================== */
+  
+  .btn-add-diagnosis {
+    width: 100%;
+    padding: clamp(12px, 2vw, 14px) clamp(20px, 4vw, 28px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    margin-bottom: clamp(16px, 3vw, 24px);
+    min-height: 48px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  }
+  
+  .btn-add-diagnosis:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  @media (min-width: 769px) {
+    .btn-add-diagnosis {
+      width: auto;
+      align-self: flex-start;
+    }
+  }
+  
+  /* =====================================================
+     SEARCH
+     ===================================================== */
+  
+  .search-box {
+    position: relative;
+    margin-bottom: clamp(12px, 2vw, 16px);
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a0aec0;
+    pointer-events: none;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: clamp(11px, 2vw, 13px) clamp(12px, 2vw, 16px);
+    padding-left: clamp(40px, 8vw, 46px);
+    padding-right: 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: clamp(14px, 2vw, 15px);
+    transition: all 0.2s;
+    box-sizing: border-box;
+    background: white;
+    color: #2d3748;
+    min-height: 48px;
+  }
+  
+  .search-input::placeholder {
+    color: #a0aec0;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .clear-search {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e2e8f0;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #4a5568;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+  }
+  
+  .clear-search:hover {
+    background: #cbd5e0;
+  }
+  
+  /* =====================================================
+     RESULTS COUNT
+     ===================================================== */
+  
+  .results-count {
+    font-size: clamp(13px, 2vw, 14px);
+    color: #718096;
+    margin: 0 0 clamp(16px, 3vw, 20px) 0;
+  }
+  
+  .results-count strong {
+    color: #667eea;
+    font-weight: 600;
+  }
+  
+  /* =====================================================
+     GRID
+     ===================================================== */
+  
+  .diagnoses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    gap: clamp(16px, 3vw, 20px);
+  }
+  
+  /* =====================================================
+     DIAGNOSIS CARD
+     ===================================================== */
+  
+  .diagnosis-card {
+    background: white;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 14px;
+    padding: clamp(16px, 3vw, 20px);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 2vw, 14px);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  }
+  
+  .diagnosis-card:hover {
+    border-color: rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  .card-header h3 {
+    font-size: clamp(16px, 3vw, 18px);
+    color: #1a202c;
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  
+  .diagnosis-description {
+    font-size: clamp(13px, 2vw, 14px);
+    color: #4a5568;
+    margin: 0;
+    line-height: 1.5;
+  }
+  
+  /* =====================================================
+     CARD ACTIONS - ИСПРАВЛЕНО! 💪
+     ===================================================== */
+  
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: clamp(8px, 2vw, 12px);
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .btn-card-action {
+    flex: 1;
+    padding: clamp(10px, 2vw, 12px) clamp(14px, 2vw, 16px);
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 10px;
+    font-size: clamp(13px, 2vw, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #4a5568;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  
+  .btn-card-action:hover {
+    border-color: #cbd5e0;
+    background: #f7fafc;
+  }
+  
+  .btn-edit {
+    color: #3182ce;
+    border-color: #bee3f8;
+    background: #ebf8ff;
+  }
+  
+  .btn-edit:hover {
+    border-color: #90cdf4;
+    background: #bee3f8;
+  }
+  
+  .btn-delete {
+    color: #c53030;
+    border-color: #feb2b2;
+    background: #fff5f5;
+    flex: 0 0 auto;
+    min-width: 44px;
+  }
+  
+  .btn-delete:hover {
+    background: #fed7d7;
+    border-color: #fc8181;
+  }
+  
+  .btn-delete span {
+    display: none;
+  }
+  
+  /* =====================================================
+     EMPTY STATE
+     ===================================================== */
+  
+  .empty-state {
+    text-align: center;
+    padding: clamp(48px, 10vw, 80px) clamp(24px, 5vw, 40px);
+    color: #a0aec0;
+    background: #f7fafc;
+    border-radius: 14px;
+    border: 2px dashed #cbd5e0;
+  }
+  
+  .empty-icon {
+    font-size: clamp(48px, 10vw, 72px);
+    margin-bottom: clamp(16px, 3vw, 24px);
+    opacity: 0.5;
+  }
+  
+  .empty-state h2 {
+    font-size: clamp(20px, 4vw, 24px);
+    color: #1a202c;
+    margin: 0 0 clamp(10px, 2vw, 14px) 0;
+  }
+  
+  .empty-state p {
+    font-size: clamp(14px, 2vw, 16px);
+    color: #718096;
+    margin: 0;
+  }
+  
+  /* =====================================================
+     LOADING
+     ===================================================== */
+  
+  .loading {
+    text-align: center;
+    padding: clamp(48px, 10vw, 80px) 20px;
+    font-size: clamp(16px, 3vw, 18px);
+    color: #718096;
+  }
+  
+  /* =====================================================
+     MODAL
+     ===================================================== */
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: clamp(24px, 5vw, 32px);
+    max-width: min(720px, 95vw);
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  
+  .modal-view {
+    max-width: min(800px, 95vw);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: clamp(20px, 4vw, 28px);
+    gap: 16px;
+  }
+  
+  .modal-header h2 {
+    font-size: clamp(20px, 4vw, 24px);
+    color: #1a202c;
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .modal-close {
+    width: 36px;
+    height: 36px;
+    background: #f7fafc;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    color: #718096;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  
+  .modal-close:hover {
+    background: #e2e8f0;
+    color: #2d3748;
+    transform: scale(1.1);
+  }
+  
+  .modal-body {
+    margin-bottom: clamp(20px, 4vw, 28px);
+  }
+  
+  /* FORM */
+  .form-group {
+    margin-bottom: clamp(16px, 3vw, 20px);
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 8px;
+    font-size: clamp(14px, 2vw, 15px);
+  }
+  
+  .required {
+    color: #e53e3e;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: clamp(11px, 2vw, 13px) clamp(14px, 2vw, 16px);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: clamp(14px, 2vw, 15px);
+    transition: all 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+    color: #2d3748;
+    background: white;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .form-group input.input-error,
+  .form-group textarea.input-error {
+    border-color: #f56565;
+  }
+  
+  .field-error {
+    display: block;
+    color: #f56565;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+  }
+  
+  /* MODAL ACTIONS */
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: clamp(20px, 4vw, 24px);
+  }
+  
+  .modal-actions button {
+    padding: clamp(12px, 2vw, 14px) clamp(20px, 4vw, 28px);
+    border-radius: 10px;
+    font-size: clamp(14px, 2vw, 15px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .btn-cancel,
+  .btn-close-modal {
+    background: white;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .btn-cancel:hover,
+  .btn-close-modal:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+  }
+  
+  .btn-save,
+  .btn-edit-full {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+  
+  .btn-save:hover,
+  .btn-edit-full:hover {
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+  }
+  
+  .btn-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* VIEW MODAL */
+  .view-section {
+    margin-bottom: clamp(20px, 4vw, 28px);
+    padding: clamp(16px, 3vw, 20px);
+    background: #f7fafc;
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+  }
+  
+  .view-section h3 {
+    font-size: clamp(16px, 3vw, 18px);
+    color: #1a202c;
+    margin: 0 0 clamp(10px, 2vw, 12px) 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .view-text {
+    font-size: clamp(14px, 2vw, 15px);
+    color: #4a5568;
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-wrap;
+  }
+  
+  .warning-section {
+    background: #fffaf0;
+    border-left-color: #ed8936;
+  }
+  
+  .warning-section h3 {
+    color: #c05621;
+  }
+  
+  /* =====================================================
+     RESPONSIVE
+     ===================================================== */
+  
+  @media (max-width: 768px) {
+    .modal-actions {
+      flex-direction: column;
+    }
+  
+    .modal-actions button {
+      width: 100%;
+    }
+  
+    .card-actions {
+      flex-direction: column;
+    }
+  
+    .btn-card-action {
+      width: 100%;
+    }
+  
+    .btn-delete {
+      flex: 1;
+      min-width: auto;
+    }
+  
+    .btn-delete span {
+      display: inline;
+    }
+  }

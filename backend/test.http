@@ -1,0 +1,198 @@
+### ============================================
+### АУТЕНТИФИКАЦИЯ
+### ============================================
+
+### Регистрация нового админа
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "vadim@azarean.com",
+  "password": "azarean123",
+  "full_name": "Вадим Азарян",
+  "role": "admin"
+}
+
+### Регистрация инструктора
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "instructor@azarean.com",
+  "password": "azarean123",
+  "full_name": "Анна Петрова",
+  "role": "instructor"
+}
+
+### Вход в систему (получить токен)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "vadim@azarean.com",
+  "password": "azarean123"
+}
+
+### Получить информацию о текущем пользователе
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+
+### ============================================
+### УПРАЖНЕНИЯ
+### ============================================
+
+### Получить все упражнения
+GET http://localhost:5000/api/exercises
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Получить упражнения для плеча
+GET http://localhost:5000/api/exercises?category=shoulder
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Получить упражнения для колена (начинающие)
+GET http://localhost:5000/api/exercises?category=knee&difficulty=beginner
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Поиск упражнений по слову "планка"
+GET http://localhost:5000/api/exercises?search=планка
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Получить одно упражнение (ID = 1)
+GET http://localhost:5000/api/exercises/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Создать новое упражнение (только админ)
+POST http://localhost:5000/api/exercises
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+Content-Type: application/json
+
+{
+  "title": "Подтягивание лопаток",
+  "description": "Упражнение для укрепления ромбовидных мышц и средней части трапеции",
+  "video_url": "https://kinescope.io/example11",
+  "category": "shoulder",
+  "body_part": "upper_body",
+  "difficulty": "beginner",
+  "equipment": "none",
+  "instructions": "3 подхода по 12-15 повторений. Движение должно быть изолированным.",
+  "contraindications": "Острая боль в плече"
+}
+
+### Обновить упражнение (только админ)
+PUT http://localhost:5000/api/exercises/11
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+Content-Type: application/json
+
+{
+  "difficulty": "intermediate",
+  "tips": "Сосредоточьтесь на сведении лопаток"
+}
+
+### Удалить упражнение (только админ)
+DELETE http://localhost:5000/api/exercises/11
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+
+### ============================================
+### ДИАГНОЗЫ
+### ============================================
+
+### Получить все диагнозы
+GET http://localhost:5000/api/diagnoses
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+
+### ============================================
+### ПАЦИЕНТЫ
+### ============================================
+
+### Создать пациента
+POST http://localhost:5000/api/patients
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+Content-Type: application/json
+
+{
+  "full_name": "Иван Петров",
+  "email": "ivan@mail.ru",
+  "phone": "+79001234567",
+  "birth_date": "1985-05-15",
+  "notes": "Жалобы на боль в правом плече при отведении"
+}
+
+### Получить всех моих пациентов
+GET http://localhost:5000/api/patients
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Получить одного пациента
+GET http://localhost:5000/api/patients/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+
+### ============================================
+### КОМПЛЕКСЫ
+### ============================================
+
+### Создать комплекс для пациента
+POST http://localhost:5000/api/complexes
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+Content-Type: application/json
+
+{
+  "patient_id": 1,
+  "diagnosis_id": 1,
+  "diagnosis_note": "Импинджмент правого плеча, начальная стадия",
+  "recommendations": "Выполняйте упражнения 3-4 раза в неделю. Избегайте резких движений.",
+  "warnings": "При усилении боли прекратите выполнение и обратитесь к врачу.",
+  "exercises": [
+    {
+      "exercise_id": 1,
+      "order_number": 1,
+      "sets": 3,
+      "reps": 15,
+      "notes": "Начните с малых амплитуд"
+    },
+    {
+      "exercise_id": 2,
+      "order_number": 2,
+      "sets": 3,
+      "reps": 12,
+      "notes": "Используйте легкий эспандер"
+    },
+    {
+      "exercise_id": 3,
+      "order_number": 3,
+      "sets": 3,
+      "reps": 10
+    }
+  ]
+}
+
+### Получить комплекс по ID
+GET http://localhost:5000/api/complexes/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiZW1haWwiOiJ2YWRpbUBhemFyZWFuLmNvbSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2Mzk4NzEzMywiZXhwIjoxNzY2NTc5MTMzfQ.bytVHQV_1l123zWcb3US3eu60AJ-ScfOL8siaN6vk9c
+
+### Получить комплекс по токену (для пациента - без авторизации)
+GET http://localhost:5000/api/complexes/token/017af0a8643c2279f21a29c9aec536352d71bc121c5afbc994063a28c6856f4c
+
+
+### ============================================
+### ПРОГРЕСС
+### ============================================
+
+### Отметить выполнение упражнения
+POST http://localhost:5000/api/progress
+Content-Type: application/json
+
+{
+  "complex_id": 1,
+  "exercise_id": 1,
+  "completed": true,
+  "pain_level": 3,
+  "difficulty_rating": 4,
+  "mood_rating": 4,
+  "notes": "Упражнение далось легко, боль незначительная"
+}
+
+### Получить прогресс по комплексу
+GET http://localhost:5000/api/progress/complex/1

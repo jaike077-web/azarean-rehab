@@ -1,0 +1,129 @@
+/* =====================================================
+   BACK BUTTON - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px);
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: clamp(16px, 3vw, 24px);
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.back-button:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+  transform: translateX(-4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.back-button:active {
+  transform: translateX(-2px);
+}
+
+.back-arrow {
+  font-size: clamp(18px, 3vw, 22px);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.back-button:hover .back-arrow {
+  transform: translateX(-4px);
+}
+
+/* Вариант с иконкой */
+.back-button svg {
+  width: clamp(18px, 3vw, 20px);
+  height: clamp(18px, 3vw, 20px);
+  stroke-width: 2.5;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   МОДИФИКАТОРЫ
+   ===================================================== */
+
+.back-button.small {
+  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 16px);
+  font-size: clamp(12px, 2vw, 14px);
+  min-height: 36px;
+}
+
+.back-button.large {
+  padding: clamp(12px, 2vw, 16px) clamp(20px, 3vw, 28px);
+  font-size: clamp(15px, 2vw, 17px);
+  min-height: 50px;
+}
+
+/* Вариант только с иконкой */
+.back-button.icon-only {
+  width: clamp(40px, 7vw, 44px);
+  height: clamp(40px, 7vw, 44px);
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .back-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .back-button.icon-only {
+    width: 44px;
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+.back-button:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back-button,
+  .back-arrow {
+    transition: none;
+  }
+  
+  .back-button:hover,
+  .back-button:hover .back-arrow {
+    transform: none;
+  }
+}
+
+/* =====================================================
+   STATES
+   ===================================================== */
+
+.back-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.back-button.loading {
+  cursor: wait;
+  opacity: 0.7;
+}

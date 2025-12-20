@@ -1,0 +1,288 @@
+/* =====================================================
+   VIEW PROGRESS PAGE - Azarean Network
+   Современный fluid/responsive дизайн без breakpoints
+   Работает на экранах от 320px до 4K
+   ===================================================== */
+
+.view-progress-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+/* =====================================================
+   PAGE HEADER
+   ===================================================== */
+
+.page-header {
+  margin-bottom: clamp(20px, 4vw, 32px);
+}
+
+.page-header h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  color: #1a202c;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 12px);
+  flex-wrap: wrap;
+}
+
+.page-icon {
+  flex-shrink: 0;
+  stroke-width: 1.8;
+}
+
+.page-header p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+/* =====================================================
+   PROGRESS OVERVIEW
+   ===================================================== */
+
+.progress-overview {
+  background: white;
+  border-radius: clamp(12px, 2vw, 16px);
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: clamp(20px, 4vw, 24px);
+}
+
+.progress-overview h2 {
+  font-size: clamp(18px, 3vw, 22px);
+  color: #1a202c;
+  margin: 0 0 clamp(12px, 2vw, 16px) 0;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.progress-stat {
+  text-align: center;
+  padding: clamp(12px, 2vw, 16px);
+  background: #f7fafc;
+  border-radius: 8px;
+}
+
+.progress-stat-value {
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 700;
+  color: #667eea;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.progress-stat-label {
+  font-size: clamp(12px, 2vw, 13px);
+  color: #718096;
+}
+
+/* =====================================================
+   EXERCISE LOGS - Адаптивный список
+   ===================================================== */
+
+.exercise-logs {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.exercise-log-card {
+  background: white;
+  border-radius: 12px;
+  padding: clamp(14px, 3vw, 18px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #667eea;
+  transition: all 0.2s;
+}
+
+.exercise-log-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.exercise-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: clamp(8px, 2vw, 12px);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.exercise-log-title {
+  font-size: clamp(15px, 3vw, 17px);
+  font-weight: 600;
+  color: #1a202c;
+  flex: 1;
+  min-width: 0;
+}
+
+.exercise-log-date {
+  font-size: clamp(12px, 2vw, 13px);
+  color: #718096;
+  white-space: nowrap;
+}
+
+.exercise-log-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100px, 100%), 1fr));
+  gap: clamp(8px, 1.5vw, 12px);
+  padding: clamp(8px, 2vw, 12px) 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.log-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-detail-label {
+  font-size: clamp(11px, 1.5vw, 12px);
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.log-detail-value {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.pain-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 13px);
+  font-weight: 600;
+}
+
+.pain-level-0 { background: #c6f6d5; color: #22543d; }
+.pain-level-1,
+.pain-level-2 { background: #fefcbf; color: #744210; }
+.pain-level-3,
+.pain-level-4 { background: #fed7aa; color: #7c2d12; }
+.pain-level-5,
+.pain-level-6,
+.pain-level-7,
+.pain-level-8,
+.pain-level-9,
+.pain-level-10 { background: #fed7d7; color: #c53030; }
+
+.completed-badge {
+  background: #48bb78;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: clamp(11px, 1.5vw, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.incomplete-badge {
+  background: #e2e8f0;
+  color: #4a5568;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: clamp(11px, 1.5vw, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* =====================================================
+   FILTERS
+   ===================================================== */
+
+.progress-filters {
+  display: flex;
+  gap: clamp(10px, 2vw, 12px);
+  margin-bottom: clamp(16px, 3vw, 20px);
+  flex-wrap: wrap;
+}
+
+.date-filter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-filter label {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.date-filter input {
+  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 13px);
+  transition: all 0.2s;
+}
+
+.date-filter input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* =====================================================
+   EMPTY STATE
+   ===================================================== */
+
+.empty-state {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon {
+  font-size: clamp(48px, 10vw, 64px);
+  color: #cbd5e0;
+  margin-bottom: clamp(12px, 2vw, 16px);
+}
+
+.empty-state h3 {
+  font-size: clamp(18px, 3vw, 22px);
+  color: #4a5568;
+  margin: 0 0 clamp(8px, 2vw, 12px) 0;
+}
+
+.empty-state p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+/* =====================================================
+   LOADING
+   ===================================================== */
+
+.loading {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) 20px;
+  font-size: clamp(16px, 3vw, 18px);
+  color: #718096;
+}
+
+/* =====================================================
+   СКРЫТИЕ BACКBUTTON НА ПЛАНШЕТАХ
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .back-button-wrapper {
+    display: none !important;
+  }
+}

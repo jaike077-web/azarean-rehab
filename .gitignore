@@ -1,0 +1,57 @@
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+*.swp
+
+# Node / React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.cache/
+.env
+.env.*
+*.local
+
+# Python (если вдруг есть)
+__pycache__/
+*.pyc
+.venv/
+
+# Databases / dumps / backups
+database/
+backups/
+backend_backup/
+frontend_exercises_backup/
+files3/
+files_CSS/
+files_CSS.zip
+backup.ps1
+
+# Local patches / exports
+PatientView.patched.*
+PatientView.patched.v2.*
+
+# Secrets (на всякий)
+*.pem
+*.key
+*.crt
+*.lnk
+*.backup
+*.bak
+*_backap.*
+*.tmp
+# Draft / old folders (project-specific)
+**/Старые*/
+**/Новая папка*/
+**/*backup*/
+**/*backap*/
+**/*.backup
+**/*.bak
+**/*.lnk

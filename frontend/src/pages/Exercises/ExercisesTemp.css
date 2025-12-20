@@ -1,0 +1,289 @@
+/* =====================================================
+   EXERCISES TEMP - Azarean Network
+   Fluid/Responsive дизайн (временная страница)
+   ===================================================== */
+
+.exercises-temp {
+  min-height: 100vh;
+  background: #f7fafc;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.exercises-temp.loading,
+.exercises-temp.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: clamp(12px, 3vw, 18px);
+}
+
+.spinner {
+  font-size: clamp(40px, 8vw, 52px);
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* =====================================================
+   HEADER
+   ===================================================== */
+
+.temp-header {
+  background: white;
+  padding: clamp(24px, 5vw, 36px);
+  border-radius: clamp(12px, 2vw, 18px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: clamp(18px, 4vw, 28px);
+  text-align: center;
+  position: relative;
+}
+
+.temp-header .btn-back {
+  position: absolute;
+  left: clamp(20px, 4vw, 36px);
+  top: clamp(20px, 4vw, 36px);
+  padding: clamp(8px, 2vw, 12px) clamp(12px, 2vw, 18px);
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 500;
+  color: #4a5568;
+  transition: all 0.2s;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.temp-header .btn-back:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  color: #2d3748;
+}
+
+.temp-header h1 {
+  font-size: clamp(26px, 6vw, 40px);
+  color: #1a202c;
+  margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
+  line-height: 1.2;
+}
+
+.temp-subtitle {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+.temp-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* =====================================================
+   NO EXERCISES
+   ===================================================== */
+
+.no-exercises {
+  background: white;
+  padding: clamp(40px, 8vw, 60px) clamp(24px, 5vw, 40px);
+  border-radius: clamp(12px, 2vw, 18px);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.no-exercises h2 {
+  font-size: clamp(24px, 5vw, 36px);
+  color: #2d3748;
+  margin: 0 0 clamp(10px, 2vw, 14px) 0;
+}
+
+.no-exercises > p {
+  font-size: clamp(16px, 3vw, 18px);
+  color: #718096;
+  margin: 0 0 clamp(24px, 5vw, 36px) 0;
+  line-height: 1.5;
+}
+
+.hint-box {
+  background: #f7fafc;
+  padding: clamp(18px, 4vw, 28px);
+  border-radius: clamp(10px, 2vw, 14px);
+  border-left: 4px solid #667eea;
+  text-align: left;
+  max-width: min(700px, 100%);
+  margin: 0 auto;
+}
+
+.hint-box h3 {
+  font-size: clamp(16px, 3vw, 20px);
+  color: #667eea;
+  margin: 0 0 clamp(12px, 2vw, 18px) 0;
+}
+
+.hint-box pre {
+  background: #1a202c;
+  color: #e2e8f0;
+  padding: clamp(12px, 3vw, 18px);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: clamp(12px, 2vw, 13px);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* =====================================================
+   STATS
+   ===================================================== */
+
+.exercises-stats {
+  background: white;
+  padding: clamp(16px, 3vw, 24px) clamp(20px, 4vw, 36px);
+  border-radius: clamp(10px, 2vw, 14px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: clamp(18px, 4vw, 28px);
+}
+
+.exercises-stats p {
+  font-size: clamp(16px, 3vw, 18px);
+  color: #4a5568;
+  margin: 0;
+}
+
+.exercises-stats strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+/* =====================================================
+   EXERCISE LIST
+   ===================================================== */
+
+.exercises-list {
+  display: grid;
+  gap: clamp(16px, 3vw, 24px);
+}
+
+.exercise-item {
+  background: white;
+  padding: clamp(18px, 4vw, 28px);
+  border-radius: clamp(12px, 2vw, 18px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.exercise-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #667eea;
+}
+
+.item-header {
+  margin-bottom: clamp(12px, 3vw, 18px);
+}
+
+.item-header h3 {
+  font-size: clamp(20px, 4vw, 28px);
+  color: #1a202c;
+  margin: 0 0 clamp(4px, 1vw, 6px) 0;
+  line-height: 1.3;
+}
+
+.item-subtitle {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.5vw, 10px);
+  margin-bottom: clamp(12px, 3vw, 18px);
+}
+
+.badge {
+  padding: clamp(5px, 1vw, 7px) clamp(10px, 2vw, 16px);
+  background: #edf2f7;
+  border-radius: 20px;
+  font-size: clamp(12px, 2vw, 14px);
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.item-description {
+  font-size: clamp(14px, 2vw, 15px);
+  line-height: 1.6;
+  color: #718096;
+  margin: 0 0 clamp(16px, 3vw, 24px) 0;
+}
+
+.btn-view {
+  padding: clamp(10px, 2vw, 14px) clamp(18px, 4vw, 28px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-view:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .exercises-temp {
+    padding: clamp(12px, 3vw, 16px);
+  }
+
+  .temp-header {
+    padding: clamp(20px, 5vw, 28px);
+  }
+  
+  .temp-header .btn-back {
+    position: static;
+    margin-bottom: 16px;
+  }
+
+  .temp-header h1 {
+    font-size: clamp(22px, 6vw, 28px);
+  }
+
+  .no-exercises {
+    padding: clamp(30px, 8vw, 40px) clamp(16px, 4vw, 24px);
+  }
+
+  .hint-box {
+    padding: clamp(14px, 4vw, 20px);
+  }
+
+  .hint-box pre {
+    font-size: clamp(11px, 2vw, 12px);
+  }
+
+  .exercise-item {
+    padding: clamp(16px, 4vw, 22px);
+  }
+}

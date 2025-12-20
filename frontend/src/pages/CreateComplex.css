@@ -1,0 +1,1159 @@
+/* =====================================================
+   CREATECOMPLEX - Azarean Network
+   Современный fluid/responsive дизайн без breakpoints
+   Работает на экранах от 320px до 4K
+   ===================================================== */
+
+.create-complex-page {
+  padding: clamp(16px, 3vw, 20px);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* =====================================================
+   PAGE HEADER
+   ===================================================== */
+
+.page-header {
+  margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+.page-header h1 {
+  font-size: clamp(20px, 4vw, 24px);
+  color: #1a202c;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 12px);
+  flex-wrap: wrap;
+}
+
+.page-header h1 svg {
+  color: #667eea;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   STEPS INDICATOR - Адаптивный
+   ===================================================== */
+
+.steps-indicator {
+  display: flex;
+  gap: clamp(8px, 2vw, 12px);
+  margin: clamp(16px, 3vw, 20px) 0;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.step {
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 3vw, 20px);
+  background: #edf2f7;
+  border-radius: 8px;
+  color: #718096;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: clamp(12px, 2vw, 14px);
+  white-space: nowrap;
+  flex: 0 1 auto;
+}
+
+.step.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.step.completed {
+  background: #48bb78;
+  color: white;
+}
+
+/* =====================================================
+   ERROR MESSAGE
+   ===================================================== */
+
+.error-message {
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
+  border-radius: 12px;
+  padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 18px);
+  color: #c53030;
+  margin-bottom: clamp(16px, 3vw, 20px);
+  font-weight: 500;
+  font-size: clamp(13px, 2vw, 14px);
+}
+
+/* =====================================================
+   FORM SECTIONS - Адаптивные карточки
+   ===================================================== */
+
+.form-section {
+  background: white;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: clamp(12px, 2vw, 16px);
+  margin-bottom: clamp(16px, 3vw, 24px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.form-section h2 {
+  font-size: clamp(18px, 3vw, 20px);
+  color: #1a202c;
+  margin: 0 0 clamp(12px, 2vw, 16px) 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 8px);
+}
+
+.form-section h2 svg {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+/* =====================================================
+   FORM FIELDS - Адаптивные инпуты
+   ===================================================== */
+
+.form-field {
+  margin-bottom: clamp(16px, 3vw, 20px);
+}
+
+.form-field label {
+  display: block;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: clamp(6px, 1vw, 8px);
+  font-size: clamp(13px, 2vw, 14px);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  transition: all 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-field textarea {
+  resize: vertical;
+  min-height: clamp(80px, 15vw, 100px);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   PATIENT SEARCH - Адаптивный
+   ===================================================== */
+
+.patient-search {
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: min(300px, 40vh);
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* =====================================================
+   PATIENTS LIST - СПИСОК ПАЦИЕНТОВ
+   ===================================================== */
+
+/* СПИСОК ПАЦИЕНТОВ */
+.create-patients-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vw, 12px);
+  margin-top: clamp(16px, 3vw, 20px);
+  overflow-y: auto;
+  padding: 4px;
+  flex: 1;
+  min-height: 200px;
+}
+
+/* КАРТОЧКА ПАЦИЕНТА */
+.patient-item {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 16px);
+  padding: clamp(12px, 2vw, 16px);
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.patient-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.patient-item.selected {
+  border-color: #667eea;
+  background: #eef2ff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* АВАТАР ПАЦИЕНТА */
+.patient-item .patient-avatar {
+  width: clamp(44px, 8vw, 52px);
+  height: clamp(44px, 8vw, 52px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(16px, 3vw, 18px);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ДЕТАЛИ ПАЦИЕНТА */
+.patient-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patient-details strong {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #1a202c;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patient-details span {
+  font-size: clamp(12px, 1.5vw, 14px);
+  color: #718096;
+}
+
+/* ГАЛОЧКА ВЫБОРА */
+.check-mark {
+  color: #48bb78;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* СЧЕТЧИК РЕЗУЛЬТАТОВ */
+.results-count {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #718096;
+  margin: clamp(10px, 2vw, 12px) 0 0 0;
+}
+
+.results-count strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+/* ПОИСК */
+.search-box {
+  position: relative;
+  margin-top: clamp(12px, 2vw, 16px);
+}
+
+.search-input {
+  width: 100%;
+  padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
+  padding-right: 40px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: clamp(14px, 2vw, 15px);
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e2e8f0;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+  color: #4a5568;
+}
+
+.clear-search:hover {
+  background: #cbd5e0;
+}
+
+/* STEP CONTENT */
+.step-content {
+  background: white;
+  padding: clamp(20px, 4vw, 28px);
+  border-radius: clamp(12px, 2vw, 16px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.step-content h2 {
+  font-size: clamp(18px, 3vw, 22px);
+  color: #1a202c;
+  margin: 0 0 clamp(16px, 3vw, 20px) 0;
+  font-weight: 700;
+}
+
+
+
+.search-result-item {
+  padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: clamp(13px, 2vw, 14px);
+}
+
+.search-result-item:hover {
+  background: #f7fafc;
+}
+
+/* =====================================================
+   SELECTED EXERCISES - Адаптивный список
+   ===================================================== */
+
+.selected-exercises-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 2vw, 14px);
+  margin-top: clamp(12px, 2vw, 16px);
+  max-height: min(400px, 50vh);
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.selected-exercise {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(8px, 2vw, 12px);
+  padding: clamp(10px, 2vw, 14px);
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.selected-exercise:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.selected-exercise.is-dragging {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+}
+
+.drag-handle {
+  cursor: grab;
+  font-size: clamp(16px, 3vw, 18px);
+  color: #cbd5e0;
+  user-select: none;
+  padding: clamp(4px, 1vw, 6px);
+  transition: color 0.2s;
+  flex-shrink: 0;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: #667eea;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.exercise-info {
+  flex: 1 1 min(120px, 100%);
+  min-width: 0;
+}
+
+.exercise-info strong {
+  font-size: clamp(13px, 2vw, 15px);
+  color: #1a202c;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.exercise-meta {
+  font-size: clamp(11px, 1.5vw, 12px);
+  color: #718096;
+}
+
+/* =====================================================
+   EXERCISE PARAMS - Адаптивная сетка
+   ===================================================== */
+
+.exercise-params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(60px, 100%), 1fr));
+  gap: clamp(6px, 1.5vw, 8px);
+  margin-top: clamp(8px, 1.5vw, 10px);
+  width: 100%;
+}
+
+.exercise-params input {
+  padding: clamp(8px, 1.5vw, 10px) clamp(6px, 1.5vw, 8px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(12px, 2vw, 14px);
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  background: #f7fafc;
+  text-align: center;
+}
+
+.exercise-params input::placeholder {
+  color: #a0aec0;
+  font-size: clamp(11px, 1.5vw, 12px);
+}
+
+.exercise-params input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: white;
+}
+
+.exercise-params input.notes-input {
+  grid-column: 1 / -1;
+  text-align: left;
+}
+
+/* =====================================================
+   REMOVE BUTTON - Адаптивный
+   ===================================================== */
+
+.remove-exercise-btn {
+  width: clamp(28px, 5vw, 32px);
+  height: clamp(28px, 5vw, 32px);
+  background: #fee;
+  border: 2px solid #fed7d7;
+  border-radius: 8px;
+  color: #e53e3e;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.remove-exercise-btn:hover {
+  background: #fc8181;
+  color: white;
+  border-color: #fc8181;
+}
+
+/* На узких экранах позиционируем абсолютно */
+@media (max-width: 500px) {
+  .selected-exercise {
+    padding-right: 40px;
+  }
+  
+  .remove-exercise-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}
+
+/* =====================================================
+   AVAILABLE EXERCISES - Адаптивная сетка
+   ===================================================== */
+
+.available-exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: clamp(10px, 2vw, 14px);
+  margin-top: clamp(12px, 2vw, 16px);
+}
+
+.exercise-card-small {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: clamp(10px, 2vw, 14px);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vw, 10px);
+  cursor: pointer;
+}
+
+.exercise-card-small:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.exercise-card-small h4 {
+  font-size: clamp(13px, 2vw, 15px);
+  color: #1a202c;
+  margin: 0;
+  font-weight: 600;
+}
+
+.exercise-card-small p {
+  font-size: clamp(12px, 1.5vw, 13px);
+  color: #4a5568;
+  margin: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.exercise-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: #edf2f7;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: clamp(10px, 1.5vw, 11px);
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.btn-add {
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
+  background: #48bb78;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(12px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.btn-add:hover {
+  background: #38a169;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
+}
+
+.btn-add:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =====================================================
+   NAVIGATION BUTTONS - Адаптивные
+   ===================================================== */
+
+.step-buttons {
+  display: flex;
+  gap: clamp(10px, 2vw, 12px);
+  justify-content: space-between;
+  margin-top: clamp(20px, 4vw, 24px);
+  flex-wrap: wrap;
+}
+
+.btn-step {
+  padding: clamp(10px, 2vw, 12px) clamp(20px, 3vw, 24px);
+  border-radius: 10px;
+  font-size: clamp(13px, 2vw, 15px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: min-content;
+  justify-content: center;
+}
+
+.btn-back {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-back:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.btn-next {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-next:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* На узких экранах кнопки на всю ширину */
+@media (max-width: 500px) {
+  .step-buttons {
+    flex-direction: column;
+  }
+  
+  .btn-step {
+    width: 100%;
+  }
+}
+
+/* =====================================================
+   SUCCESS SCREEN - Адаптивный
+   ===================================================== */
+
+.success-screen {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.success-icon {
+  font-size: clamp(60px, 10vw, 80px);
+  color: #48bb78;
+  margin-bottom: clamp(16px, 3vw, 20px);
+}
+
+.success-screen h2 {
+  font-size: clamp(22px, 4vw, 28px);
+  color: #1a202c;
+  margin: 0 0 clamp(10px, 2vw, 12px) 0;
+}
+
+.success-screen p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0 0 clamp(24px, 4vw, 32px) 0;
+}
+
+.complex-link {
+  background: #edf2f7;
+  padding: clamp(10px, 2vw, 12px) clamp(14px, 2vw, 16px);
+  border-radius: 8px;
+  font-size: clamp(12px, 2vw, 14px);
+  color: #4a5568;
+  margin: clamp(16px, 3vw, 20px) 0;
+  word-break: break-all;
+}
+
+.share-buttons {
+  display: flex;
+  gap: clamp(10px, 2vw, 12px);
+  justify-content: center;
+  margin: clamp(20px, 4vw, 24px) 0;
+  flex-wrap: wrap;
+}
+
+.btn-share {
+  padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 20px);
+  border-radius: 10px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+}
+
+.btn-telegram {
+  background: #0088cc;
+  color: white;
+}
+
+.btn-share:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* =====================================================
+   СКРЫТИЕ BACКBUTTON НА ПЛАНШЕТАХ
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .back-button-wrapper {
+    display: none !important;
+  }
+}
+
+/* =====================================================
+   STEP 3 - ДВУХКОЛОНОЧНЫЙ LAYOUT
+   ===================================================== */
+
+   .step-exercises {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(16px, 3vw, 24px);
+    align-items: start;
+  }
+  
+  .exercises-section,
+  .selected-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 20px);
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .exercises-section h2,
+  .selected-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(16px, 2.5vw, 18px);
+    margin: 0 0 clamp(12px, 2vw, 16px) 0;
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    padding-bottom: 8px;
+    z-index: 1;
+  }
+  
+  /* Поиск и фильтры */
+  .search-filters {
+    display: flex;
+    gap: clamp(8px, 1.5vw, 12px);
+    margin-bottom: clamp(12px, 2vw, 16px);
+  }
+  
+  .search-filters input {
+    flex: 1;
+    padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: clamp(13px, 2vw, 14px);
+  }
+  
+  .search-filters select {
+    padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: clamp(13px, 2vw, 14px);
+    background: white;
+    min-width: 100px;
+  }
+  
+  .search-filters input:focus,
+  .search-filters select:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  
+  /* Список доступных упражнений */
+  .available-exercises {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.5vw, 10px);
+  }
+  
+  .exercise-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(10px, 2vw, 12px);
+    padding: clamp(10px, 2vw, 12px);
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  
+  .exercise-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+  }
+  
+  .exercise-item.is-added {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+  
+  .exercise-item .exercise-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .exercise-item .exercise-info strong {
+    display: block;
+    font-size: clamp(13px, 2vw, 14px);
+    color: #1a202c;
+    margin-bottom: 2px;
+  }
+  
+  .exercise-item .exercise-info .exercise-meta {
+    font-size: clamp(11px, 1.5vw, 12px);
+    color: #718096;
+  }
+  
+  /* Кнопка "Добавлено" */
+  .btn-added {
+    padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
+    background: #e2e8f0;
+    color: #48bb78;
+    border: 2px solid #c6f6d5;
+    border-radius: 8px;
+    font-size: clamp(12px, 2vw, 13px);
+    font-weight: 600;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  
+  /* Секция комплекса */
+  .selected-section {
+    background: #eef2ff;
+    border: 2px dashed #c7d2fe;
+  }
+  
+  .empty-complex {
+    text-align: center;
+    padding: clamp(30px, 6vw, 40px);
+    color: #718096;
+  }
+  
+  .empty-complex p {
+    margin: 0;
+    font-size: clamp(13px, 2vw, 14px);
+  }
+  
+  /* Кнопки навигации на всю ширину */
+  .step-buttons.full-width {
+    grid-column: 1 / -1;
+  }
+  
+  /* Адаптив для мобильных */
+  @media (max-width: 768px) {
+    .step-exercises {
+      grid-template-columns: 1fr;
+    }
+    
+    .exercises-section,
+    .selected-section {
+      max-height: 50vh;
+    }
+  }
+
+  /* =====================================================
+   STEP 1 - ФИКС ВЫСОТЫ ДЛЯ СПИСКА ПАЦИЕНТОВ
+   ===================================================== */
+
+.step-content:has(.create-patients-list) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 250px);
+}
+
+.step-content:has(.create-patients-list) h2,
+.step-content:has(.create-patients-list) .search-box,
+.step-content:has(.create-patients-list) .results-count {
+  flex-shrink: 0;
+}
+
+.create-patients-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 150px;
+}
+
+/* =====================================================
+   ШАБЛОНЫ
+   ===================================================== */
+
+   .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: clamp(12px, 2vw, 16px);
+  }
+  
+  .section-header h2 {
+    margin: 0;
+  }
+  
+  .btn-template {
+    padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
+    background: #edf2f7;
+    color: #4a5568;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: clamp(12px, 2vw, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  
+  .btn-template:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e0;
+  }
+  
+  .btn-save-template {
+    width: 100%;
+    padding: clamp(12px, 2vw, 14px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  
+  .btn-save-template:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  }
+  
+  /* Модалки */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(16px, 3vw, 20px);
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    font-size: clamp(16px, 3vw, 18px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1a202c;
+  }
+  
+  .modal-close {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: #718096;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  
+  .modal-close:hover {
+    background: #f7fafc;
+    color: #1a202c;
+  }
+  
+  .modal-body {
+    padding: clamp(16px, 3vw, 20px);
+    overflow-y: auto;
+    flex: 1;
+  }
+  
+  .modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: clamp(16px, 3vw, 20px);
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  /* Список шаблонов */
+  .templates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .template-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(12px, 2vw, 16px);
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .template-item:hover {
+    border-color: #667eea;
+    background: #eef2ff;
+  }
+  
+  .template-info {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .template-info strong {
+    display: block;
+    font-size: clamp(14px, 2vw, 15px);
+    color: #1a202c;
+    margin-bottom: 4px;
+  }
+  
+  .template-info p {
+    font-size: clamp(12px, 1.5vw, 13px);
+    color: #4a5568;
+    margin: 0 0 4px 0;
+  }
+  
+  .template-meta {
+    font-size: clamp(11px, 1.5vw, 12px);
+    color: #718096;
+  }
+  
+  .template-arrow {
+    color: #a0aec0;
+    flex-shrink: 0;
+  }
+  
+  .empty-templates {
+    text-align: center;
+    padding: clamp(30px, 5vw, 40px) 20px;
+    color: #718096;
+  }
+  
+  .empty-templates p {
+    margin: 0 0 8px 0;
+    font-size: clamp(14px, 2vw, 16px);
+    color: #4a5568;
+  }
+  
+  .empty-templates span {
+    font-size: clamp(12px, 1.5vw, 14px);
+  }
+  
+  /* Форма сохранения шаблона */
+  .template-summary {
+    background: #f7fafc;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+  
+  .template-summary p {
+    margin: 0;
+    font-size: clamp(13px, 2vw, 14px);
+    color: #4a5568;
+  }
+  
+  .template-summary p + p {
+    margin-top: 4px;
+  }
+  
+  .template-summary strong {
+    color: #667eea;
+  }

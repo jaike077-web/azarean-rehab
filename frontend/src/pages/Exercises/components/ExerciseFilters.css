@@ -1,0 +1,360 @@
+/* =====================================================
+   EXERCISE FILTERS - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.exercise-filters {
+  background: white;
+  border-radius: clamp(10px, 2vw, 14px);
+  padding: clamp(16px, 3vw, 24px);
+  margin-bottom: clamp(18px, 4vw, 28px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* =====================================================
+   FILTERS MAIN
+   ===================================================== */
+
+.filters-main {
+  display: flex;
+  gap: clamp(10px, 2vw, 14px);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* =====================================================
+   SEARCH
+   ===================================================== */
+
+.filter-search {
+  position: relative;
+  flex: 1;
+  min-width: min(240px, 100%);
+}
+
+.search-input {
+  width: 100%;
+  padding: clamp(10px, 2vw, 14px) clamp(35px, 7vw, 45px) clamp(10px, 2vw, 14px) clamp(14px, 3vw, 18px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 15px);
+  transition: all 0.2s;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-input::placeholder {
+  color: #a0aec0;
+}
+
+.clear-search {
+  position: absolute;
+  right: clamp(8px, 2vw, 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: clamp(22px, 4vw, 26px);
+  height: clamp(22px, 4vw, 26px);
+  border: none;
+  background: #e2e8f0;
+  border-radius: 50%;
+  color: #4a5568;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(11px, 2vw, 12px);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.clear-search:hover {
+  background: #cbd5e0;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* =====================================================
+   QUICK FILTERS
+   ===================================================== */
+
+.filters-quick {
+  display: flex;
+  gap: clamp(8px, 2vw, 10px);
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: clamp(9px, 2vw, 11px) clamp(10px, 2vw, 14px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: clamp(130px, 28vw, 160px);
+  min-height: 44px;
+}
+
+.filter-select:hover {
+  border-color: #cbd5e0;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.sort-select {
+  min-width: clamp(140px, 30vw, 180px);
+}
+
+/* =====================================================
+   FILTERS ACTIONS
+   ===================================================== */
+
+.filters-actions {
+  display: flex;
+  gap: clamp(8px, 2vw, 10px);
+  align-items: center;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.btn-expand {
+  padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 18px);
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: clamp(5px, 1vw, 7px);
+  position: relative;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.btn-expand:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.btn-expand.active {
+  background: #edf2f7;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.filter-badge {
+  position: absolute;
+  top: clamp(-6px, -1vw, -8px);
+  right: clamp(-6px, -1vw, -8px);
+  background: #f56565;
+  color: white;
+  font-size: clamp(10px, 2vw, 11px);
+  font-weight: 700;
+  padding: clamp(2px, 0.5vw, 3px) clamp(5px, 1vw, 7px);
+  border-radius: 10px;
+  min-width: clamp(16px, 4vw, 20px);
+  text-align: center;
+}
+
+.btn-reset {
+  padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 18px);
+  border: none;
+  background: #fff5f5;
+  color: #f56565;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-reset:hover {
+  background: #feb2b2;
+  color: white;
+}
+
+/* =====================================================
+   FILTERS EXPANDED
+   ===================================================== */
+
+.filters-expanded {
+  margin-top: clamp(16px, 3vw, 24px);
+  padding-top: clamp(16px, 3vw, 24px);
+  border-top: 2px solid #e2e8f0;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+  gap: clamp(12px, 3vw, 18px);
+  margin-bottom: clamp(12px, 3vw, 18px);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.5vw, 10px);
+}
+
+.filter-group label {
+  font-size: clamp(12px, 2vw, 13px);
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =====================================================
+   ACTIVE FILTERS
+   ===================================================== */
+
+.active-filters {
+  background: #f7fafc;
+  border-radius: 8px;
+  padding: clamp(10px, 2vw, 14px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 2vw, 10px);
+  align-items: center;
+}
+
+.active-filters-label {
+  font-size: clamp(12px, 2vw, 13px);
+  font-weight: 600;
+  color: #4a5568;
+  margin-right: clamp(6px, 1.5vw, 10px);
+}
+
+.active-filters-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.5vw, 10px);
+  flex: 1;
+}
+
+.active-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(5px, 1vw, 7px);
+  padding: clamp(5px, 1vw, 7px) clamp(8px, 2vw, 12px);
+  background: white;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 13px);
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.active-filter button {
+  width: clamp(14px, 3vw, 16px);
+  height: clamp(14px, 3vw, 16px);
+  border: none;
+  background: #e2e8f0;
+  border-radius: 50%;
+  color: #4a5568;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(9px, 2vw, 10px);
+  transition: all 0.2s;
+  padding: 0;
+  margin-left: clamp(3px, 0.5vw, 5px);
+}
+
+.active-filter button:hover {
+  background: #cbd5e0;
+  transform: scale(1.1);
+}
+
+/* =====================================================
+   RESULTS
+   ===================================================== */
+
+.filters-results {
+  margin-top: clamp(12px, 3vw, 18px);
+  padding-top: clamp(12px, 3vw, 18px);
+  border-top: 2px solid #e2e8f0;
+  font-size: clamp(13px, 2vw, 14px);
+  color: #4a5568;
+  text-align: center;
+}
+
+.filters-results strong {
+  color: #2d3748;
+  font-weight: 700;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 900px) {
+  .filters-main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search {
+    min-width: 100%;
+  }
+
+  .filters-quick {
+    width: 100%;
+  }
+
+  .filter-select {
+    flex: 1;
+  }
+
+  .filters-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .exercise-filters {
+    padding: clamp(14px, 3vw, 20px);
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-quick {
+    flex-direction: column;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+}

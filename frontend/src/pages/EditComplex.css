@@ -1,0 +1,512 @@
+/* =====================================================
+   EDITCOMPLEX - Azarean Network
+   Современный fluid/responsive дизайн без breakpoints
+   Работает на экранах от 320px до 4K
+   ===================================================== */
+
+/* Layout страницы */
+.create-complex-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 3vw, 40px) clamp(20px, 4vw, 40px);
+}
+
+.page-header {
+  margin-bottom: clamp(20px, 4vw, 32px);
+}
+
+.page-header h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  color: #1a202c;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 12px);
+  flex-wrap: wrap;
+}
+
+.page-icon {
+  flex-shrink: 0;
+  stroke-width: 1.8;
+}
+
+.page-header p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+/* Форма комплекса */
+.complex-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3vw, 32px);
+}
+
+.form-section {
+  background: white;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: clamp(12px, 2vw, 16px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.form-section h3 {
+  font-size: clamp(17px, 3vw, 20px);
+  color: #1a202c;
+  margin: 0 0 clamp(12px, 2vw, 16px) 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-section h3 svg {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.form-section textarea {
+  width: 100%;
+  padding: clamp(12px, 2vw, 16px);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: clamp(14px, 2vw, 15px);
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: clamp(100px, 15vw, 120px);
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.form-section textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* =====================================================
+   ВЫБРАННЫЕ УПРАЖНЕНИЯ - Адаптивный список
+   ===================================================== */
+
+.selected-exercises-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vw, 16px);
+  margin-top: clamp(12px, 2vw, 16px);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.selected-exercise {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vw, 16px);
+  padding: clamp(12px, 2vw, 16px);
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  flex-wrap: wrap;
+}
+
+.selected-exercise:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.selected-exercise.is-dragging {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+}
+
+.drag-handle {
+  cursor: grab;
+  font-size: clamp(16px, 3vw, 20px);
+  color: #cbd5e0;
+  user-select: none;
+  padding: clamp(4px, 1vw, 8px) clamp(6px, 1.5vw, 10px);
+  transition: color 0.2s;
+  flex-shrink: 0;
+  touch-action: none;
+}
+
+.drag-handle:hover {
+  color: #667eea;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.exercise-info {
+  flex: 1 1 min(150px, 100%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exercise-info strong {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #1a202c;
+  font-weight: 600;
+  display: block;
+  word-break: break-word;
+}
+
+.exercise-meta {
+  font-size: clamp(12px, 1.5vw, 13px);
+  color: #718096;
+  display: block;
+}
+
+/* =====================================================
+   ПАРАМЕТРЫ УПРАЖНЕНИЯ - Адаптивная сетка
+   ===================================================== */
+
+.exercise-params {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(70px, 100%), 1fr));
+  gap: clamp(8px, 1.5vw, 12px);
+  align-items: center;
+}
+
+.exercise-params input[type="number"],
+.exercise-params input[type="text"] {
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.exercise-params input[type="text"].notes-input {
+  grid-column: 1 / -1;
+  min-width: 100%;
+}
+
+.exercise-params input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* =====================================================
+   КНОПКА УДАЛЕНИЯ - Адаптивная
+   ===================================================== */
+
+.remove-exercise-btn {
+  width: clamp(32px, 5vw, 36px);
+  height: clamp(32px, 5vw, 36px);
+  background: #fee;
+  border: 2px solid #fed7d7;
+  border-radius: 8px;
+  color: #e53e3e;
+  font-size: clamp(16px, 2vw, 18px);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.remove-exercise-btn svg {
+  flex-shrink: 0;
+  stroke-width: 2.5;
+}
+
+.remove-exercise-btn:hover {
+  background: #fc8181;
+  color: white;
+  border-color: #fc8181;
+  transform: scale(1.1);
+}
+
+/* На очень узких экранах кнопка на всю ширину */
+@media (max-width: 400px) {
+  .remove-exercise-btn {
+    width: 100%;
+    flex: 1 1 100%;
+    height: 44px;
+  }
+}
+
+.empty-exercises {
+  text-align: center;
+  padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
+  color: #a0aec0;
+  background: #f7fafc;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e0;
+}
+
+.empty-exercises p {
+  font-size: clamp(14px, 2vw, 16px);
+  margin: 0;
+}
+
+/* =====================================================
+   ПОИСК УПРАЖНЕНИЙ - Адаптивный
+   ===================================================== */
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-icon-input {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px) clamp(14px, 3vw, 16px) clamp(10px, 2vw, 12px) clamp(35px, 7vw, 40px);
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* =====================================================
+   ДОСТУПНЫЕ УПРАЖНЕНИЯ - Адаптивная сетка
+   ===================================================== */
+
+.available-exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+  margin-top: clamp(12px, 2vw, 16px);
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.exercise-card-small {
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: clamp(12px, 2vw, 16px);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vw, 12px);
+}
+
+.exercise-card-small:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-2px);
+}
+
+.exercise-card-small h4 {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #1a202c;
+  margin: 0;
+  font-weight: 600;
+}
+
+.exercise-card-small p {
+  font-size: clamp(13px, 1.5vw, 14px);
+  color: #4a5568;
+  margin: 0;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.exercise-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: #edf2f7;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: clamp(11px, 1.5vw, 12px);
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* =====================================================
+   КНОПКИ ДОБАВЛЕНИЯ - Адаптивные
+   ===================================================== */
+
+.btn-add-exercise {
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-add-exercise svg {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.btn-add-exercise:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add-exercise:disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   КНОПКИ ДЕЙСТВИЙ - Адаптивные
+   ===================================================== */
+
+.form-actions {
+  display: flex;
+  gap: clamp(12px, 2vw, 16px);
+  justify-content: flex-end;
+  padding: clamp(16px, 3vw, 24px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  bottom: 20px;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+
+.form-actions button {
+  padding: clamp(12px, 2vw, 14px) clamp(24px, 4vw, 32px);
+  border-radius: 10px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: clamp(140px, 20vw, 180px);
+  justify-content: center;
+  flex: 1 1 auto;
+}
+
+/* На узких экранах кнопки на всю ширину */
+@media (max-width: 500px) {
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions button {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+.btn-secondary {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* =====================================================
+   ОШИБКИ И ЗАГРУЗКА
+   ===================================================== */
+
+.error-view {
+  max-width: 600px;
+  margin: 100px auto;
+  text-align: center;
+  padding: clamp(20px, 4vw, 40px);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.error-view h2 {
+  font-size: clamp(24px, 4vw, 32px);
+  margin: 0 0 16px 0;
+  color: #f56565;
+}
+
+.error-view p {
+  font-size: clamp(16px, 2vw, 18px);
+  color: #4a5568;
+  margin: 0 0 24px 0;
+}
+
+.loading {
+  text-align: center;
+  padding: clamp(60px, 10vw, 100px) 20px;
+  font-size: clamp(16px, 3vw, 20px);
+  color: #718096;
+}
+
+.error-message {
+  background: #fff5f5;
+  border: 2px solid #feb2b2;
+  border-radius: 12px;
+  padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
+  color: #c53030;
+  margin-bottom: clamp(16px, 3vw, 24px);
+  font-weight: 500;
+  font-size: clamp(13px, 2vw, 14px);
+}
+
+/* =====================================================
+   СКРЫТИЕ BACКBUTTON НА ПЛАНШЕТАХ
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .back-button-wrapper {
+    display: none !important;
+  }
+}

@@ -1,0 +1,235 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+
+// Страницы
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Patients from './pages/Patients';
+import PatientView from './pages/PatientView';
+import ViewProgress from './pages/ViewProgress';
+import MyComplexes from './pages/MyComplexes';
+import EditComplex from './pages/EditComplex';
+import CreateComplex from './pages/CreateComplex';
+import Trash from './pages/Trash';
+
+// Библиотека упражнений
+import Exercises from './pages/Exercises/Exercises';
+import ExerciseDetail from './pages/Exercises/ExerciseDetail';
+
+// Защищённый роут
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        fontSize: '24px',
+        color: '#667eea'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+          Загрузка...
+        </div>
+      </div>
+    );
+  }
+
+  return user ? children : <Navigate to="/login" />;
+}
+
+function AppRoutes() {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+      {/* ========================== */}
+      {/* АВТОРИЗАЦИЯ */}
+      {/* ========================== */}
+      <Route 
+        path="/login" 
+        element={user ? <Navigate to="/dashboard" /> : <Login />} 
+      />
+
+      {/* ========================== */}
+      {/* ГЛАВНАЯ */}
+      {/* ========================== */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route 
+        path="/" 
+        element={<Navigate to="/dashboard" />} 
+      />
+
+      {/* ========================== */}
+      {/* ПАЦИЕНТЫ */}
+      {/* ========================== */}
+      <Route 
+        path="/patients"
+        element={
+          <ProtectedRoute>
+            <Patients />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========================== */}
+      {/* КОМПЛЕКСЫ */}
+      {/* ========================== */}
+      <Route 
+        path="/my-complexes"
+        element={
+          <ProtectedRoute>
+            <MyComplexes />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/create-complex"
+        element={
+          <ProtectedRoute>
+            <CreateComplex />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/create-complex/:patientId"
+        element={
+          <ProtectedRoute>
+            <CreateComplex />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/complex/edit/:id" 
+        element={
+          <ProtectedRoute>
+            <EditComplex />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========================== */}
+      {/* ПРОГРЕСС */}
+      {/* ========================== */}
+      <Route 
+        path="/progress/:complexId" 
+        element={
+          <ProtectedRoute>
+            <ViewProgress />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========================== */}
+      {/* БИБЛИОТЕКА УПРАЖНЕНИЙ */}
+      {/* ========================== */}
+      <Route 
+        path="/exercises" 
+        element={
+          <ProtectedRoute>
+            <Exercises />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/exercises/:id" 
+        element={
+          <ProtectedRoute>
+            <ExerciseDetail />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========================== */}
+      {/* КОРЗИНА */}
+      {/* ========================== */}
+      <Route 
+        path="/trash"
+        element={
+          <ProtectedRoute>
+            <Trash />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ========================== */}
+      {/* ПУБЛИЧНЫЕ СТРАНИЦЫ (без авторизации) */}
+      {/* ========================== */}
+      
+      {/* Страница пациента по токену */}
+      <Route 
+        path="/patient/:token" 
+        element={<PatientView />} 
+      />
+
+      {/* ========================== */}
+      {/* 404 */}
+      {/* ========================== */}
+      <Route 
+        path="*" 
+        element={
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100vh',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '72px', marginBottom: '16px' }}>🔍</div>
+            <h1 style={{ fontSize: '32px', color: '#2d3748', marginBottom: '8px' }}>
+              Страница не найдена
+            </h1>
+            <p style={{ fontSize: '18px', color: '#718096', marginBottom: '24px' }}>
+              Запрашиваемая страница не существует
+            </p>
+            <a 
+              href="/dashboard" 
+              style={{ 
+                padding: '12px 24px', 
+                background: '#667eea', 
+                color: 'white', 
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontWeight: '600'
+              }}
+            >
+              На главную
+            </a>
+          </div>
+        } 
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <ToastProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </ToastProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;

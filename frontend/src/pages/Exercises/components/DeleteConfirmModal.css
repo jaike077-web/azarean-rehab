@@ -1,0 +1,114 @@
+/* =====================================================
+   DELETE CONFIRM MODAL - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.delete-confirm-modal {
+  background: white;
+  border-radius: clamp(12px, 2vw, 18px);
+  padding: clamp(24px, 5vw, 36px);
+  max-width: min(480px, 92vw);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-icon {
+  font-size: clamp(52px, 10vw, 68px);
+  margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+.delete-confirm-modal h2 {
+  font-size: clamp(20px, 4vw, 26px);
+  color: #1a202c;
+  margin: 0 0 clamp(12px, 2vw, 18px) 0;
+  line-height: 1.3;
+}
+
+.modal-text {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #4a5568;
+  margin: 0 0 clamp(10px, 2vw, 14px) 0;
+  line-height: 1.6;
+}
+
+.modal-text strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.modal-hint {
+  font-size: clamp(12px, 2vw, 14px);
+  color: #a0aec0;
+  margin: 0 0 clamp(20px, 4vw, 28px) 0;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   MODAL ACTIONS
+   ===================================================== */
+
+.modal-actions {
+  display: flex;
+  gap: clamp(10px, 2vw, 14px);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: clamp(10px, 2vw, 14px) clamp(24px, 5vw, 36px);
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 48px;
+  min-width: clamp(110px, 25vw, 140px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-cancel {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.btn-confirm {
+  background: #f56565;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background: #e53e3e;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(245, 101, 101, 0.4);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .delete-confirm-modal {
+    padding: clamp(20px, 5vw, 28px);
+  }
+
+  .modal-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    min-width: 100%;
+  }
+}

@@ -1,0 +1,565 @@
+/* =====================================================
+   EXERCISE MODAL - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+   .exercise-modal {
+    max-width: min(820px, 94vw);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* =====================================================
+     FORM SECTIONS
+     ===================================================== */
+  
+  .form-section {
+    margin-bottom: clamp(24px, 5vw, 36px);
+    padding: clamp(18px, 4vw, 28px);
+    background: #f7fafc;
+    border-radius: clamp(10px, 2vw, 14px);
+  }
+  
+  .form-section.required-section {
+    background: #fef5e7;
+    border: 2px solid #f39c12;
+  }
+  
+  .section-title {
+    font-size: clamp(16px, 3vw, 20px);
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.5vw, 10px);
+  }
+  
+  .section-description {
+    font-size: clamp(13px, 2vw, 14px);
+    color: #718096;
+    margin: 0 0 clamp(16px, 3vw, 24px) 0;
+    line-height: 1.5;
+  }
+  
+  .optional {
+    font-size: clamp(13px, 2vw, 14px);
+    font-weight: 400;
+    color: #718096;
+  }
+  
+  /* =====================================================
+     REQUIRED INDICATOR
+     ===================================================== */
+  
+  .required {
+    color: #e53e3e;
+    font-weight: 700;
+    font-size: clamp(14px, 3vw, 16px);
+  }
+  
+  label .required {
+    margin-left: 4px;
+  }
+  
+  /* =====================================================
+     FORM GROUPS
+     ===================================================== */
+  
+  .form-group {
+    margin-bottom: clamp(16px, 3vw, 24px);
+  }
+  
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+  
+  .form-group label {
+    display: block;
+    font-size: clamp(13px, 2vw, 14px);
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: clamp(6px, 1.5vw, 10px);
+  }
+  
+  .form-group input[type="text"],
+  .form-group input[type="url"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%;
+    padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: clamp(13px, 2vw, 14px);
+    transition: all 0.2s;
+    background: white;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+  
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .form-group input.error,
+  .form-group textarea.error {
+    border-color: #e53e3e;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+    min-height: clamp(60px, 15vw, 90px);
+  }
+  
+  /* =====================================================
+     ERROR MESSAGES
+     ===================================================== */
+  
+  .error-message {
+    display: block;
+    font-size: clamp(12px, 2vw, 13px);
+    color: #e53e3e;
+    margin-top: clamp(5px, 1vw, 7px);
+    font-weight: 500;
+  }
+  
+  /* =====================================================
+     FORM ROW (2 columns)
+     ===================================================== */
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: clamp(12px, 3vw, 18px);
+  }
+  
+  /* =====================================================
+     DIFFICULTY SLIDER
+     ===================================================== */
+  
+  .difficulty-slider {
+    margin-top: clamp(10px, 2vw, 14px);
+  }
+  
+  .difficulty-slider input[type="range"] {
+    width: 100%;
+    height: clamp(6px, 1.5vw, 8px);
+    border-radius: 4px;
+    background: #e2e8f0;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  
+  .difficulty-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: clamp(20px, 4vw, 26px);
+    height: clamp(20px, 4vw, 26px);
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .difficulty-slider input[type="range"]::-moz-range-thumb {
+    width: clamp(20px, 4vw, 26px);
+    height: clamp(20px, 4vw, 26px);
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .difficulty-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: clamp(6px, 1.5vw, 10px);
+    font-size: clamp(11px, 2vw, 12px);
+    color: #718096;
+  }
+  
+  /* =====================================================
+     CHECKBOX GROUP (Multiple Select)
+     ===================================================== */
+  
+  .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+    gap: clamp(10px, 2vw, 14px);
+    margin-top: clamp(10px, 2vw, 14px);
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 16px);
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 400;
+    font-size: clamp(13px, 2vw, 14px);
+    color: #2d3748;
+    min-height: 44px;
+  }
+  
+  .checkbox-label:hover {
+    border-color: #cbd5e0;
+    background: #f7fafc;
+  }
+  
+  .checkbox-label input[type="checkbox"] {
+    width: clamp(16px, 3vw, 18px);
+    height: clamp(16px, 3vw, 18px);
+    cursor: pointer;
+    accent-color: #667eea;
+    flex-shrink: 0;
+  }
+  
+  .checkbox-label input[type="checkbox"]:checked + span {
+    font-weight: 600;
+    color: #667eea;
+  }
+  
+  .checkbox-label:has(input:checked) {
+    border-color: #667eea;
+    background: #eef2ff;
+  }
+  
+  /* =====================================================
+     SELECTED TAGS (Chips)
+     ===================================================== */
+  
+  .selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(6px, 1.5vw, 10px);
+    margin-top: clamp(10px, 2vw, 14px);
+  }
+  
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(5px, 1vw, 7px);
+    padding: clamp(5px, 1vw, 7px) clamp(10px, 2vw, 14px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: clamp(12px, 2vw, 13px);
+    font-weight: 500;
+  }
+  
+  .tag button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: clamp(13px, 2vw, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    width: clamp(14px, 3vw, 16px);
+    height: clamp(14px, 3vw, 16px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+    min-height: auto;
+  }
+  
+  .tag button:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* =====================================================
+     TOGGLE ADVANCED BUTTON
+     ===================================================== */
+  
+  .toggle-advanced-btn {
+    width: 100%;
+    padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 22px);
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: clamp(14px, 2vw, 15px);
+    font-weight: 600;
+    color: #2d3748;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    min-height: 48px;
+  }
+  
+  .toggle-advanced-btn:hover {
+    border-color: #cbd5e0;
+    background: #f7fafc;
+  }
+  
+  .advanced-fields {
+    margin-top: clamp(16px, 3vw, 24px);
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* =====================================================
+     MODAL FOOTER
+     ===================================================== */
+  
+  .modal-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 36px);
+    border-top: 2px solid #e2e8f0;
+    background: #f7fafc;
+  }
+  
+  .btn-secondary {
+    width: 100%;
+    padding: clamp(10px, 2vw, 14px) clamp(18px, 4vw, 28px);
+    background: white;
+    color: #2d3748;
+    border: solid 1px #667eea;
+    border-radius: 8px;
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 48px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-secondary:hover {
+    background: #f7fafc;
+    border-color: #cbd5e0;
+  }
+  
+  .btn-secondary:last-child {
+    margin-bottom: 0;
+  }
+  
+  .btn-primary {
+    width: 100%;
+    padding: clamp(10px, 2vw, 14px) clamp(18px, 4vw, 28px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    min-height: 48px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+  }
+  
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+  
+  .btn-primary:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* =====================================================
+     MODAL OVERLAY & CONTENT
+     ===================================================== */
+  
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: clamp(16px, 3vw, 24px);
+    animation: fadeIn 0.2s;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .modal-content {
+    background: white;
+    border-radius: clamp(12px, 2vw, 18px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* =====================================================
+     MODAL HEADER
+     ===================================================== */
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(18px, 4vw, 28px) clamp(20px, 5vw, 36px);
+    border-bottom: 2px solid #e2e8f0;
+    gap: clamp(12px, 3vw, 18px);
+  }
+  
+  .modal-header h2 {
+    font-size: clamp(20px, 4vw, 26px);
+    color: #1a202c;
+    margin: 0;
+    line-height: 1.3;
+  }
+  
+  .close-btn {
+    width: clamp(32px, 6vw, 40px);
+    height: clamp(32px, 6vw, 40px);
+    border: none;
+    background: #f7fafc;
+    color: #718096;
+    font-size: clamp(18px, 3vw, 22px);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    min-height: auto;
+  }
+  
+  .close-btn:hover {
+    background: #e2e8f0;
+    color: #2d3748;
+    transform: scale(1.1);
+  }
+  
+  /* =====================================================
+     MODAL BODY
+     ===================================================== */
+  
+  .modal-body {
+    padding: clamp(20px, 5vw, 36px);
+    overflow-y: auto;
+    max-height: calc(90vh - 160px);
+  }
+  
+  /* =====================================================
+     SCROLLBAR STYLING
+     ===================================================== */
+  
+  .modal-body::-webkit-scrollbar {
+    width: clamp(6px, 1.5vw, 8px);
+  }
+  
+  .modal-body::-webkit-scrollbar-track {
+    background: #f7fafc;
+  }
+  
+  .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+  
+  .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+  
+  /* =====================================================
+     HELP TEXT
+     ===================================================== */
+  
+  .help-text {
+    font-size: clamp(12px, 2vw, 13px);
+    color: #718096;
+    margin-top: clamp(5px, 1vw, 7px);
+    line-height: 1.5;
+  }
+  
+  .help-text a {
+    color: #667eea;
+    text-decoration: none;
+  }
+  
+  .help-text a:hover {
+    text-decoration: underline;
+  }
+  
+  /* =====================================================
+     RESPONSIVE
+     ===================================================== */
+  
+  @media (max-width: 768px) {
+    .exercise-modal {
+      max-width: 100%;
+      max-height: 100vh;
+      border-radius: 0;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: clamp(16px, 4vw, 22px);
+    }
+    
+    .form-section {
+      padding: clamp(14px, 3vw, 20px);
+      margin-bottom: clamp(16px, 4vw, 24px);
+    }
+    
+    .checkbox-group {
+      grid-template-columns: 1fr;
+    }
+  }

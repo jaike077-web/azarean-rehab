@@ -1,0 +1,336 @@
+/* =====================================================
+   TOAST NOTIFICATIONS - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.toast-container {
+  position: fixed;
+  top: clamp(16px, 3vw, 20px);
+  right: clamp(16px, 3vw, 20px);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 2vw, 12px);
+  pointer-events: none;
+  max-width: min(440px, calc(100vw - 32px));
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 14px);
+  padding: clamp(14px, 2vw, 18px) clamp(16px, 3vw, 22px);
+  border-radius: clamp(10px, 2vw, 14px);
+  background: white;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  min-width: min(300px, 100%);
+  max-width: 100%;
+  pointer-events: auto;
+  animation: toastSlideIn 0.3s ease-out;
+  border-left: 4px solid;
+  position: relative;
+  overflow: hidden;
+}
+
+.toast.toast-exiting {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* =====================================================
+   ТИПЫ TOAST
+   ===================================================== */
+
+.toast-success {
+  border-left-color: #22c55e;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.toast-error {
+  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+}
+
+.toast-warning {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+}
+
+.toast-info {
+  border-left-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+/* =====================================================
+   ИКОНКА
+   ===================================================== */
+
+.toast-icon {
+  font-size: clamp(20px, 4vw, 24px);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(28px, 5vw, 32px);
+  height: clamp(28px, 5vw, 32px);
+}
+
+.toast-success .toast-icon {
+  color: #22c55e;
+}
+
+.toast-error .toast-icon {
+  color: #ef4444;
+}
+
+.toast-warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-info .toast-icon {
+  color: #3b82f6;
+}
+
+/* =====================================================
+   КОНТЕНТ
+   ===================================================== */
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: clamp(14px, 2vw, 15px);
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.toast-message {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #64748b;
+  margin: 0;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   КНОПКА ЗАКРЫТИЯ
+   ===================================================== */
+
+.toast-close {
+  background: none;
+  border: none;
+  font-size: clamp(18px, 3vw, 20px);
+  color: #94a3b8;
+  cursor: pointer;
+  padding: clamp(6px, 1vw, 8px);
+  margin: -4px -4px -4px 0;
+  border-radius: 6px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  min-height: auto;
+  width: clamp(28px, 5vw, 32px);
+  height: clamp(28px, 5vw, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #64748b;
+}
+
+.toast-close:active {
+  transform: scale(0.95);
+}
+
+/* =====================================================
+   ПРОГРЕСС-БАР АВТОЗАКРЫТИЯ
+   ===================================================== */
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  border-radius: 0 0 0 clamp(10px, 2vw, 14px);
+  animation: toastProgress linear forwards;
+}
+
+.toast-success .toast-progress {
+  background: #22c55e;
+}
+
+.toast-error .toast-progress {
+  background: #ef4444;
+}
+
+.toast-warning .toast-progress {
+  background: #f59e0b;
+}
+
+.toast-info .toast-progress {
+  background: #3b82f6;
+}
+
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* =====================================================
+   ДЕЙСТВИЯ (ACTION BUTTONS)
+   ===================================================== */
+
+.toast-actions {
+  display: flex;
+  gap: clamp(8px, 2vw, 10px);
+  margin-top: clamp(10px, 2vw, 12px);
+}
+
+.toast-action-btn {
+  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 16px);
+  border-radius: 6px;
+  font-size: clamp(12px, 2vw, 13px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  min-height: 32px;
+}
+
+.toast-action-btn.primary {
+  background: #667eea;
+  color: white;
+}
+
+.toast-action-btn.primary:hover {
+  background: #5568d3;
+}
+
+.toast-action-btn.secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.toast-action-btn.secondary:hover {
+  background: #e2e8f0;
+}
+
+/* =====================================================
+   MOBILE АДАПТАЦИЯ
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .toast-container {
+    top: auto;
+    bottom: clamp(16px, 3vw, 20px);
+    left: clamp(12px, 3vw, 16px);
+    right: clamp(12px, 3vw, 16px);
+  }
+
+  .toast {
+    min-width: 100%;
+    max-width: 100%;
+  }
+  
+  /* На мобильных анимация снизу */
+  @keyframes toastSlideIn {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes toastSlideOut {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+  
+  .toast.toast-exiting {
+    animation: none;
+    opacity: 0;
+  }
+  
+  .toast-progress {
+    animation: none;
+  }
+}
+
+/* Screen reader only */
+.toast[role="alert"],
+.toast[role="status"] {
+  /* aria-live уже указан в HTML */
+}
+
+/* =====================================================
+   ВАРИАНТЫ РАЗМЕРОВ
+   ===================================================== */
+
+.toast.compact {
+  padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 16px);
+}
+
+.toast.large {
+  padding: clamp(18px, 3vw, 22px) clamp(20px, 4vw, 26px);
+}
+
+.toast.large .toast-title {
+  font-size: clamp(15px, 3vw, 17px);
+}
+
+.toast.large .toast-message {
+  font-size: clamp(14px, 2vw, 15px);
+}

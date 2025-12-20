@@ -1,0 +1,285 @@
+/* =====================================================
+   TRASH PAGE - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.trash-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 24px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: clamp(24px, 5vw, 36px);
+  gap: clamp(16px, 3vw, 24px);
+  flex-wrap: wrap;
+}
+
+.page-header h1 {
+  font-size: clamp(24px, 5vw, 36px);
+  margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
+  color: #1a202c;
+  line-height: 1.2;
+}
+
+.page-header p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: clamp(40px, 10vw, 60px) clamp(16px, 3vw, 20px);
+  font-size: clamp(16px, 3vw, 18px);
+  color: #718096;
+}
+
+/* =====================================================
+   TABS
+   ===================================================== */
+
+.trash-tabs {
+  display: flex;
+  gap: clamp(10px, 2vw, 14px);
+  margin-bottom: clamp(24px, 5vw, 36px);
+  background: white;
+  padding: clamp(6px, 1.5vw, 10px);
+  border-radius: clamp(10px, 2vw, 14px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 28px);
+  border: none;
+  background: transparent;
+  border-radius: clamp(6px, 1.5vw, 10px);
+  font-size: clamp(14px, 2vw, 16px);
+  font-weight: 600;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-btn:hover {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+/* =====================================================
+   EMPTY STATE
+   ===================================================== */
+
+.empty-state {
+  background: white;
+  border-radius: clamp(10px, 2vw, 14px);
+  padding: clamp(40px, 8vw, 60px) clamp(24px, 5vw, 40px);
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.empty-icon {
+  font-size: clamp(60px, 12vw, 80px);
+  margin-bottom: clamp(16px, 3vw, 24px);
+  opacity: 0.3;
+}
+
+.empty-state h2 {
+  font-size: clamp(20px, 4vw, 28px);
+  color: #1a202c;
+  margin: 0 0 clamp(10px, 2vw, 14px) 0;
+}
+
+.empty-state p {
+  font-size: clamp(14px, 2vw, 16px);
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* =====================================================
+   TRASH GRID
+   ===================================================== */
+
+.trash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: clamp(18px, 4vw, 28px);
+}
+
+/* =====================================================
+   TRASH CARD
+   ===================================================== */
+
+.trash-card {
+  background: white;
+  border-radius: clamp(10px, 2vw, 14px);
+  padding: clamp(18px, 4vw, 28px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #fc8181;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.trash-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.trash-header {
+  display: flex;
+  gap: clamp(12px, 3vw, 18px);
+  margin-bottom: clamp(16px, 3vw, 24px);
+  padding-bottom: clamp(16px, 3vw, 24px);
+  border-bottom: 2px solid #f7fafc;
+}
+
+.patient-avatar {
+  width: clamp(52px, 10vw, 64px);
+  height: clamp(52px, 10vw, 64px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.patient-avatar.deleted {
+  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+  opacity: 0.6;
+}
+
+.trash-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.trash-info h3 {
+  font-size: clamp(16px, 3vw, 20px);
+  color: #1a202c;
+  margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-meta {
+  font-size: clamp(12px, 2vw, 14px);
+  color: #718096;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* =====================================================
+   TRASH DETAILS
+   ===================================================== */
+
+.trash-details {
+  margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+.trash-page .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: clamp(6px, 1.5vw, 10px) 0;
+  font-size: clamp(13px, 2vw, 14px);
+  gap: clamp(8px, 2vw, 12px);
+}
+
+.trash-page .detail-label {
+  color: #718096;
+  flex-shrink: 0;
+}
+
+.trash-page .detail-value {
+  color: #2d3748;
+  font-weight: 600;
+  text-align: right;
+}
+
+/* =====================================================
+   TRASH ACTIONS
+   ===================================================== */
+
+.trash-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 2vw, 14px);
+}
+
+.trash-actions button {
+  padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-restore {
+  background: #48bb78;
+  color: white;
+}
+
+.btn-restore:hover {
+  background: #38a169;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+}
+
+.btn-permanent-delete {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.btn-permanent-delete:hover {
+  background: #fc8181;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(252, 129, 129, 0.4);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .trash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trash-tabs {
+    flex-direction: column;
+  }
+
+  .trash-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

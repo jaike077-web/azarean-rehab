@@ -1,0 +1,382 @@
+/* =====================================================
+   SKELETON LOADERS - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+/* Базовый skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite ease-in-out;
+  border-radius: clamp(6px, 1.5vw, 8px);
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* =====================================================
+   ТИПЫ SKELETON
+   ===================================================== */
+
+.skeleton-text {
+  height: clamp(14px, 2vw, 16px);
+  margin-bottom: clamp(6px, 1.5vw, 8px);
+}
+
+.skeleton-text.short {
+  width: 40%;
+}
+
+.skeleton-text.medium {
+  width: 70%;
+}
+
+.skeleton-text.long {
+  width: 100%;
+}
+
+.skeleton-title {
+  height: clamp(20px, 4vw, 28px);
+  width: 60%;
+  margin-bottom: clamp(10px, 2vw, 14px);
+}
+
+.skeleton-subtitle {
+  height: clamp(16px, 3vw, 20px);
+  width: 45%;
+  margin-bottom: clamp(8px, 2vw, 12px);
+}
+
+.skeleton-avatar {
+  width: clamp(44px, 8vw, 52px);
+  height: clamp(44px, 8vw, 52px);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-avatar.large {
+  width: clamp(60px, 10vw, 72px);
+  height: clamp(60px, 10vw, 72px);
+}
+
+.skeleton-avatar.small {
+  width: clamp(32px, 6vw, 40px);
+  height: clamp(32px, 6vw, 40px);
+}
+
+.skeleton-button {
+  height: clamp(40px, 7vw, 48px);
+  width: clamp(100px, 20vw, 140px);
+  border-radius: clamp(6px, 1.5vw, 8px);
+}
+
+.skeleton-image {
+  width: 100%;
+  height: clamp(140px, 30vw, 200px);
+  border-radius: clamp(10px, 2vw, 14px);
+}
+
+.skeleton-badge {
+  height: clamp(22px, 4vw, 26px);
+  width: clamp(70px, 15vw, 90px);
+  border-radius: clamp(10px, 2vw, 12px);
+  display: inline-block;
+  margin-right: clamp(6px, 1.5vw, 8px);
+}
+
+.skeleton-icon {
+  width: clamp(20px, 4vw, 24px);
+  height: clamp(20px, 4vw, 24px);
+  border-radius: 4px;
+}
+
+/* =====================================================
+   SKELETON CARDS
+   ===================================================== */
+
+/* Карточка пациента */
+.skeleton-patient-card {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 18px);
+  padding: clamp(16px, 3vw, 22px);
+  background: white;
+  border-radius: clamp(12px, 2vw, 16px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.skeleton-patient-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Карточка упражнения */
+.skeleton-exercise-card {
+  background: white;
+  border-radius: clamp(12px, 2vw, 16px);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.skeleton-exercise-card .skeleton-image {
+  border-radius: 0;
+  height: clamp(160px, 30vw, 200px);
+}
+
+.skeleton-exercise-content {
+  padding: clamp(14px, 3vw, 18px);
+}
+
+.skeleton-exercise-badges {
+  display: flex;
+  gap: clamp(6px, 1.5vw, 8px);
+  margin: clamp(10px, 2vw, 14px) 0;
+  flex-wrap: wrap;
+}
+
+/* Карточка комплекса */
+.skeleton-complex-card {
+  background: white;
+  border-radius: clamp(12px, 2vw, 16px);
+  padding: clamp(16px, 3vw, 22px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.skeleton-complex-header {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 18px);
+  margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+.skeleton-complex-stats {
+  display: flex;
+  gap: clamp(16px, 3vw, 28px);
+  margin-top: clamp(12px, 2vw, 18px);
+  flex-wrap: wrap;
+}
+
+.skeleton-stat {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(3px, 1vw, 5px);
+  min-width: clamp(60px, 15vw, 80px);
+}
+
+.skeleton-stat-value {
+  height: clamp(24px, 5vw, 32px);
+  width: clamp(36px, 8vw, 48px);
+}
+
+.skeleton-stat-label {
+  height: clamp(12px, 2vw, 14px);
+  width: clamp(54px, 12vw, 70px);
+}
+
+/* =====================================================
+   SKELETON CONTAINERS
+   ===================================================== */
+
+/* Сетка пациентов */
+.skeleton-patients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: clamp(14px, 3vw, 18px);
+}
+
+/* Сетка упражнений */
+.skeleton-exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: clamp(16px, 3vw, 22px);
+}
+
+/* Список комплексов */
+.skeleton-complexes-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 3vw, 18px);
+}
+
+/* =====================================================
+   SKELETON TABLE
+   ===================================================== */
+
+.skeleton-table {
+  width: 100%;
+  background: white;
+  border-radius: clamp(10px, 2vw, 14px);
+  overflow: hidden;
+}
+
+.skeleton-table-header {
+  display: flex;
+  gap: clamp(12px, 2vw, 18px);
+  padding: clamp(14px, 3vw, 18px) clamp(16px, 3vw, 22px);
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.skeleton-table-header .skeleton {
+  height: clamp(12px, 2vw, 14px);
+}
+
+.skeleton-table-row {
+  display: flex;
+  gap: clamp(12px, 2vw, 18px);
+  padding: clamp(14px, 3vw, 18px) clamp(16px, 3vw, 22px);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.skeleton-table-row:last-child {
+  border-bottom: none;
+}
+
+.skeleton-table-cell {
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-table-cell.small {
+  flex: 0.5;
+  min-width: clamp(60px, 12vw, 80px);
+}
+
+.skeleton-table-cell.large {
+  flex: 2;
+}
+
+/* =====================================================
+   SKELETON PAGE SECTIONS
+   ===================================================== */
+
+.skeleton-page-header {
+  margin-bottom: clamp(20px, 4vw, 28px);
+}
+
+.skeleton-filters {
+  display: flex;
+  gap: clamp(12px, 2vw, 18px);
+  margin-bottom: clamp(20px, 4vw, 28px);
+  flex-wrap: wrap;
+}
+
+.skeleton-filter {
+  height: clamp(40px, 7vw, 48px);
+  width: clamp(140px, 25vw, 200px);
+  border-radius: clamp(6px, 1.5vw, 8px);
+}
+
+.skeleton-search {
+  height: clamp(40px, 7vw, 48px);
+  flex: 1 1 min(300px, 100%);
+  border-radius: clamp(6px, 1.5vw, 8px);
+}
+
+/* =====================================================
+   FULL PAGE SKELETON
+   ===================================================== */
+
+.skeleton-page {
+  padding: clamp(18px, 4vw, 26px);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.skeleton-page-title {
+  height: clamp(28px, 6vw, 40px);
+  width: min(280px, 70%);
+  margin-bottom: clamp(8px, 2vw, 12px);
+}
+
+.skeleton-page-subtitle {
+  height: clamp(16px, 3vw, 20px);
+  width: min(380px, 85%);
+  margin-bottom: clamp(20px, 4vw, 28px);
+}
+
+/* =====================================================
+   SKELETON FORM
+   ===================================================== */
+
+.skeleton-form {
+  background: white;
+  padding: clamp(18px, 4vw, 26px);
+  border-radius: clamp(10px, 2vw, 14px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.skeleton-form-group {
+  margin-bottom: clamp(16px, 3vw, 22px);
+}
+
+.skeleton-form-label {
+  height: clamp(14px, 2vw, 16px);
+  width: clamp(80px, 20vw, 120px);
+  margin-bottom: clamp(6px, 1.5vw, 10px);
+}
+
+.skeleton-form-input {
+  height: clamp(40px, 7vw, 48px);
+  width: 100%;
+  border-radius: clamp(6px, 1.5vw, 8px);
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 640px) {
+  .skeleton-patients-grid,
+  .skeleton-exercises-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skeleton-filters {
+    flex-direction: column;
+  }
+
+  .skeleton-filter,
+  .skeleton-search {
+    width: 100%;
+  }
+
+  .skeleton-complex-stats {
+    gap: clamp(12px, 3vw, 16px);
+  }
+  
+  .skeleton-table {
+    display: none;
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    background: #e0e0e0;
+  }
+}
+
+/* Screen reader announcement */
+.skeleton[aria-busy="true"] {
+  /* уже есть в HTML */
+}
+
+.skeleton[aria-label="Loading"] {
+  /* уже есть в HTML */
+}

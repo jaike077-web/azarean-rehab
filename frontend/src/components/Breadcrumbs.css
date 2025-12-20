@@ -1,0 +1,221 @@
+/* =====================================================
+   BREADCRUMBS - Azarean Network
+   Fluid/Responsive дизайн
+   ===================================================== */
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  margin-bottom: clamp(20px, 4vw, 28px);
+  padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: clamp(14px, 2vw, 16px);
+  min-height: 44px;
+}
+
+/* =====================================================
+   BREADCRUMB ITEMS
+   ===================================================== */
+
+.crumb-item {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 1vw, 6px);
+}
+
+.breadcrumb-link,
+.crumb-item a {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(4px, 1vw, 6px);
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+  padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+  border-radius: 6px;
+  min-height: 32px;
+}
+
+.breadcrumb-link:hover,
+.crumb-item a:hover {
+  background: #f7fafc;
+  color: #5568d3;
+  text-decoration: none;
+}
+
+.breadcrumb-current,
+.crumb-item.active .crumb-label {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(4px, 1vw, 6px);
+  color: #2d3748;
+  font-weight: 600;
+  padding: clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px);
+}
+
+/* =====================================================
+   ICONS
+   ===================================================== */
+
+.breadcrumb-icon,
+.crumb-icon {
+  font-size: clamp(16px, 3vw, 18px);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.crumb-icon svg,
+.breadcrumb-icon svg {
+  width: clamp(16px, 3vw, 18px);
+  height: clamp(16px, 3vw, 18px);
+  stroke-width: 2;
+}
+
+/* =====================================================
+   SEPARATOR
+   ===================================================== */
+
+.breadcrumb-separator,
+.crumb-separator {
+  color: #cbd5e0;
+  font-size: clamp(14px, 2vw, 16px);
+  user-select: none;
+  margin: 0 clamp(2px, 0.5vw, 4px);
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb-separator svg,
+.crumb-separator svg {
+  width: clamp(14px, 2vw, 16px);
+  height: clamp(14px, 2vw, 16px);
+}
+
+/* =====================================================
+   КОМПАКТНЫЙ ВАРИАНТ
+   ===================================================== */
+
+.breadcrumbs.compact {
+  padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
+  margin-bottom: clamp(12px, 2vw, 16px);
+  min-height: 36px;
+}
+
+.breadcrumbs.compact .breadcrumb-link,
+.breadcrumbs.compact .breadcrumb-current {
+  padding: clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 8px);
+  font-size: clamp(12px, 2vw, 14px);
+}
+
+/* =====================================================
+   БЕЗ ФОНА (TRANSPARENT)
+   ===================================================== */
+
+.breadcrumbs.transparent {
+  background: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .breadcrumbs {
+    font-size: clamp(12px, 3vw, 14px);
+  }
+  
+  /* Скрываем промежуточные элементы на очень узких экранах */
+  .breadcrumbs .crumb-item:not(:first-child):not(:last-child) {
+    display: none;
+  }
+  
+  /* Показываем только первый и последний */
+  .breadcrumbs .crumb-item:first-child + .crumb-separator::after {
+    content: '...';
+    margin: 0 4px;
+    color: #a0aec0;
+  }
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+.breadcrumb-link:focus-visible,
+.crumb-item a:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Подсказка для screen readers */
+.breadcrumbs[aria-label="Breadcrumb"] {
+  /* уже есть aria-label в HTML */
+}
+
+.breadcrumb-current[aria-current="page"] {
+  /* уже есть aria-current в HTML */
+}
+
+/* =====================================================
+   АНИМАЦИИ
+   ===================================================== */
+
+@keyframes breadcrumbSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.breadcrumbs.animate .crumb-item {
+  animation: breadcrumbSlideIn 0.3s ease-out backwards;
+}
+
+.breadcrumbs.animate .crumb-item:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.breadcrumbs.animate .crumb-item:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.breadcrumbs.animate .crumb-item:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.breadcrumbs.animate .crumb-item:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumbs.animate .crumb-item {
+    animation: none;
+  }
+}
+
+/* =====================================================
+   LOADING STATE
+   ===================================================== */
+
+.breadcrumbs.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.breadcrumbs.loading .breadcrumb-link,
+.breadcrumbs.loading .crumb-item a {
+  cursor: wait;
+}
