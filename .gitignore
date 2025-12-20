@@ -25,7 +25,7 @@ __pycache__/
 .venv/
 
 # Databases / dumps / backups
-database/
+/database/
 backups/
 backend_backup/
 frontend_exercises_backup/
