@@ -476,5 +476,4 @@ function PatientView() {
     </div>
   );
 }
-
 export default PatientView;
