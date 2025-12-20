@@ -21,9 +21,6 @@ function Exercises() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
 
-  // Фильтры
-  const [currentFilters, setCurrentFilters] = useState({});
-
   useEffect(() => {
     loadExercises();
   }, []);
@@ -45,8 +42,6 @@ function Exercises() {
 
   // Применение фильтров
   const handleFilterChange = useCallback((filters) => {
-    setCurrentFilters(filters);
-    
     let filtered = [...exercisesList];
 
     // Поиск

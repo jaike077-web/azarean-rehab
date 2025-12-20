@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  EyeIcon
 } from 'lucide-react';
 import { ComplexesPageSkeleton } from '../components/Skeleton';
 
