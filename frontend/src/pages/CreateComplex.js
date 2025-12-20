@@ -33,7 +33,6 @@ import {
   ExternalLink,
   MessageCircle,
   Send,
-  FileDown,
   Save,
   Folder,
 } from 'lucide-react';
@@ -837,4 +836,3 @@ function CreateComplex() {
 }
 
 export default CreateComplex;
-

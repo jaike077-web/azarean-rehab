@@ -469,16 +469,7 @@ function Patients() {
                   : {}
               }
             >
-              {filteredPatients.map((patient) => {
-                const initials =
-                  (patient.full_name || '')
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase() || '?';
-
-                return (
+              {filteredPatients.map((patient) => (
                   <div
                     key={patient.id}
                     className={
@@ -573,8 +564,7 @@ function Patients() {
                       </button>
                     </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
           )}
         </>

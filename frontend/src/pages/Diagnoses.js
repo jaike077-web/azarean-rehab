@@ -10,7 +10,6 @@ import {
   X,
   AlertTriangle,
   BookOpen,
-  MessageSquare,
   CheckCircle
 } from 'lucide-react';
 import { PatientsPageSkeleton } from '../components/Skeleton';
