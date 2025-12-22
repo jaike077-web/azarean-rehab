@@ -97,6 +97,16 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
         />
         <input
           type="number"
+          placeholder="Отдых (сек)"
+          value={exercise.rest_seconds || ''}
+          onChange={(e) => onUpdate(exercise.id, 'rest_seconds', e.target.value)}
+          onClick={handleInputClick}
+          onPointerDown={handleInputClick}
+          min="0"
+          max="9999"
+        />
+        <input
+          type="number"
           placeholder="Сек"
           value={exercise.duration_seconds || ''}
           onChange={(e) => onUpdate(exercise.id, 'duration_seconds', e.target.value)}
@@ -233,6 +243,7 @@ function CreateComplex() {
       ...exercise,
       sets: 3,
       reps: 10,
+      rest_seconds: 30,
       order_number: selectedExercises.length + 1
     }]);
     toast.success('Упражнение добавлено');
@@ -244,7 +255,7 @@ function CreateComplex() {
 
   const updateExercise = (exerciseId, field, value) => {
     // Валидация числовых полей
-    if (['sets', 'reps', 'duration_seconds'].includes(field)) {
+    if (['sets', 'reps', 'duration_seconds', 'rest_seconds'].includes(field)) {
       const numValue = parseInt(value, 10);
       if (value && (isNaN(numValue) || numValue < 0 || numValue > 9999)) {
         return;
@@ -276,6 +287,7 @@ function CreateComplex() {
           order_number: index + 1,
           sets: parseInt(ex.sets, 10) || 3,
           reps: parseInt(ex.reps, 10) || 10,
+          rest_seconds: parseInt(ex.rest_seconds, 10) || 30,
           notes: ex.notes || null
         }))
       };
