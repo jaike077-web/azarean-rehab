@@ -264,10 +264,8 @@ function PatientView() {
             >
               <div className="exercise-content">
                 <div className="exercise-header">
-                  <div className="exercise-title-row">
-                    <div className="exercise-number">{index + 1}</div>
-                    <h3 className="exercise-title">{item.exercise.title}</h3>
-                  </div>
+                  <div className="exercise-number">{index + 1}</div>
+                  <h3 className="exercise-title">{item.exercise.title}</h3>
                   <div className="completion-info">
                     {completedExercises[item.exercise.id] > 0 && (
                       <span className="completion-badge">
@@ -308,23 +306,23 @@ function PatientView() {
                 <div className="exercise-params">
                   <div className="param">
                     <span className="param-label">Подходы:</span>
-                    <span className="param-value">{item.sets}</span>
+                    <span className="param-value">{Number.isFinite(Number(item.sets)) ? Number(item.sets) : 0}</span>
                   </div>
                   {item.duration_seconds > 0 ? (
                     <div className="param">
                       <span className="param-label">Время:</span>
-                      <span className="param-value">{formatDurationSeconds(item.duration_seconds)}</span>
+                      <span className="param-value">{formatDurationSeconds(Number(item.duration_seconds))}</span>
                     </div>
                   ) : (
                     <div className="param">
                       <span className="param-label">Повторения:</span>
-                      <span className="param-value">{item.reps}</span>
+                      <span className="param-value">{Number.isFinite(Number(item.reps)) ? Number(item.reps) : 0}</span>
                     </div>
                   )}
                   {item.rest_seconds && (
                     <div className="param">
                       <span className="param-label">Отдых:</span>
-                      <span className="param-value">{item.rest_seconds} сек</span>
+                      <span className="param-value">{Number.isFinite(Number(item.rest_seconds)) ? Number(item.rest_seconds) : 0} сек</span>
                     </div>
                   )}
                 </div>
