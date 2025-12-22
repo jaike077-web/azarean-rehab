@@ -262,11 +262,12 @@ function PatientView() {
               key={item.id}
               className="exercise-card"
             >
-              <div className="exercise-number">{index + 1}</div>
-              
               <div className="exercise-content">
                 <div className="exercise-header">
-                  <h3>{item.exercise.title}</h3>
+                  <div className="exercise-title-row">
+                    <div className="exercise-number">{index + 1}</div>
+                    <h3 className="exercise-title">{item.exercise.title}</h3>
+                  </div>
                   <div className="completion-info">
                     {completedExercises[item.exercise.id] > 0 && (
                       <span className="completion-badge">
