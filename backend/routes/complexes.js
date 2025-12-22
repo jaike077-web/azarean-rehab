@@ -64,6 +64,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Добавляем упражнения в комплекс
     for (const exercise of exercises) {
+      const durationSeconds = Number(exercise.duration_seconds) || 0;
       await client.query(
         `INSERT INTO complex_exercises 
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes) 
@@ -74,7 +75,7 @@ router.post('/', authenticateToken, async (req, res) => {
           exercise.order_number,
           exercise.sets || 3,
           exercise.reps || 10,
-          exercise.duration_seconds,
+          durationSeconds,
           exercise.rest_seconds || 30,
           exercise.notes
         ]
@@ -317,6 +318,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // Добавляем новые упражнения
     for (const exercise of exercises) {
+      const durationSeconds = Number(exercise.duration_seconds) || 0;
       await client.query(
         `INSERT INTO complex_exercises 
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
@@ -327,7 +329,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
           exercise.order_number,
           exercise.sets,
           exercise.reps,
-          exercise.duration_seconds,
+          durationSeconds,
           exercise.rest_seconds,
           exercise.notes
         ]
