@@ -245,11 +245,26 @@ function PatientView() {
 
         <div className="exercises-list" id="exercises">
           <h2>Упражнения ({complex.exercises?.length || 0})</h2>
-          {complex.exercises?.map((item, index) => (
-            <div
-              key={item.id}
-              className="exercise-card"
-            >
+          {complex.exercises?.map((item, index) => {
+            const duration = Number(item.duration_seconds || 0);
+            const reps = Number(item.reps || 0);
+            const hasDuration = duration > 0;
+
+            const formatDuration = (seconds) => {
+              const totalSeconds = Math.max(0, Math.floor(seconds));
+              if (totalSeconds < 60) {
+                return `${totalSeconds} сек`;
+              }
+              const minutes = Math.floor(totalSeconds / 60);
+              const remainingSeconds = totalSeconds % 60;
+              return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+            };
+
+            return (
+              <div
+                key={item.id}
+                className="exercise-card"
+              >
               <div className="exercise-number">{index + 1}</div>
               
               <div className="exercise-content">
@@ -296,10 +311,17 @@ function PatientView() {
                     <span className="param-label">Подходы:</span>
                     <span className="param-value">{item.sets}</span>
                   </div>
-                  <div className="param">
-                    <span className="param-label">Повторения:</span>
-                    <span className="param-value">{item.reps}</span>
-                  </div>
+                  {hasDuration ? (
+                    <div className="param">
+                      <span className="param-label">Время:</span>
+                      <span className="param-value">{formatDuration(duration)}</span>
+                    </div>
+                  ) : (
+                    <div className="param">
+                      <span className="param-label">Повторения:</span>
+                      <span className="param-value">{reps}</span>
+                    </div>
+                  )}
                   {item.rest_seconds && (
                     <div className="param">
                       <span className="param-label">Отдых:</span>
@@ -330,7 +352,8 @@ function PatientView() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="contact-section" aria-label="Поддержка">
