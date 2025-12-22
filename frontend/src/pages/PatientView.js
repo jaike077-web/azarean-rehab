@@ -154,6 +154,11 @@ function PatientView() {
   const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const totalExecutions = Object.values(completedExercises).reduce((sum, count) => sum + count, 0);
 
+  const toInt = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+  };
+
   const formatDurationSeconds = (durationSeconds) => {
     if (!durationSeconds || durationSeconds <= 0) {
       return '';
@@ -257,99 +262,107 @@ function PatientView() {
 
         <div className="exercises-list" id="exercises">
           <h2>Упражнения ({complex.exercises?.length || 0})</h2>
-          {complex.exercises?.map((item, index) => (
-            <div
-              key={item.id}
-              className="exercise-card"
-            >
-              <div className="exercise-content">
-                <div className="exercise-header">
-                  <div className="exercise-number">{index + 1}</div>
-                  <h3 className="exercise-title">{item.exercise.title}</h3>
-                  <div className="completion-info">
-                    {completedExercises[item.exercise.id] > 0 && (
-                      <span className="completion-badge">
-                        <Check size={14} aria-hidden="true" />
-                        Выполнено: {completedExercises[item.exercise.id]} раз
-                      </span>
+          {complex.exercises?.map((item, index) => {
+            const sets = toInt(item.sets, 0);
+            const reps = toInt(item.reps, 0);
+            const durationSeconds = toInt(item.duration_seconds, 0);
+            const restSeconds = toInt(item.rest_seconds, 0);
+            const showDuration = durationSeconds > 0;
+
+            return (
+              <div
+                key={item.id}
+                className="exercise-card"
+              >
+                <div className="exercise-content">
+                  <div className="exercise-header">
+                    <div className="exercise-number">{index + 1}</div>
+                    <h3 className="exercise-title">{item.exercise.title}</h3>
+                    <div className="completion-info">
+                      {completedExercises[item.exercise.id] > 0 && (
+                        <span className="completion-badge">
+                          <Check size={14} aria-hidden="true" />
+                          Выполнено: {completedExercises[item.exercise.id]} раз
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-complete"
+                        onClick={() => handleComplete(item.exercise.id, item.exercise.title)}
+                        aria-label={`Отметить упражнение «${item.exercise.title}» выполненным`}
+                      >
+                        <Check size={16} aria-hidden="true" />
+                        Выполнено
+                      </button>
+                    </div>
+                  </div>
+
+                  {item.exercise.video_url && (
+                    <div className="exercise-video-wrapper">
+                      <div className="video-container">
+                        <iframe
+                          className="exercise-video"
+                          loading="lazy"
+                          src={getVideoUrl(item.exercise.video_url)}
+                          title={item.exercise.title}
+                          frameBorder="0"
+                          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="exercise-description">{item.exercise.description}</p>
+
+                  <div className="exercise-params">
+                    <div className="param">
+                      <span className="param-label">Подходы:</span>
+                      <span className="param-value">{sets}</span>
+                    </div>
+                    {showDuration ? (
+                      <div className="param">
+                        <span className="param-label">Время:</span>
+                        <span className="param-value">{formatDurationSeconds(durationSeconds)}</span>
+                      </div>
+                    ) : (
+                      <div className="param">
+                        <span className="param-label">Повторения:</span>
+                        <span className="param-value">{reps}</span>
+                      </div>
                     )}
-                    <button
-                      type="button"
-                      className="btn-complete"
-                      onClick={() => handleComplete(item.exercise.id, item.exercise.title)}
-                      aria-label={`Отметить упражнение «${item.exercise.title}» выполненным`}
-                    >
-                      <Check size={16} aria-hidden="true" />
-                      Выполнено
-                    </button>
+                    {restSeconds > 0 && (
+                      <div className="param">
+                        <span className="param-label">Отдых:</span>
+                        <span className="param-value">{restSeconds} сек</span>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                {item.exercise.video_url && (
-                  <div className="exercise-video-wrapper">
-                    <div className="video-container">
-                      <iframe
-                        className="exercise-video"
-                        loading="lazy"
-                        src={getVideoUrl(item.exercise.video_url)}
-                        title={item.exercise.title}
-                        frameBorder="0"
-                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer; clipboard-write; screen-wake-lock"
-                        allowFullScreen
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <p className="exercise-description">{item.exercise.description}</p>
-
-                <div className="exercise-params">
-                  <div className="param">
-                    <span className="param-label">Подходы:</span>
-                    <span className="param-value">{Number.isFinite(Number(item.sets)) ? Number(item.sets) : 0}</span>
-                  </div>
-                  {item.duration_seconds > 0 ? (
-                    <div className="param">
-                      <span className="param-label">Время:</span>
-                      <span className="param-value">{formatDurationSeconds(Number(item.duration_seconds))}</span>
-                    </div>
-                  ) : (
-                    <div className="param">
-                      <span className="param-label">Повторения:</span>
-                      <span className="param-value">{Number.isFinite(Number(item.reps)) ? Number(item.reps) : 0}</span>
+                  {item.exercise.instructions && (
+                    <div className="exercise-instructions">
+                      <strong><FileText size={16} aria-hidden="true" /> Как выполнять:</strong>
+                      <p>{item.exercise.instructions}</p>
                     </div>
                   )}
-                  {item.rest_seconds && (
-                    <div className="param">
-                      <span className="param-label">Отдых:</span>
-                      <span className="param-value">{Number.isFinite(Number(item.rest_seconds)) ? Number(item.rest_seconds) : 0} сек</span>
+
+                  {item.exercise.contraindications && (
+                    <div className="exercise-warnings">
+                      <strong><AlertTriangle size={16} aria-hidden="true" /> Противопоказания:</strong>
+                      <p>{item.exercise.contraindications}</p>
+                    </div>
+                  )}
+
+                  {item.notes && (
+                    <div className="exercise-notes">
+                      <strong><FileText size={16} aria-hidden="true" /> Примечания от инструктора:</strong>
+                      <p>{item.notes}</p>
                     </div>
                   )}
                 </div>
-
-                {item.exercise.instructions && (
-                  <div className="exercise-instructions">
-                    <strong><FileText size={16} aria-hidden="true" /> Как выполнять:</strong>
-                    <p>{item.exercise.instructions}</p>
-                  </div>
-                )}
-
-                {item.exercise.contraindications && (
-                  <div className="exercise-warnings">
-                    <strong><AlertTriangle size={16} aria-hidden="true" /> Противопоказания:</strong>
-                    <p>{item.exercise.contraindications}</p>
-                  </div>
-                )}
-
-                {item.notes && (
-                  <div className="exercise-notes">
-                    <strong><FileText size={16} aria-hidden="true" /> Примечания от инструктора:</strong>
-                    <p>{item.notes}</p>
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="contact-section" aria-label="Поддержка">
