@@ -268,39 +268,46 @@
   .exercise-card:hover {
     transform: translateY(-4px);
   }
-  
+
   .exercise-number {
-    position: absolute;
-    top: clamp(16px, 3vw, 22px);
-    left: clamp(16px, 3vw, 22px);
-    width: clamp(52px, 10vw, 64px);
-    height: clamp(52px, 10vw, 64px);
+    width: 44px;
+    height: 44px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 50%;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: clamp(24px, 5vw, 32px);
+    font-size: 16px;
     font-weight: 700;
-    z-index: 10;
+    line-height: 1;
+    flex: 0 0 44px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
-  
+
   .exercise-content {
     padding: clamp(18px, 4vw, 28px);
-    padding-top: clamp(80px, 15vw, 110px);
   }
-  
+
   .exercise-header {
     margin-bottom: clamp(16px, 3vw, 22px);
   }
-  
-  .exercise-header h3 {
+
+  .exercise-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .exercise-title {
     font-size: clamp(20px, 4vw, 28px);
     color: #1a202c;
     margin: 0 0 clamp(10px, 2vw, 14px) 0;
     line-height: 1.3;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   
   .completion-info {
