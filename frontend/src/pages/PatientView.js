@@ -287,9 +287,10 @@ function PatientView() {
                 </div>
 
                 {item.exercise.video_url && (
-                  <div className="exercise-video">
+                  <div className="exercise-video-wrapper">
                     <div className="video-container">
                       <iframe
+                        className="exercise-video"
                         loading="lazy"
                         src={getVideoUrl(item.exercise.video_url)}
                         title={item.exercise.title}
