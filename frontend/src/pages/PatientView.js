@@ -154,6 +154,18 @@ function PatientView() {
   const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const totalExecutions = Object.values(completedExercises).reduce((sum, count) => sum + count, 0);
 
+  const formatDurationSeconds = (durationSeconds) => {
+    if (!durationSeconds || durationSeconds <= 0) {
+      return '';
+    }
+    if (durationSeconds < 60) {
+      return `${durationSeconds} сек`;
+    }
+    const minutes = Math.floor(durationSeconds / 60);
+    const seconds = durationSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
   // Функция для получения embed URL из разных видеохостингов
   const getVideoUrl = (url) => {
     // Kinescope - если уже embed URL, используем как есть
@@ -296,10 +308,17 @@ function PatientView() {
                     <span className="param-label">Подходы:</span>
                     <span className="param-value">{item.sets}</span>
                   </div>
-                  <div className="param">
-                    <span className="param-label">Повторения:</span>
-                    <span className="param-value">{item.reps}</span>
-                  </div>
+                  {item.duration_seconds > 0 ? (
+                    <div className="param">
+                      <span className="param-label">Время:</span>
+                      <span className="param-value">{formatDurationSeconds(item.duration_seconds)}</span>
+                    </div>
+                  ) : (
+                    <div className="param">
+                      <span className="param-label">Повторения:</span>
+                      <span className="param-value">{item.reps}</span>
+                    </div>
+                  )}
                   {item.rest_seconds && (
                     <div className="param">
                       <span className="param-label">Отдых:</span>

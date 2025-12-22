@@ -94,6 +94,7 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           onPointerDown={handleInputClick}
           min="1"
           max="999"
+          disabled={Number(exercise.duration_seconds) > 0}
         />
         <input
           type="number"
@@ -107,7 +108,7 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
         />
         <input
           type="number"
-          placeholder="Сек"
+          placeholder="Время (сек)"
           value={exercise.duration_seconds || ''}
           onChange={(e) => onUpdate(exercise.id, 'duration_seconds', e.target.value)}
           onClick={handleInputClick}
@@ -261,9 +262,16 @@ function CreateComplex() {
         return;
       }
     }
-    setSelectedExercises(selectedExercises.map(e =>
-      e.id === exerciseId ? { ...e, [field]: value } : e
-    ));
+    setSelectedExercises(selectedExercises.map(e => {
+      if (e.id !== exerciseId) {
+        return e;
+      }
+      const updatedExercise = { ...e, [field]: value };
+      if (field === 'duration_seconds' && Number(value) > 0) {
+        updatedExercise.reps = '';
+      }
+      return updatedExercise;
+    }));
   };
 
   const handleSubmit = async () => {
@@ -282,14 +290,18 @@ function CreateComplex() {
         diagnosis_note: diagnosisNote,
         recommendations: recommendations || 'Выполняйте упражнения регулярно 3-4 раза в неделю',
         warnings: warnings || 'При усилении боли прекратите выполнение',
-        exercises: selectedExercises.map((ex, index) => ({
-          exercise_id: ex.id,
-          order_number: index + 1,
-          sets: parseInt(ex.sets, 10) || 3,
-          reps: parseInt(ex.reps, 10) || 10,
-          rest_seconds: parseInt(ex.rest_seconds, 10) || 30,
-          notes: ex.notes || null
-        }))
+        exercises: selectedExercises.map((ex, index) => {
+          const durationSeconds = Number(ex.duration_seconds) || 0;
+          return {
+            exercise_id: ex.id,
+            order_number: index + 1,
+            sets: parseInt(ex.sets, 10) || 3,
+            reps: durationSeconds > 0 ? 0 : parseInt(ex.reps, 10) || 10,
+            duration_seconds: durationSeconds,
+            rest_seconds: parseInt(ex.rest_seconds, 10) || 30,
+            notes: ex.notes || null
+          };
+        })
       };
 
       const response = await complexes.create(complexData);
