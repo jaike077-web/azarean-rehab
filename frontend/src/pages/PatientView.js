@@ -197,7 +197,10 @@ function PatientView() {
   return (
     <div className="patient-view">
       <header className="patient-header">
-        <div className="logo"><Activity size={18} aria-hidden="true" /><span>Azarean Network</span></div>
+        <div className="logo">
+          <img src="/AN-logo.jpg" alt="Azarean Network" className="logo-image" />
+          <span>Azarean Network</span>
+        </div>
         <div className="patient-info">
           <span className="patient-name">{complex.patient_name}</span>
           <span className="instructor-name">Инструктор: {complex.instructor_name}</span>
@@ -210,10 +213,23 @@ function PatientView() {
           {complex.diagnosis_name && (
             <div className="diagnosis-badge">
               {complex.diagnosis_name}
-              {complex.diagnosis_note && ` • ${complex.diagnosis_note}`}
             </div>
           )}
         </div>
+
+        {(complex.diagnosis_note || complex.recommendations) && (
+          <div className="info-box recommendations">
+            <h3><Lightbulb size={20} aria-hidden="true" /> Рекомендации</h3>
+            <p>{complex.diagnosis_note || complex.recommendations}</p>
+          </div>
+        )}
+
+        {complex.warnings && (
+          <div className="info-box warnings">
+            <h3><AlertTriangle size={20} aria-hidden="true" /> Важно</h3>
+            <p>{complex.warnings}</p>
+          </div>
+        )}
 
         <div className="progress-overview">
           <div className="progress-stat">
@@ -239,26 +255,6 @@ function PatientView() {
             Нажмите эту кнопку перед началом новой тренировки
           </p>
         </div>
-
-        {complex.recommendations && (
-          <div className="info-box recommendations">
-            <div className="info-icon" aria-hidden="true"><Lightbulb size={18} /></div>
-            <div>
-              <strong>Рекомендации:</strong>
-              <p>{complex.recommendations}</p>
-            </div>
-          </div>
-        )}
-
-        {complex.warnings && (
-          <div className="info-box warnings">
-            <div className="info-icon" aria-hidden="true"><AlertTriangle size={18} /></div>
-            <div>
-              <strong>Важно:</strong>
-              <p>{complex.warnings}</p>
-            </div>
-          </div>
-        )}
 
         <div className="exercises-list" id="exercises">
           <h2>Упражнения ({complex.exercises?.length || 0})</h2>
