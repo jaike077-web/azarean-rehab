@@ -5,7 +5,7 @@
 
    .patient-view {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(102, 126, 234, 0.20) 0%, rgba(118, 75, 162, 0.14) 32%, #f7fafc 100%);
+    background: #f9fbfd;
   }
   
   
@@ -99,7 +99,7 @@
   
   .welcome-section {
     text-align: center;
-    color: white;
+    color: rgb(58 56 61);
     margin-bottom: clamp(20px, 4vw, 32px);
   }
   
