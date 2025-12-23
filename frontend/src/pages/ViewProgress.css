@@ -8,6 +8,35 @@
   margin: 0 auto;
 }
 
+.loading {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: clamp(14px, 2vw, 16px);
+  color: #6b7280;
+  margin-bottom: clamp(16px, 2vw, 24px);
+}
+
+.error {
+  background: #fff1f2;
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid #fecdd3;
+  color: #991b1b;
+  margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+.error h2 {
+  margin: 0 0 8px;
+  font-size: clamp(18px, 3vw, 22px);
+}
+
+.error p {
+  margin: 0 0 16px;
+  font-size: clamp(14px, 2vw, 16px);
+}
+
 .progress-header {
   background: #ffffff;
   border-radius: 12px;
@@ -90,7 +119,7 @@
 
 .exercises-progress-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: clamp(16px, 3vw, 24px);
 }
 
@@ -107,7 +136,7 @@
 .exercise-card-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .exercise-card-header h3 {
@@ -116,53 +145,23 @@
   color: #1f2937;
 }
 
-.exercise-completion {
+.exercise-category {
+  margin: 0;
+  font-size: clamp(12px, 2vw, 14px);
+  color: #6b7280;
+}
+
+.completion-info {
   font-size: clamp(13px, 2vw, 15px);
   color: #4b5563;
 }
 
-.exercise-preview {
-  border-radius: 10px;
-  overflow: hidden;
-  background: #f3f4f6;
-  min-height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.exercise-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.exercise-preview-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: #6b7280;
-  font-size: clamp(13px, 2vw, 15px);
-}
-
-.exercise-metrics {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(12px, 2vw, 16px);
-}
-
-.metric-block h4 {
+.pain-section h4,
+.difficulty-section h4,
+.comments-section h4 {
   margin: 0 0 8px;
   font-size: clamp(14px, 2vw, 16px);
   color: #111827;
-}
-
-.metric-empty {
-  margin: 0;
-  font-size: clamp(13px, 2vw, 15px);
-  color: #9ca3af;
 }
 
 .pain-history {
@@ -180,20 +179,20 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
+  color: #ffffff;
 }
 
-.pain-indicator.level-0 { background: #10b981; color: #ffffff; }
-.pain-indicator.level-1 { background: #34d399; color: #ffffff; }
-.pain-indicator.level-2 { background: #6ee7b7; color: #1f2937; }
-.pain-indicator.level-3 { background: #a7f3d0; color: #1f2937; }
-.pain-indicator.level-4 { background: #fde047; color: #1f2937; }
-.pain-indicator.level-5 { background: #fbbf24; color: #1f2937; }
-.pain-indicator.level-6 { background: #f59e0b; color: #1f2937; }
-.pain-indicator.level-7 { background: #fb923c; color: #ffffff; }
-.pain-indicator.level-8 { background: #f97316; color: #ffffff; }
-.pain-indicator.level-9 { background: #ef4444; color: #ffffff; }
-.pain-indicator.level-10 { background: #dc2626; color: #ffffff; }
-.pain-indicator.unknown { background: #e5e7eb; color: #6b7280; }
+.pain-indicator.low {
+  background: #22c55e;
+}
+
+.pain-indicator.medium {
+  background: #f59e0b;
+}
+
+.pain-indicator.high {
+  background: #ef4444;
+}
 
 .difficulty-history {
   display: flex;
@@ -205,23 +204,7 @@
   font-size: 22px;
 }
 
-.exercise-footer {
-  font-size: clamp(13px, 2vw, 15px);
-  color: #6b7280;
-}
-
-.exercise-footer span {
-  font-weight: 600;
-  color: #374151;
-}
-
-.comments-section h4 {
-  margin: 0 0 10px;
-  font-size: clamp(14px, 2vw, 16px);
-  color: #111827;
-}
-
-.comments-list {
+.comments-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -232,11 +215,6 @@
   border-radius: 8px;
   border-left: 3px solid #3b82f6;
   padding: 12px;
-}
-
-.comment-item.recent {
-  background: #eef2ff;
-  border-left-color: #4f46e5;
 }
 
 .comment-date {
