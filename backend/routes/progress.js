@@ -61,7 +61,17 @@ router.post('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Ошибка сохранения прогресса:', error);
+    console.error('Ошибка сохранения прогресса:', {
+      message: error.message,
+      stack: error.stack,
+      payload: {
+        complex_id: req.body?.complex_id,
+        exercise_id: req.body?.exercise_id,
+        completed: req.body?.completed,
+        pain_level: req.body?.pain_level,
+        difficulty_rating: req.body?.difficulty_rating
+      }
+    });
     res.status(500).json({ 
       error: 'Server Error',
       message: 'Ошибка при сохранении прогресса' 
