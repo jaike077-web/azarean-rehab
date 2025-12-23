@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { complexes, progress } from '../services/api';
 import './PatientView.css';
 import { useToast } from '../context/ToastContext';
 import { ComplexesPageSkeleton } from '../components/Skeleton';
-import { Activity, AlertTriangle, BarChart3, Check, Copy, FileText, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, Frown, Star, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Check, Copy, FileText, Lightbulb, Mail, MessageCircle, Play, RefreshCw, X, XCircle } from 'lucide-react';
 
 function PatientView() {
   const toast = useToast();
@@ -13,20 +13,45 @@ function PatientView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [completedExercises, setCompletedExercises] = useState({});
-  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentExerciseId, setCurrentExerciseId] = useState(null);
   const [currentExerciseTitle, setCurrentExerciseTitle] = useState('');
-  const [ratings, setRatings] = useState({
-    pain_level: 0,
-    difficulty_rating: 3,
-    mood_rating: 3,
-    notes: ''
-  });
+  const [commentDraft, setCommentDraft] = useState('');
+  const [painLevels, setPainLevels] = useState({});
+  const [difficultyRatings, setDifficultyRatings] = useState({});
+  const [exerciseComments, setExerciseComments] = useState({});
+  const [savingStates, setSavingStates] = useState({});
+  const [saveErrors, setSaveErrors] = useState({});
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
+  const lastScrollRef = useRef(0);
+  const difficultyTimeouts = useRef({});
 
   useEffect(() => {
     loadComplex();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScroll = window.scrollY;
+      if (currentScroll > 100 && currentScroll > lastScrollRef.current) {
+        setHeaderVisible(false);
+      } else {
+        setHeaderVisible(true);
+      }
+      lastScrollRef.current = currentScroll;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(difficultyTimeouts.current).forEach((timeoutId) => clearTimeout(timeoutId));
+    };
+  }, []);
 
   const loadComplex = async () => {
     try {
@@ -47,56 +72,105 @@ function PatientView() {
     }
   };
 
-  const handleComplete = (exerciseId, exerciseTitle) => {
-    setCurrentExerciseId(exerciseId);
-    setCurrentExerciseTitle(exerciseTitle);
-    setShowRatingModal(true);
+  const setExerciseSaving = (exerciseId, isSaving) => {
+    setSavingStates((prev) => ({ ...prev, [exerciseId]: isSaving }));
   };
 
-  const submitRating = async () => {
-    try {
-      // Генерируем session_id для текущей сессии (если нет)
-      let sessionId = sessionStorage.getItem('current_session_id');
-      if (!sessionId) {
-        sessionId = Date.now().toString();
-        sessionStorage.setItem('current_session_id', sessionId);
-      }
+  const setExerciseError = (exerciseId, message) => {
+    setSaveErrors((prev) => ({ ...prev, [exerciseId]: message }));
+  };
 
+  const saveProgress = async (exerciseId, payload, { onSuccess, onError } = {}) => {
+    if (!complex?.id) return;
+    setExerciseSaving(exerciseId, true);
+    setExerciseError(exerciseId, '');
+
+    try {
       await progress.create({
         complex_id: complex.id,
-        exercise_id: currentExerciseId,
-        completed: true,
-        pain_level: ratings.pain_level,
-        difficulty_rating: ratings.difficulty_rating,
-        mood_rating: ratings.mood_rating,
-        notes: ratings.notes || null,
-        session_id: sessionId
+        exercise_id: exerciseId,
+        ...payload
       });
 
-      // Обновляем счётчик
-      const newCounts = {
-        ...completedExercises,
-        [currentExerciseId]: (completedExercises[currentExerciseId] || 0) + 1
-      };
-      setCompletedExercises(newCounts);
-      
-      // Сохраняем в sessionStorage
-      sessionStorage.setItem('exercise_counts', JSON.stringify(newCounts));
-
-      // Закрываем модалку и сбрасываем форму
-      setShowRatingModal(false);
-      setRatings({
-        pain_level: 0,
-        difficulty_rating: 3,
-        mood_rating: 3,
-        notes: ''
-      });
-
-      toast.success('Выполнение отмечено');
+      setExerciseSaving(exerciseId, false);
+      setExerciseError(exerciseId, '');
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error('Ошибка сохранения прогресса:', err);
+      setExerciseSaving(exerciseId, false);
+      setExerciseError(exerciseId, 'Ошибка сохранения');
       toast.error('Ошибка сохранения');
+      if (onError) {
+        onError();
+      }
     }
+  };
+
+  const handleComplete = (exerciseId) => {
+    const previousCount = completedExercises[exerciseId] || 0;
+    setCompletedExercises((prev) => {
+      const newCounts = {
+        ...prev,
+        [exerciseId]: (prev[exerciseId] || 0) + 1
+      };
+      sessionStorage.setItem('exercise_counts', JSON.stringify(newCounts));
+      return newCounts;
+    });
+
+    saveProgress(
+      exerciseId,
+      { completed: true },
+      {
+        onError: () => {
+          setCompletedExercises((prev) => {
+            const newCounts = {
+              ...prev,
+              [exerciseId]: previousCount
+            };
+            sessionStorage.setItem('exercise_counts', JSON.stringify(newCounts));
+            return newCounts;
+          });
+        }
+      }
+    );
+  };
+
+  const handlePainSelect = (exerciseId, level) => {
+    setPainLevels((prev) => ({ ...prev, [exerciseId]: level }));
+    saveProgress(exerciseId, { pain_level: level });
+  };
+
+  const handleDifficultyChange = (exerciseId, value) => {
+    setDifficultyRatings((prev) => ({ ...prev, [exerciseId]: value }));
+    if (difficultyTimeouts.current[exerciseId]) {
+      clearTimeout(difficultyTimeouts.current[exerciseId]);
+    }
+    difficultyTimeouts.current[exerciseId] = setTimeout(() => {
+      saveProgress(exerciseId, { difficulty_rating: value });
+    }, 500);
+  };
+
+  const handleOpenComment = (exerciseId, exerciseTitle) => {
+    setCurrentExerciseId(exerciseId);
+    setCurrentExerciseTitle(exerciseTitle);
+    setCommentDraft(exerciseComments[exerciseId] || '');
+    setShowCommentModal(true);
+  };
+
+  const handleSaveComment = () => {
+    if (!currentExerciseId) return;
+    const trimmedComment = commentDraft.trim();
+    saveProgress(currentExerciseId, { comment: trimmedComment || null }, {
+      onSuccess: () => {
+        setExerciseComments((prev) => ({
+          ...prev,
+          [currentExerciseId]: trimmedComment
+        }));
+        setShowCommentModal(false);
+      }
+    });
   };
 
   const handleNewSession = () => {
@@ -114,23 +188,6 @@ function PatientView() {
       toast.error('Не удалось скопировать email');
     }
   };
-
-  const getMoodIcon = (mood) => {
-    // 1–5: от "плохо" к "отлично"
-    switch (mood) {
-      case 1:
-      case 2:
-        return <Frown size={18} aria-hidden="true" />;
-      case 3:
-        return <Meh size={18} aria-hidden="true" />;
-      case 4:
-      case 5:
-        return <Smile size={18} aria-hidden="true" />;
-      default:
-        return <Meh size={18} aria-hidden="true" />;
-    }
-  };
-  
 
   if (loading) {
     return <ComplexesPageSkeleton count={4} />;
@@ -196,19 +253,19 @@ function PatientView() {
 
   return (
     <div className="patient-view">
-      <header className="patient-header">
+      <header className={`patient-header ${headerVisible ? '' : 'is-hidden'}`}>
         <div className="logo">
           <img src="/AN-logo.jpg" alt="Azarean Network" className="logo-image" />
           <span>Azarean Network</span>
-        </div>
-        <div className="patient-info">
-          <span className="patient-name">{complex.patient_name}</span>
-          <span className="instructor-name">Инструктор: {complex.instructor_name}</span>
         </div>
       </header>
 
       <div className="patient-content">
         <div className="welcome-section">
+          <div className="patient-identity">
+            <span>Пациент: {complex.patient_name}</span>
+            <span>Инструктор: {complex.instructor_name}</span>
+          </div>
           <h1>Ваш комплекс упражнений</h1>
           {complex.diagnosis_name && (
             <div className="diagnosis-badge">
@@ -264,6 +321,19 @@ function PatientView() {
             const durationSeconds = toInt(item.duration_seconds, 0);
             const restSeconds = toInt(item.rest_seconds, 0);
             const showDuration = durationSeconds > 0;
+            const exerciseId = item.exercise.id;
+            const completionCount = completedExercises[exerciseId] || 0;
+            const isCompleted = completionCount > 0;
+            const description = item.exercise.description || '';
+            const isExpanded = expandedDescriptions[exerciseId];
+            const shouldTruncate = description.length > 150;
+            const visibleDescription = shouldTruncate && !isExpanded
+              ? `${description.slice(0, 150)}...`
+              : description;
+            const painLevel = painLevels[exerciseId];
+            const difficultyRating = difficultyRatings[exerciseId] ?? 5;
+            const isSaving = savingStates[exerciseId];
+            const saveError = saveErrors[exerciseId];
 
             return (
               <div
@@ -275,21 +345,34 @@ function PatientView() {
                     <div className="exercise-number">{index + 1}</div>
                     <h3 className="exercise-title">{item.exercise.title}</h3>
                     <div className="completion-info">
-                      {completedExercises[item.exercise.id] > 0 && (
-                        <span className="completion-badge">
-                          <Check size={14} aria-hidden="true" />
-                          Выполнено: {completedExercises[item.exercise.id]} раз
-                        </span>
+                      <div className="exercise-actions">
+                        <button
+                          type="button"
+                          className={`btn-complete ${isCompleted ? 'is-completed' : ''}`}
+                          onClick={() => handleComplete(exerciseId)}
+                          aria-label={`Отметить упражнение «${item.exercise.title}» выполненным`}
+                        >
+                          <Check size={16} aria-hidden="true" />
+                          {isCompleted ? `Выполнено: ${completionCount} раз` : 'Выполнено'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-comment"
+                          onClick={() => handleOpenComment(exerciseId, item.exercise.title)}
+                          aria-label={`Добавить комментарий к упражнению «${item.exercise.title}»`}
+                        >
+                          💬 Комментарий
+                        </button>
+                      </div>
+                      {(isSaving || saveError) && (
+                        <div
+                          className={`exercise-save-status ${saveError ? 'has-error' : ''}`}
+                          role="status"
+                          aria-live="polite"
+                        >
+                          {isSaving ? 'Сохранение...' : saveError}
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        className="btn-complete"
-                        onClick={() => handleComplete(item.exercise.id, item.exercise.title)}
-                        aria-label={`Отметить упражнение «${item.exercise.title}» выполненным`}
-                      >
-                        <Check size={16} aria-hidden="true" />
-                        Выполнено
-                      </button>
                     </div>
                   </div>
 
@@ -309,7 +392,25 @@ function PatientView() {
                     </div>
                   )}
 
-                  <p className="exercise-description">{item.exercise.description}</p>
+                  <p className="exercise-description" id={`exercise-description-${exerciseId}`}>
+                    {visibleDescription}
+                  </p>
+                  {shouldTruncate && (
+                    <button
+                      type="button"
+                      className="description-toggle"
+                      onClick={() =>
+                        setExpandedDescriptions((prev) => ({
+                          ...prev,
+                          [exerciseId]: !prev[exerciseId]
+                        }))
+                      }
+                      aria-expanded={Boolean(isExpanded)}
+                      aria-controls={`exercise-description-${exerciseId}`}
+                    >
+                      {isExpanded ? 'Скрыть' : 'Показать ещё'}
+                    </button>
+                  )}
 
                   <div className="exercise-params">
                     <div className="param">
@@ -333,6 +434,43 @@ function PatientView() {
                         <span className="param-value">{restSeconds} сек</span>
                       </div>
                     )}
+                  </div>
+
+                  <div className="exercise-feedback">
+                    <div className="pain-rating">
+                      <p className="pain-scale-label">Уровень боли (0 = нет боли, 10 = максимальная)</p>
+                      <div className="pain-scale" role="radiogroup" aria-label="Уровень боли">
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
+                          <button
+                            key={level}
+                            type="button"
+                            className={`pain-button ${painLevel === level ? 'active' : ''}`}
+                            onClick={() => handlePainSelect(exerciseId, level)}
+                            aria-pressed={painLevel === level}
+                            aria-label={`Боль: ${level}`}
+                          >
+                            {level}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="difficulty-rating">
+                      <label className="difficulty-label" htmlFor={`difficulty-${exerciseId}`}>
+                        Сложность выполнения:
+                      </label>
+                      <div className="difficulty-slider">
+                        <input
+                          id={`difficulty-${exerciseId}`}
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={difficultyRating}
+                          onChange={(event) => handleDifficultyChange(exerciseId, Number(event.target.value))}
+                          aria-label={`Сложность выполнения: ${difficultyRating} из 10`}
+                        />
+                        <span className="difficulty-value">{difficultyRating}/10</span>
+                      </div>
+                    </div>
                   </div>
 
                   {item.exercise.instructions && (
@@ -412,12 +550,12 @@ function PatientView() {
         )}
       </div>
 
-      {showRatingModal && (
-        <div className="modal-overlay" onClick={() => setShowRatingModal(false)}>
+      {showCommentModal && (
+        <div className="modal-overlay" onClick={() => setShowCommentModal(false)}>
           <div className="rating-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Оцените выполнение</h3>
-              <button className="modal-close" onClick={() => setShowRatingModal(false)}>
+              <h3>Комментарий (необязательно)</h3>
+              <button className="modal-close" onClick={() => setShowCommentModal(false)}>
                 <X size={18} aria-hidden="true" />
               </button>
             </div>
@@ -428,72 +566,20 @@ function PatientView() {
 
             <div className="rating-form">
               <div className="rating-group">
-                <label className="rating-label"><Activity size={16} aria-hidden="true" /> Уровень боли (0 = нет боли, 10 = максимальная)</label>
-                <div className="pain-scale">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => (
-                    <button
-                      key={level}
-                      className={`pain-btn ${ratings.pain_level === level ? 'active' : ''} level-${level}`}
-                      onClick={() => setRatings({...ratings, pain_level: level})}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rating-group">
-                <label className="rating-label"><BarChart3 size={16} aria-hidden="true" /> Сложность выполнения</label>
-                <div className="stars">
-                  {[1, 2, 3, 4, 5].map(rating => (
-                    <button
-                      key={rating}
-                      className={`star-btn ${ratings.difficulty_rating >= rating ? 'active' : ''}`}
-                      onClick={() => setRatings({...ratings, difficulty_rating: rating})}
-                    >
-                      <Star size={18} aria-hidden="true" className="star-icon" />
-                    </button>
-                  ))}
-                </div>
-                <span className="rating-label">
-                  {ratings.difficulty_rating === 1 && 'Очень легко'}
-                  {ratings.difficulty_rating === 2 && 'Легко'}
-                  {ratings.difficulty_rating === 3 && 'Нормально'}
-                  {ratings.difficulty_rating === 4 && 'Сложно'}
-                  {ratings.difficulty_rating === 5 && 'Очень сложно'}
-                </span>
-              </div>
-
-              <div className="rating-group">
-                <label className="rating-label"><Smile size={16} aria-hidden="true" /> Настроение</label>
-                <div className="mood-buttons">
-                  {[1, 2, 3, 4, 5].map(mood => (
-                    <button
-                      key={mood}
-                      className={`mood-btn ${ratings.mood_rating === mood ? 'active' : ''}`}
-                      onClick={() => setRatings({...ratings, mood_rating: mood})}
-                    >
-                      {getMoodIcon(mood)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rating-group">
                 <label className="rating-label"><MessageCircle size={16} aria-hidden="true" /> Комментарий (необязательно)</label>
                 <textarea
                   placeholder="Как прошло выполнение? Были ли трудности?"
-                  value={ratings.notes}
-                  onChange={(e) => setRatings({...ratings, notes: e.target.value})}
+                  value={commentDraft}
+                  onChange={(e) => setCommentDraft(e.target.value)}
                   rows="3"
                 />
               </div>
 
               <div className="modal-actions">
-                <button className="btn-secondary" onClick={() => setShowRatingModal(false)}>
+                <button className="btn-secondary" onClick={() => setShowCommentModal(false)}>
                   Отмена
                 </button>
-                <button className="btn-primary" onClick={submitRating}>
+                <button className="btn-primary" onClick={handleSaveComment}>
                   Сохранить
                 </button>
               </div>
