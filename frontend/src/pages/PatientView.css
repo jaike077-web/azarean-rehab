@@ -43,8 +43,12 @@
     align-items: center;
     gap: clamp(12px, 3vw, 24px);
     flex-wrap: wrap;
+    transition: transform 0.3s ease;
   }
-  
+
+  .patient-header.is-hidden {
+    transform: translateY(-120%);
+  }
   
   .logo {
     font-weight: 700;
@@ -63,22 +67,12 @@
   }
   
   
-  .patient-info {
+  .patient-identity {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: clamp(3px, 0.5vw, 5px);
-  }
-  
-  .patient-name {
-    font-size: clamp(16px, 3vw, 20px);
+    gap: clamp(4px, 1vw, 6px);
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
     font-weight: 600;
-    color: #1a202c;
-  }
-  
-  .instructor-name {
-    font-size: clamp(12px, 2vw, 14px);
-    color: #718096;
   }
   
   /* =====================================================
@@ -101,6 +95,9 @@
     text-align: center;
     color: white;
     margin-bottom: clamp(20px, 4vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 2vw, 12px);
   }
   
   .welcome-section h1 {
@@ -316,23 +313,32 @@
 
   .completion-info {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: clamp(10px, 2vw, 14px);
     justify-content: flex-end;
     flex-wrap: wrap;
     justify-self: end;
+    flex-direction: column;
+    min-width: clamp(200px, 24vw, 280px);
   }
-  
-  .completion-badge {
-    background: #c6f6d5;
-    color: #22543d;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+
+  .exercise-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(8px, 2vw, 12px);
+    justify-content: flex-end;
+    width: 100%;
+  }
+
+  .exercise-save-status {
+    font-size: clamp(12px, 2vw, 13px);
+    color: #718096;
+    min-height: 18px;
+    text-align: right;
+  }
+
+  .exercise-save-status.has-error {
+    color: #e53e3e;
   }
   
   
@@ -375,7 +381,24 @@
     font-size: clamp(14px, 2vw, 16px);
     color: #4a5568;
     line-height: 1.6;
+    margin-bottom: clamp(8px, 2vw, 14px);
+  }
+
+  .description-toggle {
+    background: transparent;
+    border: none;
+    color: #667eea;
+    font-size: clamp(12px, 2vw, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
     margin-bottom: clamp(16px, 3vw, 22px);
+    align-self: flex-start;
+    transition: color 0.2s ease;
+  }
+
+  .description-toggle:hover {
+    color: #5a67d8;
   }
   
   /* =====================================================
@@ -410,6 +433,76 @@
     font-size: clamp(18px, 4vw, 22px);
     color: #2d3748;
     font-weight: 700;
+  }
+
+  .exercise-feedback {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 3vw, 22px);
+    margin-bottom: clamp(16px, 3vw, 22px);
+  }
+
+  .pain-scale-label {
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 clamp(8px, 2vw, 12px) 0;
+  }
+
+  .difficulty-label {
+    display: block;
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: clamp(8px, 2vw, 12px);
+  }
+
+  .difficulty-slider {
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 16px);
+  }
+
+  .difficulty-slider input[type="range"] {
+    flex: 1;
+    accent-color: #667eea;
+    height: 6px;
+    cursor: pointer;
+  }
+
+  .difficulty-slider input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 999px;
+  }
+
+  .difficulty-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #667eea;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    margin-top: -6px;
+  }
+
+  .difficulty-slider input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #667eea;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .difficulty-value {
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 600;
+    color: #2d3748;
+    min-width: 44px;
+    text-align: right;
   }
   
   /* =====================================================
@@ -466,7 +559,7 @@
   }
   
   .btn-complete {
-    background: #48bb78;
+    background: #10b981;
     color: white;
     border: none;
     padding: 8px 14px;
@@ -481,12 +574,41 @@
     gap: 8px;
     min-height: 44px;
   }
-  
-  
+
+  .btn-complete.is-completed {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
   .btn-complete:hover {
-    background: #38a169;
+    background: #0ea271;
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+  }
+
+  .btn-complete.is-completed:hover {
+    background: #bbf7d0;
+  }
+
+  .btn-comment {
+    background: #edf2f7;
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .btn-comment:hover {
+    background: #e2e8f0;
+    transform: translateY(-2px);
   }
   
   /* =====================================================
@@ -609,126 +731,34 @@
   .pain-scale {
     display: grid;
     grid-template-columns: repeat(11, minmax(0, 1fr));
-    gap: clamp(3px, 0.5vw, 5px);
+    gap: clamp(6px, 1vw, 8px);
   }
   
-  .pain-btn {
+  .pain-button {
     padding: clamp(6px, 1.5vw, 10px);
     border: 2px solid #e2e8f0;
     background: white;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: clamp(12px, 2vw, 14px);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    min-height: 40px;
+    min-height: 44px;
+    min-width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   
-  .pain-btn:hover {
-    border-color: #667eea;
-    background: #f7fafc;
+  .pain-button:hover {
+    border-color: #10b981;
+    background: #f0fdf4;
   }
   
-  .pain-btn.active {
-    border-color: #667eea;
-    background: #667eea;
+  .pain-button.active {
+    border-color: #10b981;
+    background: #10b981;
     color: white;
-  }
-  
-  /* Color coding */
-  .pain-btn.level-0,
-  .pain-btn.level-1 {
-    border-color: #48bb78;
-  }
-  
-  .pain-btn.level-0.active,
-  .pain-btn.level-1.active {
-    background: #48bb78;
-    border-color: #48bb78;
-  }
-  
-  .pain-btn.level-2,
-  .pain-btn.level-3,
-  .pain-btn.level-4 {
-    border-color: #ecc94b;
-  }
-  
-  .pain-btn.level-2.active,
-  .pain-btn.level-3.active,
-  .pain-btn.level-4.active {
-    background: #ecc94b;
-    border-color: #ecc94b;
-  }
-  
-  .pain-btn.level-5,
-  .pain-btn.level-6,
-  .pain-btn.level-7 {
-    border-color: #ed8936;
-  }
-  
-  .pain-btn.level-5.active,
-  .pain-btn.level-6.active,
-  .pain-btn.level-7.active {
-    background: #ed8936;
-    border-color: #ed8936;
-  }
-  
-  .pain-btn.level-8,
-  .pain-btn.level-9,
-  .pain-btn.level-10 {
-    border-color: #f56565;
-  }
-  
-  .pain-btn.level-8.active,
-  .pain-btn.level-9.active,
-  .pain-btn.level-10.active {
-    background: #f56565;
-    border-color: #f56565;
-  }
-  
-  /* =====================================================
-     MOOD & STARS
-     ===================================================== */
-  
-  .mood-buttons,
-  .stars {
-    display: flex;
-    gap: clamp(10px, 2vw, 14px);
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  
-  .mood-btn,
-  .star-btn {
-    padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 22px);
-    border: 2px solid #e2e8f0;
-    background: white;
-    border-radius: 8px;
-    font-size: clamp(20px, 4vw, 26px);
-    cursor: pointer;
-    transition: all 0.2s;
-    min-width: 52px;
-    min-height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .mood-btn:hover,
-  .star-btn:hover {
-    border-color: #667eea;
-    background: #f7fafc;
-    transform: scale(1.1);
-  }
-  
-  .mood-btn.active,
-  .star-btn.active {
-    border-color: #667eea;
-    background: #667eea;
-    transform: scale(1.15);
   }
   
   .rating-group textarea {
@@ -800,11 +830,7 @@
       align-items: center;
       text-align: center;
     }
-    
-    .patient-info {
-      align-items: center;
-    }
-    
+
     .progress-overview {
       grid-template-columns: 1fr;
     }
@@ -842,10 +868,6 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-  }
-  
-  .star-icon {
-    margin-right: 6px;
   }
   
   /* Make instructor notes header align with icon */
@@ -977,9 +999,8 @@
      ===================================================== */
   .btn-complete,
   .btn-new-session,
-  .difficulty-btn,
-  .mood-btn,
-  .rating-btn,
+  .btn-comment,
+  .pain-button,
   .modal-actions button {
     min-height: 44px;
   }

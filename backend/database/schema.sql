@@ -103,8 +103,7 @@ CREATE TABLE progress_logs (
     exercise_id INTEGER REFERENCES exercises(id) ON DELETE CASCADE,
     completed BOOLEAN DEFAULT false,
     pain_level INTEGER CHECK (pain_level >= 0 AND pain_level <= 10),
-    difficulty_rating INTEGER CHECK (difficulty_rating >= 1 AND difficulty_rating <= 5),
-    mood_rating INTEGER CHECK (mood_rating >= 1 AND mood_rating <= 5),
+    difficulty_rating INTEGER CHECK (difficulty_rating >= 1 AND difficulty_rating <= 10),
     notes TEXT,
     completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT NOW()
