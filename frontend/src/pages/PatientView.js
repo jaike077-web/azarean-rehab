@@ -397,29 +397,6 @@ function PatientView() {
                     </div>
                   )}
 
-                  <p
-                    className={`exercise-description ${shouldTruncate && !isExpanded ? 'collapsed' : ''}`}
-                    id={`exercise-description-${exerciseId}`}
-                  >
-                    {description}
-                  </p>
-                  {shouldTruncate && (
-                    <button
-                      type="button"
-                      className="show-more-btn"
-                      onClick={() =>
-                        setExpandedDescriptions((prev) => ({
-                          ...prev,
-                          [exerciseId]: !prev[exerciseId]
-                        }))
-                      }
-                      aria-expanded={Boolean(isExpanded)}
-                      aria-controls={`exercise-description-${exerciseId}`}
-                    >
-                      {isExpanded ? 'Скрыть' : 'Показать ещё'}
-                    </button>
-                  )}
-
                   <div className="exercise-params">
                     <div className="param">
                       <span className="param-label">Подходы:</span>
@@ -482,6 +459,29 @@ function PatientView() {
                       </div>
                     </div>
                   </div>
+
+                  <p
+                    className={`exercise-description ${shouldTruncate && !isExpanded ? 'collapsed' : ''}`}
+                    id={`exercise-description-${exerciseId}`}
+                  >
+                    {description}
+                  </p>
+                  {shouldTruncate && (
+                    <button
+                      type="button"
+                      className="show-more-btn"
+                      onClick={() =>
+                        setExpandedDescriptions((prev) => ({
+                          ...prev,
+                          [exerciseId]: !prev[exerciseId]
+                        }))
+                      }
+                      aria-expanded={Boolean(isExpanded)}
+                      aria-controls={`exercise-description-${exerciseId}`}
+                    >
+                      {isExpanded ? 'Скрыть' : 'Показать ещё'}
+                    </button>
+                  )}
 
                   {item.exercise.instructions && (
                     <div className="exercise-instructions">
