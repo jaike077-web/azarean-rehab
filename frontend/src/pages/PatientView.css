@@ -276,7 +276,7 @@
   .exercise-card {
     background: white;
     border-radius: clamp(12px, 2vw, 18px);
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     transition: transform 0.2s;
     position: relative;
