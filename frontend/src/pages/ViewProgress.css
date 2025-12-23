@@ -1,60 +1,66 @@
 /* =====================================================
    VIEW PROGRESS PAGE - Azarean Network
-   Современный fluid/responsive дизайн без breakpoints
-   Работает на экранах от 320px до 4K
    ===================================================== */
 
-.view-progress-page {
-  max-width: 1400px;
+.progress-page {
+  padding: clamp(16px, 3vw, 32px);
+  max-width: 1200px;
   margin: 0 auto;
-  padding: clamp(16px, 3vw, 24px);
 }
 
-/* =====================================================
-   PAGE HEADER
-   ===================================================== */
-
-.page-header {
-  margin-bottom: clamp(20px, 4vw, 32px);
+.progress-header {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: clamp(20px, 3vw, 32px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: clamp(20px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3vw, 24px);
 }
 
-.page-header h1 {
-  font-size: clamp(22px, 4vw, 32px);
-  color: #1a202c;
-  margin: 0 0 8px 0;
+.progress-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.progress-avatar {
+  width: clamp(48px, 6vw, 56px);
+  height: clamp(48px, 6vw, 56px);
+  background: #eef2ff;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: clamp(8px, 2vw, 12px);
-  flex-wrap: wrap;
+  justify-content: center;
+  color: #4f46e5;
 }
 
-.page-icon {
-  flex-shrink: 0;
-  stroke-width: 1.8;
+.progress-avatar-skeleton {
+  width: clamp(48px, 6vw, 56px);
+  height: clamp(48px, 6vw, 56px);
+  border-radius: 12px;
 }
 
-.page-header p {
+.progress-header-text h1 {
+  font-size: clamp(22px, 4vw, 32px);
+  margin: 0 0 6px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.progress-subtitle {
   font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
-  margin: 0;
+  color: #4b5563;
+  margin: 0 0 8px;
 }
 
-/* =====================================================
-   PROGRESS OVERVIEW
-   ===================================================== */
-
-.progress-overview {
-  background: white;
-  border-radius: clamp(12px, 2vw, 16px);
-  padding: clamp(16px, 3vw, 24px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  margin-bottom: clamp(20px, 4vw, 24px);
-}
-
-.progress-overview h2 {
-  font-size: clamp(18px, 3vw, 22px);
-  color: #1a202c;
-  margin: 0 0 clamp(12px, 2vw, 16px) 0;
+.progress-dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(13px, 2vw, 15px);
+  color: #6b7280;
 }
 
 .progress-stats {
@@ -63,223 +69,206 @@
   gap: clamp(12px, 2vw, 16px);
 }
 
-.progress-stat {
-  text-align: center;
+.stat-card {
+  background: #f8fafc;
+  border-radius: 10px;
   padding: clamp(12px, 2vw, 16px);
-  background: #f7fafc;
-  border-radius: 8px;
+  text-align: center;
 }
 
-.progress-stat-value {
-  font-size: clamp(24px, 5vw, 32px);
+.stat-value {
+  font-size: clamp(18px, 3vw, 24px);
   font-weight: 700;
-  color: #667eea;
-  line-height: 1;
+  color: #111827;
   margin-bottom: 4px;
 }
 
-.progress-stat-label {
-  font-size: clamp(12px, 2vw, 13px);
-  color: #718096;
+.stat-label {
+  font-size: clamp(12px, 2vw, 14px);
+  color: #6b7280;
 }
 
-/* =====================================================
-   EXERCISE LOGS - Адаптивный список
-   ===================================================== */
+.exercises-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: clamp(16px, 3vw, 24px);
+}
 
-.exercise-logs {
+.exercise-progress-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 24px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vw, 18px);
+}
+
+.exercise-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exercise-card-header h3 {
+  margin: 0;
+  font-size: clamp(16px, 2.5vw, 20px);
+  color: #1f2937;
+}
+
+.exercise-completion {
+  font-size: clamp(13px, 2vw, 15px);
+  color: #4b5563;
+}
+
+.exercise-preview {
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3f4f6;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exercise-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.exercise-preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: clamp(13px, 2vw, 15px);
+}
+
+.exercise-metrics {
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 2vw, 16px);
 }
 
-.exercise-log-card {
-  background: white;
-  border-radius: 12px;
-  padding: clamp(14px, 3vw, 18px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-left: 4px solid #667eea;
-  transition: all 0.2s;
+.metric-block h4 {
+  margin: 0 0 8px;
+  font-size: clamp(14px, 2vw, 16px);
+  color: #111827;
 }
 
-.exercise-log-card:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+.metric-empty {
+  margin: 0;
+  font-size: clamp(13px, 2vw, 15px);
+  color: #9ca3af;
 }
 
-.exercise-log-header {
+.pain-history {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: clamp(8px, 2vw, 12px);
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 6px;
 }
 
-.exercise-log-title {
-  font-size: clamp(15px, 3vw, 17px);
+.pain-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
   font-weight: 600;
-  color: #1a202c;
-  flex: 1;
-  min-width: 0;
 }
 
-.exercise-log-date {
-  font-size: clamp(12px, 2vw, 13px);
-  color: #718096;
-  white-space: nowrap;
+.pain-indicator.level-0 { background: #10b981; color: #ffffff; }
+.pain-indicator.level-1 { background: #34d399; color: #ffffff; }
+.pain-indicator.level-2 { background: #6ee7b7; color: #1f2937; }
+.pain-indicator.level-3 { background: #a7f3d0; color: #1f2937; }
+.pain-indicator.level-4 { background: #fde047; color: #1f2937; }
+.pain-indicator.level-5 { background: #fbbf24; color: #1f2937; }
+.pain-indicator.level-6 { background: #f59e0b; color: #1f2937; }
+.pain-indicator.level-7 { background: #fb923c; color: #ffffff; }
+.pain-indicator.level-8 { background: #f97316; color: #ffffff; }
+.pain-indicator.level-9 { background: #ef4444; color: #ffffff; }
+.pain-indicator.level-10 { background: #dc2626; color: #ffffff; }
+.pain-indicator.unknown { background: #e5e7eb; color: #6b7280; }
+
+.difficulty-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.exercise-log-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100px, 100%), 1fr));
-  gap: clamp(8px, 1.5vw, 12px);
-  padding: clamp(8px, 2vw, 12px) 0;
-  border-top: 1px solid #e2e8f0;
+.difficulty-icon {
+  font-size: 22px;
 }
 
-.log-detail {
+.exercise-footer {
+  font-size: clamp(13px, 2vw, 15px);
+  color: #6b7280;
+}
+
+.exercise-footer span {
+  font-weight: 600;
+  color: #374151;
+}
+
+.comments-section h4 {
+  margin: 0 0 10px;
+  font-size: clamp(14px, 2vw, 16px);
+  color: #111827;
+}
+
+.comments-list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
 }
 
-.log-detail-label {
-  font-size: clamp(11px, 1.5vw, 12px);
-  color: #a0aec0;
-  font-weight: 500;
+.comment-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+  padding: 12px;
 }
 
-.log-detail-value {
-  font-size: clamp(14px, 2vw, 16px);
-  color: #2d3748;
-  font-weight: 600;
+.comment-item.recent {
+  background: #eef2ff;
+  border-left-color: #4f46e5;
 }
 
-.pain-level {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: clamp(12px, 2vw, 13px);
-  font-weight: 600;
+.comment-date {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
 }
 
-.pain-level-0 { background: #c6f6d5; color: #22543d; }
-.pain-level-1,
-.pain-level-2 { background: #fefcbf; color: #744210; }
-.pain-level-3,
-.pain-level-4 { background: #fed7aa; color: #7c2d12; }
-.pain-level-5,
-.pain-level-6,
-.pain-level-7,
-.pain-level-8,
-.pain-level-9,
-.pain-level-10 { background: #fed7d7; color: #c53030; }
-
-.completed-badge {
-  background: #48bb78;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: clamp(11px, 1.5vw, 12px);
-  font-weight: 600;
-  white-space: nowrap;
+.comment-text {
+  font-size: clamp(13px, 2vw, 15px);
+  color: #1f2937;
 }
-
-.incomplete-badge {
-  background: #e2e8f0;
-  color: #4a5568;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: clamp(11px, 1.5vw, 12px);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* =====================================================
-   FILTERS
-   ===================================================== */
-
-.progress-filters {
-  display: flex;
-  gap: clamp(10px, 2vw, 12px);
-  margin-bottom: clamp(16px, 3vw, 20px);
-  flex-wrap: wrap;
-}
-
-.date-filter {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.date-filter label {
-  font-size: clamp(13px, 2vw, 14px);
-  color: #4a5568;
-  font-weight: 500;
-}
-
-.date-filter input {
-  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: clamp(12px, 2vw, 13px);
-  transition: all 0.2s;
-}
-
-.date-filter input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-/* =====================================================
-   EMPTY STATE
-   ===================================================== */
 
 .empty-state {
   text-align: center;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.empty-icon {
-  font-size: clamp(48px, 10vw, 64px);
-  color: #cbd5e0;
-  margin-bottom: clamp(12px, 2vw, 16px);
-}
-
 .empty-state h3 {
+  margin: 0 0 8px;
   font-size: clamp(18px, 3vw, 22px);
-  color: #4a5568;
-  margin: 0 0 clamp(8px, 2vw, 12px) 0;
+  color: #374151;
 }
 
 .empty-state p {
-  font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
   margin: 0;
+  font-size: clamp(14px, 2vw, 16px);
+  color: #6b7280;
 }
-
-/* =====================================================
-   LOADING
-   ===================================================== */
-
-.loading {
-  text-align: center;
-  padding: clamp(40px, 8vw, 60px) 20px;
-  font-size: clamp(16px, 3vw, 18px);
-  color: #718096;
-}
-
-/* =====================================================
-   СКРЫТИЕ BACКBUTTON НА ПЛАНШЕТАХ
-   ===================================================== */
 
 @media (max-width: 1024px) {
   .back-button-wrapper {
