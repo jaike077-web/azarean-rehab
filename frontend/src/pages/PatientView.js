@@ -330,6 +330,7 @@ function PatientView() {
             const visibleDescription = shouldTruncate && !isExpanded
               ? `${description.slice(0, 150)}...`
               : description;
+            const descriptionClassName = `exercise-description${shouldTruncate ? (isExpanded ? ' expanded' : ' collapsed') : ''}`;
             const painLevel = painLevels[exerciseId];
             const difficultyRating = difficultyRatings[exerciseId] ?? 5;
             const isSaving = savingStates[exerciseId];
@@ -392,7 +393,7 @@ function PatientView() {
                     </div>
                   )}
 
-                  <p className="exercise-description" id={`exercise-description-${exerciseId}`}>
+                  <p className={descriptionClassName} id={`exercise-description-${exerciseId}`}>
                     {visibleDescription}
                   </p>
                   {shouldTruncate && (
