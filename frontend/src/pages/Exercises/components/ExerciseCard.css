@@ -3,7 +3,7 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.exercise-card {
+.exercises-page .exercise-card {
   background: white;
   border-radius: clamp(10px, 2vw, 14px);
   overflow: hidden;
@@ -15,7 +15,7 @@
   height: 100%;
 }
 
-.exercise-card:hover {
+.exercises-page .exercise-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
@@ -24,7 +24,7 @@
    THUMBNAIL
    ===================================================== */
 
-.card-thumbnail {
+.exercises-page .card-thumbnail {
   position: relative;
   width: 100%;
   padding-bottom: 56.25%; /* 16:9 */
@@ -32,7 +32,7 @@
   overflow: hidden;
 }
 
-.card-thumbnail img {
+.exercises-page .card-thumbnail img {
   position: absolute;
   top: 0;
   left: 0;
@@ -42,11 +42,11 @@
   transition: transform 0.3s ease;
 }
 
-.exercise-card:hover .card-thumbnail img {
+.exercises-page .exercise-card:hover .card-thumbnail img {
   transform: scale(1.05);
 }
 
-.card-thumbnail-placeholder {
+.exercises-page .card-thumbnail-placeholder {
   position: absolute;
   top: 0;
   left: 0;
@@ -58,7 +58,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-.placeholder-icon {
+.exercises-page .placeholder-icon {
   font-size: clamp(52px, 10vw, 68px);
   opacity: 0.8;
   color: white;
@@ -68,7 +68,7 @@
    DIFFICULTY BADGE
    ===================================================== */
 
-.difficulty-badge {
+.exercises-page .difficulty-badge {
   position: absolute;
   top: clamp(10px, 2vw, 14px);
   right: clamp(10px, 2vw, 14px);
@@ -86,7 +86,7 @@
    OVERLAY
    ===================================================== */
 
-.card-overlay {
+.exercises-page .card-overlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -101,11 +101,11 @@
   transition: opacity 0.3s ease;
 }
 
-.exercise-card:hover .card-overlay {
+.exercises-page .exercise-card:hover .card-overlay {
   opacity: 1;
 }
 
-.btn-card-action {
+.exercises-page .btn-card-action {
   width: clamp(44px, 8vw, 52px);
   height: clamp(44px, 8vw, 52px);
   border: none;
@@ -119,31 +119,31 @@
   
 }
 
-.btn-view {
+.exercises-page .btn-view {
   background: white;
   color: #2d3748;
 }
 
-.btn-view:hover {
+.exercises-page .btn-view:hover {
   transform: scale(1.1);
 }
 
-.btn-edit {
+.exercises-page .btn-edit {
   background: #667eea;
   color: white;
 }
 
-.btn-edit:hover {
+.exercises-page .btn-edit:hover {
   background: #5568d3;
   transform: scale(1.03);
 }
 
-.btn-delete {
+.exercises-page .btn-delete {
   background: #f56565;
   color: white;
 }
 
-.btn-delete:hover {
+.exercises-page .btn-delete:hover {
   background: #e53e3e;
   transform: translateY(5px);
 }
@@ -152,7 +152,7 @@
    CONTENT
    ===================================================== */
 
-.card-content {
+.exercises-page .card-content {
   padding: clamp(14px, 3vw, 18px);
   flex: 1;
   display: flex;
@@ -160,7 +160,7 @@
   gap: clamp(10px, 2vw, 14px);
 }
 
-.card-title {
+.exercises-page .card-title {
   font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
   color: #1a202c;
@@ -176,7 +176,7 @@
    METADATA
    ===================================================== */
 
-.card-meta {
+.exercises-page .card-meta {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(10px, 2vw, 14px);
@@ -184,13 +184,13 @@
   color: #4a5568;
 }
 
-.meta-item {
+.exercises-page .meta-item {
   display: flex;
   align-items: center;
   gap: clamp(3px, 0.5vw, 5px);
 }
 
-.meta-icon {
+.exercises-page .meta-icon {
   font-size: clamp(13px, 2vw, 14px);
 }
 
@@ -198,7 +198,7 @@
    EQUIPMENT
    ===================================================== */
 
-.card-equipment {
+.exercises-page .card-equipment {
   display: inline-flex;
   align-items: center;
   gap: clamp(5px, 1vw, 7px);
@@ -211,7 +211,7 @@
   align-self: flex-start;
 }
 
-.equipment-icon {
+.exercises-page .equipment-icon {
   font-size: clamp(13px, 2vw, 14px);
 }
 
@@ -219,13 +219,13 @@
    MUSCLES
    ===================================================== */
 
-.card-muscles {
+.exercises-page .card-muscles {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.muscle-tag {
+.exercises-page .muscle-tag {
   padding: clamp(4px, 0.5vw, 5px) clamp(8px, 2vw, 12px);
   border-radius: 4px;
   font-size: clamp(11px, 2vw, 12px);
@@ -233,19 +233,19 @@
   white-space: nowrap;
 }
 
-.muscle-tag.primary {
+.exercises-page .muscle-tag.primary {
   background: #e6fffa;
   color: #234e52;
   border: 1px solid #81e6d9;
 }
 
-.muscle-tag.secondary {
+.exercises-page .muscle-tag.secondary {
   background: #fef5e7;
   color: #78350f;
   border: 1px solid #fad390;
 }
 
-.muscle-tag.more {
+.exercises-page .muscle-tag.more {
   background: #edf2f7;
   color: #4a5568;
   border: 1px solid #cbd5e0;
@@ -255,13 +255,13 @@
    PHASES
    ===================================================== */
 
-.card-phases {
+.exercises-page .card-phases {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.phase-tag {
+.exercises-page .phase-tag {
   padding: clamp(4px, 0.5vw, 5px) clamp(8px, 2vw, 12px);
   background: #e6fffa;
   color: #234e52;
@@ -273,7 +273,7 @@
   letter-spacing: 0.3px;
 }
 
-.phase-tag.more {
+.exercises-page .phase-tag.more {
   background: #edf2f7;
   color: #4a5568;
   border-color: #cbd5e0;
@@ -283,7 +283,7 @@
    FOOTER
    ===================================================== */
 
-.card-footer {
+.exercises-page .card-footer {
   padding: clamp(10px, 2vw, 14px) clamp(14px, 3vw, 18px);
   border-top: 1px solid #e2e8f0;
   display: flex;
@@ -293,12 +293,12 @@
   gap: clamp(8px, 2vw, 12px);
 }
 
-.card-date {
+.exercises-page .card-date {
   font-size: clamp(11px, 2vw, 12px);
   color: #a0aec0;
 }
 
-.unilateral-badge {
+.exercises-page .unilateral-badge {
   font-size: clamp(14px, 3vw, 16px);
   opacity: 0.7;
 }
@@ -308,15 +308,15 @@
    ===================================================== */
 
 @media (max-width: 640px) {
-  .card-thumbnail {
+  .exercises-page .card-thumbnail {
     padding-bottom: 66.67%; /* 3:2 на мобильных */
   }
 
-  .card-title {
+  .exercises-page .card-title {
     font-size: clamp(15px, 4vw, 18px);
   }
 
-  .btn-card-action {
+  .exercises-page .btn-card-action {
     width: 44px;
     height: 44px;
     font-size: 18px;

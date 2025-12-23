@@ -430,7 +430,7 @@
    EXERCISE PARAMS - Адаптивная сетка
    ===================================================== */
 
-.exercise-params {
+.create-complex-page .exercise-params {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(60px, 100%), 1fr));
   gap: clamp(6px, 1.5vw, 8px);
@@ -438,7 +438,7 @@
   width: 100%;
 }
 
-.exercise-params input {
+.create-complex-page .exercise-params input {
   padding: clamp(8px, 1.5vw, 10px) clamp(6px, 1.5vw, 8px);
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -450,19 +450,19 @@
   text-align: center;
 }
 
-.exercise-params input::placeholder {
+.create-complex-page .exercise-params input::placeholder {
   color: #a0aec0;
   font-size: clamp(11px, 1.5vw, 12px);
 }
 
-.exercise-params input:focus {
+.create-complex-page .exercise-params input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   background: white;
 }
 
-.exercise-params input.notes-input {
+.create-complex-page .exercise-params input.notes-input {
   grid-column: 1 / -1;
   text-align: left;
 }
