@@ -189,8 +189,7 @@ Content-Type: application/json
   "exercise_id": 1,
   "completed": true,
   "pain_level": 3,
-  "difficulty_rating": 4,
-  "mood_rating": 4,
+  "difficulty_rating": 7,
   "notes": "Упражнение далось легко, боль незначительная"
 }
 

@@ -11,7 +11,7 @@ router.post('/', async (req, res) => {
       completed,
       pain_level,
       difficulty_rating,
-      mood_rating,
+      comment,
       notes
     } = req.body;
 
@@ -41,8 +41,8 @@ router.post('/', async (req, res) => {
     // Добавляем запись о выполнении
     const result = await query(
       `INSERT INTO progress_logs 
-       (complex_id, exercise_id, completed, pain_level, difficulty_rating, mood_rating, notes, completed_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       (complex_id, exercise_id, completed, pain_level, difficulty_rating, notes, completed_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
       [
         complex_id,
@@ -50,8 +50,7 @@ router.post('/', async (req, res) => {
         completed || false,
         pain_level,
         difficulty_rating,
-        mood_rating,
-        notes,
+        comment ?? notes,
         completed ? new Date() : null
       ]
     );
@@ -92,8 +91,7 @@ router.get('/complex/:complex_id', async (req, res) => {
          COUNT(*) as total_logs,
          COUNT(*) FILTER (WHERE completed = true) as completed_count,
          AVG(pain_level) FILTER (WHERE pain_level IS NOT NULL) as avg_pain_level,
-         AVG(difficulty_rating) FILTER (WHERE difficulty_rating IS NOT NULL) as avg_difficulty,
-         AVG(mood_rating) FILTER (WHERE mood_rating IS NOT NULL) as avg_mood
+         AVG(difficulty_rating) FILTER (WHERE difficulty_rating IS NOT NULL) as avg_difficulty
        FROM progress_logs
        WHERE complex_id = $1`,
       [complex_id]

@@ -57,7 +57,7 @@ function ViewProgress() {
   };
 
   if (loading) {
-    return <TableSkeleton rows={6} columns={4} />;
+    return <TableSkeleton rows={6} columns={5} />;
   }
 
   if (error) {
@@ -161,7 +161,6 @@ function ViewProgress() {
               <div className="col-status">Статус</div>
               <div className="col-pain">Боль</div>
               <div className="col-difficulty">Сложность</div>
-              <div className="col-mood">Настроение</div>
             </div>
             {progressData.logs.map((log) => (
               <div key={log.id} className="table-row">
@@ -180,10 +179,7 @@ function ViewProgress() {
                   </span>
                 </div>
                 <div className="col-difficulty">
-                  {log.difficulty_rating ? `${log.difficulty_rating}/5` : '-'}
-                </div>
-                <div className="col-mood">
-                  {log.mood_rating ? '😊'.repeat(log.mood_rating) : '-'}
+                  {log.difficulty_rating ? `${log.difficulty_rating}/10` : '-'}
                 </div>
               </div>
             ))}
