@@ -1,0 +1,361 @@
+/*
+Duplicate Class Report (Phase 1)
+- active
+  - files: frontend/src/components/Breadcrumbs.css, frontend/src/pages/CreateComplex.css, frontend/src/pages/Dashboard.css, frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css
+  - jsx: unused
+- available-exercises-grid
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: single (frontend/src/pages/EditComplex.js)
+- back-button
+  - files: frontend/src/components/BackButton.css, frontend/src/pages/Exercises/ExerciseDetail.css
+  - jsx: yes (frontend/src/components/BackButton.js, frontend/src/pages/Exercises/ExerciseDetail.js)
+- back-button-wrapper
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/EditComplex.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/ViewProgress.js)
+- badge
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseViewModal.js)
+- btn-add
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Exercises/Exercises.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js)
+- btn-back
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Exercises/ExercisesTemp.css
+  - jsx: single (frontend/src/pages/Exercises/Exercises.js)
+- btn-cancel
+  - files: frontend/src/pages/Exercises/components/DeleteConfirmModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/DeleteConfirmModal.js)
+- btn-card-action
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseCard.js)
+- btn-delete
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseCard.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- btn-edit
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseCard.js, frontend/src/pages/MyComplexes.js)
+- btn-primary
+  - files: frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/Login.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/Login.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js, frontend/src/pages/ViewProgress.js)
+- btn-save
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Patients.css
+  - jsx: single (frontend/src/pages/Diagnoses.js)
+- btn-secondary
+  - files: frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- btn-view
+  - files: frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/Exercises/components/ExerciseSelector.css, frontend/src/pages/MyComplexes.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseCard.js, frontend/src/pages/Exercises/components/ExerciseSelector.js, frontend/src/pages/MyComplexes.js)
+- card-title
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/Exercises/components/ExerciseCard.css
+  - jsx: yes (frontend/src/pages/Exercises/ExerciseDetail.js, frontend/src/pages/Exercises/components/ExerciseCard.js)
+- clear-search
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseFilters.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- compact
+  - files: frontend/src/components/Breadcrumbs.css, frontend/src/components/Toast.css
+  - jsx: unused
+- complex-date
+  - files: frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: single (frontend/src/pages/Patients.js)
+- create-complex-page
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- crumb-separator
+  - files: frontend/src/components/Breadcrumbs.css, frontend/src/pages/Exercises/ExerciseDetail.css
+  - jsx: yes (frontend/src/components/Breadcrumbs.js, frontend/src/pages/Exercises/ExerciseDetail.js)
+- detail-label
+  - files: frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css
+  - jsx: yes (frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js)
+- detail-row
+  - files: frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css
+  - jsx: yes (frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js)
+- detail-value
+  - files: frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css
+  - jsx: yes (frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js)
+- difficulty-badge
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/Exercises/components/ExerciseCard.css
+  - jsx: yes (frontend/src/pages/Exercises/ExerciseDetail.js, frontend/src/pages/Exercises/components/ExerciseCard.js)
+- drag-handle
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- empty-icon
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Trash.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/Exercises.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js)
+- empty-state
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js, frontend/src/pages/ViewProgress.js)
+- error
+  - files: frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseSelector.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- error-icon
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Exercises/ExerciseDetail.js, frontend/src/pages/Exercises/Exercises.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- error-message
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Login.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/Exercises.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Login.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- error-view
+  - files: frontend/src/pages/EditComplex.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/EditComplex.js, frontend/src/pages/PatientView.js, frontend/src/pages/ViewProgress.js)
+- exercise-actions
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/PatientView.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- exercise-card
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseCard.js, frontend/src/pages/PatientView.js)
+- exercise-card-small
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: single (frontend/src/pages/EditComplex.js)
+- exercise-content
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/PatientView.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- exercise-description
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js)
+- exercise-header
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/PatientView.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- exercise-info
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- exercise-item
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Exercises/ExercisesTemp.css
+  - jsx: single (frontend/src/pages/CreateComplex.js)
+- exercise-meta
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- exercise-params
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js, frontend/src/pages/PatientView.js)
+- exercise-tags
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: single (frontend/src/pages/EditComplex.js)
+- exercise-title
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Exercises/ExerciseDetail.js, frontend/src/pages/PatientView.js)
+- exercises-list
+  - files: frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/PatientView.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- field-error
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Patients.js)
+- filter-group
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/components/ExerciseFilters.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseFilters.js)
+- filter-search
+  - files: frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/Exercises/components/ExerciseSelector.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseFilters.js, frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- filter-select
+  - files: frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/Exercises/components/ExerciseSelector.css, frontend/src/pages/MyComplexes.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseFilters.js, frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- form-group
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Login.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Login.js, frontend/src/pages/Patients.js)
+- form-row
+  - files: frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Patients.js)
+- form-section
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/components/ExerciseModal.css
+  - jsx: yes (frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseModal.js)
+- input-error
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Patients.css
+  - jsx: unused
+- is-dragging
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: unused
+- item-meta
+  - files: frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/Exercises/components/ExerciseSelector.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- label
+  - files: frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/PatientView.js)
+- large
+  - files: frontend/src/components/BackButton.css, frontend/src/components/Skeleton.css, frontend/src/components/Toast.css
+  - jsx: unused
+- loading
+  - files: frontend/src/components/BackButton.css, frontend/src/components/Breadcrumbs.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/EditComplex.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- modal-actions
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/DeleteConfirmModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/DeleteConfirmModal.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- modal-body
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/MyComplexes.js)
+- modal-close
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- modal-content
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- modal-footer
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/MyComplexes.js)
+- modal-header
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- modal-overlay
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/DeleteConfirmModal.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- more
+  - files: frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/Exercises/components/ExerciseSelector.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseCard.js, frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- notes-input
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- page-header
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/EditComplex.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/EditComplex.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/Trash.js, frontend/src/pages/ViewProgress.js)
+- page-icon
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/EditComplex.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css, frontend/src/pages/ViewProgress.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/EditComplex.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js, frontend/src/pages/ViewProgress.js)
+- page-subtitle
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Patients.css
+  - jsx: single (frontend/src/pages/Diagnoses.js)
+- patient-avatar
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Patients.css, frontend/src/pages/Trash.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Trash.js)
+- patient-details
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Patients.js)
+- patient-header
+  - files: frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/PatientView.js, frontend/src/pages/Patients.js)
+- patient-name
+  - files: frontend/src/pages/PatientView.css, frontend/src/pages/Patients.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- primary
+  - files: frontend/src/components/Toast.css, frontend/src/pages/Exercises/components/ExerciseCard.css, frontend/src/pages/PatientView.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- progress-overview
+  - files: frontend/src/pages/PatientView.css, frontend/src/pages/ViewProgress.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- progress-stat
+  - files: frontend/src/pages/PatientView.css, frontend/src/pages/ViewProgress.css
+  - jsx: single (frontend/src/pages/PatientView.js)
+- remove-exercise-btn
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- required
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/components/ExerciseModal.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseModal.js)
+- results-count
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/components/ExerciseSelector.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- search-box
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- search-icon
+  - files: frontend/src/pages/Diagnoses.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Diagnoses.js, frontend/src/pages/MyComplexes.js, frontend/src/pages/Patients.js)
+- search-input
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Diagnoses.css, frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/Diagnoses.js, frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseFilters.js, frontend/src/pages/Patients.js)
+- secondary
+  - files: frontend/src/components/Toast.css, frontend/src/pages/Exercises/components/ExerciseCard.css
+  - jsx: unused
+- section-title
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/Exercises/components/ExerciseModal.css
+  - jsx: yes (frontend/src/pages/Exercises/ExerciseDetail.js, frontend/src/pages/Exercises/components/ExerciseModal.js)
+- selected
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/Exercises/components/ExerciseSelector.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/PatientView.css
+  - jsx: unused
+- selected-exercise
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- selected-exercises-list
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/EditComplex.js)
+- small
+  - files: frontend/src/components/BackButton.css, frontend/src/components/Skeleton.css
+  - jsx: unused
+- sort-select
+  - files: frontend/src/pages/Exercises/components/ExerciseFilters.css, frontend/src/pages/Patients.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseFilters.js, frontend/src/pages/Patients.js)
+- spinner
+  - files: frontend/src/pages/Exercises/ExercisesTemp.css, frontend/src/pages/Exercises/components/ExerciseSelector.css, frontend/src/pages/Login.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseSelector.js)
+- stat-card
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/MyComplexes.css
+  - jsx: single (frontend/src/pages/Dashboard.js)
+- stat-icon
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/MyComplexes.css
+  - jsx: single (frontend/src/pages/Dashboard.js)
+- stat-info
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/MyComplexes.css
+  - jsx: single (frontend/src/pages/Dashboard.js)
+- stat-label
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/MyComplexes.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Dashboard.js, frontend/src/pages/PatientView.js, frontend/src/pages/ViewProgress.js)
+- stat-value
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/MyComplexes.css
+  - jsx: yes (frontend/src/pages/Dashboard.js, frontend/src/pages/ViewProgress.js)
+- tab-btn
+  - files: frontend/src/pages/MyComplexes.css, frontend/src/pages/Trash.css
+  - jsx: yes (frontend/src/pages/MyComplexes.js, frontend/src/pages/Trash.js)
+- tag
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/EditComplex.css, frontend/src/pages/Exercises/components/ExerciseModal.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css
+  - jsx: yes (frontend/src/pages/EditComplex.js, frontend/src/pages/Exercises/components/ExerciseModal.js, frontend/src/pages/Exercises/components/ExerciseViewModal.js)
+- template-info
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/MyComplexes.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/MyComplexes.js)
+- template-meta
+  - files: frontend/src/pages/CreateComplex.css, frontend/src/pages/MyComplexes.css
+  - jsx: yes (frontend/src/pages/CreateComplex.js, frontend/src/pages/MyComplexes.js)
+- video-container
+  - files: frontend/src/pages/Exercises/components/ExerciseViewModal.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Exercises/components/ExerciseViewModal.js, frontend/src/pages/PatientView.js)
+- video-placeholder
+  - files: frontend/src/pages/Exercises/ExerciseDetail.css, frontend/src/pages/Exercises/Exercises.css
+  - jsx: single (frontend/src/pages/Exercises/ExerciseDetail.js)
+- warning
+  - files: frontend/src/pages/Exercises/Exercises.css, frontend/src/pages/Exercises/components/ExerciseViewModal.css
+  - jsx: single (frontend/src/pages/Exercises/components/ExerciseViewModal.js)
+- welcome-section
+  - files: frontend/src/pages/Dashboard.css, frontend/src/pages/PatientView.css
+  - jsx: yes (frontend/src/pages/Dashboard.js, frontend/src/pages/PatientView.js)
+
+Decision Summary (Phase 2)
+- exercise-description (+ collapsed/expanded): moved to common.css (shared across PatientView + MyComplexes).
+- exercise-card: removed unused definition from Exercises.css; scoped ExerciseCard.css to .exercises-page to avoid conflicts with PatientView.
+- exercise-content/exercise-header/exercise-actions: removed unused definitions from Exercises.css (PatientView retains ownership).
+- video-placeholder: removed unused definition from Exercises.css (ExerciseDetail retains ownership).
+- exercise-params: scoped within owning page/container (CreateComplex, EditComplex, PatientView) to avoid conflicts.
+- other duplicates: left in place when already component-scoped or used as modifiers; follow-up scoping/renames as needed.
+*/
+
+/* Shared Exercise Components */
+.exercise-description {
+  font-size: clamp(14px, 1vw, 16px);
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: clamp(8px, 2vw, 14px);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.exercise-description.collapsed {
+  position: relative;
+  max-height: 4.8em;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  transition: max-height 0.3s ease;
+}
+
+.exercise-description.collapsed::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.5em;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #ffffff);
+  pointer-events: none;
+}
+
+.exercise-description.expanded {
+  max-height: none;
+  overflow: visible;
+  display: block;
+}

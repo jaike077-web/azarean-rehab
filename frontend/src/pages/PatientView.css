@@ -451,7 +451,7 @@
      EXERCISE PARAMS
      ===================================================== */
   
-  .exercise-params {
+  .patient-view .exercise-params {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
     gap: clamp(12px, 2vw, 18px);

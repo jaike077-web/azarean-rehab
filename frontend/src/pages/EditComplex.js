@@ -310,7 +310,7 @@ function EditComplex() {
   }
 
   return (
-    <div className="create-complex-page">
+    <div className="edit-complex-page">
       <Breadcrumbs 
   items={[
     { 

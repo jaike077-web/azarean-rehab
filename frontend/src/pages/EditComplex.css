@@ -5,7 +5,7 @@
    ===================================================== */
 
 /* Layout страницы */
-.create-complex-page {
+.edit-complex-page {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 clamp(16px, 3vw, 40px) clamp(20px, 4vw, 40px);
@@ -169,7 +169,7 @@
    ПАРАМЕТРЫ УПРАЖНЕНИЯ - Адаптивная сетка
    ===================================================== */
 
-.exercise-params {
+.edit-complex-page .exercise-params {
   flex: 1 1 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(70px, 100%), 1fr));
@@ -177,8 +177,8 @@
   align-items: center;
 }
 
-.exercise-params input[type="number"],
-.exercise-params input[type="text"] {
+.edit-complex-page .exercise-params input[type="number"],
+.edit-complex-page .exercise-params input[type="text"] {
   padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
   border: 2px solid #e2e8f0;
   border-radius: 8px;
@@ -188,12 +188,12 @@
   box-sizing: border-box;
 }
 
-.exercise-params input[type="text"].notes-input {
+.edit-complex-page .exercise-params input[type="text"].notes-input {
   grid-column: 1 / -1;
   min-width: 100%;
 }
 
-.exercise-params input:focus {
+.edit-complex-page .exercise-params input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
