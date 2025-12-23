@@ -31,8 +31,13 @@ function ViewProgress() {
 
         console.log('=== ViewProgress Debug ===');
         console.log('Raw API response:', progressPayload);
-        console.log('Progress logs count:', progressPayload.progressLogs?.length);
-        console.log('Summary:', progressPayload.summary);
+        const progressLogs = progressPayload.logs || [];
+        const statistics = progressPayload.statistics || {};
+
+        console.log('Progress logs count:', progressLogs.length);
+        console.log('Statistics:', statistics);
+        console.log('Total logs:', parseInt(statistics.total_logs, 10));
+        console.log('Avg pain:', parseFloat(statistics.avg_pain_level).toFixed(1));
 
         setComplex(complexPayload || null);
         setData(progressPayload);
@@ -89,7 +94,7 @@ function ViewProgress() {
     return emojis[rating] || '😐';
   };
 
-  const progressLogs = data?.progressLogs || [];
+  const progressLogs = data?.logs || [];
 
   const exercisesWithProgress = useMemo(() => {
     const exercisesMap = {};
@@ -134,7 +139,7 @@ function ViewProgress() {
   }, [progressLogs]);
 
   const progressStats = useMemo(() => {
-    const summary = data?.summary || {};
+    const statistics = data?.statistics || {};
     const completionDates = progressLogs
       .map((log) => log.completed_at)
       .filter(Boolean)
@@ -142,10 +147,10 @@ function ViewProgress() {
       .sort((a, b) => a - b);
 
     return {
-      totalLogs: summary.total_logs ?? progressLogs.length,
-      completedCount: summary.completed_count ?? 0,
-      avgPain: Number(summary.avg_pain_level ?? 0),
-      avgDifficulty: Number(summary.avg_difficulty ?? 0),
+      totalLogs: Number.parseInt(statistics.total_logs ?? progressLogs.length, 10),
+      completedCount: Number.parseInt(statistics.completed_count ?? 0, 10),
+      avgPain: Number.parseFloat(statistics.avg_pain_level ?? 0),
+      avgDifficulty: Number.parseFloat(statistics.avg_difficulty ?? 0),
       dateRange:
         completionDates.length > 0
           ? formatDateRange(completionDates[0], completionDates[completionDates.length - 1])
