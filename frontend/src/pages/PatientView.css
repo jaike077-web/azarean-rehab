@@ -398,15 +398,19 @@
     white-space: pre-wrap;
     word-break: break-word;
     max-width: 100%;
+    /* УБЕРИ overflow и display тут */
   }
-
+  
   .exercise-description.collapsed {
     position: relative;
     max-height: 4.8em;
     overflow: hidden;
     transition: max-height 0.3s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
   }
-
+  
   .exercise-description.collapsed::after {
     content: '';
     position: absolute;
@@ -416,6 +420,12 @@
     height: 1.5em;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #ffffff);
     pointer-events: none;
+  }
+  
+  .exercise-description.expanded {
+    max-height: none;
+    overflow: visible;
+    display: block; /* ВАЖНО */
   }
 
   .show-more-btn {
