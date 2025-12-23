@@ -4,7 +4,7 @@ import { complexes, progress } from '../services/api';
 import './PatientView.css';
 import { useToast } from '../context/ToastContext';
 import { ComplexesPageSkeleton } from '../components/Skeleton';
-import { AlertTriangle, Check, Copy, FileText, Lightbulb, Mail, MessageCircle, Play, RefreshCw, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Annoyed, Check, Copy, FileText, Frown, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, SmilePlus, X, XCircle } from 'lucide-react';
 
 function PatientView() {
   const toast = useToast();
@@ -26,6 +26,13 @@ function PatientView() {
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const lastScrollRef = useRef(0);
   const difficultyTimeouts = useRef({});
+  const difficultyLevels = [
+    { value: 1, icon: Smile, label: 'Легко' },
+    { value: 2, icon: SmilePlus, label: 'Легко+' },
+    { value: 3, icon: Meh, label: 'Средне' },
+    { value: 4, icon: Frown, label: 'Средне+' },
+    { value: 5, icon: Annoyed, label: 'Тяжело' }
+  ];
 
   useEffect(() => {
     loadComplex();
@@ -263,8 +270,8 @@ function PatientView() {
       <div className="patient-content">
         <div className="welcome-section">
           <div className="patient-identity">
-            <span>Пациент: {complex.patient_name}</span>
-            <span>Инструктор: {complex.instructor_name}</span>
+            <span className="patient-name">{complex.patient_name}</span>
+            <span className="instructor-name">Инструктор: {complex.instructor_name}</span>
           </div>
           <h1>Ваш комплекс упражнений</h1>
           {complex.diagnosis_name && (
@@ -327,12 +334,8 @@ function PatientView() {
             const description = item.exercise.description || '';
             const isExpanded = expandedDescriptions[exerciseId];
             const shouldTruncate = description.length > 150;
-            const visibleDescription = shouldTruncate && !isExpanded
-              ? `${description.slice(0, 150)}...`
-              : description;
-            const descriptionClassName = `exercise-description${shouldTruncate ? (isExpanded ? ' expanded' : ' collapsed') : ''}`;
             const painLevel = painLevels[exerciseId];
-            const difficultyRating = difficultyRatings[exerciseId] ?? 5;
+            const difficultyRating = difficultyRatings[exerciseId] ?? 3;
             const isSaving = savingStates[exerciseId];
             const saveError = saveErrors[exerciseId];
 
@@ -362,7 +365,8 @@ function PatientView() {
                           onClick={() => handleOpenComment(exerciseId, item.exercise.title)}
                           aria-label={`Добавить комментарий к упражнению «${item.exercise.title}»`}
                         >
-                          💬 Комментарий
+                          <MessageCircle size={16} aria-hidden="true" />
+                          Комментарий
                         </button>
                       </div>
                       {(isSaving || saveError) && (
@@ -393,13 +397,16 @@ function PatientView() {
                     </div>
                   )}
 
-                  <p className={descriptionClassName} id={`exercise-description-${exerciseId}`}>
-                    {visibleDescription}
+                  <p
+                    className={`exercise-description ${shouldTruncate && !isExpanded ? 'collapsed' : ''}`}
+                    id={`exercise-description-${exerciseId}`}
+                  >
+                    {description}
                   </p>
                   {shouldTruncate && (
                     <button
                       type="button"
-                      className="description-toggle"
+                      className="show-more-btn"
                       onClick={() =>
                         setExpandedDescriptions((prev) => ({
                           ...prev,
@@ -445,7 +452,8 @@ function PatientView() {
                           <button
                             key={level}
                             type="button"
-                            className={`pain-button ${painLevel === level ? 'active' : ''}`}
+                            className={`pain-button ${painLevel === level ? 'selected' : ''}`}
+                            data-level={level}
                             onClick={() => handlePainSelect(exerciseId, level)}
                             aria-pressed={painLevel === level}
                             aria-label={`Боль: ${level}`}
@@ -456,20 +464,21 @@ function PatientView() {
                       </div>
                     </div>
                     <div className="difficulty-rating">
-                      <label className="difficulty-label" htmlFor={`difficulty-${exerciseId}`}>
-                        Сложность выполнения:
-                      </label>
-                      <div className="difficulty-slider">
-                        <input
-                          id={`difficulty-${exerciseId}`}
-                          type="range"
-                          min="1"
-                          max="10"
-                          value={difficultyRating}
-                          onChange={(event) => handleDifficultyChange(exerciseId, Number(event.target.value))}
-                          aria-label={`Сложность выполнения: ${difficultyRating} из 10`}
-                        />
-                        <span className="difficulty-value">{difficultyRating}/10</span>
+                      <p className="difficulty-label">Сложность выполнения:</p>
+                      <div className="difficulty-icon-container" role="radiogroup" aria-label="Сложность выполнения">
+                        {difficultyLevels.map(({ value, icon: Icon, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={`difficulty-icon-btn ${difficultyRating === value ? 'selected' : ''}`}
+                            onClick={() => handleDifficultyChange(exerciseId, value)}
+                            aria-label={`Сложность: ${label}`}
+                            aria-pressed={difficultyRating === value}
+                          >
+                            <Icon className="icon" size={32} aria-hidden="true" />
+                            <span className="label">{label}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
