@@ -11,6 +11,8 @@ router.post('/', async (req, res) => {
       completed,
       pain_level,
       difficulty_rating,
+      session_id,
+      session_comment,
       comment,
       notes
     } = req.body;
@@ -41,8 +43,8 @@ router.post('/', async (req, res) => {
     // Добавляем запись о выполнении
     const result = await query(
       `INSERT INTO progress_logs 
-       (complex_id, exercise_id, completed, pain_level, difficulty_rating, notes, completed_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       (complex_id, exercise_id, completed, pain_level, difficulty_rating, session_id, session_comment, notes, completed_at) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
        RETURNING *`,
       [
         complex_id,
@@ -50,6 +52,8 @@ router.post('/', async (req, res) => {
         completed || false,
         pain_level,
         difficulty_rating,
+        session_id,
+        session_comment,
         comment ?? notes,
         completed ? new Date() : null
       ]
@@ -69,7 +73,8 @@ router.post('/', async (req, res) => {
         exercise_id: req.body?.exercise_id,
         completed: req.body?.completed,
         pain_level: req.body?.pain_level,
-        difficulty_rating: req.body?.difficulty_rating
+        difficulty_rating: req.body?.difficulty_rating,
+        session_id: req.body?.session_id
       }
     });
     res.status(500).json({ 
