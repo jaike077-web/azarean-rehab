@@ -4,7 +4,7 @@ import { complexes, progress } from '../services/api';
 import './PatientView.css';
 import { useToast } from '../context/ToastContext';
 import { ComplexesPageSkeleton } from '../components/Skeleton';
-import { AlertTriangle, Annoyed, Check, Copy, FileText, Frown, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, SmilePlus, X, XCircle } from 'lucide-react';
+import { AlertTriangle, Annoyed, Check, CheckCircle, Clock, Copy, FileText, Frown, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, SmilePlus, X, XCircle } from 'lucide-react';
 
 function PatientView() {
   const toast = useToast();
@@ -12,20 +12,22 @@ function PatientView() {
   const [complex, setComplex] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [completedExercises, setCompletedExercises] = useState({});
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionStarted, setSessionStarted] = useState(false);
+  const [sessionData, setSessionData] = useState({});
+  const [savedExercises, setSavedExercises] = useState({});
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [sessionComment, setSessionComment] = useState('');
   const [headerVisible, setHeaderVisible] = useState(true);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [currentExerciseId, setCurrentExerciseId] = useState(null);
   const [currentExerciseTitle, setCurrentExerciseTitle] = useState('');
   const [commentDraft, setCommentDraft] = useState('');
-  const [painLevels, setPainLevels] = useState({});
-  const [difficultyRatings, setDifficultyRatings] = useState({});
   const [exerciseComments, setExerciseComments] = useState({});
   const [savingStates, setSavingStates] = useState({});
   const [saveErrors, setSaveErrors] = useState({});
   const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const lastScrollRef = useRef(0);
-  const difficultyTimeouts = useRef({});
   const difficultyLevels = [
     { value: 1, icon: Smile, label: 'Легко' },
     { value: 2, icon: SmilePlus, label: 'Легко+' },
@@ -38,6 +40,12 @@ function PatientView() {
     loadComplex();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    const newSessionId = Date.now();
+    setSessionId(newSessionId);
+    setSessionStarted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,23 +62,11 @@ function PatientView() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      Object.values(difficultyTimeouts.current).forEach((timeoutId) => clearTimeout(timeoutId));
-    };
-  }, []);
-
   const loadComplex = async () => {
     try {
       setLoading(true);
       const response = await complexes.getByToken(token);
       setComplex(response.data.complex);
-      
-      // Загружаем счётчики выполнений из sessionStorage
-      const savedCounts = sessionStorage.getItem('exercise_counts');
-      if (savedCounts) {
-        setCompletedExercises(JSON.parse(savedCounts));
-      }
     } catch (err) {
       console.error('Ошибка загрузки комплекса:', err);
       setError('Комплекс не найден или ссылка недействительна');
@@ -115,48 +111,64 @@ function PatientView() {
     }
   };
 
-  const handleComplete = (exerciseId) => {
-    const previousCount = completedExercises[exerciseId] || 0;
-    setCompletedExercises((prev) => {
-      const newCounts = {
-        ...prev,
-        [exerciseId]: (prev[exerciseId] || 0) + 1
-      };
-      sessionStorage.setItem('exercise_counts', JSON.stringify(newCounts));
-      return newCounts;
-    });
-
-    saveProgress(
-      exerciseId,
-      { completed: true },
-      {
-        onError: () => {
-          setCompletedExercises((prev) => {
-            const newCounts = {
-              ...prev,
-              [exerciseId]: previousCount
-            };
-            sessionStorage.setItem('exercise_counts', JSON.stringify(newCounts));
-            return newCounts;
-          });
-        }
+  const clearSavedStatus = (exerciseId) => {
+    setSavedExercises((prev) => {
+      if (!prev[exerciseId]) {
+        return prev;
       }
-    );
+      const next = { ...prev };
+      delete next[exerciseId];
+      return next;
+    });
+  };
+
+  const updateSessionData = (exerciseId, updater) => {
+    setSessionData((prev) => {
+      const current = prev[exerciseId] || {};
+      const nextEntry = typeof updater === 'function'
+        ? updater(current)
+        : { ...current, ...updater };
+
+      if (nextEntry === null) {
+        const next = { ...prev };
+        delete next[exerciseId];
+        return next;
+      }
+      return {
+        ...prev,
+        [exerciseId]: nextEntry
+      };
+    });
+    clearSavedStatus(exerciseId);
+  };
+
+  const handleCompletionToggle = (exerciseId) => {
+    updateSessionData(exerciseId, (current) => {
+      const nextCompleted = !current.completed;
+      const hasPain = current.pain_level !== undefined && current.pain_level !== null;
+      const hasDifficulty = current.difficulty_rating !== undefined && current.difficulty_rating !== null;
+      const hasNotes = current.notes;
+
+      if (!nextCompleted && !hasPain && !hasDifficulty && !hasNotes) {
+        return null;
+      }
+
+      return {
+        ...current,
+        completed: nextCompleted
+      };
+    });
+    toast.info('Отмечено (будет сохранено при завершении)');
   };
 
   const handlePainSelect = (exerciseId, level) => {
-    setPainLevels((prev) => ({ ...prev, [exerciseId]: level }));
-    saveProgress(exerciseId, { pain_level: level });
+    updateSessionData(exerciseId, { pain_level: level });
+    toast.info('Отмечено (будет сохранено при завершении)');
   };
 
   const handleDifficultyChange = (exerciseId, value) => {
-    setDifficultyRatings((prev) => ({ ...prev, [exerciseId]: value }));
-    if (difficultyTimeouts.current[exerciseId]) {
-      clearTimeout(difficultyTimeouts.current[exerciseId]);
-    }
-    difficultyTimeouts.current[exerciseId] = setTimeout(() => {
-      saveProgress(exerciseId, { difficulty_rating: value });
-    }, 500);
+    updateSessionData(exerciseId, { difficulty_rating: value });
+    toast.info('Отмечено (будет сохранено при завершении)');
   };
 
   const handleOpenComment = (exerciseId, exerciseTitle) => {
@@ -181,10 +193,61 @@ function PatientView() {
   };
 
   const handleNewSession = () => {
-    sessionStorage.removeItem('current_session_id');
-    sessionStorage.removeItem('exercise_counts');
-    setCompletedExercises({});
+    setSessionId(Date.now());
+    setSessionStarted(true);
+    setSessionData({});
+    setSavedExercises({});
+    setSessionComment('');
     toast.success('Новая тренировка начата! Отметки сброшены.');
+  };
+
+  const handleFinishWorkout = async () => {
+    if (!complex?.id) {
+      return;
+    }
+
+    const entries = Object.entries(sessionData);
+    if (entries.length === 0) {
+      toast.warning('Нет отмеченных упражнений для сохранения.');
+      return;
+    }
+
+    const activeSessionId = sessionId ?? Date.now();
+    if (!sessionId) {
+      setSessionId(activeSessionId);
+    }
+
+    try {
+      const trimmedSessionComment = sessionComment.trim();
+      await Promise.all(entries.map(([exerciseId, data]) => (
+        progress.create({
+          complex_id: complex.id,
+          exercise_id: Number(exerciseId),
+          session_id: activeSessionId,
+          session_comment: trimmedSessionComment || null,
+          completed: Boolean(data.completed),
+          pain_level: data.pain_level ?? null,
+          difficulty_rating: data.difficulty_rating ?? null,
+          notes: data.notes ?? null
+        })
+      )));
+
+      const nextSaved = entries.reduce((acc, [exerciseId]) => {
+        acc[exerciseId] = true;
+        return acc;
+      }, {});
+
+      setSavedExercises(nextSaved);
+      setSessionData({});
+      setSessionComment('');
+      setShowFinishModal(false);
+      setSessionId(Date.now());
+      setSessionStarted(true);
+      toast.success('Тренировка завершена!');
+    } catch (err) {
+      console.error('Ошибка сохранения сессии:', err);
+      toast.error('Ошибка сохранения');
+    }
   };
 
   const handleCopyEmail = async (email) => {
@@ -210,13 +273,11 @@ function PatientView() {
     );
   }
 
-  const completedCount = complex.exercises?.filter(ex => 
-    completedExercises[ex.exercise.id] > 0
-  ).length || 0;
+  const completedCount = Object.values(sessionData).filter((entry) => entry.completed).length;
 
   const totalCount = complex.exercises?.length || 0;
   const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  const totalExecutions = Object.values(completedExercises).reduce((sum, count) => sum + count, 0);
+  const totalExecutions = completedCount;
 
   const toInt = (value, fallback = 0) => {
     const parsed = Number(value);
@@ -329,15 +390,17 @@ function PatientView() {
             const restSeconds = toInt(item.rest_seconds, 0);
             const showDuration = durationSeconds > 0;
             const exerciseId = item.exercise.id;
-            const completionCount = completedExercises[exerciseId] || 0;
-            const isCompleted = completionCount > 0;
+            const sessionEntry = sessionData[exerciseId];
+            const isCompleted = Boolean(sessionEntry?.completed);
             const description = item.exercise.description || '';
             const isExpanded = expandedDescriptions[exerciseId];
             const shouldTruncate = description.length > 150;
-            const painLevel = painLevels[exerciseId];
-            const difficultyRating = difficultyRatings[exerciseId] ?? 3;
+            const painLevel = sessionEntry?.pain_level;
+            const difficultyRating = sessionEntry?.difficulty_rating;
             const isSaving = savingStates[exerciseId];
             const saveError = saveErrors[exerciseId];
+            const hasPendingData = Boolean(sessionEntry);
+            const hasSavedData = Boolean(savedExercises[exerciseId]);
 
             return (
               <div
@@ -353,11 +416,11 @@ function PatientView() {
                         <button
                           type="button"
                           className={`btn-complete ${isCompleted ? 'is-completed' : ''}`}
-                          onClick={() => handleComplete(exerciseId)}
+                          onClick={() => handleCompletionToggle(exerciseId)}
                           aria-label={`Отметить упражнение «${item.exercise.title}» выполненным`}
                         >
                           <Check size={16} aria-hidden="true" />
-                          {isCompleted ? `Выполнено: ${completionCount} раз` : 'Выполнено'}
+                          {isCompleted ? 'Выполнено' : 'Отметить выполненным'}
                         </button>
                         <button
                           type="button"
@@ -376,6 +439,20 @@ function PatientView() {
                           aria-live="polite"
                         >
                           {isSaving ? 'Сохранение...' : saveError}
+                        </div>
+                      )}
+                      {(hasPendingData || hasSavedData) && (
+                        <div
+                          className={`session-status ${hasPendingData ? 'is-pending' : 'is-saved'}`}
+                          role="status"
+                          aria-live="polite"
+                        >
+                          {hasPendingData ? (
+                            <Clock size={14} aria-hidden="true" />
+                          ) : (
+                            <CheckCircle size={14} aria-hidden="true" />
+                          )}
+                          {hasPendingData ? 'Не сохранено' : 'Сохранено'}
                         </div>
                       )}
                     </div>
@@ -509,6 +586,17 @@ function PatientView() {
           })}
         </div>
 
+        <div className="finish-workout-section">
+          <button
+            type="button"
+            className="btn-finish-workout"
+            onClick={() => setShowFinishModal(true)}
+            disabled={!sessionStarted}
+          >
+            Завершить тренировку
+          </button>
+        </div>
+
         <div className="contact-section" aria-label="Поддержка">
           <div className="contact-header">
             <MessageCircle size={18} aria-hidden="true" />
@@ -593,6 +681,95 @@ function PatientView() {
                   Сохранить
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFinishModal && (
+        <div className="modal-overlay" onClick={() => setShowFinishModal(false)}>
+          <div className="modal-content finish-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Завершение тренировки</h3>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setShowFinishModal(false)}
+                aria-label="Закрыть окно завершения тренировки"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p>Как вы себя чувствуете сегодня?</p>
+              <textarea
+                className="session-comment-input"
+                placeholder="Опишите ваше общее самочувствие..."
+                value={sessionComment}
+                onChange={(e) => setSessionComment(e.target.value)}
+                rows={4}
+              />
+
+              <div className="session-summary">
+                <h4>Выполнено упражнений:</h4>
+                {Object.keys(sessionData).length === 0 ? (
+                  <p className="session-empty">Нет отмеченных упражнений.</p>
+                ) : (
+                  <ul>
+                    {Object.entries(sessionData).map(([exerciseId, data]) => {
+                      const exercise = complex.exercises.find(
+                        (entry) => entry.exercise.id === Number(exerciseId)
+                      );
+                      const painLabel = data.pain_level !== undefined && data.pain_level !== null
+                        ? `Боль: ${data.pain_level}/10`
+                        : null;
+                      const difficultyLabel = data.difficulty_rating !== undefined && data.difficulty_rating !== null
+                        ? `Сложность: ${data.difficulty_rating}/5`
+                        : null;
+
+                      return (
+                        <li key={exerciseId}>
+                          <div className="session-summary-title">
+                            {exercise?.exercise.title || 'Упражнение'}
+                          </div>
+                          <div className={`session-summary-status ${data.completed ? 'is-completed' : 'is-skipped'}`}>
+                            {data.completed ? (
+                              <CheckCircle size={16} aria-hidden="true" />
+                            ) : (
+                              <XCircle size={16} aria-hidden="true" />
+                            )}
+                            {data.completed ? 'Выполнено' : 'Пропущено'}
+                          </div>
+                          {(painLabel || difficultyLabel) && (
+                            <div className="session-summary-meta">
+                              {painLabel && <span>{painLabel}</span>}
+                              {difficultyLabel && <span>{difficultyLabel}</span>}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowFinishModal(false)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleFinishWorkout}
+              >
+                Сохранить и завершить
+              </button>
             </div>
           </div>
         </div>

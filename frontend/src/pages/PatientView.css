@@ -205,6 +205,49 @@
     margin: clamp(6px, 1.5vw, 10px) 0 0 0;
     line-height: 1.5;
   }
+
+  /* =====================================================
+     FINISH WORKOUT
+     ===================================================== */
+  .finish-workout-section {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom) + 64px);
+    left: 0;
+    right: 0;
+    padding: clamp(14px, 3vw, 20px);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    z-index: 55;
+    margin-top: clamp(20px, 4vw, 32px);
+  }
+
+  .btn-finish-workout {
+    width: 100%;
+    padding: clamp(14px, 3vw, 18px);
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: clamp(16px, 3vw, 18px);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 52px;
+  }
+
+  .btn-finish-workout:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+  }
+
+  .btn-finish-workout:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
   
   /* =====================================================
      INFO BOXES
@@ -352,6 +395,26 @@
 
   .exercise-save-status.has-error {
     color: #e53e3e;
+  }
+
+  .session-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: clamp(12px, 2vw, 13px);
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .session-status.is-pending {
+    background: rgba(251, 191, 36, 0.2);
+    color: #b45309;
+  }
+
+  .session-status.is-saved {
+    background: rgba(16, 185, 129, 0.15);
+    color: #047857;
   }
   
   
@@ -714,6 +777,16 @@
     overflow-y: auto;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
   }
+
+  .finish-modal {
+    background: white;
+    border-radius: clamp(12px, 2vw, 18px);
+    width: 100%;
+    max-width: min(620px, 95vw);
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  }
   
   .modal-header {
     display: flex;
@@ -760,6 +833,22 @@
   
   .rating-form {
     padding: clamp(18px, 4vw, 28px);
+  }
+
+  .modal-body {
+    padding: clamp(18px, 4vw, 28px);
+  }
+
+  .modal-body p {
+    margin: 0 0 clamp(10px, 2vw, 14px) 0;
+    color: #4a5568;
+    font-size: clamp(14px, 2vw, 16px);
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: clamp(10px, 2vw, 14px);
+    padding: 0 clamp(18px, 4vw, 28px) clamp(18px, 4vw, 28px);
   }
   
   .rating-group {
@@ -987,6 +1076,97 @@
   .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  }
+
+  .session-comment-input {
+    width: 100%;
+    padding: clamp(10px, 2vw, 14px);
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: clamp(14px, 2vw, 16px);
+    resize: vertical;
+    min-height: clamp(90px, 18vw, 120px);
+    box-sizing: border-box;
+  }
+
+  .session-comment-input:focus {
+    outline: none;
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  .session-summary {
+    margin-top: clamp(18px, 4vw, 26px);
+    padding: clamp(14px, 3vw, 18px);
+    background: #f9fafb;
+    border-radius: 12px;
+  }
+
+  .session-summary h4 {
+    margin: 0 0 clamp(10px, 2vw, 14px) 0;
+    font-size: clamp(15px, 2vw, 17px);
+    color: #1f2937;
+  }
+
+  .session-summary ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 2vw, 14px);
+  }
+
+  .session-summary li {
+    padding-bottom: clamp(8px, 2vw, 12px);
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .session-summary li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .session-summary-title {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+
+  .session-summary-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .session-summary-status.is-completed {
+    background: rgba(16, 185, 129, 0.15);
+    color: #047857;
+  }
+
+  .session-summary-status.is-skipped {
+    background: rgba(239, 68, 68, 0.15);
+    color: #b91c1c;
+  }
+
+  .session-summary-meta {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #4b5563;
+    font-size: 13px;
+  }
+
+  .session-empty {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
   }
   
   /* =====================================================
