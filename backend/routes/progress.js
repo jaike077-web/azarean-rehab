@@ -5,6 +5,12 @@ const { query } = require('../database/db');
 // Отметить выполнение упражнения (БЕЗ авторизации - для пациента)
 router.post('/', async (req, res) => {
   try {
+    console.log('=== Progress Save Request ===');
+    console.log('Headers:', req.headers);
+    console.log('Body:', req.body);
+    console.log('Session ID:', req.body?.session_id);
+    console.log('Session Comment:', req.body?.session_comment);
+
     const {
       complex_id,
       exercise_id,
@@ -52,12 +58,16 @@ router.post('/', async (req, res) => {
         completed || false,
         pain_level,
         difficulty_rating,
-        session_id,
-        session_comment,
-        comment ?? notes,
+        session_id ?? null,
+        session_comment ?? null,
+        comment ?? notes ?? null,
         completed ? new Date() : null
       ]
     );
+
+    console.log('=== Progress Saved Successfully ===');
+    console.log('Record ID:', result.rows[0]?.id);
+    console.log('Session ID:', result.rows[0]?.session_id);
 
     res.status(201).json({
       message: 'Прогресс успешно сохранен',
@@ -106,7 +116,9 @@ router.get('/complex/:complex_id', async (req, res) => {
          COUNT(*) as total_logs,
          COUNT(*) FILTER (WHERE completed = true) as completed_count,
          AVG(pain_level) FILTER (WHERE pain_level IS NOT NULL) as avg_pain_level,
-         AVG(difficulty_rating) FILTER (WHERE difficulty_rating IS NOT NULL) as avg_difficulty
+         AVG(difficulty_rating) FILTER (WHERE difficulty_rating IS NOT NULL) as avg_difficulty,
+         COUNT(DISTINCT session_id) FILTER (WHERE session_id IS NOT NULL) as total_sessions,
+         COUNT(DISTINCT DATE(completed_at)) as unique_days
        FROM progress_logs
        WHERE complex_id = $1`,
       [complex_id]
