@@ -1,0 +1,47 @@
+.edit-template-page .template-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: clamp(12px, 2vw, 16px);
+}
+
+.edit-template-page .template-form-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+.edit-template-page .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-template-page .form-field label {
+  font-size: clamp(13px, 2vw, 14px);
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.edit-template-page .form-field input,
+.edit-template-page .form-field select,
+.edit-template-page .form-field textarea {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px);
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: clamp(14px, 2vw, 15px);
+  font-family: inherit;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.edit-template-page .form-field textarea {
+  min-height: clamp(90px, 15vw, 120px);
+  resize: vertical;
+}
+
+.edit-template-page .form-field input:focus,
+.edit-template-page .form-field select:focus,
+.edit-template-page .form-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}

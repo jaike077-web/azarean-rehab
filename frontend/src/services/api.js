@@ -150,7 +150,7 @@ export const diagnoses = {
 };
 
 export const templates = {
-  getAll: () => api.get('/templates'),
+  getAll: (params = {}) => api.get('/templates', { params }),
   getById: (id) => api.get(`/templates/${id}`),
   create: (data) => api.post('/templates', data),
   update: (id, data) => api.put(`/templates/${id}`, data),
