@@ -101,6 +101,8 @@ CREATE TABLE progress_logs (
     id SERIAL PRIMARY KEY,
     complex_id INTEGER REFERENCES complexes(id) ON DELETE CASCADE,
     exercise_id INTEGER REFERENCES exercises(id) ON DELETE CASCADE,
+    session_id BIGINT,
+    session_comment TEXT,
     completed BOOLEAN DEFAULT false,
     pain_level INTEGER CHECK (pain_level >= 0 AND pain_level <= 10),
     difficulty_rating INTEGER CHECK (difficulty_rating >= 1 AND difficulty_rating <= 10),
@@ -121,6 +123,7 @@ CREATE INDEX idx_complexes_token ON complexes(access_token);
 CREATE INDEX idx_complex_exercises_complex ON complex_exercises(complex_id);
 CREATE INDEX idx_progress_complex ON progress_logs(complex_id);
 CREATE INDEX idx_progress_exercise ON progress_logs(exercise_id);
+CREATE INDEX idx_progress_logs_session_id ON progress_logs(session_id);
 
 -- Добавим базовые диагнозы
 INSERT INTO diagnoses (name, category, description, recommendations, warnings) VALUES
