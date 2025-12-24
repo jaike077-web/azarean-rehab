@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { complexes, templates } from '../services/api';
 import './MyComplexes.css';
 import BackButton from '../components/BackButton';
@@ -25,6 +25,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { ComplexesPageSkeleton } from '../components/Skeleton';
+import TemplateViewModal from '../components/TemplateViewModal';
+import DeleteTemplateModal from '../components/DeleteTemplateModal';
 
 
 function MyComplexes() {
@@ -43,17 +45,24 @@ const [searchTerm, setSearchTerm] = useState('');
 const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, name_asc, name_desc
 const [activeTab, setActiveTab] = useState('complexes'); // complexes, templates
 const [templatesList, setTemplatesList] = useState([]);
-const [showTemplateModal, setShowTemplateModal] = useState(false);
-const [selectedTemplate, setSelectedTemplate] = useState(null);
-const [templateExercises, setTemplateExercises] = useState([]);
-const [showEditTemplateModal, setShowEditTemplateModal] = useState(false);
-const [editTemplateName, setEditTemplateName] = useState('');
-const [editTemplateDescription, setEditTemplateDescription] = useState('');
+const [viewTemplateId, setViewTemplateId] = useState(null);
+const [viewTemplateModalOpen, setViewTemplateModalOpen] = useState(false);
+const [deleteTemplateModalOpen, setDeleteTemplateModalOpen] = useState(false);
+const [templateToDelete, setTemplateToDelete] = useState(null);
+const location = useLocation();
 
 useEffect(() => {
   loadComplexes();
   loadTemplates();
 }, []);
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const tab = params.get('tab');
+  if (tab === 'templates' || tab === 'complexes') {
+    setActiveTab(tab);
+  }
+}, [location.search]);
 
 // Сброс страницы при изменении поиска
 useEffect(() => {
@@ -76,62 +85,35 @@ useEffect(() => {
   const loadTemplates = async () => {
     try {
       const response = await templates.getAll();
-      setTemplatesList(response.data.templates || []);
+      const data = response.data?.items || response.data?.templates || response.data || [];
+      setTemplatesList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Ошибка загрузки шаблонов:', err);
     }
   };
 
 
-  const handleViewTemplate = async (template) => {
-    try {
-      setSelectedTemplate(template);
-      const response = await templates.getById(template.id);
-      setTemplateExercises(response.data.exercises || []);
-      setShowTemplateModal(true);
-    } catch (err) {
-      console.error('Ошибка загрузки шаблона:', err);
-      toast.error('Не удалось загрузить шаблон');
-    }
+  const handleViewTemplate = (template) => {
+    setViewTemplateId(template.id);
+    setViewTemplateModalOpen(true);
   };
 
 
   const handleEditTemplate = (template) => {
-    setSelectedTemplate(template);
-    setEditTemplateName(template.name);
-    setEditTemplateDescription(template.description || '');
-    setShowEditTemplateModal(true);
-  };
-
-  const handleSaveTemplate = async () => {
-    if (!editTemplateName.trim()) {
-      toast.error('Введите название шаблона');
-      return;
-    }
-    try {
-      await templates.update(selectedTemplate.id, {
-        name: editTemplateName.trim(),
-        description: editTemplateDescription.trim() || null
-      });
-      toast.success('Шаблон обновлён');
-      setShowEditTemplateModal(false);
-      loadTemplates();
-    } catch (err) {
-      toast.error('Не удалось обновить шаблон');
-    }
+    navigate(`/templates/${template.id}/edit`);
   };
 
 
 
-  const handleDeleteTemplate = async (id) => {
-    if (!window.confirm('Удалить шаблон?')) return;
-    try {
-      await templates.delete(id);
-      toast.success('Шаблон удалён');
-      loadTemplates();
-    } catch (err) {
-      toast.error('Не удалось удалить шаблон');
-    }
+  const handleDeleteTemplate = (template) => {
+    setTemplateToDelete(template);
+    setDeleteTemplateModalOpen(true);
+  };
+
+  const handleConfirmTemplateDelete = async () => {
+    setDeleteTemplateModalOpen(false);
+    setTemplateToDelete(null);
+    await loadTemplates();
   };
 
 
@@ -598,7 +580,7 @@ useEffect(() => {
 
   <button
     className="btn-delete icon-btn"
-    onClick={() => handleDeleteTemplate(template.id)}
+    onClick={() => handleDeleteTemplate(template)}
     title="Удалить"
     aria-label="Удалить"
     type="button"
@@ -708,129 +690,24 @@ useEffect(() => {
         </div>
       )}
 
-{/* Модальное окно просмотра шаблона */}
-{showTemplateModal && selectedTemplate && (
-        <div className="modal-overlay" onClick={() => setShowTemplateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>
-                <Folder size={24} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
-                Шаблон: {selectedTemplate.name}
-              </h2>
-              <button className="modal-close" onClick={() => setShowTemplateModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
+<TemplateViewModal
+  templateId={viewTemplateId}
+  isOpen={viewTemplateModalOpen}
+  onClose={() => {
+    setViewTemplateModalOpen(false);
+    setViewTemplateId(null);
+  }}
+/>
 
-            <div className="modal-body">
-              <div className="complex-info-block">
-                {selectedTemplate.description && (
-                  <div className="info-row">
-                    <span className="info-label">Описание:</span>
-                    <span className="info-value">{selectedTemplate.description}</span>
-                  </div>
-                )}
-                <div className="info-row">
-                  <span className="info-label">Диагноз:</span>
-                  <span className="info-value">{selectedTemplate.diagnosis_name || 'Не указан'}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">Упражнений:</span>
-                  <span className="info-value">{templateExercises.length}</span>
-                </div>
-              </div>
-
-              <div className="exercises-list-modal">
-                <h3>Упражнения:</h3>
-                {templateExercises.length === 0 ? (
-                  <p className="empty-text">Нет упражнений в шаблоне</p>
-                ) : (
-                  templateExercises.map((ex, index) => (
-                    <div key={ex.exercise_id || index} className="exercise-item-modal">
-                      <div className="exercise-number">{index + 1}</div>
-                      <div className="exercise-details-modal">
-                        <h4>{ex.title}</h4>
-                        <div className="exercise-params-modal">
-                          <span className="param-badge">
-                            <strong>Подходы:</strong> {ex.sets || '-'}
-                          </span>
-                          <span className="param-badge">
-                            <strong>Повторения:</strong> {ex.reps || '-'}
-                          </span>
-                          {ex.duration_seconds && (
-                            <span className="param-badge">
-                              <strong>Длительность:</strong> {ex.duration_seconds} сек
-                            </span>
-                          )}
-                        </div>
-                        {ex.notes && (
-                          <div className="exercise-notes">
-                            <strong>📝 Примечание:</strong> {ex.notes}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowTemplateModal(false)}>
-                Закрыть
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-{/* Модальное окно редактирования шаблона */}
-{showEditTemplateModal && selectedTemplate && (
-        <div className="modal-overlay" onClick={() => setShowEditTemplateModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>
-                <Edit2 size={24} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
-                Редактировать шаблон
-              </h2>
-              <button className="modal-close" onClick={() => setShowEditTemplateModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div className="form-field">
-                <label>Название шаблона *</label>
-                <input
-                  type="text"
-                  value={editTemplateName}
-                  onChange={(e) => setEditTemplateName(e.target.value)}
-                  placeholder="Введите название"
-                />
-              </div>
-              <div className="form-field">
-                <label>Описание</label>
-                <textarea
-                  value={editTemplateDescription}
-                  onChange={(e) => setEditTemplateDescription(e.target.value)}
-                  placeholder="Краткое описание шаблона..."
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowEditTemplateModal(false)}>
-                Отмена
-              </button>
-              <button className="btn-primary" onClick={handleSaveTemplate}>
-                Сохранить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+<DeleteTemplateModal
+  template={templateToDelete}
+  isOpen={deleteTemplateModalOpen}
+  onClose={() => {
+    setDeleteTemplateModalOpen(false);
+    setTemplateToDelete(null);
+  }}
+  onConfirm={handleConfirmTemplateDelete}
+/>
     </div>
   );
 }

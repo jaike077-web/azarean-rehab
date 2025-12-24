@@ -11,6 +11,7 @@ import PatientView from './pages/PatientView';
 import ViewProgress from './pages/ViewProgress';
 import MyComplexes from './pages/MyComplexes';
 import EditComplex from './pages/EditComplex';
+import EditTemplate from './pages/EditTemplate';
 import CreateComplex from './pages/CreateComplex';
 import Trash from './pages/Trash';
 
@@ -120,6 +121,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <EditComplex />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/templates/:id/edit" 
+        element={
+          <ProtectedRoute>
+            <EditTemplate />
           </ProtectedRoute>
         } 
       />

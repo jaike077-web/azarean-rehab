@@ -37,6 +37,7 @@ import {
   Folder,
 } from 'lucide-react';
 import './CreateComplex.css';
+import TemplateSelector from '../components/TemplateSelector';
 
 // Компонент для перетаскиваемого упражнения
 function SortableExercise({ exercise, onRemove, onUpdate }) {
@@ -160,11 +161,10 @@ function CreateComplex() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   // Шаблоны
-  const [templatesList, setTemplatesList] = useState([]);
-  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
 
@@ -349,36 +349,32 @@ function CreateComplex() {
   // ФУНКЦИИ ШАБЛОНОВ
   // =====================================================
   
-  const loadTemplates = async () => {
-    try {
-      const response = await templates.getAll();
-      setTemplatesList(response.data.templates || []);
-    } catch (err) {
-      console.error('Ошибка загрузки шаблонов:', err);
-      toast.error('Не удалось загрузить шаблоны');
-    }
-  };
-
   const loadTemplate = async (templateId) => {
     try {
       const response = await templates.getById(templateId);
       const templateExercises = response.data.exercises || [];
-      
-      // Преобразуем упражнения шаблона в формат selectedExercises
-      const exercisesToAdd = templateExercises.map(te => ({
-        id: te.exercise_id,
-        title: te.title,
-        body_region: te.body_region,
-        category: te.category,
-        sets: te.sets,
-        reps: te.reps,
-        duration_seconds: te.duration_seconds,
-        notes: te.notes
+      const exercisesToAdd = templateExercises.map((exercise) => ({
+        id: exercise.exercise_id,
+        title: exercise.title,
+        body_region: exercise.body_region,
+        category: exercise.category,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        duration_seconds: exercise.duration_seconds,
+        rest_seconds: exercise.rest_seconds || 30,
+        notes: exercise.notes
       }));
-      
-      setSelectedExercises(exercisesToAdd);
-      setShowTemplatesModal(false);
-      toast.success(`Шаблон "${response.data.template.name}" загружен`);
+
+      const existingIds = new Set(selectedExercises.map((item) => item.id));
+      const uniqueExercises = exercisesToAdd.filter((exercise) => !existingIds.has(exercise.id));
+      if (uniqueExercises.length === 0) {
+        toast.warning('Все упражнения из шаблона уже добавлены');
+      } else {
+        setSelectedExercises([...selectedExercises, ...uniqueExercises]);
+        toast.success(`Добавлено упражнений: ${uniqueExercises.length}`);
+      }
+
+      setTemplateSelectorOpen(false);
     } catch (err) {
       console.error('Ошибка загрузки шаблона:', err);
       toast.error('Не удалось загрузить шаблон');
@@ -407,6 +403,7 @@ function CreateComplex() {
           sets: ex.sets || 3,
           reps: ex.reps || 10,
           duration_seconds: ex.duration_seconds || null,
+          rest_seconds: ex.rest_seconds || 30,
           notes: ex.notes || null
         }))
       };
@@ -423,8 +420,7 @@ function CreateComplex() {
   };
 
   const openTemplatesModal = () => {
-    loadTemplates();
-    setShowTemplatesModal(true);
+    setTemplateSelectorOpen(true);
   };
 
   const stepLabels = [
@@ -603,7 +599,7 @@ function CreateComplex() {
           <div className="section-header">
   <h2><Search size={20} /> Упражнения</h2>
   <button className="btn-template" onClick={openTemplatesModal}>
-    <Folder size={16} /> Загрузить шаблон
+    <Folder size={16} /> Загрузить из шаблона
   </button>
 </div>
             <div className="search-filters">
@@ -766,46 +762,12 @@ function CreateComplex() {
       )}
 
 {/* Модалка выбора шаблона */}
-{showTemplatesModal && (
-  <div className="modal-overlay" onClick={() => setShowTemplatesModal(false)}>
-    <div className="modal-content templates-modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
-        <h3><Folder size={20} /> Выбрать шаблон</h3>
-        <button className="modal-close" onClick={() => setShowTemplatesModal(false)}>
-          <X size={20} />
-        </button>
-      </div>
-      <div className="modal-body">
-        {templatesList.length === 0 ? (
-          <div className="empty-templates">
-            <p>У вас пока нет сохранённых шаблонов</p>
-            <span>Создайте комплекс и сохраните его как шаблон</span>
-          </div>
-        ) : (
-          <div className="templates-list">
-            {templatesList.map(template => (
-              <div 
-                key={template.id} 
-                className="template-item"
-                onClick={() => loadTemplate(template.id)}
-              >
-                <div className="template-info">
-                  <strong>{template.name}</strong>
-                  {template.description && <p>{template.description}</p>}
-                  <span className="template-meta">
-                    {template.exercises_count} упражнений
-                    {template.diagnosis_name && ` • ${template.diagnosis_name}`}
-                  </span>
-                </div>
-                <ChevronRight size={20} className="template-arrow" />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+<TemplateSelector
+  isOpen={templateSelectorOpen}
+  onClose={() => setTemplateSelectorOpen(false)}
+  onSelect={loadTemplate}
+  diagnosisId={selectedDiagnosis?.id || null}
+/>
 
 {/* Модалка сохранения шаблона */}
 {showSaveTemplateModal && (

@@ -15,6 +15,15 @@ router.use(authenticateToken);
 // =====================================================
 router.get('/', async (req, res) => {
   try {
+    const { diagnosis_id } = req.query;
+    const params = [req.user.id];
+    let diagnosisFilter = '';
+
+    if (diagnosis_id) {
+      params.push(diagnosis_id);
+      diagnosisFilter = ` AND t.diagnosis_id = $${params.length}`;
+    }
+
     const result = await query(`
       SELECT 
         t.*,
@@ -23,10 +32,10 @@ router.get('/', async (req, res) => {
       FROM templates t
       LEFT JOIN diagnoses d ON t.diagnosis_id = d.id
       LEFT JOIN template_exercises te ON t.id = te.template_id
-      WHERE t.created_by = $1
+      WHERE t.created_by = $1${diagnosisFilter}
       GROUP BY t.id, d.name
       ORDER BY t.created_at DESC
-    `, [req.user.id]);
+    `, params);
 
     res.json({ templates: result.rows });
   } catch (err) {
@@ -102,8 +111,8 @@ router.post('/', async (req, res) => {
       const ex = exercises[i];
       await query(`
         INSERT INTO template_exercises 
-        (template_id, exercise_id, order_number, sets, reps, duration_seconds, notes)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        (template_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `, [
         template.id,
         ex.exercise_id,
@@ -111,6 +120,7 @@ router.post('/', async (req, res) => {
         ex.sets || 3,
         ex.reps || 10,
         ex.duration_seconds || null,
+        ex.rest_seconds ?? 30,
         ex.notes || null
       ]);
     }
@@ -160,8 +170,8 @@ router.put('/:id', async (req, res) => {
         const ex = exercises[i];
         await query(`
           INSERT INTO template_exercises 
-          (template_id, exercise_id, order_number, sets, reps, duration_seconds, notes)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          (template_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `, [
           id,
           ex.exercise_id,
@@ -169,6 +179,7 @@ router.put('/:id', async (req, res) => {
           ex.sets || 3,
           ex.reps || 10,
           ex.duration_seconds || null,
+          ex.rest_seconds ?? 30,
           ex.notes || null
         ]);
       }
