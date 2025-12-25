@@ -2,11 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity,
-  AlertCircle,
   BarChart3,
   Calendar,
-  CheckCircle,
   ChevronRight,
+  TrendingDown,
   User,
 } from 'lucide-react';
 import { patients } from '../services/api';
@@ -15,15 +14,15 @@ import './ProgressDashboard.css';
 
 const getPainStatus = (avgPain) => {
   if (avgPain == null) {
-    return { color: 'gray', text: 'Нет данных', icon: AlertCircle };
+    return { color: 'gray', text: 'Нет данных' };
   }
   if (avgPain <= 3) {
-    return { color: 'green', text: 'Отлично', icon: CheckCircle };
+    return { color: 'green', text: 'Отлично' };
   }
   if (avgPain <= 6) {
-    return { color: 'yellow', text: 'Средне', icon: AlertCircle };
+    return { color: 'yellow', text: 'Средне' };
   }
-  return { color: 'red', text: 'Высокая', icon: AlertCircle };
+  return { color: 'red', text: 'Высокая' };
 };
 
 const getActivityStatus = (lastActivity, sessionsLastWeek) => {
@@ -290,7 +289,6 @@ function ProgressDashboard() {
               patient.last_activity,
               patient.sessions_last_week
             );
-            const PainIcon = painStatus.icon;
 
             return (
               <div
@@ -354,7 +352,7 @@ function ProgressDashboard() {
 
                 {patient.avg_pain !== null && (
                   <div className={`pain-indicator ${painStatus.color}`}>
-                    <PainIcon size={16} />
+                    <TrendingDown size={16} />
                     <span>Боль: {patient.avg_pain.toFixed(1)}/10</span>
                     <span className="pain-status">{painStatus.text}</span>
                   </div>
