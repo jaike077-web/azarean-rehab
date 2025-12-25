@@ -589,4 +589,40 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/complexes/:id/exercises
+router.get('/:id/exercises', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const query = `
+      SELECT 
+        ce.exercise_id,
+        ce.order_number,
+        ce.sets,
+        ce.reps,
+        ce.duration_seconds,
+        ce.rest_seconds,
+        e.title,
+        e.body_region,
+        e.video_url
+      FROM complex_exercises ce
+      JOIN exercises e ON ce.exercise_id = e.id
+      WHERE ce.complex_id = $1
+      ORDER BY ce.order_number ASC
+    `;
+    
+    const result = await pool.query(query, [id]);
+    
+    res.json({
+      complexId: parseInt(id, 10),
+      exercises: result.rows
+    });
+    
+  } catch (error) {
+    console.error('Error fetching complex exercises:', error);
+    res.status(500).json({ error: 'Failed to fetch complex exercises' });
+  }
+});
+
 module.exports = router;
+
