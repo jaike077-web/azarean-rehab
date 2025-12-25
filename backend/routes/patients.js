@@ -59,6 +59,59 @@ router.get('/trash', authenticateToken, async (req, res) => {
   }
 });
 
+// Получить пациентов с прогрессом
+router.get('/with-progress', authenticateToken, async (req, res) => {
+  try {
+    const instructorId = req.user.id;
+
+    const result = await query(
+      `SELECT 
+         p.id,
+         p.full_name,
+         p.email,
+         p.phone,
+         p.created_at,
+         COUNT(DISTINCT c.id) as total_complexes,
+         COUNT(DISTINCT c.id) FILTER (WHERE c.is_active = true) as active_complexes,
+         COUNT(DISTINCT pl.session_id) FILTER (WHERE pl.session_id IS NOT NULL) as total_sessions,
+         COUNT(DISTINCT DATE(pl.completed_at)) as training_days,
+         AVG(pl.pain_level) FILTER (WHERE pl.pain_level IS NOT NULL) as avg_pain,
+         AVG(pl.difficulty_rating) FILTER (WHERE pl.difficulty_rating IS NOT NULL) as avg_difficulty,
+         MAX(pl.completed_at) as last_activity,
+         COUNT(pl.id) FILTER (WHERE pl.completed_at > NOW() - INTERVAL '7 days') as sessions_last_week
+       FROM patients p
+       LEFT JOIN complexes c ON p.id = c.patient_id
+       LEFT JOIN progress_logs pl ON c.id = pl.complex_id
+       WHERE p.created_by = $1
+       GROUP BY p.id
+       ORDER BY last_activity DESC NULLS LAST, p.created_at DESC`,
+      [instructorId]
+    );
+
+    const patients = result.rows.map((row) => ({
+      id: row.id,
+      full_name: row.full_name,
+      email: row.email,
+      phone: row.phone,
+      created_at: row.created_at,
+      total_complexes: parseInt(row.total_complexes, 10) || 0,
+      active_complexes: parseInt(row.active_complexes, 10) || 0,
+      total_sessions: parseInt(row.total_sessions, 10) || 0,
+      training_days: parseInt(row.training_days, 10) || 0,
+      avg_pain: row.avg_pain !== null ? parseFloat(row.avg_pain) : null,
+      avg_difficulty: row.avg_difficulty !== null ? parseFloat(row.avg_difficulty) : null,
+      last_activity: row.last_activity,
+      sessions_last_week: parseInt(row.sessions_last_week, 10) || 0,
+      has_progress: parseInt(row.total_sessions, 10) > 0
+    }));
+
+    res.json(patients);
+  } catch (error) {
+    console.error('Ошибка получения пациентов с прогрессом:', error);
+    res.status(500).json({ error: 'Failed to fetch patients' });
+  }
+});
+
 // Получить одного пациента
 router.get('/:id', authenticateToken, async (req, res) => {
   try {

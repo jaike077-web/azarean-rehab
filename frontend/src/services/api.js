@@ -58,6 +58,7 @@ export const patients = {
   getTrash: () => api.get('/patients/trash'),
   restore: (id) => api.patch(`/patients/${id}/restore`),
   deletePermanent: (id) => api.delete(`/patients/${id}/permanent`),
+  getWithProgress: () => api.get('/patients/with-progress'),
 };
 
 
