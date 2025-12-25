@@ -68,7 +68,7 @@ router.get('/', authenticateToken, async (req, res) => {
       limit = 50
     } = req.query;
 
-    let query = `
+    let queryText = `
       SELECT 
         id,
         title,
@@ -94,21 +94,21 @@ router.get('/', authenticateToken, async (req, res) => {
     // Поиск по названию
     if (search) {
       paramCount++;
-      query += ` AND title ILIKE $${paramCount}`;
+      queryText += ` AND title ILIKE $${paramCount}`;
       values.push(`%${search}%`);
     }
 
     // Фильтр по региону тела
     if (body_region) {
       paramCount++;
-      query += ` AND body_region = $${paramCount}`;
+      queryText += ` AND body_region = $${paramCount}`;
       values.push(body_region);
     }
 
     // Фильтр по сложности
     if (difficulty) {
       paramCount++;
-      query += ` AND difficulty_level = $${paramCount}`;
+      queryText += ` AND difficulty_level = $${paramCount}`;
       values.push(parseInt(difficulty));
     }
 
@@ -116,7 +116,7 @@ router.get('/', authenticateToken, async (req, res) => {
     if (equipment) {
       const equipmentArray = Array.isArray(equipment) ? equipment : [equipment];
       paramCount++;
-      query += ` AND equipment ?| $${paramCount}`;
+      queryText += ` AND equipment ?| $${paramCount}`;
       values.push(equipmentArray);
     }
 
@@ -124,54 +124,54 @@ router.get('/', authenticateToken, async (req, res) => {
     if (position) {
       const positionArray = Array.isArray(position) ? position : [position];
       paramCount++;
-      query += ` AND position ?| $${paramCount}`;
+      queryText += ` AND position ?| $${paramCount}`;
       values.push(positionArray);
     }
 
     // Фильтр по фазе реабилитации (JSONB contains)
     if (rehab_phase) {
       paramCount++;
-      query += ` AND rehab_phases @> $${paramCount}`;
+      queryText += ` AND rehab_phases @> $${paramCount}`;
       values.push(JSON.stringify([rehab_phase]));
     }
 
     // Сортировка
-    query += ' ORDER BY title ASC';
+    queryText += ' ORDER BY title ASC';
 
     // Пагинация
     const offset = (page - 1) * limit;
     paramCount++;
-    query += ` LIMIT $${paramCount}`;
+    queryText += ` LIMIT $${paramCount}`;
     values.push(limit);
     
     paramCount++;
-    query += ` OFFSET $${paramCount}`;
+    queryText += ` OFFSET $${paramCount}`;
     values.push(offset);
 
-    const result = await query(query, values);
+    const result = await query(queryText, values);
 
     // Подсчет общего количества (для пагинации)
-    let countQuery = 'SELECT COUNT(*) FROM exercises WHERE is_active = true';
+    let countQueryText = 'SELECT COUNT(*) FROM exercises WHERE is_active = true';
     const countValues = [];
     let countParamCount = 0;
 
     if (search) {
       countParamCount++;
-      countQuery += ` AND title ILIKE $${countParamCount}`;
+      countQueryText += ` AND title ILIKE $${countParamCount}`;
       countValues.push(`%${search}%`);
     }
     if (body_region) {
       countParamCount++;
-      countQuery += ` AND body_region = $${countParamCount}`;
+      countQueryText += ` AND body_region = $${countParamCount}`;
       countValues.push(body_region);
     }
     if (difficulty) {
       countParamCount++;
-      countQuery += ` AND difficulty_level = $${countParamCount}`;
+      countQueryText += ` AND difficulty_level = $${countParamCount}`;
       countValues.push(parseInt(difficulty));
     }
 
-    const countResult = await query(countQuery, countValues);
+    const countResult = await query(countQueryText, countValues);
     const total = parseInt(countResult.rows[0].count);
 
     res.json({
