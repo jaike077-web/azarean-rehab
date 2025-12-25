@@ -141,6 +141,22 @@ export const exercises = {
   getPresets: (exerciseId) => api.get(`/exercises/${exerciseId}/presets`)
 };
 
+export const importAPI = {
+  kinescopePreview: () => api.get('/import/kinescope/preview'),
+
+  kinescopeExecute: (videoIds) => api.post('/import/kinescope/execute', { videoIds }),
+
+  csvImport: (formData) =>
+    api.post('/import/csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  downloadTemplate: () =>
+    api.get('/import/csv/template', {
+      responseType: 'blob',
+    }),
+};
+
 export default api;
 
 export const diagnoses = {

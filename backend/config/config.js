@@ -31,6 +31,8 @@ const config = {
   // Kinescope
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
+    projectId: process.env.KINESCOPE_PROJECT_ID,
+    apiUrl: 'https://api.kinescope.io/v1',
   },
 };
 

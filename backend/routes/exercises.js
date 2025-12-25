@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { pool } = require('../database/db');
+const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 
 // ========================================
@@ -148,7 +148,7 @@ router.get('/', authenticateToken, async (req, res) => {
     query += ` OFFSET $${paramCount}`;
     values.push(offset);
 
-    const result = await pool.query(query, values);
+    const result = await query(query, values);
 
     // Подсчет общего количества (для пагинации)
     let countQuery = 'SELECT COUNT(*) FROM exercises WHERE is_active = true';
@@ -171,7 +171,7 @@ router.get('/', authenticateToken, async (req, res) => {
       countValues.push(parseInt(difficulty));
     }
 
-    const countResult = await pool.query(countQuery, countValues);
+    const countResult = await query(countQuery, countValues);
     const total = parseInt(countResult.rows[0].count);
 
     res.json({
@@ -195,7 +195,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
 router.get('/stats/summary', authenticateToken, async (req, res) => {
   try {
-    const stats = await pool.query(`
+    const stats = await query(`
       SELECT 
         COUNT(*) as total,
         COUNT(CASE WHEN body_region = 'shoulder' THEN 1 END) as shoulder_count,
@@ -222,7 +222,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
+    const result = await query(
       `SELECT * FROM exercises WHERE id = $1 AND is_active = true`,
       [id]
     );
@@ -352,7 +352,7 @@ router.post('/', authenticateToken, async (req, res) => {
     // ВСТАВКА В БД
     // ========================================
 
-    const result = await pool.query(
+    const result = await query(
       `INSERT INTO exercises (
         title,
         short_title,
@@ -410,6 +410,137 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // ========================================
+// POST /api/exercises/bulk - Массовое создание упражнений
+// ========================================
+
+router.post('/bulk', authenticateToken, async (req, res) => {
+  const client = await getClient();
+
+  try {
+    const { exercises } = req.body;
+
+    if (!Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({ error: 'Список упражнений обязателен' });
+    }
+
+    const results = {
+      created: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    await client.query('BEGIN');
+
+    for (const exercise of exercises) {
+      try {
+        const {
+          title,
+          video_url,
+          short_title,
+          description,
+          thumbnail_url,
+          exercise_type,
+          body_region,
+          difficulty_level = 1,
+          equipment = [],
+          position = [],
+          rehab_phases = [],
+          instructions,
+          cues,
+          tips,
+          contraindications,
+          absolute_contraindications,
+          red_flags,
+          safe_with_inflammation = false,
+        } = exercise;
+
+        if (!title || !title.trim()) {
+          throw new Error('Название упражнения обязательно');
+        }
+
+        if (!video_url || !video_url.trim()) {
+          throw new Error('Ссылка на видео обязательна');
+        }
+
+        try {
+          new URL(video_url);
+        } catch (error) {
+          throw new Error('Некорректная ссылка на видео');
+        }
+
+        await client.query(
+          `INSERT INTO exercises (
+            title,
+            short_title,
+            description,
+            video_url,
+            thumbnail_url,
+            exercise_type,
+            body_region,
+            difficulty_level,
+            equipment,
+            position,
+            rehab_phases,
+            instructions,
+            cues,
+            tips,
+            contraindications,
+            absolute_contraindications,
+            red_flags,
+            safe_with_inflammation,
+            created_by
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+          )`,
+          [
+            title.trim(),
+            short_title?.trim() || null,
+            description?.trim() || null,
+            video_url.trim(),
+            thumbnail_url?.trim() || null,
+            exercise_type || null,
+            body_region || null,
+            difficulty_level,
+            JSON.stringify(Array.isArray(equipment) ? equipment : []),
+            JSON.stringify(Array.isArray(position) ? position : []),
+            JSON.stringify(Array.isArray(rehab_phases) ? rehab_phases : []),
+            instructions?.trim() || null,
+            cues?.trim() || null,
+            tips?.trim() || null,
+            contraindications?.trim() || null,
+            absolute_contraindications?.trim() || null,
+            red_flags?.trim() || null,
+            safe_with_inflammation,
+            req.user.id,
+          ]
+        );
+
+        results.created += 1;
+      } catch (error) {
+        results.failed += 1;
+        results.errors.push({
+          title: exercise?.title || 'Без названия',
+          error: error.message,
+        });
+      }
+    }
+
+    await client.query('COMMIT');
+
+    res.status(201).json({
+      message: 'Импорт завершен',
+      results,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating exercises in bulk:', error);
+    res.status(500).json({ error: 'Ошибка при массовом создании упражнений' });
+  } finally {
+    client.release();
+  }
+});
+
+// ========================================
 // PUT /api/exercises/:id - Обновление упражнения
 // ========================================
 
@@ -453,7 +584,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Проверка существования упражнения
-    const existing = await pool.query(
+    const existing = await query(
       'SELECT id, thumbnail_url, video_url FROM exercises WHERE id = $1 AND is_active = true',
       [id]
     );
@@ -501,7 +632,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     // Обновление
-    const result = await pool.query(
+    const result = await query(
       `UPDATE exercises SET
         title = $1,
         short_title = $2,
@@ -566,7 +697,7 @@ router.post('/:id/fetch-thumbnail', authenticateToken, async (req, res) => {
     const { id } = req.params;
 
     // Получаем упражнение
-    const existing = await pool.query(
+    const existing = await query(
       'SELECT id, video_url, thumbnail_url FROM exercises WHERE id = $1 AND is_active = true',
       [id]
     );
@@ -615,7 +746,7 @@ router.post('/:id/fetch-thumbnail', authenticateToken, async (req, res) => {
     }
 
     // Обновляем в БД
-    await pool.query(
+    await query(
       'UPDATE exercises SET thumbnail_url = $1, updated_at = NOW() WHERE id = $2',
       [thumbnailUrl, id]
     );
@@ -647,7 +778,7 @@ router.post('/fetch-all-thumbnails', authenticateToken, async (req, res) => {
     }
 
     // Получаем все упражнения без thumbnail с Kinescope видео
-    const exercises = await pool.query(`
+    const exercises = await query(`
       SELECT id, video_url 
       FROM exercises 
       WHERE is_active = true 
@@ -682,7 +813,7 @@ router.post('/fetch-all-thumbnails', authenticateToken, async (req, res) => {
                                data.data?.poster?.md;
 
           if (thumbnailUrl) {
-            await pool.query(
+            await query(
               'UPDATE exercises SET thumbnail_url = $1, updated_at = NOW() WHERE id = $2',
               [thumbnailUrl, exercise.id]
             );
@@ -727,7 +858,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Недостаточно прав' });
     }
 
-    const result = await pool.query(
+    const result = await query(
       'UPDATE exercises SET is_active = false, updated_at = NOW() WHERE id = $1 RETURNING id',
       [id]
     );

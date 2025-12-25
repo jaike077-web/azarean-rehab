@@ -5,6 +5,7 @@ import Patients from './Patients';
 import CreateComplex from './CreateComplex';
 import MyComplexes from './MyComplexes';
 import Trash from './Trash';
+import ImportExercises from './ImportExercises';
 import './Dashboard.css';
 import Diagnoses from './Diagnoses';
 import {
@@ -20,6 +21,7 @@ import {
   UserPlus,
   HeartHandshake,
   FileText,
+  Upload,
 } from 'lucide-react';
 
 function Dashboard() {
@@ -89,8 +91,10 @@ function Dashboard() {
         return <CreateComplex />;
       case 'my-complexes':
         return <MyComplexes />;
-        case 'diagnoses':  // ✅ ДОБАВЬ ЭТОТ БЛОК
-      return <Diagnoses />;
+      case 'diagnoses':
+        return <Diagnoses />;
+      case 'import':
+        return <ImportExercises />;
       case 'trash':
         return <Trash />;
       case 'settings':
@@ -276,6 +280,14 @@ function Dashboard() {
           >
             <ClipboardList className="nav-icon" size={18} />
             <span>Мои комплексы</span>
+          </button>
+
+          <button 
+            className={`nav-item ${activeTab === 'import' ? 'active' : ''}`}
+            onClick={() => handleNavClick('import')}
+          >
+            <Upload className="nav-icon" size={18} />
+            <span>Импорт упражнений</span>
           </button>
 
           <button 
