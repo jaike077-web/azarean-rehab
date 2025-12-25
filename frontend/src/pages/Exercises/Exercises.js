@@ -6,7 +6,8 @@ import ExerciseCard from './components/ExerciseCard';
 import ExerciseModal from './components/ExerciseModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
 import './Exercises.css';
-import { ExercisesPageSkeleton } from '../../components/Skeleton';
+import { Skeleton } from '../../components/Skeleton';
+import ExerciseCardSkeleton from '../../components/skeletons/ExerciseCardSkeleton';
 
 function Exercises() {
   const navigate = useNavigate();
@@ -161,7 +162,31 @@ function Exercises() {
   };
 
   if (loading) {
-    return <ExercisesPageSkeleton count={6} />;
+    return (
+      <div className="exercises-page">
+        <div className="exercises-page-header">
+          <div className="header-left">
+            <Skeleton width="180px" height="32px" />
+            <Skeleton width="240px" height="18px" style={{ marginTop: '10px' }} />
+          </div>
+          <div className="header-actions">
+            <Skeleton width="140px" height="42px" borderRadius="10px" />
+          </div>
+        </div>
+        <div className="exercises-content">
+          <div className="filters-row">
+            <Skeleton width="220px" height="40px" borderRadius="8px" />
+            <Skeleton width="160px" height="40px" borderRadius="8px" />
+            <Skeleton width="160px" height="40px" borderRadius="8px" />
+          </div>
+          <div className="exercises-grid">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <ExerciseCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {

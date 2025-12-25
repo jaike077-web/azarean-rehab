@@ -38,6 +38,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import './EditComplex.css';
+import { Skeleton } from '../components/Skeleton';
+import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
 
 // Компонент для перетаскиваемого упражнения
 function SortableExercise({ exercise, onRemove, onUpdate }) {
@@ -131,6 +133,7 @@ function EditComplex() {
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
+  const [exercisesLoading, setExercisesLoading] = useState(true);
 
   // Определяем, есть ли вообще тач
   const isTouchDevice =
@@ -209,10 +212,13 @@ function EditComplex() {
 
   const loadExercises = async () => {
     try {
+      setExercisesLoading(true);
       const response = await exercises.getAll();
       setAvailableExercises(response.data.exercises);
     } catch (err) {
       console.error('Ошибка загрузки упражнений:', err);
+    } finally {
+      setExercisesLoading(false);
     }
   };
 
@@ -294,7 +300,44 @@ function EditComplex() {
   );
 
   if (loading) {
-    return <div className="loading">Загрузка комплекса...</div>;
+    return (
+      <div className="edit-complex-page">
+        <div className="page-header">
+          <Skeleton width="260px" height="32px" />
+          <Skeleton width="200px" height="18px" style={{ marginTop: '10px' }} />
+        </div>
+        <div className="complex-form">
+          <div className="form-section">
+            <Skeleton width="180px" height="20px" />
+            <Skeleton width="100%" height="120px" style={{ marginTop: '12px' }} borderRadius="12px" />
+          </div>
+          <div className="form-section">
+            <Skeleton width="220px" height="20px" />
+            <div className="selected-exercises-list">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="selected-exercise">
+                  <Skeleton width="32px" height="32px" borderRadius="8px" />
+                  <div className="exercise-info">
+                    <Skeleton width="60%" height="16px" />
+                    <Skeleton width="40%" height="14px" style={{ marginTop: '6px' }} />
+                  </div>
+                  <Skeleton width="120px" height="32px" borderRadius="8px" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="form-section">
+            <Skeleton width="200px" height="20px" />
+            <Skeleton width="100%" height="40px" borderRadius="8px" style={{ marginTop: '12px' }} />
+            <div className="available-exercises-grid" style={{ marginTop: '16px' }}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <ExerciseCardSkeleton key={index} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error && !loading) {
@@ -411,35 +454,39 @@ function EditComplex() {
           </div>
 
           <div className="available-exercises-grid">
-            {filteredExercises.map((exercise) => (
-              <div key={exercise.id} className="exercise-card-small">
-                <h4>{exercise.title}</h4>
-                <p>{exercise.description}</p>
-                {(exercise.category || exercise.difficulty) && (
-                  <div className="exercise-tags">
-                    {exercise.category && <span className="tag">{exercise.category}</span>}
-                    {exercise.difficulty && <span className="tag">{exercise.difficulty}</span>}
+            {exercisesLoading
+              ? Array.from({ length: 6 }).map((_, index) => (
+                  <ExerciseCardSkeleton key={index} />
+                ))
+              : filteredExercises.map((exercise) => (
+                  <div key={exercise.id} className="exercise-card-small">
+                    <h4>{exercise.title}</h4>
+                    <p>{exercise.description}</p>
+                    {(exercise.category || exercise.difficulty) && (
+                      <div className="exercise-tags">
+                        {exercise.category && <span className="tag">{exercise.category}</span>}
+                        {exercise.difficulty && <span className="tag">{exercise.difficulty}</span>}
+                      </div>
+                    )}
+                    <button
+                      className="btn-add-exercise"
+                      onClick={() => handleAddExercise(exercise)}
+                      disabled={selectedExercises.find(e => e.id === exercise.id)}
+                    >
+                      {selectedExercises.find(e => e.id === exercise.id) ? (
+                        <>
+                          <Check size={16} />
+                          <span>Добавлено</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={16} />
+                          <span>Добавить</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                )}
-                <button
-                  className="btn-add-exercise"
-                  onClick={() => handleAddExercise(exercise)}
-                  disabled={selectedExercises.find(e => e.id === exercise.id)}
-                >
-                  {selectedExercises.find(e => e.id === exercise.id) ? (
-                    <>
-                      <Check size={16} />
-                      <span>Добавлено</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus size={16} />
-                      <span>Добавить</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            ))}
+                ))}
           </div>
         </div>
 

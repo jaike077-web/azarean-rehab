@@ -1,0 +1,22 @@
+.complex-card-skeleton {
+  background: #ffffff;
+  border-radius: clamp(12px, 2vw, 16px);
+  padding: clamp(18px, 3vw, 24px);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.complex-card-skeleton .skeleton-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: clamp(12px, 2vw, 16px);
+  margin-bottom: clamp(10px, 2vw, 14px);
+}
+
+.complex-card-skeleton .skeleton-footer {
+  display: flex;
+  gap: clamp(10px, 2vw, 14px);
+  margin-top: clamp(18px, 3vw, 22px);
+  flex-wrap: wrap;
+}
