@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Patients from './pages/Patients';
 import PatientView from './pages/PatientView';
 import ViewProgress from './pages/ViewProgress';
+import PatientProgress from './pages/PatientProgress';
 import MyComplexes from './pages/MyComplexes';
 import EditComplex from './pages/EditComplex';
 import EditTemplate from './pages/EditTemplate';
@@ -142,6 +143,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ViewProgress />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/patient-progress/:patientId" 
+        element={
+          <ProtectedRoute>
+            <PatientProgress />
           </ProtectedRoute>
         } 
       />

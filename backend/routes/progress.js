@@ -166,4 +166,82 @@ router.get('/exercise/:exercise_id/complex/:complex_id', async (req, res) => {
   }
 });
 
+// Получить общий прогресс пациента по всем комплексам
+router.get('/patient/:patientId', async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const complexesQuery = `
+      SELECT 
+        c.id,
+        c.diagnosis_id,
+        c.is_active,
+        c.created_at,
+        d.name as diagnosis_name,
+        COUNT(DISTINCT pl.session_id) FILTER (WHERE pl.session_id IS NOT NULL) as total_sessions,
+        COUNT(pl.id) as total_logs,
+        COUNT(pl.id) FILTER (WHERE pl.completed = true) as completed_count,
+        AVG(pl.pain_level) FILTER (WHERE pl.pain_level IS NOT NULL) as avg_pain,
+        AVG(pl.difficulty_rating) FILTER (WHERE pl.difficulty_rating IS NOT NULL) as avg_difficulty,
+        MAX(pl.completed_at) as last_activity
+      FROM complexes c
+      LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+      LEFT JOIN progress_logs pl ON c.id = pl.complex_id
+      WHERE c.patient_id = $1
+      GROUP BY c.id, d.name
+      ORDER BY c.created_at DESC
+    `;
+
+    const complexesResult = await query(complexesQuery, [patientId]);
+
+    const patientQuery = `
+      SELECT id, full_name, email, phone, created_at
+      FROM patients
+      WHERE id = $1
+    `;
+    const patientResult = await query(patientQuery, [patientId]);
+
+    if (patientResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Patient not found' });
+    }
+
+    const overallStatsQuery = `
+      SELECT 
+        COUNT(DISTINCT pl.session_id) FILTER (WHERE pl.session_id IS NOT NULL) as total_sessions,
+        COUNT(DISTINCT DATE(pl.completed_at)) as unique_days,
+        COUNT(pl.id) as total_logs,
+        AVG(pl.pain_level) FILTER (WHERE pl.pain_level IS NOT NULL) as overall_avg_pain,
+        AVG(pl.difficulty_rating) FILTER (WHERE pl.difficulty_rating IS NOT NULL) as overall_avg_difficulty
+      FROM progress_logs pl
+      JOIN complexes c ON pl.complex_id = c.id
+      WHERE c.patient_id = $1
+    `;
+    const overallStatsResult = await query(overallStatsQuery, [patientId]);
+    const overallStatsRow = overallStatsResult.rows[0] || {};
+    const overallStats = {
+      total_sessions: parseInt(overallStatsRow.total_sessions, 10) || 0,
+      unique_days: parseInt(overallStatsRow.unique_days, 10) || 0,
+      total_logs: parseInt(overallStatsRow.total_logs, 10) || 0,
+      overall_avg_pain: parseFloat(overallStatsRow.overall_avg_pain) || 0,
+      overall_avg_difficulty: parseFloat(overallStatsRow.overall_avg_difficulty) || 0
+    };
+
+    res.json({
+      patient: patientResult.rows[0],
+      complexes: complexesResult.rows.map((row) => ({
+        ...row,
+        total_sessions: parseInt(row.total_sessions, 10) || 0,
+        total_logs: parseInt(row.total_logs, 10) || 0,
+        completed_count: parseInt(row.completed_count, 10) || 0,
+        avg_pain: parseFloat(row.avg_pain) || 0,
+        avg_difficulty: parseFloat(row.avg_difficulty) || 0
+      })),
+      overallStats
+    });
+  } catch (error) {
+    console.error('Error fetching patient progress:', error);
+    res.status(500).json({ error: 'Failed to fetch patient progress' });
+  }
+});
+
 module.exports = router;

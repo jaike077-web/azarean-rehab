@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { patients } from '../services/api';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -12,6 +13,7 @@ import {
   Search,
   AlertTriangle,
   ClipboardList,
+  BarChart3,
   Edit2,
   Trash2,
   Eye,
@@ -22,6 +24,7 @@ import {
 
 function Patients() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [patientsList, setPatientsList] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -545,6 +548,16 @@ function Patients() {
                       >
                         <ClipboardList className="btn-icon" size={16} />
                         <span>Комплексы</span>
+                      </button>
+                      <button
+                        className="btn-secondary"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/patient-progress/${patient.id}`);
+                        }}
+                      >
+                        <BarChart3 className="btn-icon" size={16} />
+                        <span>Прогресс</span>
                       </button>
                       <button
                         className="btn-secondary"

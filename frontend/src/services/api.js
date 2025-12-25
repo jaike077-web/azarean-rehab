@@ -81,6 +81,7 @@ export const progress = {
   create: (data) => axios.post(`${API_BASE_URL}/progress`, data), // БЕЗ авторизации (для пациента)
   getByComplex: (complexId) => axios.get(`${API_BASE_URL}/progress/complex/${complexId}`), // БЕЗ авторизации
   getByComplexAuth: (complexId) => api.get(`/progress/complex/${complexId}`), // С авторизацией (для инструктора)
+  getPatientProgress: (patientId) => api.get(`/progress/patient/${patientId}`),
 };
 
 // Dashboard статистика
