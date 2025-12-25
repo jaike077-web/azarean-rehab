@@ -21,19 +21,15 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   BookOpen,
   Check,
-  ClipboardList,
   Dumbbell,
-  Edit2,
   FileText,
   GripVertical,
-  LayoutDashboard,
   Plus,
   Save,
   Search,
   X,
 } from 'lucide-react';
 import { diagnoses, exercises, templates } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
 import './EditComplex.css';
@@ -329,46 +325,40 @@ function EditTemplate() {
     exercise.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const breadcrumbItems = [
+    { label: 'Шаблоны', path: '/my-complexes?tab=templates' },
+    {
+      label: templateName ? `Редактирование: ${templateName}` : 'Редактирование шаблона'
+    }
+  ];
+
   if (loading) {
-    return <div className="loading">Загрузка шаблона...</div>;
+    return (
+      <div className="edit-complex-page edit-template-page">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="loading">Загрузка шаблона...</div>
+      </div>
+    );
   }
 
   if (loadError && !loading) {
     return (
-      <div className="error-view">
-        <h2>Ошибка</h2>
-        <p>{loadError}</p>
-        <button className="btn-primary" onClick={() => navigate('/my-complexes?tab=templates')}>
-          Вернуться к шаблонам
-        </button>
+      <div className="edit-complex-page edit-template-page">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="error-view">
+          <h2>Ошибка</h2>
+          <p>{loadError}</p>
+          <button className="btn-primary" onClick={() => navigate('/my-complexes?tab=templates')}>
+            Вернуться к шаблонам
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="edit-complex-page edit-template-page">
-      <Breadcrumbs
-        items={[
-          {
-            icon: <LayoutDashboard size={16} />,
-            label: 'Главная',
-            path: '/dashboard',
-          },
-          {
-            icon: <ClipboardList size={16} />,
-            label: 'Мои комплексы',
-            path: '/my-complexes?tab=templates',
-          },
-          {
-            icon: <Edit2 size={16} />,
-            label: 'Редактирование шаблона',
-          },
-        ]}
-      />
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes?tab=templates" label="К списку шаблонов" />
-      </div>
+      <Breadcrumbs items={breadcrumbItems} />
 
       <div className="page-header">
         <h1>

@@ -1,47 +1,59 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ChevronRight, Home } from 'lucide-react';
 import './Breadcrumbs.css';
 
-function Breadcrumbs({ items = [] }) {
-  if (!items.length) return null;
+const Breadcrumbs = ({ items = [], showHome = true }) => {
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    navigate(-1);
+  };
 
   return (
-    <nav className="breadcrumbs">
-      {items.map((item, index) => {
-        const isLast = index === items.length - 1;
+    <nav className="breadcrumbs" aria-label="Breadcrumb navigation">
+      <button
+        className="breadcrumb-back"
+        onClick={handleBack}
+        type="button"
+        aria-label="Назад"
+      >
+        <ArrowLeft size={16} aria-hidden="true" />
+        <span>Назад</span>
+      </button>
 
-        const content = (
-          <>
-            {item.icon && (
-              <span className="crumb-icon">
-                {item.icon}
-              </span>
-            )}
-            <span className="crumb-label">{item.label}</span>
-          </>
-        );
+      <ol className="breadcrumb-list">
+        {showHome && (
+          <li className="breadcrumb-item">
+            <Link to="/dashboard" className="breadcrumb-link">
+              <Home size={16} aria-hidden="true" />
+              <span>Главная</span>
+            </Link>
+          </li>
+        )}
 
-        return (
-          <span
-            key={index}
-            className={`crumb-item ${isLast ? 'active' : ''}`}
-          >
-            {!isLast && item.path ? (
-              <Link to={item.path}>
-                {content}
-              </Link>
-            ) : (
-              content
-            )}
-
-            {!isLast && (
-              <span className="crumb-separator">/</span>
-            )}
-          </span>
-        );
-      })}
+        {items.map((item, index) => {
+          const isLast = index === items.length - 1;
+          return (
+            <li key={`${item.label}-${index}`} className="breadcrumb-item">
+              <ChevronRight size={16} className="breadcrumb-separator" aria-hidden="true" />
+              {item.path && !isLast ? (
+                <Link to={item.path} className="breadcrumb-link">
+                  {item.icon && <span className="breadcrumb-icon">{item.icon}</span>}
+                  {item.label}
+                </Link>
+              ) : (
+                <span className="breadcrumb-current" aria-current="page">
+                  {item.icon && <span className="breadcrumb-icon">{item.icon}</span>}
+                  {item.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </nav>
   );
-}
+};
 
 export default Breadcrumbs;

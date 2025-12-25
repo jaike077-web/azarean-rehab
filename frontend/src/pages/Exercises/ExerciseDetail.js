@@ -7,6 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises } from '../../services/api';
 import MDEditor from '@uiw/react-md-editor';
+import { AlertTriangle, Video } from 'lucide-react';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import './ExerciseDetail.css';
 
 import {
@@ -118,7 +120,9 @@ const ExerciseDetail = () => {
     if (!url) {
       return (
         <div className="video-placeholder">
-          <div className="video-placeholder-icon">🎥</div>
+          <div className="video-placeholder-icon">
+            <Video size={32} aria-hidden="true" />
+          </div>
           <p>Видео не прикреплено</p>
         </div>
       );
@@ -141,9 +145,15 @@ const ExerciseDetail = () => {
   // Состояния загрузки / ошибки
   // ============================
 
+  const breadcrumbItems = [
+    { label: 'Библиотека упражнений', path: '/exercises' },
+    { label: exercise?.short_title || exercise?.title || 'Упражнение' }
+  ];
+
   if (loading) {
     return (
       <div className="exercise-detail-page">
+        <Breadcrumbs items={breadcrumbItems} />
         <div className="exercise-detail-inner loading-state">
           <div className="loader-spinner" />
           <p>Загружаем упражнение...</p>
@@ -155,15 +165,18 @@ const ExerciseDetail = () => {
   if (error || !exercise) {
     return (
       <div className="exercise-detail-page">
+        <Breadcrumbs items={breadcrumbItems} />
         <div className="exercise-detail-inner error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon">
+            <AlertTriangle size={32} aria-hidden="true" />
+          </div>
           <h2>Не удалось загрузить упражнение</h2>
           <p className="muted-text">{error || 'Неизвестная ошибка'}</p>
           <button
             className="btn-primary-outline"
             onClick={() => navigate('/exercises')}
           >
-            ← Вернуться к списку упражнений
+            Вернуться к списку упражнений
           </button>
         </div>
       </div>
@@ -200,26 +213,8 @@ const ExerciseDetail = () => {
 
   return (
     <div className="exercise-detail-page">
+      <Breadcrumbs items={breadcrumbItems} />
       <div className="exercise-detail-inner">
-        {/* HEADER */}
-        <div className="exercise-detail-header">
-          <button
-            className="back-button"
-            type="button"
-            onClick={() => navigate('/exercises')}
-          >
-            ← Назад к библиотеке
-          </button>
-
-          <div className="exercise-breadcrumb">
-            <span className="crumb">Библиотека упражнений</span>
-            <span className="crumb-separator">/</span>
-            <span className="crumb-active">
-              {short_title || title}
-            </span>
-          </div>
-        </div>
-
         {/* MAIN CARD LAYOUT */}
         <div className="exercise-detail-grid">
           {/* Левая колонка — видео + ключевые параметры */}
