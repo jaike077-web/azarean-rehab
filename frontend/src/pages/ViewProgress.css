@@ -117,6 +117,167 @@
   color: #6b7280;
 }
 
+.sessions-container {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3vw, 24px);
+}
+
+.session-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.session-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: clamp(16px, 3vw, 20px) clamp(20px, 4vw, 24px);
+}
+
+.session-info h3 {
+  margin: 0;
+  font-size: clamp(16px, 3vw, 18px);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-info h3 span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-time {
+  font-size: clamp(13px, 2.5vw, 14px);
+  opacity: 0.9;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.session-table-wrapper {
+  overflow-x: auto;
+  padding: clamp(16px, 3vw, 20px);
+}
+
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.session-table th {
+  background: #f7fafc;
+  padding: 12px;
+  text-align: left;
+  font-size: clamp(12px, 2.5vw, 13px);
+  font-weight: 600;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.session-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: clamp(13px, 2.5vw, 14px);
+}
+
+.exercise-name {
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.completed {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.status-badge.skipped {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.pain-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.pain-badge.pain-low {
+  background: #10b981;
+  color: white;
+}
+
+.pain-badge.pain-medium {
+  background: #fbbf24;
+  color: #1f2937;
+}
+
+.pain-badge.pain-high {
+  background: #ef4444;
+  color: white;
+}
+
+.difficulty-cell {
+  font-size: 14px;
+}
+
+.difficulty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #edf2f7;
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.session-comment {
+  padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
+  background: #f7fafc;
+  border-top: 1px solid #e2e8f0;
+  font-size: clamp(13px, 2.5vw, 14px);
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.no-data {
+  color: #a0aec0;
+}
+
+.exercise-name,
+.status-badge,
+.pain-badge,
+.difficulty-badge {
+  white-space: nowrap;
+}
+
+.session-table td.text-center {
+  min-width: 110px;
+}
+
 .exercises-progress-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
@@ -246,6 +407,22 @@
   margin: 0;
   font-size: clamp(14px, 2vw, 16px);
   color: #6b7280;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .session-table th,
+  .session-table td {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .exercise-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 1024px) {
