@@ -301,39 +301,47 @@
 }
 
 /* Pain Indicator */
-.pain-indicator {
+.progress-dashboard .pain-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
   font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 16px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  width: auto;
+  height: auto;
+  justify-content: flex-start;
 }
 
-.pain-indicator.green {
-  background: #d1fae5;
+.progress-dashboard .pain-indicator.green {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #065f46;
+  border: 1px solid #6ee7b7;
 }
 
-.pain-indicator.yellow {
-  background: #fef3c7;
+.progress-dashboard .pain-indicator.yellow {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
   color: #92400e;
+  border: 1px solid #fcd34d;
 }
 
-.pain-indicator.red {
-  background: #fee2e2;
+.progress-dashboard .pain-indicator.red {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #991b1b;
+  border: 1px solid #fca5a5;
 }
 
-.pain-indicator.gray {
+.progress-dashboard .pain-indicator.gray {
   background: #f3f4f6;
   color: #6b7280;
+  border: 1px solid #e5e7eb;
 }
 
-.pain-status {
+.progress-dashboard .pain-status {
   margin-left: auto;
+  font-weight: 700;
 }
 
 /* Card Footer */
