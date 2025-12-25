@@ -12,9 +12,26 @@ import './Skeleton.css';
 // БАЗОВЫЕ КОМПОНЕНТЫ
 // =====================================================
 
-export const Skeleton = ({ className = '', style = {} }) => (
-  <div className={`skeleton ${className}`} style={style} />
-);
+export const Skeleton = (props) => {
+  const {
+    width = '100%',
+    height = '20px',
+    borderRadius = '4px',
+    className = '',
+    style = {}
+  } = props;
+  const hasExplicitSizing =
+    Object.prototype.hasOwnProperty.call(props, 'width') ||
+    Object.prototype.hasOwnProperty.call(props, 'height') ||
+    Object.prototype.hasOwnProperty.call(props, 'borderRadius');
+  const shouldApplySizing = hasExplicitSizing || !className;
+  const mergedStyle = {
+    ...style,
+    ...(shouldApplySizing ? { width, height, borderRadius } : {})
+  };
+
+  return <div className={`skeleton ${className}`} style={mergedStyle} />;
+};
 
 export const SkeletonText = ({ width = '100%', lines = 1 }) => (
   <>

@@ -4,7 +4,7 @@ import { complexes, progress } from '../services/api';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { CalendarRange, ClipboardList, LayoutDashboard, User, BarChart3 } from 'lucide-react';
-import { Skeleton, SkeletonText } from '../components/Skeleton';
+import ProgressSkeleton from '../components/skeletons/ProgressSkeleton';
 import './ViewProgress.css';
 
 function ViewProgress() {
@@ -164,40 +164,6 @@ function ViewProgress() {
     complex?.diagnosis?.name ||
     complex?.name ||
     'Комплекс';
-
-  const ProgressSkeleton = () => (
-    <div className="progress-page">
-      <div className="loading">Загрузка...</div>
-      <div className="progress-header">
-        <div className="progress-header-main">
-          <Skeleton className="progress-avatar-skeleton" />
-          <div className="progress-header-text">
-            <SkeletonText width="60%" lines={1} />
-            <SkeletonText width="40%" lines={1} />
-            <SkeletonText width="30%" lines={1} />
-          </div>
-        </div>
-        <div className="progress-stats">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="stat-card">
-              <SkeletonText width="50%" lines={1} />
-              <SkeletonText width="80%" lines={1} />
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="exercises-progress-grid">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div key={index} className="exercise-progress-card">
-            <SkeletonText width="70%" lines={1} />
-            <SkeletonText width="45%" lines={1} />
-            <SkeletonText width="90%" lines={2} />
-            <SkeletonText width="80%" lines={2} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 
   if (loading) {
     return <ProgressSkeleton />;

@@ -24,7 +24,8 @@ import {
   ChevronRight,
   Eye,
 } from 'lucide-react';
-import { ComplexesPageSkeleton } from '../components/Skeleton';
+import ComplexCardSkeleton from '../components/skeletons/ComplexCardSkeleton';
+import TemplateCardSkeleton from '../components/skeletons/TemplateCardSkeleton';
 import TemplateViewModal from '../components/TemplateViewModal';
 import DeleteTemplateModal from '../components/DeleteTemplateModal';
 
@@ -45,6 +46,7 @@ const [searchTerm, setSearchTerm] = useState('');
 const [sortBy, setSortBy] = useState('date_desc'); // date_desc, date_asc, name_asc, name_desc
 const [activeTab, setActiveTab] = useState('complexes'); // complexes, templates
 const [templatesList, setTemplatesList] = useState([]);
+const [templatesLoading, setTemplatesLoading] = useState(true);
 const [viewTemplateId, setViewTemplateId] = useState(null);
 const [viewTemplateModalOpen, setViewTemplateModalOpen] = useState(false);
 const [deleteTemplateModalOpen, setDeleteTemplateModalOpen] = useState(false);
@@ -84,11 +86,14 @@ useEffect(() => {
 
   const loadTemplates = async () => {
     try {
+      setTemplatesLoading(true);
       const response = await templates.getAll();
       const data = response.data?.items || response.data?.templates || response.data || [];
       setTemplatesList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Ошибка загрузки шаблонов:', err);
+    } finally {
+      setTemplatesLoading(false);
     }
   };
 
@@ -232,10 +237,6 @@ useEffect(() => {
     });
   };
 
-  if (loading) {
-    return <ComplexesPageSkeleton count={4} />;
-  }
-
   if (error) {
     return <div className="error-message">{error}</div>;
   }
@@ -377,7 +378,13 @@ useEffect(() => {
 
       
 
-      {complexesList.length === 0 ? (
+      {loading ? (
+        <div className="complexes-grid">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <ComplexCardSkeleton key={index} />
+          ))}
+        </div>
+      ) : complexesList.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">
             <ClipboardList size={64} />
@@ -534,7 +541,13 @@ useEffect(() => {
       {/* Вкладка Шаблоны */}
       {activeTab === 'templates' && (
         <div className="templates-section">
-          {templatesList.length === 0 ? (
+          {templatesLoading ? (
+            <div className="templates-grid">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <TemplateCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : templatesList.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">
                 <Folder size={64} />

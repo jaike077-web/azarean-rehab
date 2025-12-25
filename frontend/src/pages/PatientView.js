@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { complexes, progress } from '../services/api';
 import './PatientView.css';
 import { useToast } from '../context/ToastContext';
-import { ComplexesPageSkeleton } from '../components/Skeleton';
+import { Skeleton } from '../components/Skeleton';
+import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
 import { AlertTriangle, Annoyed, Check, CheckCircle, Clock, Copy, FileText, Frown, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, SmilePlus, X, XCircle } from 'lucide-react';
 
 function PatientView() {
@@ -260,7 +261,33 @@ function PatientView() {
   };
 
   if (loading) {
-    return <ComplexesPageSkeleton count={4} />;
+    return (
+      <div className="patient-view loading">
+        <header className="patient-header">
+          <div className="logo">
+            <Skeleton width="44px" height="44px" borderRadius="10px" />
+            <Skeleton width="140px" height="18px" />
+          </div>
+        </header>
+
+        <div className="patient-content">
+          <div className="welcome-section">
+            <div className="patient-identity">
+              <Skeleton width="160px" height="20px" />
+              <Skeleton width="200px" height="16px" style={{ marginTop: '8px' }} />
+            </div>
+            <Skeleton width="60%" height="32px" style={{ marginTop: '16px' }} />
+            <Skeleton width="220px" height="20px" style={{ marginTop: '12px' }} />
+          </div>
+
+          <div className="exercises-list">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <ExerciseCardSkeleton key={index} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
