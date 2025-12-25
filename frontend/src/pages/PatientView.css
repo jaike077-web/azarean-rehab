@@ -1096,71 +1096,138 @@
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
   }
 
-  .session-summary {
-    margin-top: clamp(18px, 4vw, 26px);
-    padding: clamp(14px, 3vw, 18px);
-    background: #f9fafb;
+  .comment-section label {
+    display: block;
+    font-size: clamp(13px, 2vw, 15px);
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 10px;
+  }
+
+  /* =====================================================
+     WORKOUT SUMMARY
+     ===================================================== */
+  .workout-summary {
+    margin: clamp(16px, 3vw, 20px) 0;
+    padding: clamp(14px, 3vw, 16px);
+    background: #f7fafc;
     border-radius: 12px;
   }
 
-  .session-summary h4 {
-    margin: 0 0 clamp(10px, 2vw, 14px) 0;
-    font-size: clamp(15px, 2vw, 17px);
-    color: #1f2937;
-  }
-
-  .session-summary ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(10px, 2vw, 14px);
-  }
-
-  .session-summary li {
-    padding-bottom: clamp(8px, 2vw, 12px);
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .session-summary li:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  .session-summary-title {
+  .workout-summary h3 {
+    margin: 0 0 12px 0;
+    font-size: clamp(13px, 2vw, 14px);
+    color: #4a5568;
     font-weight: 600;
-    color: #111827;
-    margin-bottom: 6px;
   }
 
-  .session-summary-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-
-  .session-summary-status.is-completed {
-    background: rgba(16, 185, 129, 0.15);
-    color: #047857;
-  }
-
-  .session-summary-status.is-skipped {
-    background: rgba(239, 68, 68, 0.15);
-    color: #b91c1c;
-  }
-
-  .session-summary-meta {
+  .summary-progress {
     margin-top: 8px;
+  }
+
+  .progress-text {
+    font-size: clamp(13px, 2vw, 14px);
+    color: #2d3748;
+    margin-bottom: 8px;
+  }
+
+  .progress-text strong {
+    font-weight: 600;
+    color: #1a202c;
+  }
+
+  .progress-bar {
+    height: 12px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+    border-radius: 999px;
+    transition: width 0.5s ease;
+  }
+
+  /* =====================================================
+     EXERCISE SUMMARY LIST
+     ===================================================== */
+  .exercises-summary {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 16px;
+    padding-right: 8px;
+  }
+
+  .exercise-summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+  }
+
+  .exercise-summary-item.completed {
+    border-left: 3px solid #10b981;
+  }
+
+  .exercise-summary-item.skipped {
+    border-left: 3px solid #cbd5e0;
+    opacity: 0.7;
+  }
+
+  .exercise-status-icon {
+    flex-shrink: 0;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+  }
+
+  .exercise-summary-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .exercise-name {
+    font-weight: 500;
+    color: #2d3748;
+    margin-bottom: 4px;
+  }
+
+  .exercise-details {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    color: #4b5563;
-    font-size: 13px;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .detail-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .detail-badge.pain {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .detail-badge.difficulty {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .detail-badge.skipped-text {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px dashed #d1d5db;
   }
 
   .session-empty {
@@ -1178,6 +1245,18 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
+    }
+
+    .finish-modal {
+      max-height: 90vh;
+    }
+
+    .exercises-summary {
+      max-height: 200px;
+    }
+
+    .exercise-summary-item {
+      padding: 10px;
     }
 
     .progress-overview {
