@@ -5,10 +5,12 @@ import Patients from './Patients';
 import CreateComplex from './CreateComplex';
 import MyComplexes from './MyComplexes';
 import Trash from './Trash';
+import ProgressDashboard from './ProgressDashboard';
 import './Dashboard.css';
 import Diagnoses from './Diagnoses';
 import {
   Activity,
+  BarChart3,
   LayoutDashboard,
   Users,
   Dumbbell,
@@ -85,6 +87,8 @@ function Dashboard() {
     switch (activeTab) {
       case 'patients':
         return <Patients />;
+      case 'progress':
+        return <ProgressDashboard />;
       case 'complexes':
         return <CreateComplex />;
       case 'my-complexes':
@@ -244,6 +248,14 @@ function Dashboard() {
           >
             <Users className="nav-icon" size={18} />
             <span>Пациенты</span>
+          </button>
+
+          <button
+            className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
+            onClick={() => handleNavClick('progress')}
+          >
+            <BarChart3 className="nav-icon" size={18} />
+            <span>Прогресс пациентов</span>
           </button>
 
           <button 
