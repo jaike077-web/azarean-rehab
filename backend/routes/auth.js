@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { query } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+const config = require('../config/config');
 
 // Регистрация нового пользователя (инструктора/админа)
 router.post('/register', async (req, res) => {
@@ -59,8 +60,8 @@ router.post('/register', async (req, res) => {
         email: user.email, 
         role: user.role 
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
     res.status(201).json({
@@ -129,8 +130,8 @@ router.post('/login', async (req, res) => {
         email: user.email, 
         role: user.role 
       },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
     );
 
     res.json({

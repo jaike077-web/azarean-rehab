@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config/config');
 
 // Middleware для проверки JWT токена
 const authenticateToken = (req, res, next) => {
@@ -12,7 +13,7 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, config.jwt.secret, (err, user) => {
     if (err) {
       return res.status(403).json({ 
         error: 'Forbidden',

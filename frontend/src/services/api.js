@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-// Базовый URL для API (через proxy)
-const API_URL = '/api';
+// Базовый URL для API
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = `${API_URL}/api`;
 
 // Создаём axios инстанс
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -65,7 +66,7 @@ export const patients = {
 export const complexes = {
   create: (data) => api.post('/complexes', data),
   getOne: (id) => api.get(`/complexes/${id}`),
-  getByToken: (token) => axios.get(`${API_URL}/complexes/token/${token}`),
+  getByToken: (token) => axios.get(`${API_BASE_URL}/complexes/token/${token}`),
   getByPatient: (patientId) => api.get(`/complexes/patient/${patientId}`),
   getAll: () => api.get('/complexes'),
   update: (id, data) => api.put(`/complexes/${id}`, data),
@@ -77,8 +78,8 @@ export const complexes = {
 
 // Прогресс
 export const progress = {
-  create: (data) => axios.post(`${API_URL}/progress`, data), // БЕЗ авторизации (для пациента)
-  getByComplex: (complexId) => axios.get(`${API_URL}/progress/complex/${complexId}`), // БЕЗ авторизации
+  create: (data) => axios.post(`${API_BASE_URL}/progress`, data), // БЕЗ авторизации (для пациента)
+  getByComplex: (complexId) => axios.get(`${API_BASE_URL}/progress/complex/${complexId}`), // БЕЗ авторизации
   getByComplexAuth: (complexId) => api.get(`/progress/complex/${complexId}`), // С авторизацией (для инструктора)
 };
 
@@ -153,6 +154,6 @@ export const templates = {
   getAll: (params = {}) => api.get('/templates', { params }),
   getById: (id) => api.get(`/templates/${id}`),
   create: (data) => api.post('/templates', data),
-  update: (id, data) => api.put(`/templates/${id}`, data),
+  update: (id, data) => api.put(`/templates/${id}`),
   delete: (id) => api.delete(`/templates/${id}`)
 };
