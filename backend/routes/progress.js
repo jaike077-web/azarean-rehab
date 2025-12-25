@@ -106,7 +106,7 @@ router.get('/complex/:complex_id', async (req, res) => {
        FROM progress_logs pl
        JOIN exercises e ON pl.exercise_id = e.id
        WHERE pl.complex_id = $1
-       ORDER BY pl.created_at DESC`,
+       ORDER BY COALESCE(pl.completed_at, pl.created_at) DESC`,
       [complex_id]
     );
 

@@ -66,6 +66,7 @@ export const patients = {
 export const complexes = {
   create: (data) => api.post('/complexes', data),
   getOne: (id) => api.get(`/complexes/${id}`),
+  getExercises: (id) => api.get(`/complexes/${id}/exercises`),
   getByToken: (token) => axios.get(`${API_BASE_URL}/complexes/token/${token}`),
   getByPatient: (patientId) => api.get(`/complexes/patient/${patientId}`),
   getAll: () => api.get('/complexes'),

@@ -10,7 +10,10 @@ import {
   User,
   BarChart3,
   Clock,
-  MessageCircle
+  MessageCircle,
+  CheckCircle2,
+  XCircle,
+  SkipForward
 } from 'lucide-react';
 import ProgressSkeleton from '../components/skeletons/ProgressSkeleton';
 import './ViewProgress.css';
@@ -20,6 +23,7 @@ function ViewProgress() {
   const navigate = useNavigate();
   const [complex, setComplex] = useState(null);
   const [data, setData] = useState(null);
+  const [complexExercises, setComplexExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -29,13 +33,15 @@ function ViewProgress() {
         setLoading(true);
         setError('');
 
-        const [complexRes, progressRes] = await Promise.all([
+        const [complexRes, progressRes, exercisesRes] = await Promise.all([
           complexes.getOne(complexId),
-          progress.getByComplex(complexId)
+          progress.getByComplex(complexId),
+          complexes.getExercises(complexId)
         ]);
 
         const complexPayload = complexRes.data?.complex || complexRes.data;
         const progressPayload = progressRes.data?.items || progressRes.data || {};
+        const exercisesPayload = exercisesRes.data?.exercises || [];
 
         console.log('=== ViewProgress Debug ===');
         console.log('Raw API response:', progressPayload);
@@ -49,6 +55,7 @@ function ViewProgress() {
 
         setComplex(complexPayload || null);
         setData(progressPayload);
+        setComplexExercises(exercisesPayload);
       } catch (err) {
         console.error('Ошибка загрузки данных:', err);
         setError('Не удалось загрузить данные');
@@ -104,13 +111,14 @@ function ViewProgress() {
     const sessionsMap = {};
 
     progressLogs.forEach((log) => {
+      const sessionDate = log.completed_at || log.created_at;
       // Use session_id if available, otherwise group by date
-      const sessionKey = log.session_id || new Date(log.completed_at).getTime();
+      const sessionKey = log.session_id || new Date(sessionDate).getTime();
 
       if (!sessionsMap[sessionKey]) {
         sessionsMap[sessionKey] = {
           sessionId: sessionKey,
-          date: log.completed_at,
+          date: sessionDate,
           sessionComment: log.session_comment,
           exercises: []
         };
@@ -292,76 +300,153 @@ function ViewProgress() {
             </div>
           ) : (
             <div className="sessions-container">
-              {groupedSessions.map((session, index) => (
-                <div key={session.sessionId} className="session-card">
-                  <div className="session-header">
-                    <div className="session-info">
-                      <h3>
-                        <CalendarRange size={16} aria-hidden="true" />
-                        <span>
-                          {formatDateShort(session.date)} — Сессия #
-                          {groupedSessions.length - index}
-                        </span>
-                      </h3>
-                      <span className="session-time">
-                        <Clock size={14} aria-hidden="true" />
-                        {new Date(session.date).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </div>
+              {groupedSessions.map((session, index) => {
+                const performedExercisesMap = session.exercises.reduce((acc, exercise) => {
+                  acc[exercise.id] = exercise;
+                  return acc;
+                }, {});
 
-                  <div className="session-table-wrapper">
-                    <table className="session-table">
-                      <thead>
-                        <tr>
-                          <th>Упражнение</th>
-                          <th className="text-center">Статус</th>
-                          <th className="text-center">Боль</th>
-                          <th className="text-center">Сложность</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {session.exercises.map((exercise, exIndex) => (
-                          <tr key={`${session.sessionId}-${exercise.id}-${exIndex}`}>
-                            <td className="exercise-name">{exercise.title}</td>
-                            <td className="text-center">
-                              <span
-                                className={`status-badge ${
-                                  exercise.completed ? 'completed' : 'skipped'
-                                }`}
-                              >
-                                {exercise.completed ? 'Выполнено' : 'Пропущено'}
-                              </span>
-                            </td>
-                            <td className="text-center">
-                              {exercise.painLevel !== null &&
-                              exercise.painLevel !== undefined ? (
-                                <span
-                                  className={`pain-badge ${getPainClass(exercise.painLevel)}`}
-                                >
-                                  {exercise.painLevel}
-                                </span>
-                              ) : (
-                                <span className="no-data">—</span>
-                              )}
-                            </td>
-                            <td className="text-center difficulty-cell">
-                              {exercise.difficultyRating ? (
-                                <span className="difficulty-badge">
-                                  {getDifficultyLabel(exercise.difficultyRating)}
-                                </span>
-                              ) : (
-                                <span className="no-data">—</span>
-                              )}
-                            </td>
+                const baseExercises =
+                  complexExercises.length > 0
+                    ? complexExercises
+                    : session.exercises.map((exercise) => ({
+                        exercise_id: exercise.id,
+                        title: exercise.title
+                      }));
+
+                const allSessionExercises = baseExercises.map((exercise) => {
+                  const performed = performedExercisesMap[exercise.exercise_id];
+
+                  if (performed) {
+                    return {
+                      ...performed,
+                      title: exercise.title,
+                      wasPerformed: true
+                    };
+                  }
+
+                  return {
+                    id: exercise.exercise_id,
+                    title: exercise.title,
+                    completed: false,
+                    painLevel: null,
+                    difficultyRating: null,
+                    notes: null,
+                    wasPerformed: false
+                  };
+                });
+
+                const completedCount = allSessionExercises.filter((exercise) => exercise.completed)
+                  .length;
+                const totalCount = allSessionExercises.length;
+                const completionPercent =
+                  totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+                return (
+                  <div key={session.sessionId} className="session-card">
+                    <div className="session-header">
+                      <div className="session-info">
+                        <h3>
+                          <CalendarRange size={16} aria-hidden="true" />
+                          <span>
+                            {formatDateShort(session.date)} — Сессия #
+                            {groupedSessions.length - index}
+                          </span>
+                        </h3>
+                        <span className="session-time">
+                          <Clock size={14} aria-hidden="true" />
+                          {new Date(session.date).toLocaleTimeString('ru-RU', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="session-progress">
+                      <div className="progress-text">
+                        <strong>Выполнено:</strong> {completedCount} из {totalCount} (
+                        {completionPercent}%)
+                      </div>
+                      <div className="progress-bar" aria-hidden="true">
+                        <div
+                          className="progress-fill"
+                          style={{ width: `${completionPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="session-table-wrapper">
+                      <table className="session-table">
+                        <thead>
+                          <tr>
+                            <th>Упражнение</th>
+                            <th className="text-center">Статус</th>
+                            <th className="text-center">Боль</th>
+                            <th className="text-center">Сложность</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {allSessionExercises.map((exercise, exIndex) => {
+                            const statusClass = exercise.wasPerformed
+                              ? exercise.completed
+                                ? 'completed'
+                                : 'skipped'
+                              : 'not-attempted';
+                            const statusLabel = exercise.wasPerformed
+                              ? exercise.completed
+                                ? 'Выполнено'
+                                : 'Не выполнено'
+                              : 'Пропущено';
+                            const statusIcon = exercise.wasPerformed ? (
+                              exercise.completed ? (
+                                <CheckCircle2 size={14} aria-hidden="true" />
+                              ) : (
+                                <XCircle size={14} aria-hidden="true" />
+                              )
+                            ) : (
+                              <SkipForward size={14} aria-hidden="true" />
+                            );
+
+                            return (
+                              <tr
+                                key={`${session.sessionId}-${exercise.id}-${exIndex}`}
+                                className={exercise.wasPerformed ? '' : 'skipped-exercise'}
+                              >
+                                <td className="exercise-name">{exercise.title}</td>
+                                <td className="text-center">
+                                  <span className={`status-badge ${statusClass}`}>
+                                    {statusIcon}
+                                    <span>{statusLabel}</span>
+                                  </span>
+                                </td>
+                                <td className="text-center">
+                                  {exercise.painLevel !== null &&
+                                  exercise.painLevel !== undefined ? (
+                                    <span
+                                      className={`pain-badge ${getPainClass(exercise.painLevel)}`}
+                                    >
+                                      {exercise.painLevel}
+                                    </span>
+                                  ) : (
+                                    <span className="no-data">—</span>
+                                  )}
+                                </td>
+                                <td className="text-center difficulty-cell">
+                                  {exercise.difficultyRating ? (
+                                    <span className="difficulty-badge">
+                                      {getDifficultyLabel(exercise.difficultyRating)}
+                                    </span>
+                                  ) : (
+                                    <span className="no-data">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
                   {session.sessionComment && (
                     <div className="session-comment">
@@ -371,8 +456,9 @@ function ViewProgress() {
                       </span>
                     </div>
                   )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
