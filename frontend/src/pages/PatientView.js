@@ -18,6 +18,7 @@ function PatientView() {
   const [sessionData, setSessionData] = useState({});
   const [savedExercises, setSavedExercises] = useState({});
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [sessionComment, setSessionComment] = useState('');
   const [headerVisible, setHeaderVisible] = useState(true);
   const [showCommentModal, setShowCommentModal] = useState(false);
@@ -213,6 +214,7 @@ function PatientView() {
       return;
     }
 
+    setIsFinishing(true);
     const activeSessionId = sessionId ?? Date.now();
     if (!sessionId) {
       setSessionId(activeSessionId);
@@ -248,6 +250,8 @@ function PatientView() {
     } catch (err) {
       console.error('Ошибка сохранения сессии:', err);
       toast.error('Ошибка сохранения');
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -305,6 +309,30 @@ function PatientView() {
   const totalCount = complex.exercises?.length || 0;
   const completionPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const totalExecutions = completedCount;
+  const allExercises = (complex.exercises || []).map((item) => item.exercise);
+  const performedExercises = Object.entries(sessionData).map(([exerciseId, data]) => ({
+    exerciseId: Number(exerciseId),
+    ...data
+  }));
+  const performedById = performedExercises.reduce((acc, item) => {
+    acc[item.exerciseId] = item;
+    return acc;
+  }, {});
+  const exerciseSummary = allExercises.map((exercise) => {
+    const performed = performedById[exercise.id];
+    return {
+      id: exercise.id,
+      title: exercise.title,
+      completed: Boolean(performed?.completed),
+      painLevel: performed?.pain_level ?? null,
+      difficultyRating: performed?.difficulty_rating ?? null
+    };
+  });
+  const summaryCompletedCount = exerciseSummary.filter((exercise) => exercise.completed).length;
+  const summaryTotalCount = exerciseSummary.length;
+  const summaryCompletionPercent = summaryTotalCount > 0
+    ? Math.round((summaryCompletedCount / summaryTotalCount) * 100)
+    : 0;
 
   const toInt = (value, fallback = 0) => {
     const parsed = Number(value);
@@ -729,55 +757,74 @@ function PatientView() {
             </div>
 
             <div className="modal-body">
-              <p>Как вы себя чувствуете сегодня?</p>
-              <textarea
-                className="session-comment-input"
-                placeholder="Опишите ваше общее самочувствие..."
-                value={sessionComment}
-                onChange={(e) => setSessionComment(e.target.value)}
-                rows={4}
-              />
+              <div className="comment-section">
+                <label htmlFor="session-comment">Комментарий о самочувствии:</label>
+                <textarea
+                  id="session-comment"
+                  className="session-comment-input"
+                  placeholder="Как вы себя чувствуете после тренировки?"
+                  value={sessionComment}
+                  onChange={(e) => setSessionComment(e.target.value)}
+                  rows={3}
+                />
+              </div>
 
-              <div className="session-summary">
-                <h4>Выполнено упражнений:</h4>
-                {Object.keys(sessionData).length === 0 ? (
-                  <p className="session-empty">Нет отмеченных упражнений.</p>
+              <div className="workout-summary">
+                <h3>Выполнено упражнений:</h3>
+                <div className="summary-progress">
+                  <div className="progress-text">
+                    <strong>{summaryCompletedCount} из {summaryTotalCount}</strong> ({summaryCompletionPercent}%)
+                  </div>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${summaryCompletionPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="exercises-summary">
+                {exerciseSummary.length === 0 ? (
+                  <p className="session-empty">Нет упражнений в комплексе.</p>
                 ) : (
-                  <ul>
-                    {Object.entries(sessionData).map(([exerciseId, data]) => {
-                      const exercise = complex.exercises.find(
-                        (entry) => entry.exercise.id === Number(exerciseId)
-                      );
-                      const painLabel = data.pain_level !== undefined && data.pain_level !== null
-                        ? `Боль: ${data.pain_level}/10`
-                        : null;
-                      const difficultyLabel = data.difficulty_rating !== undefined && data.difficulty_rating !== null
-                        ? `Сложность: ${data.difficulty_rating}/5`
-                        : null;
-
-                      return (
-                        <li key={exerciseId}>
-                          <div className="session-summary-title">
-                            {exercise?.exercise.title || 'Упражнение'}
-                          </div>
-                          <div className={`session-summary-status ${data.completed ? 'is-completed' : 'is-skipped'}`}>
-                            {data.completed ? (
-                              <CheckCircle size={16} aria-hidden="true" />
-                            ) : (
-                              <XCircle size={16} aria-hidden="true" />
-                            )}
-                            {data.completed ? 'Выполнено' : 'Пропущено'}
-                          </div>
-                          {(painLabel || difficultyLabel) && (
-                            <div className="session-summary-meta">
-                              {painLabel && <span>{painLabel}</span>}
-                              {difficultyLabel && <span>{difficultyLabel}</span>}
-                            </div>
+                  exerciseSummary.map((exercise) => (
+                    <div
+                      key={exercise.id}
+                      className={`exercise-summary-item ${exercise.completed ? 'completed' : 'skipped'}`}
+                    >
+                      <div className="exercise-status-icon" aria-hidden="true">
+                        {exercise.completed ? (
+                          <CheckCircle size={20} />
+                        ) : (
+                          <XCircle size={20} />
+                        )}
+                      </div>
+                      <div className="exercise-summary-info">
+                        <div className="exercise-name">{exercise.title}</div>
+                        <div className="exercise-details">
+                          {exercise.completed ? (
+                            <>
+                              {exercise.painLevel !== null && (
+                                <span className="detail-badge pain">
+                                  Боль: {exercise.painLevel}/10
+                                </span>
+                              )}
+                              {exercise.difficultyRating !== null && (
+                                <span className="detail-badge difficulty">
+                                  Сложность: {exercise.difficultyRating}/5
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="detail-badge skipped-text">
+                              Пропущено
+                            </span>
                           )}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
@@ -787,6 +834,7 @@ function PatientView() {
                 type="button"
                 className="btn-secondary"
                 onClick={() => setShowFinishModal(false)}
+                disabled={isFinishing}
               >
                 Отмена
               </button>
@@ -794,8 +842,9 @@ function PatientView() {
                 type="button"
                 className="btn-primary"
                 onClick={handleFinishWorkout}
+                disabled={isFinishing}
               >
-                Сохранить и завершить
+                {isFinishing ? 'Сохранение...' : 'Сохранить и завершить'}
               </button>
             </div>
           </div>

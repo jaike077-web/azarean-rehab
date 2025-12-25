@@ -164,10 +164,9 @@ useEffect(() => {
     }
   };
 
-  const handleCopyLink = (token) => {
+  const handleOpenPatientView = (token) => {
     const link = `${window.location.origin}/patient/${token}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Ссылка скопирована! 📋');
+    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   const handleViewProgress = (complexId) => {
@@ -475,9 +474,12 @@ useEffect(() => {
   <button
     type="button"
     className="btn-copy-link icon-btn"
-    onClick={() => handleCopyLink(complex.access_token)}
-    title="Скопировать ссылку"
-    aria-label="Скопировать ссылку"
+    onClick={(event) => {
+      event.stopPropagation();
+      handleOpenPatientView(complex.access_token);
+    }}
+    title="Открыть страницу пациента в новой вкладке"
+    aria-label="Открыть страницу пациента в новой вкладке"
   >
     <Link2 size={18} />
   </button>
