@@ -3,29 +3,22 @@
 // С улучшенной безопасностью
 // =====================================================
 
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { testConnection } = require('./database/db');
-
+const config = require('./config/config');
 
 const app = express();
 app.set('trust proxy', 1);
-const PORT = process.env.PORT || 5000;
+const PORT = config.port;
 
 // =====================================================
 // ПРОВЕРКА ОБЯЗАТЕЛЬНЫХ ПЕРЕМЕННЫХ
 // =====================================================
 
-if (!process.env.JWT_SECRET) {
-  console.error('❌ ОШИБКА: JWT_SECRET не установлен в .env');
-  console.error('   Добавьте JWT_SECRET в файл .env');
-  process.exit(1);
-}
-
-if (process.env.JWT_SECRET.length < 32) {
+if (config.jwt.secret.length < 32) {
   console.warn('⚠️  ВНИМАНИЕ: JWT_SECRET слишком короткий (рекомендуется минимум 32 символа)');
 }
 
@@ -40,34 +33,36 @@ app.use(helmet({
 }));
 
 // CORS - настройка разрешённых источников
-const allowedOrigins = process.env.CORS_ORIGINS 
-  ? process.env.CORS_ORIGINS.split(',') 
+const allowedOrigins = config.corsOrigin
+  ? config.corsOrigin
+      .split(',')
+      .map((origin) => origin.trim().replace(/\/$/, ''))
   : ['http://localhost:3000', 'http://localhost:5173'];
 
-  app.use(cors({
-    origin: function(origin, callback) {
-      // Разрешаем запросы без origin (мобильные приложения, Postman)
-      if (!origin) return callback(null, true);
-      
-      // Убираем trailing slash для сравнения
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      
-      if (allowedOrigins.includes(normalizedOrigin)) {
-        callback(null, true);
-      } else {
-        console.warn(`⚠️  Заблокирован CORS запрос с: ${origin}`);
-        callback(new Error('CORS not allowed'));
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
+app.use(cors({
+  origin: function(origin, callback) {
+    // Разрешаем запросы без origin (мобильные приложения, Postman)
+    if (!origin) return callback(null, true);
+
+    // Убираем trailing slash для сравнения
+    const normalizedOrigin = origin.replace(/\/$/, '');
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️  Заблокирован CORS запрос с: ${origin}`);
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Rate Limiting - общий лимит
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 100 запросов с одного IP
+  max: config.nodeEnv === 'production' ? 100 : 1000, // 100 запросов с одного IP
   message: {
     error: 'Too Many Requests',
     message: 'Слишком много запросов. Попробуйте позже.',
@@ -77,14 +72,14 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 // 👇 вместо app.use('/api', generalLimiter); делаем так:
-if (process.env.NODE_ENV === 'production') {
+if (config.nodeEnv === 'production') {
   app.use('/api', generalLimiter);
 }
 
 // Rate Limiting - строгий для авторизации
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
-  max: process.env.NODE_ENV === 'production' ? 5 : 15, // 5 попыток входа
+  max: config.nodeEnv === 'production' ? 5 : 15, // 5 попыток входа
   message: {
     error: 'Too Many Login Attempts',
     message: 'Слишком много попыток входа. Попробуйте через 15 минут.',
@@ -149,7 +144,7 @@ app.get('/health', async (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     memory: process.memoryUsage(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: config.nodeEnv
   });
 });
 
@@ -200,20 +195,20 @@ app.use((req, res) => {
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
-  
+
   // Определяем тип ошибки
   const statusCode = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
-  
+
   // Не раскрываем детали в production
-  const isDev = process.env.NODE_ENV === 'development';
-  
+  const isDev = config.nodeEnv === 'development';
+
   res.status(statusCode).json({
     error: statusCode === 500 ? 'Internal Server Error' : message,
     message: message,
-    ...(isDev && { 
+    ...(isDev && {
       stack: err.stack,
-      details: err.details 
+      details: err.details
     })
   });
 });
@@ -226,10 +221,10 @@ const startServer = async () => {
   try {
     // Проверяем подключение к БД
     const dbConnected = await testConnection();
-    
+
     if (!dbConnected) {
       console.error('❌ Не удалось подключиться к базе данных');
-      console.error('   Проверьте DATABASE_URL в файле .env');
+      console.error('   Проверьте DB_HOST, DB_NAME, DB_USER и DB_PASSWORD в файле .env');
       process.exit(1);
     }
 
@@ -243,7 +238,7 @@ const startServer = async () => {
       console.log('║                                                       ║');
       console.log(`║   ✅ Сервер:    http://localhost:${PORT}                 ║`);
       console.log('║   ✅ База:      PostgreSQL подключена                 ║');
-      console.log(`║   ✅ Режим:     ${(process.env.NODE_ENV || 'development').padEnd(28)}║`);
+      console.log(`║   ✅ Режим:     ${config.nodeEnv.padEnd(28)}║`);
       console.log('║                                                       ║');
       console.log('╠═══════════════════════════════════════════════════════╣');
       console.log('║   🔒 БЕЗОПАСНОСТЬ:                                    ║');
