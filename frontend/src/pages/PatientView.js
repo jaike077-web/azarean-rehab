@@ -5,6 +5,7 @@ import './PatientView.css';
 import { useToast } from '../context/ToastContext';
 import { Skeleton } from '../components/Skeleton';
 import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { AlertTriangle, Annoyed, Check, CheckCircle, Clock, Copy, FileText, Frown, Lightbulb, Mail, Meh, MessageCircle, Play, RefreshCw, Smile, SmilePlus, X, XCircle } from 'lucide-react';
 
 function PatientView() {
@@ -36,6 +37,7 @@ function PatientView() {
     { value: 4, icon: Frown, label: 'Средне+' },
     { value: 5, icon: Annoyed, label: 'Тяжело' }
   ];
+  const breadcrumbItems = [{ label: 'Мой комплекс упражнений' }];
 
   useEffect(() => {
     loadComplex();
@@ -263,6 +265,7 @@ function PatientView() {
   if (loading) {
     return (
       <div className="patient-view loading">
+        <Breadcrumbs items={breadcrumbItems} showHome={false} />
         <header className="patient-header">
           <div className="logo">
             <Skeleton width="44px" height="44px" borderRadius="10px" />
@@ -293,6 +296,7 @@ function PatientView() {
   if (error) {
     return (
       <div className="patient-view error-view">
+        <Breadcrumbs items={breadcrumbItems} showHome={false} />
         <div className="error-icon" aria-hidden="true"><XCircle size={56} /></div>
         <h2>Ошибка</h2>
         <p>{error}</p>
@@ -348,6 +352,7 @@ function PatientView() {
 
   return (
     <div className="patient-view">
+      <Breadcrumbs items={breadcrumbItems} showHome={false} />
       <header className={`patient-header ${headerVisible ? '' : 'is-hidden'}`}>
         <div className="logo">
           <img src="/AN-logo.jpg" alt="Azarean Network" className="logo-image" />

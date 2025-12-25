@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises, complexes } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
   DndContext,
@@ -14,9 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { useToast } from '../context/ToastContext';
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
+import {
   Edit2,
   FileText,
   Dumbbell,
@@ -286,7 +283,7 @@ function EditComplex() {
       };
 
       await complexes.update(id, updateData);
-      toast.success('Комплекс успешно обновлён! ✓');
+      toast.success('Комплекс успешно обновлён');
       navigate('/my-complexes');
     } catch (err) {
       console.error('Ошибка обновления комплекса:', err);
@@ -299,9 +296,19 @@ function EditComplex() {
     ex.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const breadcrumbItems = [
+    { label: 'Мои комплексы', path: '/my-complexes?tab=complexes' },
+    {
+      label: patientName
+        ? `Редактирование: ${patientName}`
+        : 'Редактирование комплекса'
+    }
+  ];
+
   if (loading) {
     return (
       <div className="edit-complex-page">
+        <Breadcrumbs items={breadcrumbItems} />
         <div className="page-header">
           <Skeleton width="260px" height="32px" />
           <Skeleton width="200px" height="18px" style={{ marginTop: '10px' }} />
@@ -342,40 +349,22 @@ function EditComplex() {
 
   if (error && !loading) {
     return (
-      <div className="error-view">
-        <h2>❌ Ошибка</h2>
-        <p>{error}</p>
-        <button className="btn-primary" onClick={() => navigate('/my-complexes')}>
-          ← Вернуться к комплексам
-        </button>
+      <div className="edit-complex-page">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="error-view">
+          <h2>Ошибка</h2>
+          <p>{error}</p>
+          <button className="btn-primary" onClick={() => navigate('/my-complexes')}>
+            Вернуться к комплексам
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="edit-complex-page">
-      <Breadcrumbs 
-  items={[
-    { 
-      icon: <LayoutDashboard size={16} />, 
-      label: 'Главная', 
-      path: '/dashboard' 
-    },
-    { 
-      icon: <ClipboardList size={16} />, 
-      label: 'Мои комплексы', 
-      path: '/my-complexes' 
-    },
-    { 
-      icon: <Edit2 size={16} />, 
-      label: `Редактирование: ${patientName}` 
-    }
-  ]}
-/>
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes" label="К списку комплексов" />
-      </div>
+      <Breadcrumbs items={breadcrumbItems} />
 
       <div className="page-header">
         <h1>

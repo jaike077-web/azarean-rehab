@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { complexes, progress } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
-import { CalendarRange, ClipboardList, LayoutDashboard, User, BarChart3 } from 'lucide-react';
+import { Annoyed, CalendarRange, Frown, Meh, Smile, SmilePlus, User } from 'lucide-react';
 import ProgressSkeleton from '../components/skeletons/ProgressSkeleton';
 import './ViewProgress.css';
 
@@ -83,15 +82,15 @@ function ViewProgress() {
     return 'high';
   };
 
-  const getDifficultyEmoji = (rating) => {
-    const emojis = {
-      1: '😊',
-      2: '🙂',
-      3: '😐',
-      4: '😓',
-      5: '😰'
+  const getDifficultyIcon = (rating) => {
+    const icons = {
+      1: Smile,
+      2: SmilePlus,
+      3: Meh,
+      4: Frown,
+      5: Annoyed
     };
-    return emojis[rating] || '😐';
+    return icons[rating] || Meh;
   };
 
   const progressLogs = data?.logs || [];
@@ -165,34 +164,23 @@ function ViewProgress() {
     complex?.name ||
     'Комплекс';
 
+  const breadcrumbItems = [
+    { label: 'Мои комплексы', path: '/my-complexes?tab=complexes' },
+    { label: `Прогресс: ${patientName}` }
+  ];
+
   if (loading) {
-    return <ProgressSkeleton />;
+    return (
+      <div className="view-progress-page progress-page">
+        <Breadcrumbs items={breadcrumbItems} />
+        <ProgressSkeleton />
+      </div>
+    );
   }
 
   return (
     <div className="view-progress-page progress-page">
-      <Breadcrumbs
-        items={[
-          {
-            icon: <LayoutDashboard size={16} />,
-            label: 'Главная',
-            path: '/dashboard'
-          },
-          {
-            icon: <ClipboardList size={16} />,
-            label: 'Мои комплексы',
-            path: '/my-complexes'
-          },
-          {
-            icon: <BarChart3 size={16} />,
-            label: `Прогресс: ${patientName}`
-          }
-        ]}
-      />
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes" label="К списку комплексов" />
-      </div>
+      <Breadcrumbs items={breadcrumbItems} />
 
       {error && (
         <div className="error">
@@ -288,15 +276,20 @@ function ViewProgress() {
                     <div className="difficulty-section">
                       <h4>Сложность:</h4>
                       <div className="difficulty-history">
-                        {exercise.difficultyRatings.map((rating, index) => (
-                          <span
-                            key={`${exercise.id}-diff-${index}`}
-                            className="difficulty-icon"
-                            title={`Сложность: ${rating}/5`}
-                          >
-                            {getDifficultyEmoji(rating)}
-                          </span>
-                        ))}
+                        {exercise.difficultyRatings.map((rating, index) => {
+                          const DifficultyIcon = getDifficultyIcon(rating);
+                          return (
+                            <span
+                              key={`${exercise.id}-diff-${index}`}
+                              className="difficulty-icon"
+                              title={`Сложность: ${rating}/5`}
+                              role="img"
+                              aria-label={`Сложность: ${rating} из 5`}
+                            >
+                              <DifficultyIcon size={18} aria-hidden="true" />
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
