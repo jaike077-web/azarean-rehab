@@ -21,19 +21,15 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   BookOpen,
   Check,
-  ClipboardList,
   Dumbbell,
-  Edit2,
   FileText,
   GripVertical,
-  LayoutDashboard,
   Plus,
   Save,
   Search,
   X,
 } from 'lucide-react';
 import { diagnoses, exercises, templates } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
 import './EditComplex.css';
@@ -349,26 +345,10 @@ function EditTemplate() {
     <div className="edit-complex-page edit-template-page">
       <Breadcrumbs
         items={[
-          {
-            icon: <LayoutDashboard size={16} />,
-            label: 'Главная',
-            path: '/dashboard',
-          },
-          {
-            icon: <ClipboardList size={16} />,
-            label: 'Мои комплексы',
-            path: '/my-complexes?tab=templates',
-          },
-          {
-            icon: <Edit2 size={16} />,
-            label: 'Редактирование шаблона',
-          },
+          { label: 'Шаблоны', path: '/dashboard' },
+          { label: `Редактирование: ${templateName || 'Шаблон'}` },
         ]}
       />
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes?tab=templates" label="К списку шаблонов" />
-      </div>
 
       <div className="page-header">
         <h1>

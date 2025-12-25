@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { patients } from '../services/api';
 import BackButton from '../components/BackButton';
-import Breadcrumbs from '../components/Breadcrumbs';
 import './Patients.css';
 import { useToast } from '../context/ToastContext';
 import { PatientsPageSkeleton } from '../components/Skeleton';
@@ -15,7 +14,6 @@ import {
   Edit2,
   Trash2,
   Eye,
-  LayoutDashboard,
   LayoutGrid,
   List as ListIcon,
 } from 'lucide-react';
@@ -332,23 +330,9 @@ function Patients() {
 
   return (
     <div className="patients-page">
-      <Breadcrumbs
-  items={[
-    {
-      icon: <LayoutDashboard size={16} />,
-      label: 'Главная',
-      path: '/dashboard?home=1',
-    },
-    {
-      icon: <Users size={16} />,
-      label: 'Пациенты',
-    },
-  ]}
-/>
-
-<div className="back-button-wrapper">
-  <BackButton to="/dashboard?home=1" label="На главную" />
-</div>
+      <div className="back-button-wrapper">
+        <BackButton to="/dashboard?home=1" label="На главную" />
+      </div>
 
 
       <div className="page-header">
