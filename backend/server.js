@@ -163,6 +163,7 @@ app.use('/api/patients', require('./routes/patients'));
 app.use('/api/diagnoses', require('./routes/diagnoses'));
 app.use('/api/complexes', require('./routes/complexes'));
 app.use('/api/exercises', require('./routes/exercises'));
+app.use('/api/import', require('./routes/import'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/templates', require('./routes/templates'));
