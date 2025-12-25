@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises } from '../../services/api';
 import MDEditor from '@uiw/react-md-editor';
+import Breadcrumbs from '../../components/Breadcrumbs';
 import './ExerciseDetail.css';
 
 import {
@@ -201,24 +202,12 @@ const ExerciseDetail = () => {
   return (
     <div className="exercise-detail-page">
       <div className="exercise-detail-inner">
-        {/* HEADER */}
-        <div className="exercise-detail-header">
-          <button
-            className="back-button"
-            type="button"
-            onClick={() => navigate('/exercises')}
-          >
-            ← Назад к библиотеке
-          </button>
-
-          <div className="exercise-breadcrumb">
-            <span className="crumb">Библиотека упражнений</span>
-            <span className="crumb-separator">/</span>
-            <span className="crumb-active">
-              {short_title || title}
-            </span>
-          </div>
-        </div>
+        <Breadcrumbs
+          items={[
+            { label: 'Библиотека упражнений', path: '/exercises' },
+            { label: exercise?.title || 'Упражнение' },
+          ]}
+        />
 
         {/* MAIN CARD LAYOUT */}
         <div className="exercise-detail-grid">

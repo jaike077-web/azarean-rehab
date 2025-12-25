@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises, complexes } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
   DndContext,
@@ -14,9 +13,7 @@ import {
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { useToast } from '../context/ToastContext';
-import { 
-  LayoutDashboard, 
-  ClipboardList, 
+import {
   Edit2,
   FileText,
   Dumbbell,
@@ -24,7 +21,7 @@ import {
   Search,
   Save,
   Check,
-  X
+  X,
 } from 'lucide-react';
 
 
@@ -354,28 +351,12 @@ function EditComplex() {
 
   return (
     <div className="edit-complex-page">
-      <Breadcrumbs 
-  items={[
-    { 
-      icon: <LayoutDashboard size={16} />, 
-      label: 'Главная', 
-      path: '/dashboard' 
-    },
-    { 
-      icon: <ClipboardList size={16} />, 
-      label: 'Мои комплексы', 
-      path: '/my-complexes' 
-    },
-    { 
-      icon: <Edit2 size={16} />, 
-      label: `Редактирование: ${patientName}` 
-    }
-  ]}
-/>
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes" label="К списку комплексов" />
-      </div>
+      <Breadcrumbs
+        items={[
+          { label: 'Мои комплексы', path: '/dashboard' },
+          { label: `Редактирование: ${patientName || ''}` },
+        ]}
+      />
 
       <div className="page-header">
         <h1>

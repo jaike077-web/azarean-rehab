@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { patients, complexes } from '../services/api';
 import './Trash.css';
 import BackButton from '../components/BackButton';
-import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
-import { LayoutDashboard, Trash2 } from 'lucide-react';
 import { TableSkeleton } from '../components/Skeleton';
 
 
@@ -120,21 +118,6 @@ function Trash() {
 
   return (
     <div className="trash-page">
-      <Breadcrumbs
-  items={[
-    { 
-      icon: <LayoutDashboard size={16} />, 
-      label: 'Главная', 
-      path: '/dashboard' 
-    },
-    { 
-      icon: <Trash2 size={16} />, 
-      label: 'Корзина' 
-    }
-  ]}
-/>
-
-      
       <BackButton to="/" label="На главную" />
 
       <div className="page-header">

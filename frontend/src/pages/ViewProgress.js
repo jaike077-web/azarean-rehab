@@ -1,9 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { complexes, progress } from '../services/api';
-import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
-import { CalendarRange, ClipboardList, LayoutDashboard, User, BarChart3 } from 'lucide-react';
+import { CalendarRange, User } from 'lucide-react';
 import ProgressSkeleton from '../components/skeletons/ProgressSkeleton';
 import './ViewProgress.css';
 
@@ -173,26 +172,10 @@ function ViewProgress() {
     <div className="view-progress-page progress-page">
       <Breadcrumbs
         items={[
-          {
-            icon: <LayoutDashboard size={16} />,
-            label: 'Главная',
-            path: '/dashboard'
-          },
-          {
-            icon: <ClipboardList size={16} />,
-            label: 'Мои комплексы',
-            path: '/my-complexes'
-          },
-          {
-            icon: <BarChart3 size={16} />,
-            label: `Прогресс: ${patientName}`
-          }
+          { label: 'Мои комплексы', path: '/dashboard' },
+          { label: `Прогресс: ${patientName || 'Пациент'}` },
         ]}
       />
-
-      <div className="back-button-wrapper">
-        <BackButton to="/my-complexes" label="К списку комплексов" />
-      </div>
 
       {error && (
         <div className="error">

@@ -3,10 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { complexes, templates } from '../services/api';
 import './MyComplexes.css';
 import BackButton from '../components/BackButton';
-import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
 import { 
-  LayoutDashboard, 
   ClipboardList, 
   BarChart3, 
   FileText, 
@@ -277,21 +275,6 @@ useEffect(() => {
 
   return (
     <div className="my-complexes-page">
-      <Breadcrumbs
-  items={[
-    { 
-      icon: <LayoutDashboard size={16} />, 
-      label: 'Главная', 
-      path: '/dashboard' 
-    },
-    { 
-      icon: <ClipboardList size={16} />, 
-      label: 'Мои комплексы' 
-    }
-  ]}
-/>
-
-      
       <div className="back-button-wrapper">
         <BackButton to="/" label="На главную" />
       </div>
