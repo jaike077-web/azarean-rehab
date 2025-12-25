@@ -136,6 +136,64 @@
   padding: clamp(16px, 3vw, 20px) clamp(20px, 4vw, 24px);
 }
 
+.session-progress {
+  padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.progress-text {
+  font-size: clamp(13px, 2.5vw, 14px);
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.progress-text strong {
+  color: #2d3748;
+  font-weight: 600;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .session-info h3 {
   margin: 0;
   font-size: clamp(16px, 3vw, 18px);
@@ -192,7 +250,9 @@
 }
 
 .status-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   border-radius: 10px;
   font-size: 12px;
@@ -207,6 +267,21 @@
 .status-badge.skipped {
   background: #fed7d7;
   color: #742a2a;
+}
+
+.status-badge.not-attempted {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px dashed #d1d5db;
+}
+
+.skipped-exercise {
+  opacity: 0.6;
+  background: #fafafa;
+}
+
+.skipped-exercise .exercise-name {
+  color: #718096;
 }
 
 .pain-badge {
@@ -411,6 +486,18 @@
 
 /* Mobile responsive */
 @media (max-width: 640px) {
+  .session-progress {
+    padding: 12px 16px;
+  }
+
+  .progress-text {
+    font-size: 12px;
+  }
+
+  .progress-bar {
+    height: 10px;
+  }
+
   .session-table th,
   .session-table td {
     padding: 8px;

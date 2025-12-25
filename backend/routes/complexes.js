@@ -208,6 +208,36 @@ router.get('/trash/list', authenticateToken, async (req, res) => {
   }
 });
 
+// Получить упражнения комплекса
+router.get('/:id/exercises', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await query(
+      `SELECT 
+         ce.exercise_id,
+         ce.order_number,
+         e.title,
+         e.body_region,
+         e.video_url
+       FROM complex_exercises ce
+       JOIN exercises e ON ce.exercise_id = e.id
+       JOIN complexes c ON ce.complex_id = c.id
+       WHERE ce.complex_id = $1 AND c.instructor_id = $2 AND c.is_active = true
+       ORDER BY ce.order_number ASC`,
+      [id, req.user.id]
+    );
+
+    res.json({
+      complexId: id,
+      exercises: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching complex exercises:', error);
+    res.status(500).json({ error: 'Failed to fetch complex exercises' });
+  }
+});
+
 // Получить комплекс по ID (для инструктора)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
