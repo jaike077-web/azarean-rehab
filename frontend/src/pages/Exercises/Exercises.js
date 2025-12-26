@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Inbox,
+  Plus,
+  Search
+} from 'lucide-react';
 import { exercises } from '../../services/api';
 import ExerciseFilters from './components/ExerciseFilters';
 import ExerciseCard from './components/ExerciseCard';
@@ -194,15 +201,18 @@ function Exercises() {
       <div className="exercises-page">
         <div className="exercises-page-header">
           <div className="header-left">
-            <button className="btn-back" onClick={() => navigate('/dashboard')}>
-              ← Назад в меню
+            <button className="back-button" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft size={20} />
+              Назад в меню
             </button>
-            <h1 className="page-title">🏋️ Библиотека упражнений</h1>
+            <h1 className="page-title">Библиотека упражнений</h1>
           </div>
         </div>
         <div className="exercises-content">
           <div className="exercises-error">
-            <div className="error-icon">⚠️</div>
+            <div className="error-icon">
+              <AlertTriangle size={32} />
+            </div>
             <h2 className="error-title">Ошибка загрузки</h2>
             <p className="error-message">{error}</p>
           </div>
@@ -216,14 +226,16 @@ function Exercises() {
       {/* Header */}
       <div className="exercises-page-header">
         <div className="header-left">
-          <button className="btn-back" onClick={() => navigate('/dashboard')}>
-            ← Назад в меню
+          <button className="back-button" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={20} />
+            Назад в меню
           </button>
-          <h1 className="page-title">🏋️ Библиотека упражнений</h1>
+          <h1 className="page-title">Библиотека упражнений</h1>
         </div>
         <div className="header-actions">
-          <button className="btn-add" onClick={handleCreate}>
-            + Создать упражнение
+          <button className="btn-primary" onClick={handleCreate}>
+            <Plus size={20} />
+            Создать упражнение
           </button>
         </div>
       </div>
@@ -241,19 +253,24 @@ function Exercises() {
         {exercisesList.length === 0 ? (
           // Пусто совсем
           <div className="exercises-empty">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon">
+              <Inbox size={56} />
+            </div>
             <h2 className="empty-title">Упражнений пока нет</h2>
             <p className="empty-message">
               Создайте первое упражнение для библиотеки
             </p>
-            <button className="btn-create-first" onClick={handleCreate}>
-              + Создать первое упражнение
+            <button className="btn-primary" onClick={handleCreate}>
+              <Plus size={20} />
+              Создать первое упражнение
             </button>
           </div>
         ) : filteredExercises.length === 0 ? (
           // Нет результатов фильтрации
           <div className="no-results">
-            <div className="no-results-icon">🔍</div>
+            <div className="no-results-icon">
+              <Search size={32} />
+            </div>
             <h3 className="no-results-title">Ничего не найдено</h3>
             <p className="no-results-message">
               Попробуйте изменить параметры поиска
