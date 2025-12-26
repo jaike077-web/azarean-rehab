@@ -32,6 +32,7 @@ const config = {
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
     projectId: process.env.KINESCOPE_PROJECT_ID,
+    folderId: process.env.KINESCOPE_FOLDER_ID || null, 
     apiUrl: 'https://api.kinescope.io/v1',
   },
 };

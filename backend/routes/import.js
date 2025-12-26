@@ -39,25 +39,26 @@ router.get('/kinescope/preview', async (req, res) => {
     const kinescopeIds = videos.map((video) => video.id);
 
     let existingIds = new Set();
-    if (kinescopeIds.length > 0) {
-      const existingQuery = `
-        SELECT kinescope_id
-        FROM exercises
-        WHERE kinescope_id = ANY($1)
-      `;
-      const existingResult = await query(existingQuery, [kinescopeIds]);
-      existingIds = new Set(existingResult.rows.map((row) => row.kinescope_id));
-    }
+if (kinescopeIds.length > 0) {
+  const existingQuery = `
+    SELECT kinescope_id
+    FROM exercises
+    WHERE kinescope_id = ANY($1)
+      AND is_active = true
+  `;  // ✅ Только активные!
+  const existingResult = await query(existingQuery, [kinescopeIds]);
+  existingIds = new Set(existingResult.rows.map((row) => row.kinescope_id));
+}
 
-    const videosWithStatus = videos.map((video) => ({
-      id: video.id,
-      title: video.title,
-      thumbnail: video.thumbnail,
-      duration: video.duration,
-      play_link: video.play_link,
-      created_at: video.created_at,
-      alreadyImported: existingIds.has(video.id),
-    }));
+const videosWithStatus = videos.map((video) => ({
+  id: video.id,
+  title: video.title,
+  thumbnail: video.poster?.original || video.poster?.lg || video.poster?.md || null,  // ✅ Правильно!
+  duration: video.duration,
+  play_link: video.play_link,
+  created_at: video.created_at,
+  alreadyImported: existingIds.has(video.id),
+}));
 
     res.json({
       total: videosWithStatus.length,
@@ -99,8 +100,8 @@ router.post('/kinescope/execute', async (req, res) => {
 
     for (const videoId of videoIds) {
       try {
-        const checkQuery = 'SELECT id FROM exercises WHERE kinescope_id = $1';
-        const existing = await client.query(checkQuery, [videoId]);
+        const checkQuery = 'SELECT id FROM exercises WHERE kinescope_id = $1 AND is_active = true';
+const existing = await client.query(checkQuery, [videoId]);
 
         if (existing.rows.length > 0) {
           importResults.skipped += 1;
@@ -308,13 +309,17 @@ router.post('/csv', upload.single('file'), async (req, res) => {
  * Download CSV template
  */
 router.get('/csv/template', (req, res) => {
-  const template = `title,kinescope_id,description,body_region,exercise_type,difficulty_level,equipment,instructions,contraindications,tips
-"L - отведение бедра","kinescope_abc123","Упражнение для укрепления отводящих мышц бедра","Бедро","Силовое",2,"[]","Лягте на бок, медленно поднимайте верхнюю ногу","Острая боль в тазобедренном суставе","Держите корпус стабильным"
-"Приседания","kinescope_def456","Базовое упражнение для ног","Колено","Силовое",3,"[]","Ноги на ширине плеч, приседайте до параллели","Травмы коленей","Колени не выходят за носки"`;
+  // UTF-8 BOM для правильного открытия в Excel
+  const BOM = '\uFEFF';
+  
+  // Используем точку с запятой для Excel (русская версия)
+  const template = `title;kinescope_id;description;body_region;exercise_type;difficulty_level;equipment;instructions;contraindications;tips
+"L - отведение бедра";kinescope_abc123;"Упражнение для укрепления отводящих мышц бедра";"Бедро";"Силовое";2;"[]";"Лягте на бок, медленно поднимайте верхнюю ногу";"Острая боль в тазобедренном суставе";"Держите корпус стабильным"
+"Приседания";kinescope_def456;"Базовое упражнение для ног";"Колено";"Силовое";3;"[]";"Ноги на ширине плеч, приседайте до параллели";"Травмы коленей";"Колени не выходят за носки"`;
 
-  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename=exercises_template.csv');
-  res.send(template);
+  res.send(BOM + template);
 });
 
 module.exports = router;

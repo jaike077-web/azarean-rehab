@@ -14,7 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "@dnd-kit/modifiers": "^9.0.0",
-    "axios": "^1.11.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "csv-parse": "^5.6.0",
@@ -23,7 +23,7 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.0",
+    "multer": "^2.0.2",
     "pg": "^8.16.3"
   },
   "devDependencies": {

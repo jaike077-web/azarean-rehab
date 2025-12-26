@@ -1,52 +1,54 @@
-const csvParse = require('csv-parse/sync');
-
-const normalizeJsonField = (field) => {
-  if (!field || field.trim() === '') {
-    return null;
-  }
-
-  try {
-    return JSON.parse(field);
-  } catch (error) {
-    return field;
-  }
-};
+const { parse } = require('csv-parse/sync');
 
 /**
- * Parse CSV data and validate
+ * Parse CSV data and transform to exercise format
  */
-function parseCSV(csvData) {
+async function parseCSV(csvData) {
   try {
-    const records = csvParse.parse(csvData, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      bom: true,
+    // Убираем BOM (Byte Order Mark) если есть
+    const cleanData = csvData.replace(/^\uFEFF/, '');
+    
+    // Парсим CSV с точкой с запятой как разделителем
+    const records = parse(cleanData, {
+      columns: true,           // Первая строка = названия колонок
+      skip_empty_lines: true,  // Пропускаем пустые строки
+      delimiter: ';',          // Разделитель: точка с запятой
+      trim: true,              // Убираем пробелы по краям
+      bom: true,               // Поддержка BOM
     });
 
-    return records.map((row, index) => {
-      if (!row.title || row.title.trim() === '') {
-        throw new Error(`Row ${index + 2}: Title is required`);
-      }
+    // Преобразуем каждую строку в формат упражнения
+    const exercises = records.map((record) => {
+      // Парсим JSON поля (equipment, instructions и т.д.)
+      const parseJSONField = (field) => {
+        if (!field || field === '[]') return [];
+        try {
+          return JSON.parse(field);
+        } catch (error) {
+          return [];
+        }
+      };
 
       return {
-        title: row.title.trim(),
-        kinescope_id: row.kinescope_id || null,
-        video_url: row.video_url || null,
-        thumbnail_url: row.thumbnail_url || null,
-        description: row.description || null,
-        body_region: row.body_region || null,
-        exercise_type: row.exercise_type || null,
-        difficulty_level: parseInt(row.difficulty_level, 10) || 2,
-        equipment: normalizeJsonField(row.equipment),
-        instructions: normalizeJsonField(row.instructions),
-        contraindications: normalizeJsonField(row.contraindications),
-        tips: normalizeJsonField(row.tips),
+        title: record.title || 'Без названия',
+        kinescope_id: record.kinescope_id || null,
+        description: record.description || null,
+        body_region: record.body_region || null,
+        exercise_type: record.exercise_type || null,
+        difficulty_level: parseInt(record.difficulty_level, 10) || 2,
+        equipment: parseJSONField(record.equipment),
+        instructions: record.instructions || null,
+        contraindications: record.contraindications || null,
+        tips: record.tips || null,
+        video_url: record.video_url || null,
+        thumbnail_url: record.thumbnail_url || null,
       };
     });
+
+    return exercises;
   } catch (error) {
-    console.error('CSV parsing error:', error);
-    throw new Error(`Failed to parse CSV: ${error.message}`);
+    console.error('CSV parse error:', error);
+    throw new Error(`CSV parse error: ${error.message}`);
   }
 }
 
