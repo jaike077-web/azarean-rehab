@@ -1,4 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Check,
+  Eye,
+  Loader2,
+  Plus,
+  Search,
+  X
+} from 'lucide-react';
 import { exercises } from '../../../services/api';
 import ExerciseViewModal from '../../Exercises/components/ExerciseViewModal';
 import {
@@ -85,7 +93,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
   if (loading) {
     return (
       <div className="exercise-selector loading">
-        <div className="spinner">⏳</div>
+        <Loader2 className="spinner" size={32} />
         <p>Загрузка упражнений...</p>
       </div>
     );
@@ -103,13 +111,18 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
     <div className="exercise-selector">
       {/* Фильтры */}
       <div className="selector-filters">
-        <input
-          type="text"
-          placeholder="🔍 Поиск упражнений..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="filter-search"
-        />
+        <div className="filter-search-wrapper">
+          <span className="search-icon" aria-hidden="true">
+            <Search size={16} />
+          </span>
+          <input
+            type="text"
+            placeholder="Поиск упражнений..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="filter-search"
+          />
+        </div>
 
         <select
           value={bodyRegion}
@@ -142,7 +155,8 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
               setExerciseType('');
             }}
           >
-            ✕ Сбросить
+            <X size={14} />
+            Сбросить
           </button>
         )}
       </div>
@@ -221,8 +235,9 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                   className="btn-view"
                   onClick={() => setViewExercise(exercise)}
                   title="Просмотр"
+                  aria-label="Просмотр"
                 >
-                  👁️
+                  <Eye size={18} />
                 </button>
                 
                 <button
@@ -230,7 +245,17 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                   onClick={() => handleSelect(exercise)}
                   title={isSelected(exercise.id) ? 'Убрать' : 'Добавить'}
                 >
-                  {isSelected(exercise.id) ? '✓ Добавлено' : '+ Добавить'}
+                  {isSelected(exercise.id) ? (
+                    <>
+                      <Check size={16} />
+                      Добавлено
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} />
+                      Добавить
+                    </>
+                  )}
                 </button>
               </div>
             </div>

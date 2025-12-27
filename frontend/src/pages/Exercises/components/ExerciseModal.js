@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import './ExerciseModal.css';
 
@@ -230,8 +231,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
         {/* HEADER */}
         <div className="modal-header">
           <h2>{exercise ? 'Редактировать упражнение' : 'Новое упражнение'}</h2>
-          <button className="close-btn" onClick={onClose}>
-            ✕
+          <button className="close-btn" onClick={onClose} aria-label="Закрыть">
+            <X size={20} />
           </button>
         </div>
 
@@ -436,8 +437,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                                 item
                               )
                             }
+                            aria-label="Удалить оборудование"
                           >
-                            ✕
+                            <X size={14} />
                           </button>
                         </span>
                       );
@@ -477,8 +479,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                             onClick={() =>
                               toggleArrayValue(position, setPosition, item)
                             }
+                            aria-label="Удалить позицию"
                           >
-                            ✕
+                            <X size={14} />
                           </button>
                         </span>
                       );
@@ -526,8 +529,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                                 item
                               )
                             }
+                            aria-label="Удалить фазу реабилитации"
                           >
-                            ✕
+                            <X size={14} />
                           </button>
                         </span>
                       );
@@ -544,7 +548,12 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                 className="toggle-advanced-btn"
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
-                {showAdvanced ? '▼' : '▶'} Расширенные настройки{' '}
+                {showAdvanced ? (
+                  <ChevronDown size={16} />
+                ) : (
+                  <ChevronRight size={16} />
+                )}{' '}
+                Расширенные настройки{' '}
                 <span className="optional">(инструкции, противопоказания)</span>
               </button>
 

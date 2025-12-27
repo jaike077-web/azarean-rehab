@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises } from '../../services/api';
 import MDEditor from '@uiw/react-md-editor';
+import { AlertTriangle, ArrowLeft, Footprints, Heart, Move, User, Video, Zap } from 'lucide-react';
 import './ExerciseDetail.css';
 
 import {
@@ -16,7 +17,6 @@ import {
   getEquipmentLabel,
   getPositionLabel,
   getRehabPhaseLabel,
-  BODY_REGION_ICONS,
   DIFFICULTY_COLORS,
   PHASE_COLORS,
 } from '../../utils/exerciseConstants';
@@ -96,6 +96,21 @@ const ExerciseDetail = () => {
     return '#0f766e';
   };
 
+  const getBodyRegionIcon = (region) => {
+    const icons = {
+      shoulder: <User size={16} />,
+      knee: <Footprints size={16} />,
+      spine: <Zap size={16} />,
+      hip: <Move size={16} />,
+      ankle: <Footprints size={16} />,
+      elbow: <User size={16} />,
+      wrist: <User size={16} />,
+      neck: <User size={16} />,
+      full_body: <Move size={16} />
+    };
+    return icons[region] || <Heart size={16} />;
+  };
+
   const renderChips = (items, getLabelFn, colorFn) => {
     if (!items || items.length === 0) return <span className="muted-text">Не указано</span>;
 
@@ -118,7 +133,9 @@ const ExerciseDetail = () => {
     if (!url) {
       return (
         <div className="video-placeholder">
-          <div className="video-placeholder-icon">🎥</div>
+          <div className="video-placeholder-icon" aria-hidden="true">
+            <Video size={32} />
+          </div>
           <p>Видео не прикреплено</p>
         </div>
       );
@@ -156,14 +173,17 @@ const ExerciseDetail = () => {
     return (
       <div className="exercise-detail-page">
         <div className="exercise-detail-inner error-state">
-          <div className="error-icon">⚠️</div>
+          <div className="error-icon" aria-hidden="true">
+            <AlertTriangle size={32} />
+          </div>
           <h2>Не удалось загрузить упражнение</h2>
           <p className="muted-text">{error || 'Неизвестная ошибка'}</p>
           <button
             className="btn-primary-outline"
             onClick={() => navigate('/exercises')}
           >
-            ← Вернуться к списку упражнений
+            <ArrowLeft size={16} />
+            Вернуться к списку упражнений
           </button>
         </div>
       </div>
@@ -193,10 +213,10 @@ const ExerciseDetail = () => {
   } = exercise;
 
   const regionLabel = body_region ? getBodyRegionLabel(body_region) : 'Не указан';
-  const regionIcon = body_region && BODY_REGION_ICONS ? BODY_REGION_ICONS[body_region] : null;
   const typeLabel = exercise_type ? getExerciseTypeLabel(exercise_type) : 'Не указан';
   const difficultyLabel = getDifficultyLabel(difficulty_level || 1);
   const difficultyColor = getDifficultyColor(difficulty_level || 1);
+  const regionIcon = body_region ? getBodyRegionIcon(body_region) : null;
 
   return (
     <div className="exercise-detail-page">
@@ -208,7 +228,8 @@ const ExerciseDetail = () => {
             type="button"
             onClick={() => navigate('/exercises')}
           >
-            ← Назад к библиотеке
+            <ArrowLeft size={16} />
+            Назад к библиотеке
           </button>
 
           <div className="exercise-breadcrumb">

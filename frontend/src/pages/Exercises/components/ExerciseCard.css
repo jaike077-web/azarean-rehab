@@ -55,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
 .exercises-page .placeholder-icon {
@@ -95,8 +95,8 @@
 }
 
 .exercises-page .difficulty-moderate {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: #e9d5ff;
+  color: #7c3aed;
 }
 
 .exercises-page .difficulty-medium {
@@ -166,12 +166,12 @@
 }
 
 .exercises-page .btn-edit {
-  background: #667eea;
+  background: #6366f1;
   color: white;
 }
 
 .exercises-page .btn-edit:hover {
-  background: #5568d3;
+  background: #4f46e5;
   transform: scale(1.03);
 }
 
@@ -391,13 +391,28 @@
     height: 180px;
   }
 
+  .exercises-page .card-overlay {
+    opacity: 1;
+    top: 12px;
+    right: 12px;
+    left: auto;
+    bottom: auto;
+    background: transparent;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .exercises-page .exercise-card:hover .card-overlay {
+    opacity: 1;
+  }
+
   .exercises-page .card-title {
     font-size: clamp(15px, 4vw, 18px);
   }
 
   .exercises-page .btn-card-action {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     font-size: 18px;
   }
 }

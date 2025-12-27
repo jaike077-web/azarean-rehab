@@ -24,8 +24,13 @@
 }
 
 .exercise-selector .spinner {
-  font-size: clamp(28px, 6vw, 36px);
+  color: #6366f1;
   animation: spin 2s linear infinite;
+}
+
+.exercise-selector .spinner svg {
+  width: clamp(28px, 6vw, 36px);
+  height: clamp(28px, 6vw, 36px);
 }
 
 @keyframes spin {
@@ -43,10 +48,27 @@
   flex-wrap: wrap;
 }
 
-.filter-search {
+.filter-search-wrapper {
+  position: relative;
   flex: 1;
   min-width: min(180px, 100%);
-  padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 16px);
+}
+
+.search-icon {
+  position: absolute;
+  left: clamp(12px, 2vw, 16px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.filter-search {
+  width: 100%;
+  padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 16px) clamp(9px, 2vw, 11px) clamp(38px, 6vw, 44px);
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
@@ -57,8 +79,8 @@
 
 .filter-search:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .filter-search::placeholder {
@@ -83,7 +105,7 @@
 
 .filter-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6366f1;
 }
 
 .btn-clear {
@@ -102,6 +124,11 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+}
+
+.btn-clear svg {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-clear:hover {
@@ -304,8 +331,13 @@
   padding: 0;
 }
 
+.btn-view svg {
+  width: 18px;
+  height: 18px;
+}
+
 .btn-view:hover {
-  border-color: #667eea;
+  border-color: #6366f1;
   background: #f7fafc;
   transform: scale(1.05);
 }
@@ -313,7 +345,7 @@
 .btn-select {
   padding: clamp(9px, 2vw, 11px) clamp(16px, 3vw, 22px);
   border: none;
-  background: #667eea;
+  background: #6366f1;
   color: white;
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
@@ -329,10 +361,15 @@
   gap: 6px;
 }
 
+.btn-select svg {
+  width: 16px;
+  height: 16px;
+}
+
 .btn-select:hover {
-  background: #5568d3;
+  background: #4f46e5;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
 }
 
 .btn-select.selected {
@@ -352,7 +389,7 @@
     flex-direction: column;
   }
 
-  .filter-search,
+  .filter-search-wrapper,
   .filter-select {
     width: 100%;
   }

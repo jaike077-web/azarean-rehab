@@ -3,27 +3,32 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-   .exercise-modal {
-    max-width: min(820px, 94vw);
-    max-height: 90vh;
-    overflow-y: auto;
-  }
+body.modal-open {
+  overflow: hidden;
+}
+
+.exercise-modal {
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+}
   
   /* =====================================================
      FORM SECTIONS
      ===================================================== */
   
-  .form-section {
-    margin-bottom: clamp(24px, 5vw, 36px);
-    padding: clamp(18px, 4vw, 28px);
-    background: #f7fafc;
-    border-radius: clamp(10px, 2vw, 14px);
-  }
-  
-  .form-section.required-section {
-    background: #fef5e7;
-    border: 2px solid #f39c12;
-  }
+.form-section {
+  margin-bottom: clamp(24px, 5vw, 36px);
+  padding: clamp(18px, 4vw, 28px);
+  background: #f9fafb;
+  border-radius: clamp(10px, 2vw, 14px);
+}
+
+.form-section.required-section {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+}
   
   .section-title {
     font-size: clamp(16px, 3vw, 20px);
@@ -82,28 +87,28 @@
     margin-bottom: clamp(6px, 1.5vw, 10px);
   }
   
-  .form-group input[type="text"],
-  .form-group input[type="url"],
-  .form-group textarea,
-  .form-group select {
-    width: 100%;
-    padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: clamp(13px, 2vw, 14px);
-    transition: all 0.2s;
-    background: white;
-    min-height: 44px;
-    box-sizing: border-box;
-  }
+.form-group input[type="text"],
+.form-group input[type="url"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: clamp(13px, 2vw, 14px);
+  transition: all 0.2s;
+  background: white;
+  min-height: 44px;
+  box-sizing: border-box;
+}
   
-  .form-group input:focus,
-  .form-group textarea:focus,
-  .form-group select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
   
   .form-group input.error,
   .form-group textarea.error {
@@ -160,7 +165,7 @@
     width: clamp(20px, 4vw, 26px);
     height: clamp(20px, 4vw, 26px);
     border-radius: 50%;
-    background: #667eea;
+    background: #6366f1;
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
@@ -169,7 +174,7 @@
     width: clamp(20px, 4vw, 26px);
     height: clamp(20px, 4vw, 26px);
     border-radius: 50%;
-    background: #667eea;
+    background: #6366f1;
     cursor: pointer;
     border: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -219,17 +224,17 @@
     width: clamp(16px, 3vw, 18px);
     height: clamp(16px, 3vw, 18px);
     cursor: pointer;
-    accent-color: #667eea;
+    accent-color: #6366f1;
     flex-shrink: 0;
   }
   
   .checkbox-label input[type="checkbox"]:checked + span {
     font-weight: 600;
-    color: #667eea;
+    color: #6366f1;
   }
   
   .checkbox-label:has(input:checked) {
-    border-color: #667eea;
+    border-color: #6366f1;
     background: #eef2ff;
   }
   
@@ -249,7 +254,7 @@
     align-items: center;
     gap: clamp(5px, 1vw, 7px);
     padding: clamp(5px, 1vw, 7px) clamp(10px, 2vw, 14px);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     color: white;
     border-radius: 20px;
     font-size: clamp(12px, 2vw, 13px);
@@ -272,6 +277,11 @@
     border-radius: 50%;
     transition: background 0.2s;
     min-height: auto;
+  }
+
+  .tag button svg {
+    width: 12px;
+    height: 12px;
   }
   
   .tag button:hover {
@@ -325,92 +335,81 @@
      MODAL FOOTER
      ===================================================== */
   
-  .modal-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 36px);
-    border-top: 2px solid #e2e8f0;
-    background: #f7fafc;
-  }
-  
-  .btn-secondary {
-    width: 100%;
-    padding: clamp(10px, 2vw, 14px) clamp(18px, 4vw, 28px);
-    background: white;
-    color: #2d3748;
-    border: solid 1px #667eea;
-    border-radius: 8px;
-    font-size: clamp(14px, 2vw, 18px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-height: 48px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .btn-secondary:hover {
-    background: #f7fafc;
-    border-color: #cbd5e0;
-  }
-  
-  .btn-secondary:last-child {
-    margin-bottom: 0;
-  }
-  
-  .btn-primary {
-    width: 100%;
-    padding: clamp(10px, 2vw, 14px) clamp(18px, 4vw, 28px);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: clamp(14px, 2vw, 18px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    min-height: 48px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-  }
-  
-  .btn-primary:active {
-    transform: translateY(0);
-  }
-  
-  .btn-primary:last-child {
-    margin-bottom: 0;
-  }
+.modal-footer {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  padding: 20px 32px 28px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+}
+
+.btn-secondary {
+  flex: 1;
+  padding: 12px 24px;
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:hover {
+  background: #f7fafc;
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.btn-primary {
+  flex: 1;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
   
   /* =====================================================
      MODAL OVERLAY & CONTENT
      ===================================================== */
   
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: clamp(16px, 3vw, 24px);
-    animation: fadeIn 0.2s;
-  }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s;
+}
   
   @keyframes fadeIn {
     from {
@@ -421,15 +420,16 @@
     }
   }
   
-  .modal-content {
-    background: white;
-    border-radius: clamp(12px, 2vw, 18px);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    animation: slideUp 0.3s ease-out;
-  }
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: slideUp 0.3s ease-out;
+}
   
   @keyframes slideUp {
     from {
@@ -446,55 +446,57 @@
      MODAL HEADER
      ===================================================== */
   
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: clamp(18px, 4vw, 28px) clamp(20px, 5vw, 36px);
-    border-bottom: 2px solid #e2e8f0;
-    gap: clamp(12px, 3vw, 18px);
-  }
-  
-  .modal-header h2 {
-    font-size: clamp(20px, 4vw, 26px);
-    color: #1a202c;
-    margin: 0;
-    line-height: 1.3;
-  }
-  
-  .close-btn {
-    width: clamp(32px, 6vw, 40px);
-    height: clamp(32px, 6vw, 40px);
-    border: none;
-    background: #f7fafc;
-    color: #718096;
-    font-size: clamp(18px, 3vw, 22px);
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    padding: 0;
-    min-height: auto;
-  }
-  
-  .close-btn:hover {
-    background: #e2e8f0;
-    color: #2d3748;
-    transform: scale(1.1);
-  }
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  gap: clamp(12px, 3vw, 18px);
+}
+
+.modal-header h2 {
+  font-size: clamp(20px, 4vw, 24px);
+  color: #111827;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.close-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  min-height: auto;
+}
+
+.close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.close-btn:hover {
+  background: #e5e7eb;
+}
   
   /* =====================================================
      MODAL BODY
      ===================================================== */
   
-  .modal-body {
-    padding: clamp(20px, 5vw, 36px);
-    overflow-y: auto;
-    max-height: calc(90vh - 160px);
-  }
+.modal-body {
+  padding: 0 32px 24px;
+  overflow-y: auto;
+  max-height: calc(90vh - 160px);
+}
   
   /* =====================================================
      SCROLLBAR STYLING
@@ -529,7 +531,7 @@
   }
   
   .help-text a {
-    color: #667eea;
+    color: #6366f1;
     text-decoration: none;
   }
   
@@ -541,25 +543,61 @@
      RESPONSIVE
      ===================================================== */
   
-  @media (max-width: 768px) {
-    .exercise-modal {
-      max-width: 100%;
-      max-height: 100vh;
-      border-radius: 0;
-    }
-    
-    .modal-header,
-    .modal-body,
-    .modal-footer {
-      padding: clamp(16px, 4vw, 22px);
-    }
-    
-    .form-section {
-      padding: clamp(14px, 3vw, 20px);
-      margin-bottom: clamp(16px, 4vw, 24px);
-    }
-    
-    .checkbox-group {
-      grid-template-columns: 1fr;
-    }
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
   }
+
+  .modal-content {
+    border-radius: 16px 16px 0 0;
+    max-height: 95vh;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .modal-header {
+    padding: 20px 16px 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .modal-body {
+    padding: 0 16px 16px;
+    max-height: calc(95vh - 180px);
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="url"],
+  .form-group textarea,
+  .form-group select {
+    font-size: 16px;
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .form-group textarea {
+    min-height: 100px;
+  }
+
+  .form-section {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .checkbox-group {
+    grid-template-columns: 1fr;
+  }
+}
