@@ -251,9 +251,12 @@ function Diagnoses() {
                 </p>
               )}
 
-              <div className="card-actions" onClick={(e) => e.stopPropagation()}>
+              <div
+                className="diagnosis-actions"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
-                  className="btn-card-action btn-edit"
+                  className="btn-action"
                   onClick={() => handleOpenEditModal(diagnosis)}
                   title="Редактировать"
                 >
@@ -261,9 +264,10 @@ function Diagnoses() {
                   <span>Редактировать</span>
                 </button>
                 <button
-                  className="btn-card-action btn-delete"
+                  className="btn-icon-danger"
                   onClick={() => handleDelete(diagnosis.id, diagnosis.name)}
                   title="Удалить"
+                  aria-label="Удалить"
                 >
                   <Trash2 size={16} />
                   <span>Удалить</span>

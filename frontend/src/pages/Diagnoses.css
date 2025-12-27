@@ -205,66 +205,56 @@
   }
   
   /* =====================================================
-     CARD ACTIONS - ИСПРАВЛЕНО! 💪
+     CARD ACTIONS
      ===================================================== */
   
-  .card-actions {
+  .diagnosis-actions {
     display: flex;
     gap: 8px;
     margin-top: auto;
-    padding-top: clamp(8px, 2vw, 12px);
-    border-top: 1px solid #e2e8f0;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
   }
   
-  .btn-card-action {
+  .btn-action {
     flex: 1;
-    padding: clamp(10px, 2vw, 12px) clamp(14px, 2vw, 16px);
-    border: 1px solid #e2e8f0;
-    background: white;
-    border-radius: 10px;
-    font-size: clamp(13px, 2vw, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    color: #4a5568;
-    min-height: 44px;
-    white-space: nowrap;
+    padding: 10px 16px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
   }
   
-  .btn-card-action:hover {
-    border-color: #cbd5e0;
-    background: #f7fafc;
+  .btn-icon-danger {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    cursor: pointer;
+    transition: all 0.2s;
   }
   
-  .btn-edit {
-    color: #3182ce;
-    border-color: #bee3f8;
-    background: #ebf8ff;
+  .btn-icon-danger:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
   }
-  
-  .btn-edit:hover {
-    border-color: #90cdf4;
-    background: #bee3f8;
-  }
-  
-  .btn-delete {
-    color: #c53030;
-    border-color: #feb2b2;
-    background: #fff5f5;
-    flex: 0 0 auto;
-    min-width: 44px;
-  }
-  
-  .btn-delete:hover {
-    background: #fed7d7;
-    border-color: #fc8181;
-  }
-  
-  .btn-delete span {
+
+  .btn-icon-danger span {
     display: none;
   }
   

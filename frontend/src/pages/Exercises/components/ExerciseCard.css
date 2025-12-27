@@ -138,17 +138,17 @@
 }
 
 .exercises-page .btn-card-action {
-  width: clamp(44px, 8vw, 52px);
-  height: clamp(44px, 8vw, 52px);
+  width: 40px;
+  height: 40px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .exercises-page .btn-card-action svg {
@@ -157,32 +157,33 @@
 }
 
 .exercises-page .btn-view {
-  background: white;
-  color: #2d3748;
+  background: rgba(255, 255, 255, 0.95);
+  color: #374151;
 }
 
 .exercises-page .btn-view:hover {
-  transform: scale(1.1);
+  background: white;
+  transform: scale(1.05);
 }
 
 .exercises-page .btn-edit {
-  background: #6366f1;
+  background: rgba(99, 102, 241, 0.9);
   color: white;
 }
 
 .exercises-page .btn-edit:hover {
-  background: #4f46e5;
-  transform: scale(1.03);
+  background: #6366f1;
+  transform: scale(1.05);
 }
 
 .exercises-page .btn-delete {
-  background: #f56565;
+  background: rgba(239, 68, 68, 0.9);
   color: white;
 }
 
 .exercises-page .btn-delete:hover {
-  background: #e53e3e;
-  transform: translateY(5px);
+  background: #ef4444;
+  transform: scale(1.05);
 }
 
 /* =====================================================
@@ -393,10 +394,10 @@
 
   .exercises-page .card-overlay {
     opacity: 1;
-    top: 12px;
+    top: auto;
     right: 12px;
     left: auto;
-    bottom: auto;
+    bottom: 12px;
     background: transparent;
     flex-direction: column;
     gap: 8px;
@@ -411,8 +412,13 @@
   }
 
   .exercises-page .btn-card-action {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .exercises-page .btn-card-action svg {
+    width: 16px;
+    height: 16px;
   }
 }
