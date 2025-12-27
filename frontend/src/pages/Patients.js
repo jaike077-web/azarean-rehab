@@ -491,7 +491,9 @@ function Patients() {
                     <div className="patient-header">
                       
                       <div className="patient-info">
-                        <h3>{patient.full_name || 'Без имени'}</h3>
+                        <h3 className="patient-name">
+                          {patient.full_name || 'Без имени'}
+                        </h3>
                         
                       </div>
                     </div>

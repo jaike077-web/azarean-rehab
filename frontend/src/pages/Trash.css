@@ -23,6 +23,9 @@
   margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
   color: #1a202c;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .page-header p {
@@ -67,6 +70,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 .tab-btn:hover {
@@ -95,6 +99,9 @@
   font-size: clamp(60px, 12vw, 80px);
   margin-bottom: clamp(16px, 3vw, 24px);
   opacity: 0.3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-state h2 {
@@ -121,69 +128,46 @@
 }
 
 /* =====================================================
-   TRASH CARD
+   TRASH ITEM
    ===================================================== */
 
-.trash-card {
-  background: white;
-  border-radius: clamp(10px, 2vw, 14px);
-  padding: clamp(18px, 4vw, 28px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-left: 4px solid #fc8181;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.trash-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-.trash-header {
+.trash-item {
   display: flex;
-  gap: clamp(12px, 3vw, 18px);
-  margin-bottom: clamp(16px, 3vw, 24px);
-  padding-bottom: clamp(16px, 3vw, 24px);
-  border-bottom: 2px solid #f7fafc;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
 }
 
-.patient-avatar {
-  width: clamp(52px, 10vw, 64px);
-  height: clamp(52px, 10vw, 64px);
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.item-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(20px, 4vw, 26px);
-  font-weight: 700;
-  flex-shrink: 0;
+  background: #f3f4f6;
+  border-radius: 12px;
+  color: #374151;
 }
 
-.patient-avatar.deleted {
-  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-  opacity: 0.6;
-}
-
-.trash-info {
+.item-info {
   flex: 1;
-  min-width: 0;
 }
 
-.trash-info h3 {
-  font-size: clamp(16px, 3vw, 20px);
-  color: #1a202c;
-  margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.item-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
 }
 
-.trash-meta {
-  font-size: clamp(12px, 2vw, 14px);
-  color: #718096;
-  margin: 0;
-  line-height: 1.5;
+.deleted-date {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
 }
 
 /* =====================================================
@@ -217,55 +201,55 @@
    TRASH ACTIONS
    ===================================================== */
 
-.trash-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(10px, 2vw, 14px);
-}
-
-.trash-actions button {
-  padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
-  border: none;
-  border-radius: 8px;
-  font-size: clamp(13px, 2vw, 14px);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-height: 44px;
+.item-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .btn-restore {
-  background: #48bb78;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #10b981;
+  border: none;
+  border-radius: 8px;
   color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-restore:hover {
-  background: #38a169;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+  background: #059669;
 }
 
-.btn-permanent-delete {
-  background: #fed7d7;
-  color: #c53030;
+.btn-delete-permanent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.btn-permanent-delete:hover {
-  background: #fc8181;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(252, 129, 129, 0.4);
+.btn-delete-permanent:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
 }
 
 /* =====================================================
    RESPONSIVE
    ===================================================== */
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .trash-grid {
     grid-template-columns: 1fr;
   }
@@ -274,8 +258,21 @@
     flex-direction: column;
   }
 
-  .trash-actions {
-    grid-template-columns: 1fr;
+  .trash-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .item-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn-restore,
+  .btn-delete-permanent {
+    width: 100%;
+    justify-content: center;
   }
   
   .page-header {

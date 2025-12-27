@@ -104,7 +104,10 @@ function Dashboard() {
       case 'settings':
         return (
           <div className="welcome-section">
-            <h2>⚙️ Настройки</h2>
+            <h2 className="welcome-title">
+              <span>Настройки</span>
+              <Settings className="welcome-icon" size={26} />
+            </h2>
             <p>Скоро здесь будут настройки</p>
           </div>
         );

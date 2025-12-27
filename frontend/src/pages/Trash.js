@@ -4,7 +4,13 @@ import './Trash.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
-import { LayoutDashboard, Trash2 } from 'lucide-react';
+import {
+  FileText,
+  LayoutDashboard,
+  RotateCcw,
+  Trash2,
+  UserX
+} from 'lucide-react';
 import { TableSkeleton } from '../components/Skeleton';
 
 
@@ -43,7 +49,7 @@ function Trash() {
 
     try {
       await patients.restore(patientId);
-      toast.success('Пациент восстановлен! ♻️');
+      toast.success('Пациент восстановлен');
       loadTrash();
     } catch (err) {
       console.error('Ошибка восстановления:', err);
@@ -64,7 +70,7 @@ function Trash() {
 
     try {
       await patients.deletePermanent(patientId);
-      toast.success('Пациент удалён навсегда! ❌');
+      toast.success('Пациент удалён навсегда');
       loadTrash();
     } catch (err) {
       console.error('Ошибка удаления:', err);
@@ -80,7 +86,7 @@ function Trash() {
 
     try {
       await complexes.restore(complexId);
-      toast.success('Комплекс восстановлен! ♻️');
+      toast.success('Комплекс восстановлен');
       loadTrash();
     } catch (err) {
       console.error('Ошибка восстановления:', err);
@@ -96,7 +102,7 @@ function Trash() {
 
     try {
       await complexes.deletePermanent(complexId);
-      toast.success('Комплекс удалён навсегда! ❌');
+      toast.success('Комплекс удалён навсегда');
       loadTrash();
     } catch (err) {
       console.error('Ошибка удаления:', err);
@@ -121,25 +127,28 @@ function Trash() {
   return (
     <div className="trash-page">
       <Breadcrumbs
-  items={[
-    { 
-      icon: <LayoutDashboard size={16} />, 
-      label: 'Главная', 
-      path: '/dashboard' 
-    },
-    { 
-      icon: <Trash2 size={16} />, 
-      label: 'Корзина' 
-    }
-  ]}
-/>
+        items={[
+          {
+            icon: <LayoutDashboard size={16} />,
+            label: 'Главная',
+            path: '/dashboard'
+          },
+          {
+            icon: <Trash2 size={16} />,
+            label: 'Корзина'
+          }
+        ]}
+      />
 
       
       <BackButton to="/" label="На главную" />
 
       <div className="page-header">
         <div>
-          <h1>🗑️ Корзина</h1>
+          <h1>
+            <Trash2 size={28} />
+            Корзина
+          </h1>
           <p>Удалённые пациенты и комплексы</p>
         </div>
       </div>
@@ -149,13 +158,15 @@ function Trash() {
           className={`tab-btn ${activeTab === 'patients' ? 'active' : ''}`}
           onClick={() => setActiveTab('patients')}
         >
-          👥 Пациенты ({deletedPatients.length})
+          <UserX size={16} />
+          Пациенты ({deletedPatients.length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'complexes' ? 'active' : ''}`}
           onClick={() => setActiveTab('complexes')}
         >
-          📋 Комплексы ({deletedComplexes.length})
+          <FileText size={16} />
+          Комплексы ({deletedComplexes.length})
         </button>
       </div>
 
@@ -163,53 +174,60 @@ function Trash() {
         <>
           {deletedPatients.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">👥</div>
+              <div className="empty-icon">
+                <UserX size={56} />
+              </div>
               <h2>Корзина пуста</h2>
               <p>Нет удалённых пациентов</p>
             </div>
           ) : (
             <div className="trash-grid">
               {deletedPatients.map((patient) => (
-                <div key={patient.id} className="trash-card patient-card">
-                  <div className="trash-header">
-                    <div className="patient-avatar deleted">
-                      {patient.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="trash-info">
-                      <h3>{patient.full_name}</h3>
-                      <p className="trash-meta">
-                        Удалён: {formatDate(patient.updated_at)}
-                      </p>
+                <div key={patient.id} className="trash-item">
+                  <div className="item-icon">
+                    <UserX size={24} />
+                  </div>
+                  <div className="item-info">
+                    <h4>{patient.full_name}</h4>
+                    <p className="deleted-date">
+                      Удалён: {formatDate(patient.updated_at)}
+                    </p>
+                    <div className="trash-details">
+                      <div className="detail-row">
+                        <span className="detail-label">Email:</span>
+                        <span className="detail-value">
+                          {patient.email || 'Не указан'}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Телефон:</span>
+                        <span className="detail-value">
+                          {patient.phone || 'Не указан'}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Комплексов:</span>
+                        <span className="detail-value">
+                          {patient.complexes_count || 0}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="trash-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Email:</span>
-                      <span className="detail-value">{patient.email || 'Не указан'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Телефон:</span>
-                      <span className="detail-value">{patient.phone || 'Не указан'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Комплексов:</span>
-                      <span className="detail-value">{patient.complexes_count || 0}</span>
-                    </div>
-                  </div>
-
-                  <div className="trash-actions">
+                  <div className="item-actions">
                     <button 
                       className="btn-restore"
                       onClick={() => handleRestorePatient(patient.id, patient.full_name)}
                     >
-                      ♻️ Восстановить
+                      <RotateCcw size={16} />
+                      Восстановить
                     </button>
                     <button 
-                      className="btn-permanent-delete"
+                      className="btn-delete-permanent"
                       onClick={() => handleDeletePatientPermanent(patient.id, patient.full_name)}
                     >
-                      ❌ Удалить навсегда
+                      <Trash2 size={16} />
+                      Удалить навсегда
                     </button>
                   </div>
                 </div>
@@ -223,53 +241,60 @@ function Trash() {
         <>
           {deletedComplexes.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon">
+                <FileText size={56} />
+              </div>
               <h2>Корзина пуста</h2>
               <p>Нет удалённых комплексов</p>
             </div>
           ) : (
             <div className="trash-grid">
               {deletedComplexes.map((complex) => (
-                <div key={complex.id} className="trash-card complex-card">
-                  <div className="trash-header">
-                    <div className="patient-avatar deleted">
-                      {complex.patient_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="trash-info">
-                      <h3>{complex.patient_name}</h3>
-                      <p className="trash-meta">
-                        {complex.diagnosis_name || 'Без диагноза'}
-                      </p>
+                <div key={complex.id} className="trash-item">
+                  <div className="item-icon">
+                    <FileText size={24} />
+                  </div>
+                  <div className="item-info">
+                    <h4>{complex.patient_name}</h4>
+                    <p className="deleted-date">
+                      {complex.diagnosis_name || 'Без диагноза'}
+                    </p>
+                    <div className="trash-details">
+                      <div className="detail-row">
+                        <span className="detail-label">Упражнений:</span>
+                        <span className="detail-value">
+                          {complex.exercises_count || 0}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Создан:</span>
+                        <span className="detail-value">
+                          {formatDate(complex.created_at)}
+                        </span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Удалён:</span>
+                        <span className="detail-value">
+                          {formatDate(complex.updated_at)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="trash-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Упражнений:</span>
-                      <span className="detail-value">{complex.exercises_count || 0}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Создан:</span>
-                      <span className="detail-value">{formatDate(complex.created_at)}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Удалён:</span>
-                      <span className="detail-value">{formatDate(complex.updated_at)}</span>
-                    </div>
-                  </div>
-
-                  <div className="trash-actions">
+                  <div className="item-actions">
                     <button 
                       className="btn-restore"
                       onClick={() => handleRestoreComplex(complex.id, complex.patient_name)}
                     >
-                      ♻️ Восстановить
+                      <RotateCcw size={16} />
+                      Восстановить
                     </button>
                     <button 
-                      className="btn-permanent-delete"
+                      className="btn-delete-permanent"
                       onClick={() => handleDeleteComplexPermanent(complex.id, complex.patient_name)}
                     >
-                      ❌ Удалить навсегда
+                      <Trash2 size={16} />
+                      Удалить навсегда
                     </button>
                   </div>
                 </div>
