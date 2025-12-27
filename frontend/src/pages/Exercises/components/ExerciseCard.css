@@ -118,70 +118,76 @@
    OVERLAY
    ===================================================== */
 
-.exercises-page .card-overlay {
+.exercises-page .exercise-card-actions {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 2vw, 14px);
+  gap: 12px;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s;
+  z-index: 10;
 }
 
-.exercises-page .exercise-card:hover .card-overlay {
+.exercises-page .exercise-card:hover .exercise-card-actions {
   opacity: 1;
 }
 
-.exercises-page .btn-card-action {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.exercises-page .exercise-card:hover .exercise-thumbnail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 5;
+}
+
+.exercises-page .action-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.exercises-page .btn-card-action svg {
-  width: 18px;
-  height: 18px;
+.exercises-page .action-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
-.exercises-page .btn-view {
+.exercises-page .view-btn {
   background: rgba(255, 255, 255, 0.95);
   color: #374151;
 }
 
-.exercises-page .btn-view:hover {
+.exercises-page .view-btn:hover {
   background: white;
   transform: scale(1.05);
 }
 
-.exercises-page .btn-edit {
+.exercises-page .edit-btn {
   background: rgba(99, 102, 241, 0.9);
   color: white;
 }
 
-.exercises-page .btn-edit:hover {
+.exercises-page .edit-btn:hover {
   background: #6366f1;
   transform: scale(1.05);
 }
 
-.exercises-page .btn-delete {
+.exercises-page .delete-btn {
   background: rgba(239, 68, 68, 0.9);
   color: white;
 }
 
-.exercises-page .btn-delete:hover {
+.exercises-page .delete-btn:hover {
   background: #ef4444;
   transform: scale(1.05);
 }
@@ -392,33 +398,32 @@
     height: 180px;
   }
 
-  .exercises-page .card-overlay {
+  .exercises-page .exercise-card-actions {
     opacity: 1;
     top: auto;
-    right: 12px;
     left: auto;
     bottom: 12px;
-    background: transparent;
+    right: 12px;
+    transform: none;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .exercises-page .exercise-card:hover .card-overlay {
-    opacity: 1;
   }
 
   .exercises-page .card-title {
     font-size: clamp(15px, 4vw, 18px);
   }
 
-  .exercises-page .btn-card-action {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
+  .exercises-page .action-btn {
+    width: 44px;
+    height: 44px;
   }
 
-  .exercises-page .btn-card-action svg {
-    width: 16px;
-    height: 16px;
+  .exercises-page .action-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .exercises-page .exercise-card .exercise-thumbnail::before {
+    content: none;
   }
 }
