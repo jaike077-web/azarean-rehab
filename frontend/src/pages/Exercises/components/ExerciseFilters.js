@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  X
+} from 'lucide-react';
+import {
   BODY_REGIONS,
   EXERCISE_TYPES,
   DIFFICULTY_LEVELS,
@@ -86,9 +92,12 @@ function ExerciseFilters({
       <div className="filters-main">
         {/* Поиск */}
         <div className="filter-search">
+          <span className="search-icon" aria-hidden="true">
+            <Search size={16} />
+          </span>
           <input
             type="text"
-            placeholder="🔍 Поиск упражнений..."
+            placeholder="Поиск упражнений..."
             value={filters.search}
             onChange={(e) => handleInputChange('search', e.target.value)}
             className="search-input"
@@ -98,8 +107,9 @@ function ExerciseFilters({
               className="clear-search"
               onClick={() => handleInputChange('search', '')}
               title="Очистить поиск"
+              aria-label="Очистить поиск"
             >
-              ✕
+              <X size={12} />
             </button>
           )}
         </div>
@@ -147,7 +157,8 @@ function ExerciseFilters({
             onClick={() => setIsExpanded(!isExpanded)}
             title={isExpanded ? 'Скрыть фильтры' : 'Показать все фильтры'}
           >
-            {isExpanded ? '▲' : '▼'} Фильтры
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            Фильтры
             {activeFiltersCount() > 0 && (
               <span className="filter-badge">{activeFiltersCount()}</span>
             )}
@@ -159,7 +170,8 @@ function ExerciseFilters({
               onClick={handleReset}
               title="Сбросить все фильтры"
             >
-              ✕ Сбросить
+              <X size={14} />
+              Сбросить
             </button>
           )}
 
@@ -244,43 +256,78 @@ function ExerciseFilters({
                 {filters.search && (
                   <span className="active-filter">
                     Поиск: "{filters.search}"
-                    <button onClick={() => handleInputChange('search', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('search', '')}
+                      aria-label="Убрать фильтр по поиску"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.body_region && (
                   <span className="active-filter">
                     {BODY_REGIONS[filters.body_region]}
-                    <button onClick={() => handleInputChange('body_region', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('body_region', '')}
+                      aria-label="Убрать фильтр по региону"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.exercise_type && (
                   <span className="active-filter">
                     {EXERCISE_TYPES[filters.exercise_type]}
-                    <button onClick={() => handleInputChange('exercise_type', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('exercise_type', '')}
+                      aria-label="Убрать фильтр по типу упражнения"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.difficulty_level && (
                   <span className="active-filter">
                     {DIFFICULTY_LEVELS[filters.difficulty_level]}
-                    <button onClick={() => handleInputChange('difficulty_level', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('difficulty_level', '')}
+                      aria-label="Убрать фильтр по сложности"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.equipment && (
                   <span className="active-filter">
                     {EQUIPMENT_OPTIONS[filters.equipment]}
-                    <button onClick={() => handleInputChange('equipment', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('equipment', '')}
+                      aria-label="Убрать фильтр по оборудованию"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.position && (
                   <span className="active-filter">
                     {POSITION_OPTIONS[filters.position]}
-                    <button onClick={() => handleInputChange('position', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('position', '')}
+                      aria-label="Убрать фильтр по позиции"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
                 {filters.rehab_phase && (
                   <span className="active-filter">
                     {REHAB_PHASES[filters.rehab_phase]}
-                    <button onClick={() => handleInputChange('rehab_phase', '')}>✕</button>
+                    <button
+                      onClick={() => handleInputChange('rehab_phase', '')}
+                      aria-label="Убрать фильтр по фазе реабилитации"
+                    >
+                      <X size={12} />
+                    </button>
                   </span>
                 )}
               </div>

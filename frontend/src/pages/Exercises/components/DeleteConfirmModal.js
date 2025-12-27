@@ -2,6 +2,7 @@
 // Azarean Network
 
 import React from 'react';
+import { AlertTriangle } from 'lucide-react';
 import './DeleteConfirmModal.css';
 
 function DeleteConfirmModal({ title, onConfirm, onCancel }) {
@@ -12,9 +13,11 @@ function DeleteConfirmModal({ title, onConfirm, onCancel }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="delete-confirm-modal">
-        <div className="modal-icon">⚠️</div>
+        <div className="modal-icon" aria-hidden="true">
+          <AlertTriangle size={48} />
+        </div>
         <h2>Удалить упражнение?</h2>
         <p className="modal-text">
           Вы уверены, что хотите удалить упражнение<br />

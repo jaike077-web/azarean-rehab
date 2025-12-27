@@ -30,6 +30,19 @@ function Exercises() {
   const [selectedExercise, setSelectedExercise] = useState(null);
 
   useEffect(() => {
+    const isModalOpen = showCreateModal || showEditModal;
+    if (isModalOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [showCreateModal, showEditModal]);
+
+  useEffect(() => {
     loadExercises();
   }, []);
 

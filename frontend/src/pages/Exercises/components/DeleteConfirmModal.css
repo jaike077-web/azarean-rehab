@@ -13,8 +13,16 @@
 }
 
 .modal-icon {
-  font-size: clamp(52px, 10vw, 68px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
   margin-bottom: clamp(12px, 2vw, 18px);
+}
+
+.modal-icon svg {
+  width: clamp(48px, 10vw, 64px);
+  height: clamp(48px, 10vw, 64px);
 }
 
 .delete-confirm-modal h2 {
