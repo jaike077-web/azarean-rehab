@@ -32,16 +32,6 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
     }
   };
 
-  const handleEdit = (e) => {
-    e.stopPropagation();
-    if (onEdit) onEdit(exercise);
-  };
-
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    if (onDelete) onDelete(exercise);
-  };
-
   // Получаем thumbnail для видео
   const getVideoThumbnail = () => {
     // Сначала проверяем, есть ли сохранённый thumbnail
@@ -153,7 +143,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
   return (
     <div className="exercise-card" onClick={handleCardClick}>
       {/* Превью видео */}
-      <div className="card-thumbnail">
+      <div className="card-thumbnail exercise-thumbnail">
         {thumbnail ? (
           <img 
             src={thumbnail} 
@@ -177,33 +167,45 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
         {/* Бадж сложности */}
         {getDifficultyBadge(exercise.difficulty_level)}
 
-        {/* Overlay с кнопками */}
-        <div className="card-overlay">
-          <button 
-            className="btn-card-action btn-view"
-            onClick={handleCardClick}
-            title="Открыть"
+        <div className="exercise-card-actions">
+          <button
+            className="action-btn view-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onView) {
+                onView();
+              }
+            }}
+            title="Просмотр"
           >
-            <Eye size={18} />
+            <Eye size={20} />
           </button>
-          {onEdit && (
-            <button 
-              className="btn-card-action btn-edit"
-              onClick={handleEdit}
-              title="Редактировать"
-            >
-              <Pencil size={18} />
-            </button>
-          )}
-          {onDelete && (
-            <button 
-              className="btn-card-action btn-delete"
-              onClick={handleDelete}
-              title="Удалить"
-            >
-              <Trash2 size={18} />
-            </button>
-          )}
+          
+          <button
+            className="action-btn edit-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onEdit) {
+                onEdit();
+              }
+            }}
+            title="Редактировать"
+          >
+            <Pencil size={20} />
+          </button>
+          
+          <button
+            className="action-btn delete-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onDelete) {
+                onDelete();
+              }
+            }}
+            title="Удалить"
+          >
+            <Trash2 size={20} />
+          </button>
         </div>
       </div>
 

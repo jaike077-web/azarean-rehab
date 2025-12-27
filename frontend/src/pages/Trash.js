@@ -184,34 +184,11 @@ function Trash() {
             <div className="trash-grid">
               {deletedPatients.map((patient) => (
                 <div key={patient.id} className="trash-item">
-                  <div className="item-icon">
-                    <UserX size={24} />
-                  </div>
                   <div className="item-info">
                     <h4>{patient.full_name}</h4>
-                    <p className="deleted-date">
+                    <span className="deleted-date">
                       Удалён: {formatDate(patient.updated_at)}
-                    </p>
-                    <div className="trash-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Email:</span>
-                        <span className="detail-value">
-                          {patient.email || 'Не указан'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Телефон:</span>
-                        <span className="detail-value">
-                          {patient.phone || 'Не указан'}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Комплексов:</span>
-                        <span className="detail-value">
-                          {patient.complexes_count || 0}
-                        </span>
-                      </div>
-                    </div>
+                    </span>
                   </div>
 
                   <div className="item-actions">
@@ -219,14 +196,14 @@ function Trash() {
                       className="btn-restore"
                       onClick={() => handleRestorePatient(patient.id, patient.full_name)}
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw size={18} />
                       Восстановить
                     </button>
                     <button 
                       className="btn-delete-permanent"
                       onClick={() => handleDeletePatientPermanent(patient.id, patient.full_name)}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                       Удалить навсегда
                     </button>
                   </div>
@@ -251,34 +228,11 @@ function Trash() {
             <div className="trash-grid">
               {deletedComplexes.map((complex) => (
                 <div key={complex.id} className="trash-item">
-                  <div className="item-icon">
-                    <FileText size={24} />
-                  </div>
                   <div className="item-info">
                     <h4>{complex.patient_name}</h4>
-                    <p className="deleted-date">
-                      {complex.diagnosis_name || 'Без диагноза'}
-                    </p>
-                    <div className="trash-details">
-                      <div className="detail-row">
-                        <span className="detail-label">Упражнений:</span>
-                        <span className="detail-value">
-                          {complex.exercises_count || 0}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Создан:</span>
-                        <span className="detail-value">
-                          {formatDate(complex.created_at)}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span className="detail-label">Удалён:</span>
-                        <span className="detail-value">
-                          {formatDate(complex.updated_at)}
-                        </span>
-                      </div>
-                    </div>
+                    <span className="deleted-date">
+                      Удалён: {formatDate(complex.updated_at || complex.deleted_at)}
+                    </span>
                   </div>
 
                   <div className="item-actions">
@@ -286,14 +240,14 @@ function Trash() {
                       className="btn-restore"
                       onClick={() => handleRestoreComplex(complex.id, complex.patient_name)}
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw size={18} />
                       Восстановить
                     </button>
                     <button 
                       className="btn-delete-permanent"
                       onClick={() => handleDeleteComplexPermanent(complex.id, complex.patient_name)}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                       Удалить навсегда
                     </button>
                   </div>
