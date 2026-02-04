@@ -21,6 +21,112 @@ import {
 } from '../../../utils/exerciseConstants';
 import './ExerciseCard.css';
 
+// Вспомогательные функции вынесены за пределы компонента для оптимизации
+const getVideoThumbnail = (exercise) => {
+  // Сначала проверяем, есть ли сохранённый thumbnail
+  if (exercise.thumbnail_url) {
+    return exercise.thumbnail_url;
+  }
+
+  if (!exercise.video_url) return null;
+
+  // Kinescope - правильный формат для превью
+  // Формат URL: https://kinescope.io/5mMZxKZzxAQ7f1hJnAxa7x
+  // Превью: https://kinescope.io/preview/5mMZxKZzxAQ7f1hJnAxa7x/poster
+  const kinescopeMatch = exercise.video_url.match(/kinescope\.io\/(?:watch\/|embed\/)?([a-zA-Z0-9]+)/);
+  if (kinescopeMatch) {
+    return `https://kinescope.io/preview/${kinescopeMatch[1]}/poster`;
+  }
+
+  // YouTube
+  const ytMatch = exercise.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if (ytMatch) {
+    return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+  }
+
+  // Vimeo
+  // Для Vimeo нужен API, поэтому просто возвращаем null
+
+  return null;
+};
+
+const getBodyRegionIcon = (regionKey) => {
+  const icons = {
+    shoulder: <User size={16} />,
+    knee: <Footprints size={16} />,
+    spine: <Zap size={16} />,
+    hip: <Move size={16} />,
+    ankle: <Footprints size={16} />,
+    elbow: <User size={16} />,
+    wrist: <User size={16} />,
+    neck: <User size={16} />,
+    full_body: <Move size={16} />
+  };
+  return icons[regionKey] || <User size={16} />;
+};
+
+const getTypeIcon = (type) => {
+  const icons = {
+    strength: <Target size={16} />,
+    activation: <Activity size={16} />,
+    mobilization: <Heart size={16} />,
+    proprioception: <Activity size={16} />,
+    balance: <Activity size={16} />,
+    plyometrics: <Activity size={16} />,
+    stretching: <Heart size={16} />,
+    cardio: <Activity size={16} />,
+    coordination: <Activity size={16} />,
+    relaxation_breathing: <Heart size={16} />,
+    stabilization: <Target size={16} />,
+    isometric: <Target size={16} />,
+    functional_patterns: <Activity size={16} />
+  };
+  return icons[type] || <Target size={16} />;
+};
+
+const getDifficultyBadge = (level) => {
+  const config = {
+    1: { label: 'Легко', className: 'difficulty-easy' },
+    2: { label: 'Умеренно', className: 'difficulty-moderate' },
+    3: { label: 'Средне', className: 'difficulty-medium' },
+    4: { label: 'Сложно', className: 'difficulty-hard' },
+    5: { label: 'Очень сложно', className: 'difficulty-very-hard' }
+  };
+
+  const { label, className } = config[level] || config[2];
+
+  return (
+    <span className={`difficulty-badge ${className}`}>
+      {label}
+    </span>
+  );
+};
+
+const getRehabPhaseBadge = (phase) => {
+  const phases = {
+    ACUTE: { label: 'Острая', className: 'phase-acute' },
+    SUBACUTE: { label: 'Подострая', className: 'phase-subacute' },
+    CHRONIC: { label: 'Хроническая', className: 'phase-chronic' },
+    acute: { label: 'Острая', className: 'phase-acute' },
+    subacute: { label: 'Подострая', className: 'phase-subacute' },
+    chronic: { label: 'Хроническая', className: 'phase-chronic' }
+  };
+
+  const config = phases[phase] || phases.SUBACUTE;
+
+  return (
+    <span className={`rehab-badge ${config.className}`}>
+      {config.label}
+    </span>
+  );
+};
+
+const getEquipmentIcon = () => (
+  <span className="equipment-icon" aria-hidden="true">
+    <Dumbbell size={14} />
+  </span>
+);
+
 function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
   const navigate = useNavigate();
 
@@ -42,113 +148,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
     if (onDelete) onDelete(exercise);
   };
 
-  // Получаем thumbnail для видео
-  const getVideoThumbnail = () => {
-    // Сначала проверяем, есть ли сохранённый thumbnail
-    if (exercise.thumbnail_url) {
-      return exercise.thumbnail_url;
-    }
-
-    if (!exercise.video_url) return null;
-
-    // Kinescope - правильный формат для превью
-    // Формат URL: https://kinescope.io/5mMZxKZzxAQ7f1hJnAxa7x
-    // Превью: https://kinescope.io/preview/5mMZxKZzxAQ7f1hJnAxa7x/poster
-    const kinescopeMatch = exercise.video_url.match(/kinescope\.io\/(?:watch\/|embed\/)?([a-zA-Z0-9]+)/);
-    if (kinescopeMatch) {
-      return `https://kinescope.io/preview/${kinescopeMatch[1]}/poster`;
-    }
-
-    // YouTube
-    const ytMatch = exercise.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-    if (ytMatch) {
-      return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
-    }
-
-    // Vimeo
-    // Для Vimeo нужен API, поэтому просто возвращаем null
-
-    return null;
-  };
-
-  const thumbnail = getVideoThumbnail();
-
-  const getBodyRegionIcon = (regionKey) => {
-    const icons = {
-      shoulder: <User size={16} />,
-      knee: <Footprints size={16} />,
-      spine: <Zap size={16} />,
-      hip: <Move size={16} />,
-      ankle: <Footprints size={16} />,
-      elbow: <User size={16} />,
-      wrist: <User size={16} />,
-      neck: <User size={16} />,
-      full_body: <Move size={16} />
-    };
-    return icons[regionKey] || <User size={16} />;
-  };
-
-  const getTypeIcon = (type) => {
-    const icons = {
-      strength: <Target size={16} />,
-      activation: <Activity size={16} />,
-      mobilization: <Heart size={16} />,
-      proprioception: <Activity size={16} />,
-      balance: <Activity size={16} />,
-      plyometrics: <Activity size={16} />,
-      stretching: <Heart size={16} />,
-      cardio: <Activity size={16} />,
-      coordination: <Activity size={16} />,
-      relaxation_breathing: <Heart size={16} />,
-      stabilization: <Target size={16} />,
-      isometric: <Target size={16} />,
-      functional_patterns: <Activity size={16} />
-    };
-    return icons[type] || <Target size={16} />;
-  };
-
-  const getDifficultyBadge = (level) => {
-    const config = {
-      1: { label: 'Легко', className: 'difficulty-easy' },
-      2: { label: 'Умеренно', className: 'difficulty-moderate' },
-      3: { label: 'Средне', className: 'difficulty-medium' },
-      4: { label: 'Сложно', className: 'difficulty-hard' },
-      5: { label: 'Очень сложно', className: 'difficulty-very-hard' }
-    };
-
-    const { label, className } = config[level] || config[2];
-
-    return (
-      <span className={`difficulty-badge ${className}`}>
-        {label}
-      </span>
-    );
-  };
-
-  const getRehabPhaseBadge = (phase) => {
-    const phases = {
-      ACUTE: { label: 'Острая', className: 'phase-acute' },
-      SUBACUTE: { label: 'Подострая', className: 'phase-subacute' },
-      CHRONIC: { label: 'Хроническая', className: 'phase-chronic' },
-      acute: { label: 'Острая', className: 'phase-acute' },
-      subacute: { label: 'Подострая', className: 'phase-subacute' },
-      chronic: { label: 'Хроническая', className: 'phase-chronic' }
-    };
-
-    const config = phases[phase] || phases.SUBACUTE;
-
-    return (
-      <span className={`rehab-badge ${config.className}`}>
-        {config.label}
-      </span>
-    );
-  };
-
-  const getEquipmentIcon = () => (
-    <span className="equipment-icon" aria-hidden="true">
-      <Dumbbell size={14} />
-    </span>
-  );
+  const thumbnail = getVideoThumbnail(exercise);
 
   return (
     <div className="exercise-card" onClick={handleCardClick}>
@@ -295,4 +295,5 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
   );
 }
 
-export default ExerciseCard;
+// React.memo для предотвращения лишних ререндеров
+export default React.memo(ExerciseCard);

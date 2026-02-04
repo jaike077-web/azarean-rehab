@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patients } from '../services/api';
 import BackButton from '../components/BackButton';
@@ -26,7 +26,6 @@ function Patients() {
   const toast = useToast();
   const navigate = useNavigate();
   const [patientsList, setPatientsList] = useState([]);
-  const [filteredPatients, setFilteredPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showModal, setShowModal] = useState(false);
@@ -89,7 +88,8 @@ function Patients() {
     }
   };
 
-  const filterAndSortPatients = useCallback(() => {
+  // Мемоизированная фильтрация и сортировка пациентов
+  const filteredPatients = useMemo(() => {
     let filtered = [...patientsList];
 
     // Поиск
@@ -120,12 +120,8 @@ function Patients() {
       );
     }
 
-    setFilteredPatients(filtered);
+    return filtered;
   }, [patientsList, searchQuery, sortBy]);
-
-  useEffect(() => {
-    filterAndSortPatients();
-  }, [filterAndSortPatients]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

@@ -1,24 +1,25 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import LoadingSpinner from './components/LoadingSpinner';
 
-// Страницы
+// Критические страницы - загружаются сразу
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Patients from './pages/Patients';
-import PatientView from './pages/PatientView';
-import ViewProgress from './pages/ViewProgress';
-import PatientProgress from './pages/PatientProgress';
-import MyComplexes from './pages/MyComplexes';
-import EditComplex from './pages/EditComplex';
-import EditTemplate from './pages/EditTemplate';
-import CreateComplex from './pages/CreateComplex';
-import Trash from './pages/Trash';
 
-// Библиотека упражнений
-import Exercises from './pages/Exercises/Exercises';
-import ExerciseDetail from './pages/Exercises/ExerciseDetail';
+// Ленивая загрузка страниц
+const Patients = lazy(() => import('./pages/Patients'));
+const PatientView = lazy(() => import('./pages/PatientView'));
+const ViewProgress = lazy(() => import('./pages/ViewProgress'));
+const PatientProgress = lazy(() => import('./pages/PatientProgress'));
+const MyComplexes = lazy(() => import('./pages/MyComplexes'));
+const EditComplex = lazy(() => import('./pages/EditComplex'));
+const EditTemplate = lazy(() => import('./pages/EditTemplate'));
+const CreateComplex = lazy(() => import('./pages/CreateComplex'));
+const Trash = lazy(() => import('./pages/Trash'));
+const Exercises = lazy(() => import('./pages/Exercises/Exercises'));
+const ExerciseDetail = lazy(() => import('./pages/Exercises/ExerciseDetail'));
 
 // Защищённый роут
 function ProtectedRoute({ children }) {
@@ -49,7 +50,8 @@ function AppRoutes() {
   const { user } = useAuth();
 
   return (
-    <Routes>
+    <Suspense fallback={<LoadingSpinner message="Загрузка страницы..." />}>
+      <Routes>
       {/* ========================== */}
       {/* АВТОРИЗАЦИЯ */}
       {/* ========================== */}
@@ -233,9 +235,10 @@ function AppRoutes() {
               На главную
             </a>
           </div>
-        } 
+        }
       />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

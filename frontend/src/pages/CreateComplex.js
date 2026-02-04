@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { patients, diagnoses, exercises, complexes, templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import {
@@ -40,7 +40,7 @@ import './CreateComplex.css';
 import TemplateSelector from '../components/TemplateSelector';
 
 // Компонент для перетаскиваемого упражнения
-function SortableExercise({ exercise, onRemove, onUpdate }) {
+const SortableExercise = React.memo(function SortableExercise({ exercise, onRemove, onUpdate }) {
   const {
     attributes,
     listeners,
@@ -127,7 +127,7 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           className="notes-input"
         />
       </div>
-      <button 
+      <button
         className="remove-exercise-btn"
         onClick={(e) => {
           e.stopPropagation();
@@ -139,7 +139,7 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
       </button>
     </div>
   );
-}
+});
 
 function CreateComplex() {
   const toast = useToast();
@@ -212,15 +212,17 @@ function CreateComplex() {
     }
   };
 
-  // Фильтрация упражнений
-  const filteredExercises = exercisesList.filter((ex) => {
-    const matchesSearch = !searchTerm || 
-      ex.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || 
-      ex.body_region === categoryFilter || 
-      ex.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
+  // Мемоизированная фильтрация упражнений
+  const filteredExercises = useMemo(() => {
+    return exercisesList.filter((ex) => {
+      const matchesSearch = !searchTerm ||
+        ex.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' ||
+        ex.body_region === categoryFilter ||
+        ex.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [exercisesList, searchTerm, categoryFilter]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;

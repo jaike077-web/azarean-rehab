@@ -21,4 +21,5 @@ function BackButton({ to, label = 'Назад' }) {
   );
 }
 
-export default BackButton;
+// React.memo для предотвращения лишних ререндеров
+export default React.memo(BackButton);

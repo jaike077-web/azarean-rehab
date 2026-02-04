@@ -44,4 +44,5 @@ function Breadcrumbs({ items = [] }) {
   );
 }
 
-export default Breadcrumbs;
+// React.memo для предотвращения лишних ререндеров
+export default React.memo(Breadcrumbs);

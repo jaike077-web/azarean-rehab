@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -19,10 +19,22 @@ import ExerciseCardSkeleton from '../../components/skeletons/ExerciseCardSkeleto
 function Exercises() {
   const navigate = useNavigate();
   const [exercisesList, setExercisesList] = useState([]);
-  const [filteredExercises, setFilteredExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
+  // Состояние фильтров
+  const [filters, setFilters] = useState({
+    search: '',
+    body_region: '',
+    exercise_type: '',
+    difficulty_level: '',
+    equipment: '',
+    position: '',
+    rehab_phase: '',
+    sort_by: 'created_at',
+    sort_order: 'desc'
+  });
+
   // Модалки
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -52,7 +64,6 @@ function Exercises() {
       setError('');
       const response = await exercises.getAll();
       setExercisesList(response.data.exercises || []);
-      setFilteredExercises(response.data.exercises || []);
     } catch (err) {
       console.error('Ошибка загрузки упражнений:', err);
       setError(err.response?.data?.message || 'Не удалось загрузить упражнения');
@@ -61,14 +72,14 @@ function Exercises() {
     }
   };
 
-  // Применение фильтров
-  const handleFilterChange = useCallback((filters) => {
+  // Мемоизированная фильтрация и сортировка упражнений
+  const filteredExercises = useMemo(() => {
     let filtered = [...exercisesList];
 
     // Поиск
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(ex => 
+      filtered = filtered.filter(ex =>
         ex.title?.toLowerCase().includes(searchLower) ||
         ex.short_title?.toLowerCase().includes(searchLower) ||
         ex.description?.toLowerCase().includes(searchLower)
@@ -87,7 +98,7 @@ function Exercises() {
 
     // Сложность
     if (filters.difficulty_level) {
-      filtered = filtered.filter(ex => 
+      filtered = filtered.filter(ex =>
         ex.difficulty_level === parseInt(filters.difficulty_level)
       );
     }
@@ -104,7 +115,7 @@ function Exercises() {
 
     // Фаза реабилитации
     if (filters.rehab_phase) {
-      filtered = filtered.filter(ex => 
+      filtered = filtered.filter(ex =>
         ex.rehab_phases && ex.rehab_phases.includes(filters.rehab_phase)
       );
     }
@@ -134,8 +145,13 @@ function Exercises() {
       });
     }
 
-    setFilteredExercises(filtered);
-  }, [exercisesList]);
+    return filtered;
+  }, [exercisesList, filters]);
+
+  // Обработчик изменения фильтров
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+  };
 
   // Создание
   const handleCreate = () => {
