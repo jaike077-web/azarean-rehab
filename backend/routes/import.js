@@ -39,26 +39,27 @@ router.get('/kinescope/preview', async (req, res) => {
     const kinescopeIds = videos.map((video) => video.id);
 
     let existingIds = new Set();
-if (kinescopeIds.length > 0) {
-  const existingQuery = `
-    SELECT kinescope_id
-    FROM exercises
-    WHERE kinescope_id = ANY($1)
-      AND is_active = true
-  `;  // ✅ Только активные!
-  const existingResult = await query(existingQuery, [kinescopeIds]);
-  existingIds = new Set(existingResult.rows.map((row) => row.kinescope_id));
-}
+    if (kinescopeIds.length > 0) {
+      // ИСПРАВЛЕНО: Проверяем ВСЕ записи (включая удалённые в корзину)
+      const existingQuery = `
+        SELECT kinescope_id
+        FROM exercises
+        WHERE kinescope_id = ANY($1)
+          AND is_active = true
+      `;
+      const existingResult = await query(existingQuery, [kinescopeIds]);
+      existingIds = new Set(existingResult.rows.map((row) => row.kinescope_id));
+    }
 
-const videosWithStatus = videos.map((video) => ({
-  id: video.id,
-  title: video.title,
-  thumbnail: video.poster?.original || video.poster?.lg || video.poster?.md || null,  // ✅ Правильно!
-  duration: video.duration,
-  play_link: video.play_link,
-  created_at: video.created_at,
-  alreadyImported: existingIds.has(video.id),
-}));
+    const videosWithStatus = videos.map((video) => ({
+      id: video.id,
+      title: video.title,
+      thumbnail: video.poster?.original || video.poster?.lg || video.poster?.md || null,
+      duration: video.duration,
+      play_link: video.play_link,
+      created_at: video.created_at,
+      alreadyImported: existingIds.has(video.id),
+    }));
 
     res.json({
       total: videosWithStatus.length,
@@ -95,19 +96,37 @@ router.post('/kinescope/execute', async (req, res) => {
       success: 0,
       failed: 0,
       skipped: 0,
+      restored: 0,  // Новый счётчик для восстановленных
       errors: [],
     };
 
     for (const videoId of videoIds) {
       try {
-        const checkQuery = 'SELECT id FROM exercises WHERE kinescope_id = $1 AND is_active = true';
-const existing = await client.query(checkQuery, [videoId]);
+        // ИСПРАВЛЕНО: Проверяем ВСЕ записи (включая is_active = false)
+        const checkQuery = 'SELECT id, is_active FROM exercises WHERE kinescope_id = $1';
+        const existing = await client.query(checkQuery, [videoId]);
 
         if (existing.rows.length > 0) {
-          importResults.skipped += 1;
+          const existingExercise = existing.rows[0];
+          
+          if (!existingExercise.is_active) {
+            // Упражнение было удалено — восстанавливаем его
+            await client.query(
+              'UPDATE exercises SET is_active = true, updated_at = NOW() WHERE id = $1',
+              [existingExercise.id]
+            );
+            importResults.restored += 1;
+            importResults.success += 1;
+            console.log(`✅ Restored exercise: ${videoId}`);
+          } else {
+            // Упражнение уже активно — пропускаем
+            importResults.skipped += 1;
+            console.log(`⏭️ Skipped (already exists): ${videoId}`);
+          }
           continue;
         }
 
+        // Новое упражнение — импортируем
         const videoDetails = await kinescopeService.getVideoDetails(videoId);
         const exerciseData = kinescopeService.transformToExercise(videoDetails);
 
@@ -125,8 +144,9 @@ const existing = await client.query(checkQuery, [videoId]);
             description,
             instructions,
             contraindications,
-            tips
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            tips,
+            is_active
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true)
           RETURNING id
         `;
 
@@ -147,8 +167,9 @@ const existing = await client.query(checkQuery, [videoId]);
         ]);
 
         importResults.success += 1;
+        console.log(`✅ Imported new exercise: ${exerciseData.title}`);
       } catch (error) {
-        console.error(`Error importing video ${videoId}:`, error);
+        console.error(`❌ Error importing video ${videoId}:`, error.message);
         importResults.failed += 1;
         importResults.errors.push({
           videoId,
@@ -158,6 +179,12 @@ const existing = await client.query(checkQuery, [videoId]);
     }
 
     await client.query('COMMIT');
+
+    console.log('=== IMPORT RESULTS ===');
+    console.log(`Success: ${importResults.success} (${importResults.restored} restored)`);
+    console.log(`Skipped: ${importResults.skipped}`);
+    console.log(`Failed: ${importResults.failed}`);
+    console.log('======================');
 
     res.json({
       message: 'Import completed',
@@ -206,10 +233,11 @@ router.post('/csv', upload.single('file'), async (req, res) => {
         let existingParams;
 
         if (exercise.kinescope_id) {
-          existingQuery = 'SELECT id FROM exercises WHERE kinescope_id = $1';
+          // ИСПРАВЛЕНО: Ищем без фильтра is_active
+          existingQuery = 'SELECT id, is_active FROM exercises WHERE kinescope_id = $1';
           existingParams = [exercise.kinescope_id];
         } else {
-          existingQuery = 'SELECT id FROM exercises WHERE title = $1';
+          existingQuery = 'SELECT id, is_active FROM exercises WHERE title = $1';
           existingParams = [exercise.title];
         }
 
@@ -226,7 +254,9 @@ router.post('/csv', upload.single('file'), async (req, res) => {
               equipment = COALESCE($6, equipment),
               instructions = COALESCE($7, instructions),
               contraindications = COALESCE($8, contraindications),
-              tips = COALESCE($9, tips)
+              tips = COALESCE($9, tips),
+              is_active = true,
+              updated_at = NOW()
             WHERE id = $10
           `;
 
@@ -258,8 +288,9 @@ router.post('/csv', upload.single('file'), async (req, res) => {
               equipment,
               instructions,
               contraindications,
-              tips
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+              tips,
+              is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)
           `;
 
           await client.query(insertQuery, [

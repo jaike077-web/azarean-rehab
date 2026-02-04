@@ -17,7 +17,8 @@ const config = {
   // Authentication
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h', // Уменьшено с 7d для безопасности
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
   // Session
@@ -25,8 +26,11 @@ const config = {
     secret: process.env.SESSION_SECRET,
   },
 
-  // CORS
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  // CORS - список разрешенных origins через запятую
+  corsOrigins: (process.env.CORS_ORIGINS || process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim()),
+
+  // Frontend URL для генерации ссылок пациентам
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
   // Kinescope
   kinescope: {

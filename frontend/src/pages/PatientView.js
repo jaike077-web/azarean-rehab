@@ -91,11 +91,12 @@ function PatientView() {
     setExerciseError(exerciseId, '');
 
     try {
+      // Передаём token как accessToken для авторизации пациента
       await progress.create({
         complex_id: complex.id,
         exercise_id: exerciseId,
         ...payload
-      });
+      }, token);
 
       setExerciseSaving(exerciseId, false);
       setExerciseError(exerciseId, '');
@@ -222,6 +223,7 @@ function PatientView() {
 
     try {
       const trimmedSessionComment = sessionComment.trim();
+      // Передаём token как accessToken для авторизации пациента
       await Promise.all(entries.map(([exerciseId, data]) => (
         progress.create({
           complex_id: complex.id,
@@ -232,7 +234,7 @@ function PatientView() {
           pain_level: data.pain_level ?? null,
           difficulty_rating: data.difficulty_rating ?? null,
           notes: data.notes ?? null
-        })
+        }, token)
       )));
 
       const nextSaved = entries.reduce((acc, [exerciseId]) => {

@@ -21,10 +21,18 @@ const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Выполнен запрос:', { text, duration, rows: res.rowCount });
+
+    // Логируем только в development и без параметров (безопасность)
+    if (config.nodeEnv === 'development') {
+      // Обрезаем длинные запросы и скрываем параметры
+      const sanitizedQuery = text.replace(/\s+/g, ' ').substring(0, 80);
+      console.log('Query:', { query: sanitizedQuery + (text.length > 80 ? '...' : ''), duration, rows: res.rowCount });
+    }
+
     return res;
   } catch (error) {
-    console.error('Ошибка выполнения запроса:', error);
+    // Логируем только сообщение об ошибке, не параметры
+    console.error('Ошибка выполнения запроса:', error.message);
     throw error;
   }
 };

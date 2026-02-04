@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(node -c:*)",
+      "Bash(psql:*)",
+      "Bash(curl:*)",
+      "Bash(for:*)",
+      "Bash(do curl -s -o /dev/null -w \"%{http_code} \" http://localhost:5000/api/complexes/token/fake-token-$i)",
+      "Bash(done)"
+    ]
+  }
+}

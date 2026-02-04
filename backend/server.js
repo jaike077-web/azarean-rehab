@@ -29,34 +29,46 @@ if (config.jwt.secret.length < 32) {
 // Helmet - устанавливает безопасные HTTP заголовки
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: false // Отключаем для разработки, включите в production
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://kinescope.io", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://api.kinescope.io", "https://kinescope.io"],
+      frameSrc: ["'self'", "https://kinescope.io"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'", "https://kinescope.io", "blob:"],
+    },
+  },
+  hsts: config.nodeEnv === 'production' ? {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  } : false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// CORS - настройка разрешённых источников
-const allowedOrigins = config.corsOrigin
-  ? config.corsOrigin
-      .split(',')
-      .map((origin) => origin.trim().replace(/\/$/, ''))
-  : ['http://localhost:3000', 'http://localhost:5173'];
+// CORS - ограниченный список разрешенных origins
+const allowedOrigins = config.corsOrigins;
 
 app.use(cors({
-  origin: function(origin, callback) {
-    // Разрешаем запросы без origin (мобильные приложения, Postman)
+  origin: (origin, callback) => {
+    // Разрешаем запросы без origin (curl, мобильные приложения)
     if (!origin) return callback(null, true);
 
-    // Убираем trailing slash для сравнения
-    const normalizedOrigin = origin.replace(/\/$/, '');
-
-    if (allowedOrigins.includes(normalizedOrigin)) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.warn(`⚠️  Заблокирован CORS запрос с: ${origin}`);
-      callback(new Error('CORS not allowed'));
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Access-Token'],
+  maxAge: 86400 // Кешировать preflight на 24 часа
 }));
 
 // Rate Limiting - общий лимит
@@ -90,8 +102,22 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Не считаем успешные входы
 });
 
-// Применяем общий лимит ко всем API роутам
-app.use('/api/', generalLimiter);
+// Rate Limiting - для публичных endpoints с токенами (защита от brute force)
+const tokenLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 10, // 10 попыток
+  message: {
+    error: 'Too Many Requests',
+    message: 'Слишком много попыток. Попробуйте через 15 минут.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Используем стандартный IP без кастомного keyGenerator для IPv6 совместимости
+  validate: { xForwardedForHeader: false }
+});
+
+// Применяем token лимит к /api/complexes/token/*
+app.use('/api/complexes/token', tokenLimiter);
 
 // =====================================================
 // MIDDLEWARE

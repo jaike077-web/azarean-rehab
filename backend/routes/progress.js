@@ -1,16 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
+const { authenticateToken, authenticateProgressAccess } = require('../middleware/auth');
 
-// Отметить выполнение упражнения (БЕЗ авторизации - для пациента)
-router.post('/', async (req, res) => {
+// Отметить выполнение упражнения (требуется JWT или access_token комплекса)
+router.post('/', authenticateProgressAccess, async (req, res) => {
   try {
-    console.log('=== Progress Save Request ===');
-    console.log('Headers:', req.headers);
-    console.log('Body:', req.body);
-    console.log('Session ID:', req.body?.session_id);
-    console.log('Session Comment:', req.body?.session_comment);
-
     const {
       complex_id,
       exercise_id,
@@ -25,32 +20,42 @@ router.post('/', async (req, res) => {
 
     // Валидация
     if (!complex_id || !exercise_id) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Validation Error',
-        message: 'ID комплекса и упражнения обязательны' 
+        message: 'ID комплекса и упражнения обязательны'
       });
+    }
+
+    // Проверка доступа: пациент может писать только в свой комплекс
+    if (req.authType === 'access_token') {
+      if (req.complex.id !== parseInt(complex_id)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Нет доступа к этому комплексу'
+        });
+      }
     }
 
     // Проверяем что комплекс и упражнение существуют
     const checkResult = await query(
-      `SELECT ce.id 
+      `SELECT ce.id
        FROM complex_exercises ce
        WHERE ce.complex_id = $1 AND ce.exercise_id = $2`,
       [complex_id, exercise_id]
     );
 
     if (checkResult.rows.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Not Found',
-        message: 'Упражнение не найдено в этом комплексе' 
+        message: 'Упражнение не найдено в этом комплексе'
       });
     }
 
     // Добавляем запись о выполнении
     const result = await query(
-      `INSERT INTO progress_logs 
-       (complex_id, exercise_id, completed, pain_level, difficulty_rating, session_id, session_comment, notes, completed_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+      `INSERT INTO progress_logs
+       (complex_id, exercise_id, completed, pain_level, difficulty_rating, session_id, session_comment, notes, completed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         complex_id,
@@ -65,39 +70,34 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    console.log('=== Progress Saved Successfully ===');
-    console.log('Record ID:', result.rows[0]?.id);
-    console.log('Session ID:', result.rows[0]?.session_id);
-
     res.status(201).json({
       message: 'Прогресс успешно сохранен',
       progress: result.rows[0]
     });
 
   } catch (error) {
-    console.error('Ошибка сохранения прогресса:', {
-      message: error.message,
-      stack: error.stack,
-      payload: {
-        complex_id: req.body?.complex_id,
-        exercise_id: req.body?.exercise_id,
-        completed: req.body?.completed,
-        pain_level: req.body?.pain_level,
-        difficulty_rating: req.body?.difficulty_rating,
-        session_id: req.body?.session_id
-      }
-    });
-    res.status(500).json({ 
+    console.error('Ошибка сохранения прогресса:', error.message);
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при сохранении прогресса' 
+      message: 'Ошибка при сохранении прогресса'
     });
   }
 });
 
-// Получить прогресс по комплексу (для инструктора или пациента)
-router.get('/complex/:complex_id', async (req, res) => {
+// Получить прогресс по комплексу (требуется JWT или access_token комплекса)
+router.get('/complex/:complex_id', authenticateProgressAccess, async (req, res) => {
   try {
     const { complex_id } = req.params;
+
+    // Проверка доступа: пациент может смотреть только свой комплекс
+    if (req.authType === 'access_token') {
+      if (req.complex.id !== parseInt(complex_id)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Нет доступа к этому комплексу'
+        });
+      }
+    }
 
     const result = await query(
       `SELECT pl.*,
@@ -139,10 +139,20 @@ router.get('/complex/:complex_id', async (req, res) => {
   }
 });
 
-// Получить прогресс конкретного упражнения
-router.get('/exercise/:exercise_id/complex/:complex_id', async (req, res) => {
+// Получить прогресс конкретного упражнения (требуется JWT или access_token комплекса)
+router.get('/exercise/:exercise_id/complex/:complex_id', authenticateProgressAccess, async (req, res) => {
   try {
     const { exercise_id, complex_id } = req.params;
+
+    // Проверка доступа: пациент может смотреть только свой комплекс
+    if (req.authType === 'access_token') {
+      if (req.complex.id !== parseInt(complex_id)) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Нет доступа к этому комплексу'
+        });
+      }
+    }
 
     const result = await query(
       `SELECT pl.*
@@ -166,10 +176,23 @@ router.get('/exercise/:exercise_id/complex/:complex_id', async (req, res) => {
   }
 });
 
-// Получить общий прогресс пациента по всем комплексам
-router.get('/patient/:patientId', async (req, res) => {
+// Получить общий прогресс пациента по всем комплексам (только для инструктора)
+router.get('/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
+
+    // Проверяем что пациент принадлежит инструктору
+    const patientCheck = await query(
+      'SELECT id FROM patients WHERE id = $1 AND created_by = $2',
+      [patientId, req.user.id]
+    );
+
+    if (patientCheck.rows.length === 0) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Нет доступа к данным этого пациента'
+      });
+    }
 
     const complexesQuery = `
       SELECT 

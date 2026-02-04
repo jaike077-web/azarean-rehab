@@ -4,7 +4,44 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 const API_BASE_URL = `${API_URL}/api`;
 
-// Создаём axios инстанс
+// =====================================================
+// УПРАВЛЕНИЕ ТОКЕНАМИ
+// =====================================================
+
+const getToken = () => localStorage.getItem('token');
+const getRefreshToken = () => localStorage.getItem('refresh_token');
+
+const setTokens = (token, refreshToken) => {
+  localStorage.setItem('token', token);
+  if (refreshToken) {
+    localStorage.setItem('refresh_token', refreshToken);
+  }
+};
+
+const clearTokens = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
+};
+
+// Флаг для предотвращения множественных refresh запросов
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// =====================================================
+// AXIOS ИНСТАНС
+// =====================================================
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -12,10 +49,13 @@ const api = axios.create({
   },
 });
 
-// Добавляем токен к каждому запросу
+// =====================================================
+// REQUEST INTERCEPTOR
+// =====================================================
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -26,26 +66,134 @@ api.interceptors.request.use(
   }
 );
 
-// Обработка ответов
+// =====================================================
+// RESPONSE INTERCEPTOR (с автообновлением токена)
+// =====================================================
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Обработка 423 - Account Locked
+    if (error.response?.status === 423) {
+      const message = error.response?.data?.message || 'Аккаунт заблокирован';
+      // Можно показать уведомление пользователю
+      console.warn('Account locked:', message);
+      return Promise.reject(error);
+    }
+
+    // Обработка 403 - токен истёк
+    if (error.response?.status === 403 && !originalRequest._retry) {
+      const errorMessage = error.response?.data?.message || '';
+
+      // Проверяем что это именно истекший токен
+      if (errorMessage.includes('истек') || errorMessage.includes('expired')) {
+        if (isRefreshing) {
+          // Если уже идёт refresh, ждём его завершения
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          }).catch(err => {
+            return Promise.reject(err);
+          });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        const refreshToken = getRefreshToken();
+
+        if (!refreshToken) {
+          clearTokens();
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+
+        try {
+          // Запрос на обновление токена
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refresh_token: refreshToken
+          });
+
+          const { token, refresh_token } = response.data;
+          setTokens(token, refresh_token);
+
+          processQueue(null, token);
+
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          clearTokens();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+    }
+
+    // Обработка 401 - не авторизован
     if (error.response?.status === 401) {
-      // Токен невалиден - выходим
-      localStorage.removeItem('token');
+      clearTokens();
       window.location.href = '/login';
     }
+
     return Promise.reject(error);
   }
 );
 
-// API методы
+// =====================================================
+// API ДЛЯ ПАЦИЕНТОВ (с X-Access-Token)
+// =====================================================
+
+// Создаём отдельный инстанс для запросов пациентов
+const createPatientApi = (accessToken) => {
+  const patientApi = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Access-Token': accessToken,
+    },
+  });
+  return patientApi;
+};
+
+// =====================================================
+// API МЕТОДЫ
+// =====================================================
 
 // Аутентификация
 export const auth = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
+  login: async (credentials) => {
+    const response = await api.post('/auth/login', credentials);
+    // Сохраняем оба токена при логине
+    if (response.data.token) {
+      setTokens(response.data.token, response.data.refresh_token);
+    }
+    return response;
+  },
+  register: async (userData) => {
+    const response = await api.post('/auth/register', userData);
+    // Сохраняем оба токена при регистрации
+    if (response.data.token) {
+      setTokens(response.data.token, response.data.refresh_token);
+    }
+    return response;
+  },
   getMe: () => api.get('/auth/me'),
+  logout: async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {
+      // Игнорируем ошибки при logout
+    }
+    clearTokens();
+  },
+  refresh: (refreshToken) => axios.post(`${API_BASE_URL}/auth/refresh`, { refresh_token: refreshToken }),
 };
 
 // Пациенты
@@ -60,8 +208,6 @@ export const patients = {
   deletePermanent: (id) => api.delete(`/patients/${id}/permanent`),
   getWithProgress: () => api.get('/patients/with-progress'),
 };
-
-
 
 // Комплексы
 export const complexes = {
@@ -80,9 +226,30 @@ export const complexes = {
 
 // Прогресс
 export const progress = {
-  create: (data) => axios.post(`${API_BASE_URL}/progress`, data), // БЕЗ авторизации (для пациента)
-  getByComplex: (complexId) => axios.get(`${API_BASE_URL}/progress/complex/${complexId}`), // БЕЗ авторизации
-  getByComplexAuth: (complexId) => api.get(`/progress/complex/${complexId}`), // С авторизацией (для инструктора)
+  // Для пациента (с access_token)
+  create: (data, accessToken) => {
+    if (accessToken) {
+      const patientApi = createPatientApi(accessToken);
+      return patientApi.post('/progress', data);
+    }
+    // Fallback для инструктора
+    return api.post('/progress', data);
+  },
+
+  // Для пациента (с access_token)
+  getByComplex: (complexId, accessToken) => {
+    if (accessToken) {
+      const patientApi = createPatientApi(accessToken);
+      return patientApi.get(`/progress/complex/${complexId}`);
+    }
+    // Fallback для инструктора
+    return api.get(`/progress/complex/${complexId}`);
+  },
+
+  // С авторизацией (для инструктора)
+  getByComplexAuth: (complexId) => api.get(`/progress/complex/${complexId}`),
+
+  // Прогресс пациента (только для инструктора)
   getPatientProgress: (patientId) => api.get(`/progress/patient/${patientId}`),
 };
 
@@ -106,25 +273,16 @@ export const exercises = {
         params.append(key, filters[key]);
       }
     });
-    // тут оставляем как было — возвращаем полный axios-response,
-    // чтобы не ломать существующий код в списке упражнений
     return api.get(`/exercises?${params.toString()}`);
   },
 
-  // ⚠️ НОРМАЛИЗОВАННАЯ ФУНКЦИЯ
-  // Возвращает СРАЗУ объект упражнения, а не axios-response
   getById: async (id) => {
     const res = await api.get(`/exercises/${id}`);
     const data = res.data;
-    // поддерживаем оба варианта ответа бекенда:
-    // { exercise: {...} } или просто {...}
     return data.exercise || data;
   },
 
-  // здесь можно оставить как было — create возвращает axios-response,
-  // потому что в модалке мы уже используем res.data.exercise
   create: (data) => api.post('/exercises', data),
-
   update: (id, data) => api.put(`/exercises/${id}`, data),
   delete: (id) => api.delete(`/exercises/${id}`),
 
@@ -144,14 +302,11 @@ export const exercises = {
 
 export const importAPI = {
   kinescopePreview: () => api.get('/import/kinescope/preview'),
-
   kinescopeExecute: (videoIds) => api.post('/import/kinescope/execute', { videoIds }),
-
   csvImport: (formData) =>
     api.post('/import/csv', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-
   downloadTemplate: () =>
     api.get('/import/csv/template', {
       responseType: 'blob',
@@ -176,3 +331,8 @@ export const templates = {
   update: (id, data) => api.put(`/templates/${id}`),
   delete: (id) => api.delete(`/templates/${id}`)
 };
+
+// =====================================================
+// ЭКСПОРТ УТИЛИТ
+// =====================================================
+export { setTokens, clearTokens, getToken, getRefreshToken, createPatientApi };
