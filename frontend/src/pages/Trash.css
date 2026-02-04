@@ -133,12 +133,19 @@
 
 .trash-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 16px;
   padding: 16px;
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
+}
+
+.trash-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
 }
 
 .item-icon {
@@ -204,6 +211,10 @@
 .item-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .btn-restore {

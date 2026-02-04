@@ -210,7 +210,7 @@ function Dashboard() {
 
           <div className="app-brand">
             <img
-              src="/AN_logo.jpg"
+              src="/AN-logo.jpg"
               alt="Azarean Network"
               className="app-logo"
             />

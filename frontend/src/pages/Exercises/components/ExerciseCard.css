@@ -151,9 +151,11 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* SVG иконки в кнопках действий */
 .exercises-page .btn-card-action svg {
-  width: 18px;
-  height: 18px;
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0;
 }
 
 .exercises-page .btn-view {
@@ -176,13 +178,15 @@
   transform: scale(1.05);
 }
 
-.exercises-page .btn-delete {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
+.exercises-page .btn-card-action.btn-delete {
+  background: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  width: 40px !important;
+  border: none !important;
 }
 
-.exercises-page .btn-delete:hover {
-  background: #ef4444;
+.exercises-page .btn-card-action.btn-delete:hover {
+  background: #ef4444 !important;
   transform: scale(1.05);
 }
 
@@ -415,10 +419,5 @@
     width: 36px;
     height: 36px;
     font-size: 16px;
-  }
-
-  .exercises-page .btn-card-action svg {
-    width: 16px;
-    height: 16px;
   }
 }

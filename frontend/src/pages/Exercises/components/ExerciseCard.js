@@ -179,29 +179,29 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
 
         {/* Overlay с кнопками */}
         <div className="card-overlay">
-          <button 
+          <button
             className="btn-card-action btn-view"
             onClick={handleCardClick}
             title="Открыть"
           >
-            <Eye size={18} />
+            <Eye size={20} stroke="#374151" strokeWidth={2} fill="none" />
           </button>
           {onEdit && (
-            <button 
+            <button
               className="btn-card-action btn-edit"
               onClick={handleEdit}
               title="Редактировать"
             >
-              <Pencil size={18} />
+              <Pencil size={20} stroke="#ffffff" strokeWidth={2} fill="none" />
             </button>
           )}
           {onDelete && (
-            <button 
+            <button
               className="btn-card-action btn-delete"
               onClick={handleDelete}
               title="Удалить"
             >
-              <Trash2 size={18} />
+              <Trash2 size={20} stroke="#ffffff" strokeWidth={2} fill="none" />
             </button>
           )}
         </div>

@@ -31,7 +31,7 @@ function Login() {
       <div className="login-box">
       <div className="login-header">
   <div className="login-logo">
-    <img src="/AN_logo.jpg" alt="Azarean Network Logo" />
+    <img src="/AN-logo.jpg" alt="Azarean Network Logo" />
   </div>
   <h1>Azarean Network</h1>
   <p>Система реабилитации</p>
