@@ -43,6 +43,7 @@ function Patients() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' или 'list'
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('date'); // 'date', 'name'
+  const [submitting, setSubmitting] = useState(false); // Loading state для формы
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -237,6 +238,8 @@ function Patients() {
       return;
     }
 
+    setSubmitting(true);
+
     try {
       if (editingPatient) {
         await patients.update(editingPatient.id, formData);
@@ -257,18 +260,18 @@ function Patients() {
       });
       loadPatients();
     } catch (err) {
-      console.error('Ошибка при сохранении пациента:', err);
-      
       // Пытаемся извлечь конкретную ошибку от сервера
       const serverError = err.response?.data?.message || err.response?.data?.error;
-      
+
       if (serverError) {
         setError(serverError);
       } else {
         setError('Ошибка при сохранении данных. Проверьте правильность заполнения всех полей.');
       }
-      
+
       toast.error('Не удалось сохранить данные пациента');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -725,13 +728,16 @@ function Patients() {
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowModal(false)}
+                  disabled={submitting}
                 >
                   Отмена
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingPatient
-                    ? 'Сохранить изменения'
-                    : 'Добавить пациента'}
+                <button type="submit" className="btn-primary" disabled={submitting}>
+                  {submitting
+                    ? 'Сохранение...'
+                    : editingPatient
+                      ? 'Сохранить изменения'
+                      : 'Добавить пациента'}
                 </button>
               </div>
             </form>

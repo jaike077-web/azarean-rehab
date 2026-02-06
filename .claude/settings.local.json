@@ -8,7 +8,10 @@
       "Bash(curl:*)",
       "Bash(for:*)",
       "Bash(do curl -s -o /dev/null -w \"%{http_code} \" http://localhost:5000/api/complexes/token/fake-token-$i)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nStep 10: UX Polish - accessibility improvements\n\n- Add focus-visible styles for keyboard navigation\n- Add skip link for screen readers and keyboard users\n- Add submitting state to Patients form \\(Сохранение...\\)\n- Wrap app content in <main> for semantic HTML\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

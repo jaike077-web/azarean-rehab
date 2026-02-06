@@ -249,7 +249,13 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
-            <AppRoutes />
+            {/* Skip link для accessibility - появляется при нажатии Tab */}
+            <a href="#main-content" className="skip-link">
+              Перейти к содержимому
+            </a>
+            <main id="main-content">
+              <AppRoutes />
+            </main>
           </Router>
         </ToastProvider>
       </AuthProvider>
