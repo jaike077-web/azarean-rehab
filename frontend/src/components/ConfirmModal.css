@@ -1,0 +1,161 @@
+/* =====================================================
+   CONFIRM MODAL STYLES - Azarean Network
+   ===================================================== */
+
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.confirm-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #64748b;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.confirm-modal-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.confirm-modal-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.confirm-modal-danger .confirm-modal-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.confirm-modal-warning .confirm-modal-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.confirm-modal-info .confirm-modal-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.confirm-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px;
+}
+
+.confirm-modal-message {
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-modal-actions button {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-modal-actions .btn-secondary {
+  background: #f1f5f9;
+  border: none;
+  color: #475569;
+}
+
+.confirm-modal-actions .btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.confirm-modal-actions .btn-danger {
+  background: #dc2626;
+  border: none;
+  color: white;
+}
+
+.confirm-modal-actions .btn-danger:hover {
+  background: #b91c1c;
+}
+
+.confirm-modal-actions .btn-primary {
+  background: #667eea;
+  border: none;
+  color: white;
+}
+
+.confirm-modal-actions .btn-primary:hover {
+  background: #5a67d8;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .confirm-modal {
+    padding: 20px;
+  }
+
+  .confirm-modal-actions {
+    flex-direction: column;
+  }
+
+  .confirm-modal-actions button {
+    width: 100%;
+  }
+}

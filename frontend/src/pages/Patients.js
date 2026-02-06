@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patients } from '../services/api';
 import { formatDateNumeric } from '../utils/dateUtils';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
+import ConfirmModal from '../components/ConfirmModal';
+import useConfirm from '../hooks/useConfirm';
 import './Patients.css';
 import { useToast } from '../context/ToastContext';
 import { PatientsPageSkeleton } from '../components/Skeleton';
@@ -26,6 +28,7 @@ import {
 function Patients() {
   const toast = useToast();
   const navigate = useNavigate();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
   const [patientsList, setPatientsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -281,21 +284,22 @@ function Patients() {
     }
   };
 
-  const handleDelete = async (patientId, patientName) => {
-    const confirmed = window.confirm(
-      `Вы уверены, что хотите удалить пациента "${patientName}"?\n\nВсе комплексы этого пациента также будут удалены.`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await patients.delete(patientId);
-      toast.success('Пациент успешно удален! 🗑️');
-      loadPatients();
-    } catch (err) {
-      console.error('Ошибка удаления пациента:', err);
-      toast.error('Ошибка при удалении пациента');
-    }
+  const handleDelete = (patientId, patientName) => {
+    confirm({
+      title: 'Удалить пациента?',
+      message: `Вы уверены, что хотите удалить пациента "${patientName}"? Все комплексы этого пациента также будут удалены.`,
+      confirmText: 'Удалить',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await patients.delete(patientId);
+          toast.success('Пациент успешно удален!');
+          loadPatients();
+        } catch (err) {
+          toast.error('Ошибка при удалении пациента');
+        }
+      }
+    });
   };
 
   // Используем formatDateNumeric из utils/dateUtils.js
@@ -814,6 +818,9 @@ function Patients() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

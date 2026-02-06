@@ -6,6 +6,7 @@
 // =====================================================
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import './Skeleton.css';
 
 // =====================================================
@@ -33,6 +34,14 @@ export const Skeleton = (props) => {
   return <div className={`skeleton ${className}`} style={mergedStyle} />;
 };
 
+Skeleton.propTypes = {
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  borderRadius: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  className: PropTypes.string,
+  style: PropTypes.object
+};
+
 export const SkeletonText = ({ width = '100%', lines = 1 }) => (
   <>
     {Array.from({ length: lines }).map((_, i) => (
@@ -45,17 +54,34 @@ export const SkeletonText = ({ width = '100%', lines = 1 }) => (
   </>
 );
 
+SkeletonText.propTypes = {
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  lines: PropTypes.number
+};
+
 export const SkeletonAvatar = ({ size = 'normal' }) => (
   <div className={`skeleton skeleton-avatar ${size === 'large' ? 'large' : ''}`} />
 );
+
+SkeletonAvatar.propTypes = {
+  size: PropTypes.oneOf(['normal', 'large'])
+};
 
 export const SkeletonButton = ({ width = 120 }) => (
   <div className="skeleton skeleton-button" style={{ width }} />
 );
 
+SkeletonButton.propTypes = {
+  width: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+};
+
 export const SkeletonImage = ({ height = 180 }) => (
   <div className="skeleton skeleton-image" style={{ height }} />
 );
+
+SkeletonImage.propTypes = {
+  height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+};
 
 export const SkeletonBadge = () => (
   <div className="skeleton skeleton-badge" />
@@ -135,6 +161,10 @@ export const TableRowSkeleton = ({ columns = 4 }) => (
   </div>
 );
 
+TableRowSkeleton.propTypes = {
+  columns: PropTypes.number
+};
+
 // =====================================================
 // СТРАНИЦЫ
 // =====================================================
@@ -146,12 +176,12 @@ export const PatientsPageSkeleton = ({ count = 6 }) => (
       <div className="skeleton skeleton-page-title" />
       <div className="skeleton skeleton-page-subtitle" />
     </div>
-    
+
     <div className="skeleton-filters">
       <div className="skeleton skeleton-search" />
       <div className="skeleton skeleton-filter" />
     </div>
-    
+
     <div className="skeleton-patients-grid">
       {Array.from({ length: count }).map((_, i) => (
         <PatientCardSkeleton key={i} />
@@ -160,6 +190,10 @@ export const PatientsPageSkeleton = ({ count = 6 }) => (
   </div>
 );
 
+PatientsPageSkeleton.propTypes = {
+  count: PropTypes.number
+};
+
 // Страница упражнений
 export const ExercisesPageSkeleton = ({ count = 6 }) => (
   <div className="skeleton-page">
@@ -167,13 +201,13 @@ export const ExercisesPageSkeleton = ({ count = 6 }) => (
       <div className="skeleton skeleton-page-title" />
       <div className="skeleton skeleton-page-subtitle" />
     </div>
-    
+
     <div className="skeleton-filters">
       <div className="skeleton skeleton-search" />
       <div className="skeleton skeleton-filter" />
       <div className="skeleton skeleton-filter" />
     </div>
-    
+
     <div className="skeleton-exercises-grid">
       {Array.from({ length: count }).map((_, i) => (
         <ExerciseCardSkeleton key={i} />
@@ -182,6 +216,10 @@ export const ExercisesPageSkeleton = ({ count = 6 }) => (
   </div>
 );
 
+ExercisesPageSkeleton.propTypes = {
+  count: PropTypes.number
+};
+
 // Страница комплексов
 export const ComplexesPageSkeleton = ({ count = 4 }) => (
   <div className="skeleton-page">
@@ -189,12 +227,12 @@ export const ComplexesPageSkeleton = ({ count = 4 }) => (
       <div className="skeleton skeleton-page-title" />
       <div className="skeleton skeleton-page-subtitle" />
     </div>
-    
+
     <div className="skeleton-filters">
       <div className="skeleton skeleton-search" />
       <div className="skeleton skeleton-filter" />
     </div>
-    
+
     <div className="skeleton-complexes-list">
       {Array.from({ length: count }).map((_, i) => (
         <ComplexCardSkeleton key={i} />
@@ -202,6 +240,10 @@ export const ComplexesPageSkeleton = ({ count = 4 }) => (
     </div>
   </div>
 );
+
+ComplexesPageSkeleton.propTypes = {
+  count: PropTypes.number
+};
 
 // Таблица
 export const TableSkeleton = ({ rows = 5, columns = 4 }) => (
@@ -218,6 +260,11 @@ export const TableSkeleton = ({ rows = 5, columns = 4 }) => (
     ))}
   </div>
 );
+
+TableSkeleton.propTypes = {
+  rows: PropTypes.number,
+  columns: PropTypes.number
+};
 
 // =====================================================
 // ЭКСПОРТ ПО УМОЛЧАНИЮ

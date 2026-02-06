@@ -5,6 +5,8 @@ import { formatDateNumeric } from '../utils/dateUtils';
 import './MyComplexes.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
+import ConfirmModal from '../components/ConfirmModal';
+import useConfirm from '../hooks/useConfirm';
 import { useToast } from '../context/ToastContext';
 import { 
   LayoutDashboard, 
@@ -33,6 +35,7 @@ import DeleteTemplateModal from '../components/DeleteTemplateModal';
 
 function MyComplexes() {
   const toast = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
   const [complexesList, setComplexesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -144,25 +147,30 @@ useEffect(() => {
     setSelectedIds([]);
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    
-    if (!window.confirm(`Удалить ${selectedIds.length} комплекс(ов)?`)) return;
 
-    try {
-      let deleted = 0;
-      for (const id of selectedIds) {
-        await complexes.delete(id);
-        deleted++;
+    confirm({
+      title: 'Удалить комплексы?',
+      message: `Вы уверены, что хотите удалить ${selectedIds.length} комплекс(ов)?`,
+      confirmText: 'Удалить',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          let deleted = 0;
+          for (const id of selectedIds) {
+            await complexes.delete(id);
+            deleted += 1;
+          }
+          toast.success(`Удалено комплексов: ${deleted}`);
+          setSelectedIds([]);
+          loadComplexes();
+        } catch (err) {
+          toast.error('Не удалось удалить некоторые комплексы');
+          loadComplexes();
+        }
       }
-      toast.success(`Удалено комплексов: ${deleted}`);
-      setSelectedIds([]);
-      loadComplexes();
-    } catch (err) {
-      console.error('Ошибка удаления:', err);
-      toast.error('Не удалось удалить некоторые комплексы');
-      loadComplexes();
-    }
+    });
   };
 
   const handleOpenPatientView = (token) => {
@@ -209,21 +217,22 @@ useEffect(() => {
     navigate(`/complex/edit/${complexId}`);
   };
 
-  const handleDelete = async (complexId, patientName) => {
-    const confirmed = window.confirm(
-      `Вы уверены, что хотите удалить комплекс для пациента "${patientName}"?`
-    );
-
-    if (!confirmed) return;
-
-    try {
-      await complexes.delete(complexId);
-      toast.success('Комплекс успешно удален! 🗑️');
-      loadComplexes();
-    } catch (err) {
-      console.error('Ошибка удаления комплекса:', err);
-      toast.error('Ошибка при удалении комплекса');
-    }
+  const handleDelete = (complexId, patientName) => {
+    confirm({
+      title: 'Удалить комплекс?',
+      message: `Вы уверены, что хотите удалить комплекс для пациента "${patientName}"?`,
+      confirmText: 'Удалить',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await complexes.delete(complexId);
+          toast.success('Комплекс успешно удален!');
+          loadComplexes();
+        } catch (err) {
+          toast.error('Ошибка при удалении комплекса');
+        }
+      }
+    });
   };
 
   // Используем formatDateNumeric из utils/dateUtils.js
@@ -716,6 +725,9 @@ useEffect(() => {
   }}
   onConfirm={handleConfirmTemplateDelete}
 />
+
+      {/* Confirm Modal */}
+      <ConfirmModal {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

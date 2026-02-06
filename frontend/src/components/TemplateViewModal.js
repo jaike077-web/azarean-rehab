@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { BookOpen, X } from 'lucide-react';
@@ -8,6 +9,20 @@ const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
   const toast = useToast();
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Escape handler для закрытия модалки
+  const handleEscape = useCallback((event) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleEscape]);
 
   useEffect(() => {
     if (!isOpen || !templateId) {
@@ -121,6 +136,12 @@ const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
       </div>
     </div>
   );
+};
+
+TemplateViewModal.propTypes = {
+  templateId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired
 };
 
 export default TemplateViewModal;

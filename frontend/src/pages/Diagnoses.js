@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { diagnoses } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
+import useConfirm from '../hooks/useConfirm';
 import {
   FileText,
   Plus,
@@ -16,6 +18,8 @@ import { PatientsPageSkeleton } from '../components/Skeleton';
 import './Diagnoses.css';
 
 function Diagnoses() {
+  const toast = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
   const [diagnosesList, setDiagnosesList] = useState([]);
   const [filteredDiagnoses, setFilteredDiagnoses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +40,6 @@ function Diagnoses() {
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  
-  const toast = useToast();
 
   // Загрузка диагнозов
   useEffect(() => {
@@ -151,19 +153,22 @@ function Diagnoses() {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Удалить диагноз "${name}"?`)) {
-      return;
-    }
-
-    try {
-      await diagnoses.delete(id);
-      toast.success('Диагноз удален');
-      loadDiagnoses();
-    } catch (error) {
-      console.error('Ошибка удаления:', error);
-      toast.error(error.response?.data?.message || 'Не удалось удалить диагноз');
-    }
+  const handleDelete = (id, name) => {
+    confirm({
+      title: 'Удалить диагноз?',
+      message: `Удалить диагноз "${name}"?`,
+      confirmText: 'Удалить',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await diagnoses.delete(id);
+          toast.success('Диагноз удален');
+          loadDiagnoses();
+        } catch (error) {
+          toast.error(error.response?.data?.message || 'Не удалось удалить диагноз');
+        }
+      }
+    });
   };
 
   const handleInputChange = (e) => {
@@ -440,6 +445,9 @@ function Diagnoses() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }

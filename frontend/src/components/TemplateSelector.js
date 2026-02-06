@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { FolderOpen, Search, X } from 'lucide-react';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -9,6 +10,20 @@ const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
   const [templatesList, setTemplatesList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Escape handler для закрытия модалки
+  const handleEscape = useCallback((event) => {
+    if (event.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleEscape]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -111,6 +126,13 @@ const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
       </div>
     </div>
   );
+};
+
+TemplateSelector.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  diagnosisId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 export default TemplateSelector;

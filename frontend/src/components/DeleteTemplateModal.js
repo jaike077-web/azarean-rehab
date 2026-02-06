@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
@@ -6,6 +7,20 @@ import { useToast } from '../context/ToastContext';
 const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   const toast = useToast();
   const [deleting, setDeleting] = useState(false);
+
+  // Escape handler для закрытия модалки
+  const handleEscape = useCallback((event) => {
+    if (event.key === 'Escape' && !deleting) {
+      onClose();
+    }
+  }, [onClose, deleting]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleEscape]);
 
   if (!isOpen || !template) {
     return null;
@@ -64,6 +79,16 @@ const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
       </div>
     </div>
   );
+};
+
+DeleteTemplateModal.propTypes = {
+  template: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string.isRequired
+  }),
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired
 };
 
 export default DeleteTemplateModal;

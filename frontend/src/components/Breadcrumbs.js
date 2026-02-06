@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import './Breadcrumbs.css';
 
@@ -43,6 +44,16 @@ function Breadcrumbs({ items = [] }) {
     </nav>
   );
 }
+
+Breadcrumbs.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      icon: PropTypes.node,
+      label: PropTypes.string.isRequired,
+      path: PropTypes.string
+    })
+  )
+};
 
 // React.memo для предотвращения лишних ререндеров
 export default React.memo(Breadcrumbs);

@@ -4,6 +4,8 @@ import { formatDateNumeric } from '../utils/dateUtils';
 import './Trash.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
+import ConfirmModal from '../components/ConfirmModal';
+import useConfirm from '../hooks/useConfirm';
 import { useToast } from '../context/ToastContext';
 import {
   FileText,
@@ -17,6 +19,7 @@ import { TableSkeleton } from '../components/Skeleton';
 
 function Trash() {
   const toast = useToast();
+  const { confirmState, confirm, closeConfirm } = useConfirm();
   const [deletedPatients, setDeletedPatients] = useState([]);
   const [deletedComplexes, setDeletedComplexes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,73 +45,76 @@ function Trash() {
     }
   };
 
-  const handleRestorePatient = async (patientId, patientName) => {
-    const confirmed = window.confirm(
-      `Восстановить пациента "${patientName}"?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await patients.restore(patientId);
-      toast.success('Пациент восстановлен');
-      loadTrash();
-    } catch (err) {
-      console.error('Ошибка восстановления:', err);
-      toast.error('Ошибка при восстановлении');
-    }
+  const handleRestorePatient = (patientId, patientName) => {
+    confirm({
+      title: 'Восстановить пациента?',
+      message: `Восстановить пациента "${patientName}"?`,
+      confirmText: 'Восстановить',
+      variant: 'info',
+      onConfirm: async () => {
+        try {
+          await patients.restore(patientId);
+          toast.success('Пациент восстановлен');
+          loadTrash();
+        } catch (err) {
+          toast.error('Ошибка при восстановлении');
+        }
+      }
+    });
   };
 
-  const handleDeletePatientPermanent = async (patientId, patientName) => {
-    const confirmed = window.confirm(
-      `ВНИМАНИЕ! Вы собираетесь НАВСЕГДА удалить пациента "${patientName}".\n\nВсе связанные комплексы и прогресс будут удалены БЕЗВОЗВРАТНО!\n\nПродолжить?`
-    );
-    if (!confirmed) return;
-
-    const doubleConfirm = window.confirm(
-      `Вы уверены? Это действие НЕЛЬЗЯ отменить!`
-    );
-    if (!doubleConfirm) return;
-
-    try {
-      await patients.deletePermanent(patientId);
-      toast.success('Пациент удалён навсегда');
-      loadTrash();
-    } catch (err) {
-      console.error('Ошибка удаления:', err);
-      toast.error('Ошибка при удалении');
-    }
+  const handleDeletePatientPermanent = (patientId, patientName) => {
+    confirm({
+      title: 'Удалить навсегда?',
+      message: `ВНИМАНИЕ! Вы собираетесь НАВСЕГДА удалить пациента "${patientName}". Все связанные комплексы и прогресс будут удалены БЕЗВОЗВРАТНО!`,
+      confirmText: 'Удалить навсегда',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await patients.deletePermanent(patientId);
+          toast.success('Пациент удалён навсегда');
+          loadTrash();
+        } catch (err) {
+          toast.error('Ошибка при удалении');
+        }
+      }
+    });
   };
 
-  const handleRestoreComplex = async (complexId, patientName) => {
-    const confirmed = window.confirm(
-      `Восстановить комплекс для пациента "${patientName}"?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await complexes.restore(complexId);
-      toast.success('Комплекс восстановлен');
-      loadTrash();
-    } catch (err) {
-      console.error('Ошибка восстановления:', err);
-      toast.error('Ошибка при восстановлении');
-    }
+  const handleRestoreComplex = (complexId, patientName) => {
+    confirm({
+      title: 'Восстановить комплекс?',
+      message: `Восстановить комплекс для пациента "${patientName}"?`,
+      confirmText: 'Восстановить',
+      variant: 'info',
+      onConfirm: async () => {
+        try {
+          await complexes.restore(complexId);
+          toast.success('Комплекс восстановлен');
+          loadTrash();
+        } catch (err) {
+          toast.error('Ошибка при восстановлении');
+        }
+      }
+    });
   };
 
-  const handleDeleteComplexPermanent = async (complexId, patientName) => {
-    const confirmed = window.confirm(
-      `ВНИМАНИЕ! Вы собираетесь НАВСЕГДА удалить комплекс для "${patientName}".\n\nВесь прогресс будет удалён БЕЗВОЗВРАТНО!\n\nПродолжить?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await complexes.deletePermanent(complexId);
-      toast.success('Комплекс удалён навсегда');
-      loadTrash();
-    } catch (err) {
-      console.error('Ошибка удаления:', err);
-      toast.error('Ошибка при удалении');
-    }
+  const handleDeleteComplexPermanent = (complexId, patientName) => {
+    confirm({
+      title: 'Удалить навсегда?',
+      message: `ВНИМАНИЕ! Вы собираетесь НАВСЕГДА удалить комплекс для "${patientName}". Весь прогресс будет удалён БЕЗВОЗВРАТНО!`,
+      confirmText: 'Удалить навсегда',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await complexes.deletePermanent(complexId);
+          toast.success('Комплекс удалён навсегда');
+          loadTrash();
+        } catch (err) {
+          toast.error('Ошибка при удалении');
+        }
+      }
+    });
   };
 
   // Используем formatDateNumeric из utils/dateUtils.js
@@ -301,6 +307,9 @@ function Trash() {
           )}
         </>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal {...confirmState} onClose={closeConfirm} />
     </div>
   );
 }
