@@ -473,3 +473,27 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* =====================================================
+   MOBILE 480px - Extra small screens
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 12px 16px;
+  }
+
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .nav-item svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .dashboard-content {
+    padding: 12px;
+  }
+}

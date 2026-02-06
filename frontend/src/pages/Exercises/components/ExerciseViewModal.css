@@ -122,6 +122,8 @@
   background: #f7fafc;
   border-bottom: 2px solid #e2e8f0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
 }
 
 .tab {
@@ -625,6 +627,7 @@
   .modal-tabs {
     padding: 0 clamp(16px, 4vw, 22px);
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tab {

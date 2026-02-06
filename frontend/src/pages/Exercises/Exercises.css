@@ -514,3 +514,30 @@
     text-align: center;
   }
 }
+
+/* =====================================================
+   MOBILE 480px - Extra small screens
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .exercises-page {
+    padding: 12px;
+  }
+
+  .exercises-page-header {
+    gap: 12px;
+  }
+
+  .exercises-page .page-title {
+    font-size: 20px;
+  }
+
+  .exercises-page .btn-create {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .exercises-grid {
+    gap: 12px;
+  }
+}

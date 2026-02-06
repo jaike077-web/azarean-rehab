@@ -160,6 +160,31 @@ p {
 }
 
 /* =====================================================
+   MOBILE - iOS Safari zoom fix
+   ===================================================== */
+
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+  }
+}
+
+/* =====================================================
+   MOBILE - Safe area for iPhone notch
+   ===================================================== */
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* =====================================================
    PRINT STYLES
    ===================================================== */
 
@@ -167,7 +192,7 @@ p {
   body {
     font-size: 12pt;
   }
-  
+
   button,
   .no-print {
     display: none !important;

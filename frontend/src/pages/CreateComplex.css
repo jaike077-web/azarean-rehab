@@ -1204,7 +1204,29 @@
   .template-summary p + p {
     margin-top: 4px;
   }
-  
+
   .template-summary strong {
     color: #667eea;
   }
+
+/* =====================================================
+   MOBILE 480px - Extra small screens
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .create-complex-container {
+    padding: 12px;
+  }
+
+  .step-content {
+    padding: 16px;
+  }
+
+  .form-group label {
+    font-size: 14px;
+  }
+
+  .selected-exercises-list {
+    gap: 8px;
+  }
+}

@@ -1432,4 +1432,37 @@
   .modal-actions button {
     min-height: 44px;
   }
-  
+
+/* =====================================================
+   MOBILE 480px - Extra small screens
+   ===================================================== */
+
+@media (max-width: 480px) {
+  .patient-view-container {
+    padding: 12px;
+  }
+
+  .patient-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .patient-header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .patient-header-actions button {
+    width: 100%;
+  }
+
+  .tab-button {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .exercise-card-compact {
+    padding: 12px;
+  }
+}
+
