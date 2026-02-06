@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { progress } from '../services/api';
+import { formatDateShortWithYear } from '../utils/dateUtils';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
@@ -95,15 +96,8 @@ function PatientProgress() {
     loadData();
   }, [patientId]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Нет данных';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  // Используем formatDateShortWithYear из utils/dateUtils.js
+  const formatDate = formatDateShortWithYear;
 
   const getPainClass = (level) => {
     if (level <= 3) return 'low';

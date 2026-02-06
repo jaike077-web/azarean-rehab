@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { patients } from '../services/api';
+import { formatDateNumeric } from '../utils/dateUtils';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import './Patients.css';
@@ -297,16 +298,8 @@ function Patients() {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '-';
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
-  };
+  // Используем formatDateNumeric из utils/dateUtils.js
+  const formatDate = formatDateNumeric;
 
   const calculateAge = (dateString) => {
     if (!dateString) return null;

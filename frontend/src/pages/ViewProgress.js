@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { complexes, progress } from '../services/api';
+import { formatDateShort, formatDateRange } from '../utils/dateUtils';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
@@ -43,15 +44,8 @@ function ViewProgress() {
         const progressPayload = progressRes.data?.items || progressRes.data || {};
         const exercisesPayload = exercisesRes.data?.exercises || [];
 
-        console.log('=== ViewProgress Debug ===');
-        console.log('Raw API response:', progressPayload);
         const progressLogs = progressPayload.logs || [];
         const statistics = progressPayload.statistics || {};
-
-        console.log('Progress logs count:', progressLogs.length);
-        console.log('Statistics:', statistics);
-        console.log('Total logs:', parseInt(statistics.total_logs, 10));
-        console.log('Avg pain:', parseFloat(statistics.avg_pain_level).toFixed(1));
 
         setComplex(complexPayload || null);
         setData(progressPayload);
@@ -67,19 +61,7 @@ function ViewProgress() {
     loadData();
   }, [complexId]);
 
-  const formatDateShort = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'short'
-    });
-  };
-
-  const formatDateRange = (startDate, endDate) => {
-    if (!startDate || !endDate) return 'Нет данных';
-    return `${formatDateShort(startDate)} — ${formatDateShort(endDate)}`;
-  };
+  // formatDateShort и formatDateRange импортированы из utils/dateUtils.js
 
   const getPainClass = (level) => {
     if (level <= 3) return 'pain-low';

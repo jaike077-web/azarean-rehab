@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
+import { exercises as exercisesApi } from '../../../services/api';
 import './ExerciseModal.css';
 
 const ExerciseModal = ({ exercise, onClose, onSave }) => {
@@ -165,53 +166,30 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     setErrors((prev) => ({ ...prev, form: null }));
 
     try {
-      const token =
-        localStorage.getItem('token') ||
-        localStorage.getItem('accessToken') ||
-        localStorage.getItem('authToken');
-
       const isEdit = Boolean(exercise && exercise.id);
-      const url = isEdit
-        ? `/api/exercises/${exercise.id}`
-        : '/api/exercises';
-      const method = isEdit ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
+      // Используем централизованный API сервис (токен добавляется автоматически)
+      const response = isEdit
+        ? await exercisesApi.update(exercise.id, payload)
+        : await exercisesApi.create(payload);
 
-      if (!response.ok) {
-        let message = 'Ошибка при сохранении упражнения';
-        try {
-          const data = await response.json();
-          if (data?.message) message = data.message;
-        } catch (_) {
-          // игнорируем проблемы с JSON
-        }
-
-        console.error('Exercise save error:', response.status, message);
-        setErrors((prev) => ({ ...prev, form: message }));
-        return;
-      }
-
-      const data = await response.json();
+      const savedExercise = response.data?.exercise || response.data;
 
       // Сообщаем родителю, если нужно
       if (typeof onSave === 'function') {
-        onSave(data.exercise || payload);
+        onSave(savedExercise);
       }
 
       onClose();
     } catch (err) {
-      console.error('Network error while saving exercise:', err);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Ошибка при сохранении упражнения';
+
       setErrors((prev) => ({
         ...prev,
-        form: 'Ошибка сети при сохранении упражнения',
+        form: errorMessage,
       }));
     } finally {
       setIsSubmitting(false);

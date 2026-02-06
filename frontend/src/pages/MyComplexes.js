@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { complexes, templates } from '../services/api';
+import { formatDateNumeric } from '../utils/dateUtils';
 import './MyComplexes.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -178,8 +179,7 @@ useEffect(() => {
       setSelectedComplex(complex);
       // Загружаем детали комплекса с упражнениями
       const response = await complexes.getOne(complex.id);
-      console.log('Complex data:', response.data); // Для отладки
-      
+
       // Backend возвращает { complex: { exercises: [...] } }
       const exercisesData = response.data.complex?.exercises || [];
       
@@ -226,15 +226,8 @@ useEffect(() => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  // Используем formatDateNumeric из utils/dateUtils.js
+  const formatDate = formatDateNumeric;
 
   if (error) {
     return <div className="error-message">{error}</div>;

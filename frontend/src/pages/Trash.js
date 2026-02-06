@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { patients, complexes } from '../services/api';
+import { formatDateNumeric } from '../utils/dateUtils';
 import './Trash.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -110,15 +111,8 @@ function Trash() {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  // Используем formatDateNumeric из utils/dateUtils.js
+  const formatDate = formatDateNumeric;
 
   if (loading) {
     return <TableSkeleton rows={5} columns={4} />;

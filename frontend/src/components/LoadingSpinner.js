@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import './LoadingSpinner.css';
 
 function LoadingSpinner({ message = 'Загрузка...' }) {
@@ -11,5 +12,9 @@ function LoadingSpinner({ message = 'Загрузка...' }) {
     </div>
   );
 }
+
+LoadingSpinner.propTypes = {
+  message: PropTypes.string
+};
 
 export default LoadingSpinner;

@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import { patients } from '../services/api';
+import { formatDateShort } from '../utils/dateUtils';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
 import './ProgressDashboard.css';
 
@@ -46,9 +47,12 @@ const getActivityStatus = (lastActivity, sessionsLastWeek) => {
   return { color: 'red', text: 'Давно не тренировался' };
 };
 
+// Форматирование даты с относительным временем для недавних дат
 const formatDate = (dateString) => {
   if (!dateString) return 'Нет данных';
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return 'Нет данных';
+
   const today = new Date();
   const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
 
@@ -56,10 +60,7 @@ const formatDate = (dateString) => {
   if (diffDays === 1) return 'Вчера';
   if (diffDays < 7) return `${diffDays} дн. назад`;
 
-  return date.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  });
+  return formatDateShort(dateString);
 };
 
 const ProgressDashboardSkeleton = () => (

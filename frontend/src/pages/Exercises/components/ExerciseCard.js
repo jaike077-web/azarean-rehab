@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDateNumeric } from '../../../utils/dateUtils';
 import {
   Activity,
   Dumbbell,
@@ -283,7 +284,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
       {/* Footer */}
       <div className="card-footer">
         <span className="card-date">
-          {exercise.created_at ? new Date(exercise.created_at).toLocaleDateString('ru-RU') : ''}
+          {exercise.created_at ? formatDateNumeric(exercise.created_at) : ''}
         </span>
         {exercise.is_unilateral && (
           <span className="unilateral-badge" title="Одностороннее">

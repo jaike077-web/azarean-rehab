@@ -81,7 +81,6 @@ function Dashboard() {
   };
 
   const toggleMobileMenu = () => {
-    console.log('BURGER CLICKED');
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 

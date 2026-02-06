@@ -2,7 +2,8 @@
 // TOAST COMPONENT - Azarean Network
 // =====================================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import './Toast.css';
 
 const ICONS = {
@@ -21,6 +22,7 @@ const TITLES = {
 
 const Toast = ({ id, type = 'info', title, message, duration = 4000, onClose }) => {
   const [isExiting, setIsExiting] = useState(false);
+  const exitTimerRef = useRef(null);
 
   useEffect(() => {
     if (duration > 0) {
@@ -32,9 +34,18 @@ const Toast = ({ id, type = 'info', title, message, duration = 4000, onClose }) 
     }
   }, [duration]);
 
+  // Cleanup exit timer on unmount
+  useEffect(() => {
+    return () => {
+      if (exitTimerRef.current) {
+        clearTimeout(exitTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleClose = () => {
     setIsExiting(true);
-    setTimeout(() => {
+    exitTimerRef.current = setTimeout(() => {
       onClose(id);
     }, 300); // Время анимации выхода
   };
@@ -60,6 +71,15 @@ const Toast = ({ id, type = 'info', title, message, duration = 4000, onClose }) 
       )}
     </div>
   );
+};
+
+Toast.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  type: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
+  title: PropTypes.string,
+  message: PropTypes.string,
+  duration: PropTypes.number,
+  onClose: PropTypes.func.isRequired
 };
 
 export default Toast;
