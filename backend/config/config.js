@@ -14,11 +14,18 @@ const config = {
     password: process.env.DB_PASSWORD || '',
   },
 
-  // Authentication
+  // Authentication (инструкторы)
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '1h', // Уменьшено с 7d для безопасности
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  },
+
+  // Authentication (пациенты — ОТДЕЛЬНЫЕ секреты!)
+  patient: {
+    jwtSecret: process.env.PATIENT_JWT_SECRET,
+    jwtExpiresIn: process.env.PATIENT_JWT_EXPIRES_IN || '15m',
+    refreshExpiresIn: process.env.PATIENT_REFRESH_EXPIRES_IN || '30d',
   },
 
   // Session
@@ -44,6 +51,10 @@ const config = {
 // Validation - fail fast if critical secrets missing
 if (!config.jwt.secret) {
   throw new Error('FATAL ERROR: JWT_SECRET is not defined in .env file');
+}
+
+if (!config.patient.jwtSecret) {
+  throw new Error('FATAL ERROR: PATIENT_JWT_SECRET is not defined in .env file');
 }
 
 if (!config.database.password && config.nodeEnv === 'production') {

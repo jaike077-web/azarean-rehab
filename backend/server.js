@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { testConnection } = require('./database/db');
 const config = require('./config/config');
 
@@ -125,6 +126,7 @@ app.use('/api/complexes/token', tokenLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // Логирование запросов (без чувствительных данных)
 app.use((req, res, next) => {
@@ -193,6 +195,11 @@ app.use('/api/import', require('./routes/import'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/templates', require('./routes/templates'));
+
+// Авторизация пациентов (отдельная система!)
+app.use('/api/patient-auth/login', authLimiter);
+app.use('/api/patient-auth/register', authLimiter);
+app.use('/api/patient-auth', require('./routes/patientAuth'));
 
 // =====================================================
 // ОБРАБОТКА ОШИБОК

@@ -22,6 +22,12 @@ const Trash = lazy(() => import('./pages/Trash'));
 const Exercises = lazy(() => import('./pages/Exercises/Exercises'));
 const ExerciseDetail = lazy(() => import('./pages/Exercises/ExerciseDetail'));
 
+// Авторизация пациентов (Спринт 0.1)
+const PatientLogin = lazy(() => import('./pages/PatientAuth/PatientLogin'));
+const PatientRegister = lazy(() => import('./pages/PatientAuth/PatientRegister'));
+const PatientForgotPassword = lazy(() => import('./pages/PatientAuth/PatientForgotPassword'));
+const PatientResetPassword = lazy(() => import('./pages/PatientAuth/PatientResetPassword'));
+
 // Защищённый роут
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -196,9 +202,29 @@ function AppRoutes() {
       {/* ========================== */}
       
       {/* Страница пациента по токену */}
-      <Route 
-        path="/patient/:token" 
-        element={<PatientView />} 
+      <Route
+        path="/patient/:token"
+        element={<PatientView />}
+      />
+
+      {/* ========================== */}
+      {/* АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1) */}
+      {/* ========================== */}
+      <Route
+        path="/patient-login"
+        element={<PatientLogin />}
+      />
+      <Route
+        path="/patient-register"
+        element={<PatientRegister />}
+      />
+      <Route
+        path="/patient-forgot-password"
+        element={<PatientForgotPassword />}
+      />
+      <Route
+        path="/patient-reset-password/:token"
+        element={<PatientResetPassword />}
       />
 
       {/* ========================== */}

@@ -333,6 +333,21 @@ export const templates = {
 };
 
 // =====================================================
+// АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1)
+// =====================================================
+export const patientAuth = {
+  register: (data) => api.post('/patient-auth/register', data),
+  login: (data) => api.post('/patient-auth/login', data),
+  logout: () => api.post('/patient-auth/logout'),
+  refresh: () => api.post('/patient-auth/refresh'),
+  forgotPassword: (email) => api.post('/patient-auth/forgot-password', { email }),
+  resetPassword: (data) => api.post('/patient-auth/reset-password', data),
+  linkToken: (data) => api.post('/patient-auth/link-token', data),
+  getMe: () => api.get('/patient-auth/me'),
+  updateMe: (data) => api.put('/patient-auth/me', data),
+};
+
+// =====================================================
 // ЭКСПОРТ УТИЛИТ
 // =====================================================
 export { setTokens, clearTokens, getToken, getRefreshToken, createPatientApi };

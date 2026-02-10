@@ -1,0 +1,115 @@
+/* PatientRegister.css - Additional styles for registration page */
+/* Shared styles are imported from PatientLogin.css */
+
+/* Required field asterisk */
+.patient-auth-required {
+  color: #E53E3E;
+  font-weight: 500;
+}
+
+/* Password strength indicator */
+.patient-auth-password-strength {
+  height: 4px;
+  border-radius: 2px;
+  background-color: #E2E8F0;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.patient-auth-password-strength-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.patient-auth-password-strength-bar.weak {
+  width: 33%;
+  background-color: #E53E3E;
+}
+
+.patient-auth-password-strength-bar.medium {
+  width: 66%;
+  background-color: #D69E2E;
+}
+
+.patient-auth-password-strength-bar.strong {
+  width: 100%;
+  background-color: #38A169;
+}
+
+.patient-auth-password-hint {
+  font-size: 12px;
+  color: #718096;
+  margin-top: 2px;
+}
+
+/* Consent checkbox section */
+.patient-auth-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+
+.patient-auth-consent-checkbox-wrapper {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.patient-auth-consent-checkbox-input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.patient-auth-consent-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #CBD5E0;
+  border-radius: 4px;
+  background-color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: transparent;
+}
+
+.patient-auth-consent-checkbox-input:checked ~ .patient-auth-consent-checkbox {
+  background: linear-gradient(135deg, #1A8A6A 0%, #2B7CB8 100%);
+  border-color: transparent;
+  color: #FFFFFF;
+}
+
+.patient-auth-consent-checkbox-input:disabled ~ .patient-auth-consent-checkbox {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.patient-auth-consent-label {
+  font-size: 13px;
+  color: #4A5568;
+  line-height: 1.4;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 480px) {
+  .patient-auth-consent {
+    gap: 8px;
+  }
+
+  .patient-auth-consent-label {
+    font-size: 12px;
+  }
+
+  .patient-auth-password-hint {
+    font-size: 11px;
+  }
+}

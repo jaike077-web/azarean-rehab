@@ -1,0 +1,326 @@
+/* Patient Authentication - Login Page */
+
+.patient-auth-container {
+  min-height: 100vh;
+  background-color: #F7F8FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 24px);
+}
+
+.patient-auth-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 440px;
+  padding: clamp(24px, 5vw, 40px);
+}
+
+/* Logo */
+.patient-auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.patient-auth-logo-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1A8A6A 0%, #2B7CB8 100%);
+  flex-shrink: 0;
+}
+
+.patient-auth-logo-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1A202C;
+}
+
+/* Heading */
+.patient-auth-heading {
+  font-size: clamp(20px, 4vw, 24px);
+  font-weight: 600;
+  color: #1A202C;
+  text-align: center;
+  margin: 0 0 24px 0;
+}
+
+/* Form */
+.patient-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.patient-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.patient-auth-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5568;
+}
+
+.patient-auth-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.patient-auth-input {
+  width: 100%;
+  padding: 14px 16px 14px 44px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #1A202C;
+  background: white;
+  min-height: 48px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.patient-auth-input::placeholder {
+  color: #A0AEC0;
+}
+
+.patient-auth-input:focus {
+  outline: none;
+  border-color: #1A8A6A;
+  box-shadow: 0 0 0 3px rgba(26, 138, 106, 0.1);
+}
+
+.patient-auth-input:hover:not(:focus) {
+  border-color: #CBD5E0;
+}
+
+.patient-auth-input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9AA1B2;
+  pointer-events: none;
+}
+
+.patient-auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #9AA1B2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.patient-auth-password-toggle:hover {
+  color: #4A5568;
+}
+
+.patient-auth-password-toggle:focus {
+  outline: none;
+  color: #1A8A6A;
+}
+
+/* Forgot Password Link */
+.patient-auth-forgot-link {
+  text-align: right;
+  font-size: 14px;
+  color: #1A8A6A;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  margin-top: -8px;
+}
+
+.patient-auth-forgot-link:hover {
+  color: #15725A;
+  text-decoration: underline;
+}
+
+/* Primary Button */
+.patient-auth-btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #1A8A6A 0%, #2B7CB8 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 52px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 2px 4px rgba(26, 138, 106, 0.2);
+}
+
+.patient-auth-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(26, 138, 106, 0.3);
+}
+
+.patient-auth-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(26, 138, 106, 0.2);
+}
+
+.patient-auth-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.patient-auth-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 24px 0;
+  color: #718096;
+  font-size: 14px;
+  position: relative;
+}
+
+.patient-auth-divider::before,
+.patient-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #E2E8F0;
+}
+
+/* OAuth Grid */
+.patient-auth-oauth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.patient-auth-oauth-btn {
+  padding: 12px;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  background: white;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5568;
+  font-family: inherit;
+}
+
+.patient-auth-oauth-btn:hover {
+  border-color: #CBD5E0;
+  background: #F7FAFC;
+  transform: translateY(-1px);
+}
+
+.patient-auth-oauth-btn:active {
+  transform: translateY(0);
+}
+
+.patient-auth-oauth-btn svg {
+  flex-shrink: 0;
+}
+
+/* Footer */
+.patient-auth-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #718096;
+}
+
+.patient-auth-link {
+  color: #1A8A6A;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.patient-auth-link:hover {
+  color: #15725A;
+  text-decoration: underline;
+}
+
+/* Error Message */
+.patient-auth-error {
+  padding: 12px;
+  background-color: #FED7D7;
+  color: #C53030;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* Success Message */
+.patient-auth-success {
+  padding: 12px;
+  background-color: #C6F6D5;
+  color: #22543D;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .patient-auth-oauth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-auth-oauth-btn {
+    min-height: 44px;
+  }
+}
+
+/* Touch Device Enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .patient-auth-input,
+  .patient-auth-btn-primary,
+  .patient-auth-oauth-btn,
+  .patient-auth-password-toggle {
+    min-height: 44px;
+  }
+}
+
+/* Accessibility - Focus Visible */
+.patient-auth-btn-primary:focus-visible,
+.patient-auth-oauth-btn:focus-visible,
+.patient-auth-link:focus-visible,
+.patient-auth-forgot-link:focus-visible {
+  outline: 2px solid #1A8A6A;
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .patient-auth-input,
+  .patient-auth-btn-primary,
+  .patient-auth-oauth-btn,
+  .patient-auth-password-toggle,
+  .patient-auth-link,
+  .patient-auth-forgot-link {
+    transition: none;
+  }
+}
