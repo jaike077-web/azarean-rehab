@@ -153,12 +153,14 @@ app.get('/', (req, res) => {
     },
     endpoints: {
       auth: '/api/auth',
+      patientAuth: '/api/patient-auth',
       patients: '/api/patients',
       diagnoses: '/api/diagnoses',
       complexes: '/api/complexes',
       exercises: '/api/exercises',
       progress: '/api/progress',
-      dashboard: '/api/dashboard'
+      dashboard: '/api/dashboard',
+      rehab: '/api/rehab'
     }
   });
 });
@@ -201,6 +203,9 @@ app.use('/api/patient-auth/login', authLimiter);
 app.use('/api/patient-auth/register', authLimiter);
 app.use('/api/patient-auth', require('./routes/patientAuth'));
 
+// Реабилитационные программы (Спринт 1.1)
+app.use('/api/rehab', require('./routes/rehab'));
+
 // =====================================================
 // ОБРАБОТКА ОШИБОК
 // =====================================================
@@ -216,12 +221,18 @@ app.use((req, res) => {
       'POST /api/auth/login',
       'POST /api/auth/register',
       'GET /api/auth/me',
+      'POST /api/patient-auth/login',
+      'POST /api/patient-auth/register',
       'GET /api/patients',
       'GET /api/diagnoses',
       'GET /api/complexes',
       'GET /api/exercises',
       'GET /api/progress/complex/:id',
-      'GET /api/dashboard/stats'
+      'GET /api/dashboard/stats',
+      'GET /api/rehab/phases',
+      'GET /api/rehab/tips',
+      'GET /api/rehab/my/dashboard',
+      'GET /api/rehab/programs'
     ]
   });
 });
