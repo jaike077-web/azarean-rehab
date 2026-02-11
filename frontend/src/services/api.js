@@ -348,6 +348,145 @@ export const patientAuth = {
 };
 
 // =====================================================
+// API ДЛЯ РЕАБИЛИТАЦИИ ПАЦИЕНТОВ (с JWT Bearer + auto-refresh)
+// =====================================================
+
+// Singleton axios instance для пациентов (аналог `api` для инструкторов)
+const patientApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // для httpOnly cookie patient_refresh_token
+});
+
+// Request interceptor — подставляет patient_token из localStorage
+patientApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('patient_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Флаги для предотвращения множественных refresh запросов (пациент)
+let isPatientRefreshing = false;
+let patientFailedQueue = [];
+
+const processPatientQueue = (error, token = null) => {
+  patientFailedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  patientFailedQueue = [];
+};
+
+// Response interceptor — auto-refresh при 403 "токен истёк"
+patientApi.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Обработка 403 — токен истёк
+    if (error.response?.status === 403 && !originalRequest._retry) {
+      const errorMessage = error.response?.data?.message || '';
+
+      if (errorMessage.includes('истек') || errorMessage.includes('expired')) {
+        if (isPatientRefreshing) {
+          // Если уже идёт refresh, ждём его завершения
+          return new Promise((resolve, reject) => {
+            patientFailedQueue.push({ resolve, reject });
+          }).then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return patientApi(originalRequest);
+          }).catch(err => Promise.reject(err));
+        }
+
+        originalRequest._retry = true;
+        isPatientRefreshing = true;
+
+        try {
+          // Refresh через httpOnly cookie (withCredentials: true)
+          const response = await axios.post(
+            `${API_BASE_URL}/patient-auth/refresh`,
+            {},
+            { withCredentials: true }
+          );
+
+          const newToken = response.data.token;
+          localStorage.setItem('patient_token', newToken);
+
+          processPatientQueue(null, newToken);
+
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return patientApi(originalRequest);
+        } catch (refreshError) {
+          processPatientQueue(refreshError, null);
+          localStorage.removeItem('patient_token');
+          window.location.href = '/patient-login';
+          return Promise.reject(refreshError);
+        } finally {
+          isPatientRefreshing = false;
+        }
+      }
+    }
+
+    // 401 — не авторизован
+    if (error.response?.status === 401) {
+      localStorage.removeItem('patient_token');
+      window.location.href = '/patient-login';
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Deprecated: оставлено для обратной совместимости
+const createPatientJwtApi = () => patientApi;
+
+export const rehab = {
+  // Dashboard (агрегированные данные)
+  getDashboard: () => patientApi.get('/rehab/my/dashboard'),
+  getMyProgram: () => patientApi.get('/rehab/my/program'),
+  getMyExercises: () => patientApi.get('/rehab/my/exercises'),
+
+  // Фазы (публичные)
+  getPhases: (type = 'acl') => api.get(`/rehab/phases?type=${type}`),
+  getPhase: (id) => api.get(`/rehab/phases/${id}`),
+  getTips: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/rehab/tips?${query}`);
+  },
+
+  // Дневник
+  getDiaryEntries: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return patientApi.get(`/rehab/my/diary?${query}`);
+  },
+  createDiaryEntry: (data) => patientApi.post('/rehab/my/diary', data),
+  getDiaryEntry: (date) => patientApi.get(`/rehab/my/diary/${date}`),
+
+  // Стрик
+  getMyStreak: () => patientApi.get('/rehab/my/streak'),
+
+  // Сообщения
+  getMyMessages: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return patientApi.get(`/rehab/my/messages?${query}`);
+  },
+  sendMessage: (data) => patientApi.post('/rehab/my/messages', data),
+  getUnreadCount: () => patientApi.get('/rehab/my/messages/unread'),
+
+  // Уведомления
+  getNotifications: () => patientApi.get('/rehab/my/notifications'),
+  updateNotifications: (data) => patientApi.put('/rehab/my/notifications', data),
+};
+
+// =====================================================
 // ЭКСПОРТ УТИЛИТ
 // =====================================================
-export { setTokens, clearTokens, getToken, getRefreshToken, createPatientApi };
+export { setTokens, clearTokens, getToken, getRefreshToken, createPatientApi, createPatientJwtApi, patientApi };

@@ -29,7 +29,8 @@ router.get('/phases', async (req, res) => {
     const result = await query(
       `SELECT id, program_type, phase_number, title, subtitle,
               duration_weeks, description, goals, restrictions,
-              criteria_next, icon, color
+              criteria_next, icon, color, color_bg, teaser,
+              allowed, pain, daily, red_flags, faq
        FROM rehab_phases
        WHERE program_type = $1 AND is_active = true
        ORDER BY phase_number`,
@@ -42,6 +43,11 @@ router.get('/phases', async (req, res) => {
       goals: safeJsonParse(phase.goals),
       restrictions: safeJsonParse(phase.restrictions),
       criteria_next: safeJsonParse(phase.criteria_next),
+      allowed: safeJsonParse(phase.allowed),
+      pain: safeJsonParse(phase.pain),
+      daily: safeJsonParse(phase.daily),
+      red_flags: safeJsonParse(phase.red_flags),
+      faq: safeJsonParse(phase.faq),
     }));
 
     res.json({ data: phases });
@@ -212,16 +218,27 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
 
     const program = programResult.rows[0] || null;
 
+    // Добавляем имя пациента из JWT (фронтенд ожидает program.patient_name)
+    if (program) {
+      program.patient_name = req.patient.full_name;
+    }
+
     // 2. Текущая фаза (если есть программа)
     let phase = null;
     if (program) {
       const phaseResult = await query(
-        `SELECT id, phase_number, title, subtitle, duration_weeks, icon, color
+        `SELECT id, phase_number, title, subtitle, duration_weeks, description, icon, color, color_bg
          FROM rehab_phases
          WHERE program_type = 'acl' AND phase_number = $1 AND is_active = true`,
         [program.current_phase]
       );
       phase = phaseResult.rows[0] || null;
+      // Трансформация: фронтенд ожидает name, color2, duration_weeks как число
+      if (phase) {
+        phase.name = phase.title;
+        phase.color2 = phase.color_bg || phase.color;
+        phase.duration_weeks = parseInt(phase.duration_weeks) || 12;
+      }
     }
 
     // 3. Стрик
@@ -232,7 +249,15 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
        ORDER BY current_streak DESC LIMIT 1`,
       [patientId]
     );
-    const streak = streakResult.rows[0] || { current_streak: 0, longest_streak: 0, total_days: 0 };
+    const rawStreak = streakResult.rows[0] || { current_streak: 0, longest_streak: 0, total_days: 0 };
+    // Трансформация: фронтенд ожидает current, best, atRisk
+    const streak = {
+      current: rawStreak.current_streak,
+      best: rawStreak.longest_streak,
+      atRisk: rawStreak.last_activity_date
+        ? (Date.now() - new Date(rawStreak.last_activity_date).getTime()) > 48 * 3600 * 1000
+        : false,
+    };
 
     // 4. Последняя запись дневника
     const diaryResult = await query(
@@ -1074,5 +1099,54 @@ async function updateStreak(patientId, programId, dateStr) {
     // Не бросаем ошибку — стрик не критичен
   }
 }
+
+// =====================================================
+// ПАЦИЕНТ: Упражнения (получить access_token комплекса)
+// =====================================================
+
+/**
+ * GET /api/rehab/my/exercises
+ * Получить access_token комплекса из активной программы пациента
+ */
+router.get('/my/exercises', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+
+    const result = await query(
+      `SELECT rp.id as program_id, rp.complex_id, rp.title as program_title,
+              c.title as complex_title, c.access_token,
+              (SELECT COUNT(*) FROM complex_exercises WHERE complex_id = c.id) as exercise_count
+       FROM rehab_programs rp
+       JOIN complexes c ON c.id = rp.complex_id
+       WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
+       ORDER BY rp.created_at DESC
+       LIMIT 1`,
+      [patientId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Активная программа с комплексом не найдена',
+      });
+    }
+
+    const row = result.rows[0];
+
+    res.json({
+      data: {
+        program_id: row.program_id,
+        complex_id: row.complex_id,
+        access_token: row.access_token,
+        program_title: row.program_title,
+        complex_title: row.complex_title,
+        exercise_count: parseInt(row.exercise_count, 10),
+      },
+    });
+  } catch (error) {
+    console.error('Ошибка получения упражнений:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения упражнений' });
+  }
+});
 
 module.exports = router;

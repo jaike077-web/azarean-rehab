@@ -28,6 +28,9 @@ const PatientRegister = lazy(() => import('./pages/PatientAuth/PatientRegister')
 const PatientForgotPassword = lazy(() => import('./pages/PatientAuth/PatientForgotPassword'));
 const PatientResetPassword = lazy(() => import('./pages/PatientAuth/PatientResetPassword'));
 
+// Пациентский дашборд (Спринт 1.2)
+const PatientDashboard = lazy(() => import('./pages/PatientDashboard/PatientDashboard'));
+
 // Защищённый роут
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -51,6 +54,15 @@ function ProtectedRoute({ children }) {
   }
 
   return user ? children : <Navigate to="/login" />;
+}
+
+// Защищённый роут для пациентов (Спринт 1.2)
+function PatientRoute({ children }) {
+  const patientToken = localStorage.getItem('patient_token');
+  if (!patientToken) {
+    return <Navigate to="/patient-login" state={{ from: '/patient-dashboard' }} />;
+  }
+  return children;
 }
 
 function AppRoutes() {
@@ -225,6 +237,18 @@ function AppRoutes() {
       <Route
         path="/patient-reset-password/:token"
         element={<PatientResetPassword />}
+      />
+
+      {/* ========================== */}
+      {/* ПАЦИЕНТСКИЙ ДАШБОРД (Спринт 1.2) */}
+      {/* ========================== */}
+      <Route
+        path="/patient-dashboard"
+        element={
+          <PatientRoute>
+            <PatientDashboard />
+          </PatientRoute>
+        }
       />
 
       {/* ========================== */}

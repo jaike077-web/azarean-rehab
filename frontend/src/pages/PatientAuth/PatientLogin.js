@@ -15,9 +15,6 @@ const PatientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [patientName, setPatientName] = useState('');
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -29,15 +26,10 @@ const PatientLogin = () => {
         localStorage.setItem('patient_token', data.token);
       }
       const name = data.patient?.full_name || '';
-      setPatientName(name);
-      setLoggedIn(true);
       toast.success(name ? `Добро пожаловать, ${name}!` : 'Вход выполнен!');
-      // Если пришли с конкретной страницы — переходим туда
+      // Переход на пациентский дашборд или на страницу, откуда пришли
       const redirectTo = location.state?.from;
-      if (redirectTo && redirectTo !== '/patient-login') {
-        navigate(redirectTo);
-      }
-      // Иначе остаёмся на странице (пациентский дашборд будет добавлен позже)
+      navigate(redirectTo && redirectTo !== '/patient-login' ? redirectTo : '/patient-dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Ошибка при входе';
       setError(msg);
@@ -46,50 +38,9 @@ const PatientLogin = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('patient_token');
-    setLoggedIn(false);
-    setPatientName('');
-    setEmail('');
-    setPassword('');
-    toast.info('Вы вышли из аккаунта');
-  };
-
   const handleOAuthClick = (provider) => {
     alert('В разработке');
   };
-
-  // Экран после входа
-  if (loggedIn) {
-    return (
-      <div className="patient-auth-container">
-        <div className="patient-auth-card">
-          <div className="patient-auth-logo">
-            <div className="patient-auth-logo-dot"></div>
-            <div className="patient-auth-logo-text">Azarean</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-            <h1 className="patient-auth-heading">
-              {patientName ? `Добро пожаловать, ${patientName}!` : 'Вы вошли в аккаунт'}
-            </h1>
-            <p style={{ color: '#718096', fontSize: '15px', marginBottom: '24px', lineHeight: '1.5' }}>
-              Личный кабинет пациента находится в разработке.
-              Скоро здесь появятся ваши программы реабилитации.
-            </p>
-            <button
-              type="button"
-              className="patient-auth-btn-primary"
-              onClick={handleLogout}
-              style={{ maxWidth: '240px', margin: '0 auto' }}
-            >
-              Выйти
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="patient-auth-container">

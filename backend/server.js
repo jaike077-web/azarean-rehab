@@ -335,5 +335,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// Запуск
-startServer();
+// Запуск (только при прямом вызове, не при импорте в тестах)
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
