@@ -18,13 +18,21 @@ import {
   ListPlus,
   ClipboardList,
   Trash2,
-  Settings,
   Search,
   UserPlus,
   HeartHandshake,
   FileText,
   Upload,
+  Shield,
+  ScrollText,
+  Database,
+  Server,
 } from 'lucide-react';
+import AdminStats from './Admin/AdminStats';
+import AdminUsers from './Admin/AdminUsers';
+import AdminAuditLogs from './Admin/AdminAuditLogs';
+import AdminContent from './Admin/AdminContent';
+import AdminSystem from './Admin/AdminSystem';
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -100,16 +108,16 @@ function Dashboard() {
         return <ImportExercises />;
       case 'trash':
         return <Trash />;
-      case 'settings':
-        return (
-          <div className="welcome-section">
-            <h2 className="welcome-title">
-              <span>Настройки</span>
-              <Settings className="welcome-icon" size={26} />
-            </h2>
-            <p>Скоро здесь будут настройки</p>
-          </div>
-        );
+      case 'admin-stats':
+        return <AdminStats />;
+      case 'admin-users':
+        return <AdminUsers />;
+      case 'admin-audit':
+        return <AdminAuditLogs />;
+      case 'admin-content':
+        return <AdminContent />;
+      case 'admin-system':
+        return <AdminSystem />;
       default:
         return (
           <div className="welcome-section">
@@ -313,13 +321,29 @@ function Dashboard() {
           </button>
 
           {user?.role === 'admin' && (
-            <button 
-              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => handleNavClick('settings')}
-            >
-              <Settings className="nav-icon" size={18} />
-              <span>Настройки</span>
-            </button>
+            <>
+              <div className="nav-divider" />
+              <button className={`nav-item ${activeTab === 'admin-stats' ? 'active' : ''}`} onClick={() => handleNavClick('admin-stats')}>
+                <Shield className="nav-icon" size={18} />
+                <span>Статистика</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'admin-users' ? 'active' : ''}`} onClick={() => handleNavClick('admin-users')}>
+                <Users className="nav-icon" size={18} />
+                <span>Пользователи</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'admin-audit' ? 'active' : ''}`} onClick={() => handleNavClick('admin-audit')}>
+                <ScrollText className="nav-icon" size={18} />
+                <span>Журнал аудита</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'admin-content' ? 'active' : ''}`} onClick={() => handleNavClick('admin-content')}>
+                <Database className="nav-icon" size={18} />
+                <span>Контент</span>
+              </button>
+              <button className={`nav-item ${activeTab === 'admin-system' ? 'active' : ''}`} onClick={() => handleNavClick('admin-system')}>
+                <Server className="nav-icon" size={18} />
+                <span>Система</span>
+              </button>
+            </>
           )}
         </nav>
 

@@ -1,0 +1,20 @@
+.admin-content { padding: clamp(12px, 2vw, 24px); }
+.content-tabs {
+  display: flex; gap: 4px; background: #f1f5f9; border-radius: 10px;
+  padding: 4px; margin-bottom: 16px; width: fit-content;
+}
+.content-tab {
+  padding: 7px 16px; border: none; border-radius: 7px; background: transparent;
+  color: #64748b; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+}
+.content-tab.active { background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.content-tab:hover:not(.active) { color: #334155; }
+.content-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.content-header span { font-size: 13px; color: #64748b; }
+.admin-modal-wide { max-width: 640px; }
+.content-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.content-form-grid .full-width { grid-column: 1 / -1; }
+.content-form-grid .admin-modal-actions { grid-column: 1 / -1; }
+.td-url { font-size: 12px; }

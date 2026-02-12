@@ -448,6 +448,16 @@ patientApi.interceptors.response.use(
 // Deprecated: оставлено для обратной совместимости
 const createPatientJwtApi = () => patientApi;
 
+// Спринт 2 — Профиль пациента (используют patientApi для правильного JWT)
+patientAuth.changePassword = (data) => patientApi.post('/patient-auth/change-password', data);
+patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
+// Переопределяем getMe и updateMe чтобы они тоже работали с patient JWT
+patientAuth.getMe = () => patientApi.get('/patient-auth/me');
+patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
+
 export const rehab = {
   // Dashboard (агрегированные данные)
   getDashboard: () => patientApi.get('/rehab/my/dashboard'),
@@ -484,6 +494,52 @@ export const rehab = {
   // Уведомления
   getNotifications: () => patientApi.get('/rehab/my/notifications'),
   updateNotifications: (data) => patientApi.put('/rehab/my/notifications', data),
+
+  // Telegram привязка (Sprint 3)
+  getTelegramStatus: () => patientApi.get('/telegram/status'),
+  generateTelegramCode: () => patientApi.post('/telegram/link-code'),
+  unlinkTelegram: () => patientApi.delete('/telegram/unlink'),
+};
+
+// =====================================================
+// АДМИН-ПАНЕЛЬ (Sprint 4)
+// =====================================================
+export const admin = {
+  // Юзеры
+  getUsers: (params = {}) => api.get('/admin/users', { params }),
+  createUser: (data) => api.post('/admin/users', data),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deactivateUser: (id) => api.patch(`/admin/users/${id}/deactivate`),
+  activateUser: (id) => api.patch(`/admin/users/${id}/activate`),
+  unlockUser: (id) => api.patch(`/admin/users/${id}/unlock`),
+
+  // Статистика
+  getStats: () => api.get('/admin/stats'),
+
+  // Аудит-логи
+  getAuditLogs: (params = {}) => api.get('/admin/audit-logs', { params }),
+
+  // Фазы
+  getPhases: (params = {}) => api.get('/admin/phases', { params }),
+  getPhase: (id) => api.get(`/admin/phases/${id}`),
+  createPhase: (data) => api.post('/admin/phases', data),
+  updatePhase: (id, data) => api.put(`/admin/phases/${id}`, data),
+  deletePhase: (id) => api.delete(`/admin/phases/${id}`),
+
+  // Советы
+  getTips: (params = {}) => api.get('/admin/tips', { params }),
+  createTip: (data) => api.post('/admin/tips', data),
+  updateTip: (id, data) => api.put(`/admin/tips/${id}`, data),
+  deleteTip: (id) => api.delete(`/admin/tips/${id}`),
+
+  // Видео
+  getVideos: (params = {}) => api.get('/admin/videos', { params }),
+  createVideo: (data) => api.post('/admin/videos', data),
+  updateVideo: (id, data) => api.put(`/admin/videos/${id}`, data),
+  deleteVideo: (id) => api.delete(`/admin/videos/${id}`),
+
+  // Система
+  getSystemInfo: () => api.get('/admin/system'),
 };
 
 // =====================================================
