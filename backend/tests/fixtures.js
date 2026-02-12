@@ -1,5 +1,5 @@
 // =====================================================
-// Тестовые данные для Sprint 1.2
+// Тестовые данные для Sprint 1.2 + Sprint 3
 // =====================================================
 
 const mockPhaseRow = {
@@ -129,6 +129,63 @@ const mockExerciseRow = {
   exercise_count: '8',
 };
 
+// Sprint 3 — Telegram
+const mockTelegramLinkCode = {
+  id: 1,
+  patient_id: 1,
+  code: 'A1B2C3',
+  expires_at: new Date(Date.now() + 10 * 60 * 1000),
+  used: false,
+  created_at: new Date(),
+};
+
+const mockPatientWithTelegram = {
+  id: 1,
+  full_name: 'Тест Пациент',
+  email: 'test@patient.com',
+  telegram_chat_id: 123456789,
+};
+
+// Sprint 4 — Admin
+const mockUserRow = {
+  id: 1,
+  email: 'admin@azarean.com',
+  full_name: 'Admin User',
+  role: 'admin',
+  is_active: true,
+  created_at: '2026-01-01T00:00:00.000Z',
+  updated_at: '2026-01-01T00:00:00.000Z',
+  failed_login_attempts: 0,
+  locked_until: null,
+};
+
+const mockInstructorRow = {
+  id: 2,
+  email: 'instructor@azarean.com',
+  full_name: 'Test Instructor',
+  role: 'instructor',
+  is_active: true,
+  created_at: '2026-01-15T00:00:00.000Z',
+  updated_at: '2026-01-15T00:00:00.000Z',
+  failed_login_attempts: 0,
+  locked_until: null,
+};
+
+const mockAuditLogRow = {
+  id: 1,
+  user_id: 1,
+  action: 'CREATE',
+  entity_type: 'patient',
+  entity_id: 5,
+  patient_id: null,
+  ip_address: '127.0.0.1',
+  user_agent: 'test-agent',
+  details: {},
+  created_at: '2026-02-10T10:00:00.000Z',
+  user_name: 'Admin User',
+  user_email: 'admin@azarean.com',
+};
+
 module.exports = {
   mockPhaseRow,
   mockPhaseRow2,
@@ -140,4 +197,9 @@ module.exports = {
   mockTipRow,
   mockVideoRow,
   mockExerciseRow,
+  mockTelegramLinkCode,
+  mockPatientWithTelegram,
+  mockUserRow,
+  mockInstructorRow,
+  mockAuditLogRow,
 };

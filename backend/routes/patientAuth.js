@@ -12,7 +12,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { query } = require('../database/db');
+const path = require('path');
+const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
+const { avatarUpload } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
 const config = require('../config/config');
 
@@ -614,6 +617,192 @@ router.put('/me', authenticatePatient, async (req, res) => {
     res.status(500).json({
       error: 'Server Error',
       message: 'Ошибка при обновлении профиля'
+    });
+  }
+});
+
+// =====================================================
+// POST /change-password — Смена пароля пациента
+// Спринт 2 — Профиль
+// =====================================================
+router.post('/change-password', authenticatePatient, async (req, res) => {
+  try {
+    const { old_password, new_password } = req.body;
+
+    // Валидация
+    if (!old_password || !new_password) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Текущий и новый пароль обязательны'
+      });
+    }
+
+    if (new_password.length < 8) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Новый пароль должен содержать минимум 8 символов'
+      });
+    }
+
+    // Получаем текущий пароль
+    const result = await query(
+      `SELECT password_hash FROM patients WHERE id = $1 AND is_active = true`,
+      [req.patient.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Пациент не найден'
+      });
+    }
+
+    const patient = result.rows[0];
+
+    // Проверяем старый пароль
+    const isMatch = await bcrypt.compare(old_password, patient.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Текущий пароль неверный'
+      });
+    }
+
+    // Хешируем новый пароль
+    const password_hash = await bcrypt.hash(new_password, 10);
+
+    // Обновляем пароль в БД
+    await query(
+      `UPDATE patients SET password_hash = $1 WHERE id = $2`,
+      [password_hash, req.patient.id]
+    );
+
+    // Удаляем все refresh tokens (выход со всех устройств)
+    await query(
+      `DELETE FROM patient_refresh_tokens WHERE patient_id = $1`,
+      [req.patient.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Пароль успешно изменён. Необходимо войти заново.'
+    });
+
+  } catch (error) {
+    console.error('Patient change-password error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при смене пароля'
+    });
+  }
+});
+
+// =====================================================
+// POST /upload-avatar — Загрузка аватара пациента
+// Спринт 2 — Профиль
+// =====================================================
+router.post('/upload-avatar', authenticatePatient, (req, res, next) => {
+  avatarUpload.single('avatar')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          error: 'File Too Large',
+          message: 'Максимальный размер файла — 2MB'
+        });
+      }
+      return res.status(400).json({
+        error: 'Upload Error',
+        message: err.message || 'Ошибка при загрузке файла'
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Файл не выбран'
+      });
+    }
+
+    // Получаем текущий avatar_url (для удаления старого файла)
+    const currentResult = await query(
+      `SELECT avatar_url FROM patients WHERE id = $1`,
+      [req.patient.id]
+    );
+
+    const oldAvatarUrl = currentResult.rows[0]?.avatar_url;
+
+    // Удаляем старый файл с диска, если он есть
+    if (oldAvatarUrl) {
+      const oldPath = path.join(__dirname, '..', oldAvatarUrl);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    // Формируем URL нового аватара
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Обновляем в БД
+    await query(
+      `UPDATE patients SET avatar_url = $1 WHERE id = $2`,
+      [avatarUrl, req.patient.id]
+    );
+
+    res.json({
+      success: true,
+      avatar_url: avatarUrl
+    });
+
+  } catch (error) {
+    console.error('Patient upload-avatar error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при загрузке аватара'
+    });
+  }
+});
+
+// =====================================================
+// DELETE /avatar — Удаление аватара пациента
+// Спринт 2 — Профиль
+// =====================================================
+router.delete('/avatar', authenticatePatient, async (req, res) => {
+  try {
+    // Получаем текущий avatar_url
+    const result = await query(
+      `SELECT avatar_url FROM patients WHERE id = $1`,
+      [req.patient.id]
+    );
+
+    const avatarUrl = result.rows[0]?.avatar_url;
+
+    // Удаляем файл с диска
+    if (avatarUrl) {
+      const filePath = path.join(__dirname, '..', avatarUrl);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Обнуляем в БД
+    await query(
+      `UPDATE patients SET avatar_url = NULL WHERE id = $1`,
+      [req.patient.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Аватар удалён'
+    });
+
+  } catch (error) {
+    console.error('Patient delete-avatar error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при удалении аватара'
     });
   }
 });

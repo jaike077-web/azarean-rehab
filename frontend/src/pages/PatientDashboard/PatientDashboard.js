@@ -7,6 +7,7 @@ import RoadmapScreen from './components/RoadmapScreen';
 import DiaryScreen from './components/DiaryScreen';
 import ContactScreen from './components/ContactScreen';
 import ExercisesScreen from './components/ExercisesScreen';
+import ProfileScreen from './components/ProfileScreen';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -129,6 +130,8 @@ export default function PatientDashboard() {
         return <ContactScreen {...screenProps} />;
       case 4:
         return <ExercisesScreen {...screenProps} />;
+      case 5:
+        return <ProfileScreen {...screenProps} />;
       default:
         return <HomeScreen {...screenProps} />;
     }
@@ -178,13 +181,22 @@ export default function PatientDashboard() {
           <div className="pd-header-logo-dot"></div>
           <span className="pd-header-logo-text">AZAREAN</span>
         </div>
-        {dashboardData?.streak && (
-          <StreakBadge
-            days={dashboardData.streak.current}
-            best={dashboardData.streak.best}
-            atRisk={dashboardData.streak.atRisk}
-          />
-        )}
+        <div className="pd-header-right">
+          {dashboardData?.streak && (
+            <StreakBadge
+              days={dashboardData.streak.current}
+              best={dashboardData.streak.best}
+              atRisk={dashboardData.streak.atRisk}
+            />
+          )}
+          <button
+            className={`pd-header-avatar-btn ${screen === 5 ? 'pd-header-avatar-btn--active' : ''}`}
+            onClick={() => setScreen(5)}
+            aria-label="Профиль"
+          >
+            <span className="pd-header-avatar-icon">👤</span>
+          </button>
+        </div>
       </header>
 
       <div className="pd-content" ref={scrollRef}>

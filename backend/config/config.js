@@ -39,6 +39,12 @@ const config = {
   // Frontend URL для генерации ссылок пациентам
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
+  // Telegram Bot
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+    botUsername: process.env.TELEGRAM_BOT_USERNAME || 'azarean_rehab_bot',
+  },
+
   // Kinescope
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,

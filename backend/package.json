@@ -14,8 +14,12 @@
   "type": "commonjs",
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["**/tests/**/*.test.js"],
-    "setupFiles": ["./tests/setup.js"]
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFiles": [
+      "./tests/setup.js"
+    ]
   },
   "dependencies": {
     "@dnd-kit/modifiers": "^9.0.0",
@@ -31,6 +35,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "node-telegram-bot-api": "^0.67.0",
     "pg": "^8.16.3"
   },
   "devDependencies": {

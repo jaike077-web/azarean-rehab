@@ -1370,6 +1370,322 @@
 }
 
 /* ==========================================================================
+   Header Right Group
+   ========================================================================== */
+.pd-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   Header Avatar Button
+   ========================================================================== */
+.pd-header-avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--pd-border);
+  background-color: var(--pd-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pd-header-avatar-btn:hover {
+  border-color: var(--pd-accent);
+  background-color: #EDFAF5;
+}
+
+.pd-header-avatar-btn--active {
+  border-color: var(--pd-accent);
+  background-color: #EDFAF5;
+  box-shadow: 0 0 0 3px rgba(26, 138, 106, 0.15);
+}
+
+.pd-header-avatar-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   Profile Screen
+   ========================================================================== */
+.pd-profile-page-title {
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--pd-font-display);
+  color: var(--pd-text);
+  margin-bottom: 16px;
+}
+
+/* Avatar Section */
+.pd-profile-avatar-section {
+  text-align: center;
+  padding: 24px 18px 20px;
+}
+
+.pd-profile-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.pd-profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--pd-border);
+  transition: border-color 0.2s ease;
+}
+
+.pd-profile-avatar-wrapper:hover .pd-profile-avatar {
+  border-color: var(--pd-accent);
+}
+
+.pd-profile-avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--pd-accent), var(--pd-accent2));
+}
+
+.pd-profile-avatar--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--pd-bg);
+  animation: pd-pulse 1s ease-in-out infinite;
+}
+
+.pd-profile-avatar-initials {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: var(--pd-font-display);
+  color: white;
+}
+
+.pd-profile-avatar-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--pd-card);
+  border: 2px solid var(--pd-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pd-profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--pd-font-display);
+  color: var(--pd-text);
+  margin-bottom: 4px;
+}
+
+.pd-profile-email {
+  font-size: 13px;
+  color: var(--pd-text3);
+  margin-bottom: 16px;
+}
+
+.pd-profile-avatar-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pd-profile-avatar-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1.5px solid var(--pd-border);
+  background-color: var(--pd-card);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--pd-font);
+  color: var(--pd-text2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pd-profile-avatar-btn:hover {
+  border-color: var(--pd-accent);
+  color: var(--pd-accent);
+}
+
+.pd-profile-avatar-btn--danger {
+  color: var(--pd-danger);
+  border-color: #FECACA;
+}
+
+.pd-profile-avatar-btn--danger:hover {
+  color: var(--pd-danger);
+  border-color: var(--pd-danger);
+  background-color: #FEF2F2;
+}
+
+.pd-profile-avatar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Form Fields */
+.pd-profile-field {
+  margin-bottom: 14px;
+}
+
+.pd-profile-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pd-text3);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pd-profile-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--pd-radius-sm);
+  border: 1.5px solid var(--pd-border);
+  font-size: 14px;
+  font-family: var(--pd-font);
+  color: var(--pd-text);
+  background-color: var(--pd-card);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.pd-profile-input:focus {
+  outline: none;
+  border-color: var(--pd-accent);
+  box-shadow: 0 0 0 3px rgba(26, 138, 106, 0.1);
+}
+
+.pd-profile-input--readonly {
+  background-color: var(--pd-bg);
+  color: var(--pd-text3);
+  cursor: not-allowed;
+}
+
+.pd-profile-input::placeholder {
+  color: var(--pd-text3);
+}
+
+/* Save Button */
+.pd-profile-save-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--pd-radius-sm);
+  border: none;
+  background: linear-gradient(135deg, var(--pd-accent), var(--pd-accent2));
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--pd-font);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(26, 138, 106, 0.25);
+}
+
+.pd-profile-save-btn:active {
+  transform: scale(0.98);
+}
+
+.pd-profile-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Collapse Button */
+.pd-profile-collapse-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--pd-font);
+}
+
+.pd-profile-collapse-chevron {
+  font-size: 18px;
+  color: var(--pd-text3);
+  transition: transform 0.3s ease;
+}
+
+/* Password Section */
+.pd-profile-password-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pd-border);
+}
+
+/* Info Rows */
+.pd-profile-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--pd-border);
+}
+
+.pd-profile-info-row:last-child {
+  border-bottom: none;
+}
+
+.pd-profile-info-label {
+  font-size: 13px;
+  color: var(--pd-text2);
+}
+
+.pd-profile-info-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pd-text);
+}
+
+/* Logout Button */
+.pd-profile-logout-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: var(--pd-radius);
+  border: 1.5px solid #FECACA;
+  background-color: #FEF2F2;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--pd-font);
+  color: var(--pd-danger);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 12px;
+}
+
+.pd-profile-logout-btn:hover {
+  background-color: #FEE2E2;
+  border-color: var(--pd-danger);
+}
+
+.pd-profile-logout-btn:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
    Dark Mode Support (Optional - for future implementation)
    ========================================================================== */
 @media (prefers-color-scheme: dark) {

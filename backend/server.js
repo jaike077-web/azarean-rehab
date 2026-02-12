@@ -128,6 +128,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Static file serving для загрузок (аватары и т.д.)
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Логирование запросов (без чувствительных данных)
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
@@ -160,7 +164,9 @@ app.get('/', (req, res) => {
       exercises: '/api/exercises',
       progress: '/api/progress',
       dashboard: '/api/dashboard',
-      rehab: '/api/rehab'
+      rehab: '/api/rehab',
+      telegram: '/api/telegram',
+      admin: '/api/admin'
     }
   });
 });
@@ -206,6 +212,12 @@ app.use('/api/patient-auth', require('./routes/patientAuth'));
 // Реабилитационные программы (Спринт 1.1)
 app.use('/api/rehab', require('./routes/rehab'));
 
+// Telegram привязка (Спринт 3)
+app.use('/api/telegram', require('./routes/telegram'));
+
+// Админ-панель (Спринт 4)
+app.use('/api/admin', require('./routes/admin'));
+
 // =====================================================
 // ОБРАБОТКА ОШИБОК
 // =====================================================
@@ -232,7 +244,16 @@ app.use((req, res) => {
       'GET /api/rehab/phases',
       'GET /api/rehab/tips',
       'GET /api/rehab/my/dashboard',
-      'GET /api/rehab/programs'
+      'GET /api/rehab/programs',
+      'POST /api/telegram/link-code',
+      'GET /api/telegram/status',
+      'GET /api/admin/users',
+      'GET /api/admin/stats',
+      'GET /api/admin/audit-logs',
+      'GET /api/admin/phases',
+      'GET /api/admin/tips',
+      'GET /api/admin/videos',
+      'GET /api/admin/system'
     ]
   });
 });
@@ -299,11 +320,23 @@ const startServer = async () => {
       console.log('║   • GET  /api/patients  - Пациенты                    ║');
       console.log('║   • GET  /api/complexes - Комплексы                   ║');
       console.log('║   • GET  /api/exercises - Упражнения                  ║');
+      console.log('║   🤖 TELEGRAM BOT:                                    ║');
+      if (config.telegram.botToken) {
+        console.log(`║   • @${config.telegram.botUsername.padEnd(15)} — подключён ✓          ║`);
+      } else {
+        console.log('║   • Токен не задан — бот отключён ✗                   ║');
+      }
       console.log('║                                                       ║');
       console.log('╚═══════════════════════════════════════════════════════╝');
       console.log('');
       console.log('   Нажмите Ctrl+C для остановки');
       console.log('');
+
+      // Запускаем Telegram бот и scheduler
+      const { initBot } = require('./services/telegramBot');
+      const { initScheduler } = require('./services/scheduler');
+      initBot();
+      initScheduler();
     });
 
   } catch (error) {
@@ -316,15 +349,20 @@ const startServer = async () => {
 // GRACEFUL SHUTDOWN
 // =====================================================
 
-process.on('SIGTERM', () => {
-  console.log('\n⚠️  SIGTERM получен. Завершаю работу...');
+const gracefulShutdown = (signal) => {
+  console.log(`\n⚠️  ${signal} получен. Завершаю работу...`);
+  try {
+    const { getBot } = require('./services/telegramBot');
+    const { stopScheduler } = require('./services/scheduler');
+    const bot = getBot();
+    if (bot) bot.stopPolling();
+    stopScheduler();
+  } catch (e) { /* ignore */ }
   process.exit(0);
-});
+};
 
-process.on('SIGINT', () => {
-  console.log('\n\n⚠️  SIGINT получен. Завершаю работу...');
-  process.exit(0);
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
