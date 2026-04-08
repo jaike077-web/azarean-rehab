@@ -58,7 +58,7 @@ function AdminUserModal({ user, onSave, onClose }) {
       <div className="admin-modal" onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h3>{isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}</h3>
-          <button className="admin-modal-close" onClick={onClose}><X size={18} /></button>
+          <button className="admin-modal-close" onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="admin-modal-form">

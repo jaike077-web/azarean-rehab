@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { Server, RefreshCw, Database, Cpu, Clock, Bot, Globe } from 'lucide-react';
+import { Skeleton } from '../../components/Skeleton';
 import './AdminSystem.css';
 
 function AdminSystem() {
@@ -26,8 +27,21 @@ function AdminSystem() {
   if (loading) {
     return (
       <div className="admin-system">
-        <h2 className="admin-section-title"><Server size={22} /><span>Система</span></h2>
-        <div className="admin-loading">Загрузка...</div>
+        <h2 className="admin-section-title">
+          <Server size={22} strokeWidth={1.8} />
+          <span>Система</span>
+        </h2>
+        <div className="system-grid">
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="system-card" style={{ opacity: 0.6 }}>
+              <Skeleton width={44} height={44} borderRadius="10px" />
+              <div style={{ flex: 1 }}>
+                <Skeleton width="60%" height="12px" style={{ marginBottom: 6 }} />
+                <Skeleton width="80%" height="16px" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -37,15 +51,15 @@ function AdminSystem() {
   return (
     <div className="admin-system">
       <div className="admin-section-header">
-        <h2 className="admin-section-title"><Server size={22} /><span>Система</span></h2>
+        <h2 className="admin-section-title"><Server size={22} strokeWidth={1.8} /><span>Система</span></h2>
         <button className="admin-btn-secondary" onClick={loadInfo}>
-          <RefreshCw size={14} /> Обновить
+          <RefreshCw size={14} strokeWidth={1.8} /> Обновить
         </button>
       </div>
 
       <div className="system-grid">
         <div className="system-card">
-          <div className="system-card-icon"><Clock size={20} /></div>
+          <div className="system-card-icon"><Clock size={20} strokeWidth={1.8} /></div>
           <div className="system-card-info">
             <div className="system-card-label">Uptime сервера</div>
             <div className="system-card-value">{info.server_uptime_formatted}</div>
@@ -53,7 +67,7 @@ function AdminSystem() {
         </div>
 
         <div className="system-card">
-          <div className="system-card-icon"><Cpu size={20} /></div>
+          <div className="system-card-icon"><Cpu size={20} strokeWidth={1.8} /></div>
           <div className="system-card-info">
             <div className="system-card-label">Node.js</div>
             <div className="system-card-value">{info.node_version}</div>
@@ -61,7 +75,7 @@ function AdminSystem() {
         </div>
 
         <div className="system-card">
-          <div className="system-card-icon"><Globe size={20} /></div>
+          <div className="system-card-icon"><Globe size={20} strokeWidth={1.8} /></div>
           <div className="system-card-info">
             <div className="system-card-label">Окружение</div>
             <div className="system-card-value">{info.environment}</div>
@@ -69,7 +83,7 @@ function AdminSystem() {
         </div>
 
         <div className="system-card">
-          <div className="system-card-icon"><Cpu size={20} /></div>
+          <div className="system-card-icon"><Cpu size={20} strokeWidth={1.8} /></div>
           <div className="system-card-info">
             <div className="system-card-label">Память (RSS)</div>
             <div className="system-card-value">{info.memory_usage?.rss}</div>
@@ -79,7 +93,7 @@ function AdminSystem() {
 
         <div className="system-card">
           <div className={`system-card-icon ${info.db_connected ? 'icon-success' : 'icon-error'}`}>
-            <Database size={20} />
+            <Database size={20} strokeWidth={1.8} />
           </div>
           <div className="system-card-info">
             <div className="system-card-label">База данных</div>
@@ -92,7 +106,7 @@ function AdminSystem() {
 
         <div className="system-card">
           <div className={`system-card-icon ${info.telegram_bot_active ? 'icon-success' : 'icon-warning'}`}>
-            <Bot size={20} />
+            <Bot size={20} strokeWidth={1.8} />
           </div>
           <div className="system-card-info">
             <div className="system-card-label">Telegram бот</div>

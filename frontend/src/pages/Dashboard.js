@@ -324,23 +324,23 @@ function Dashboard() {
             <>
               <div className="nav-divider" />
               <button className={`nav-item ${activeTab === 'admin-stats' ? 'active' : ''}`} onClick={() => handleNavClick('admin-stats')}>
-                <Shield className="nav-icon" size={18} />
+                <Shield className="nav-icon" size={18} strokeWidth={1.8} />
                 <span>Статистика</span>
               </button>
               <button className={`nav-item ${activeTab === 'admin-users' ? 'active' : ''}`} onClick={() => handleNavClick('admin-users')}>
-                <Users className="nav-icon" size={18} />
+                <Users className="nav-icon" size={18} strokeWidth={1.8} />
                 <span>Пользователи</span>
               </button>
               <button className={`nav-item ${activeTab === 'admin-audit' ? 'active' : ''}`} onClick={() => handleNavClick('admin-audit')}>
-                <ScrollText className="nav-icon" size={18} />
+                <ScrollText className="nav-icon" size={18} strokeWidth={1.8} />
                 <span>Журнал аудита</span>
               </button>
               <button className={`nav-item ${activeTab === 'admin-content' ? 'active' : ''}`} onClick={() => handleNavClick('admin-content')}>
-                <Database className="nav-icon" size={18} />
+                <Database className="nav-icon" size={18} strokeWidth={1.8} />
                 <span>Контент</span>
               </button>
               <button className={`nav-item ${activeTab === 'admin-system' ? 'active' : ''}`} onClick={() => handleNavClick('admin-system')}>
-                <Server className="nav-icon" size={18} />
+                <Server className="nav-icon" size={18} strokeWidth={1.8} />
                 <span>Система</span>
               </button>
             </>

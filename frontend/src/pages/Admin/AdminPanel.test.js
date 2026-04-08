@@ -39,6 +39,24 @@ jest.mock('../../context/ToastContext', () => ({
   useToast: () => mockToast,
 }));
 
+// Mock shared components
+jest.mock('../../components/Skeleton', () => ({
+  Skeleton: (props) => <div data-testid="skeleton" />,
+  TableSkeleton: ({ rows, columns }) => <div data-testid="table-skeleton" />,
+}));
+
+jest.mock('../../components/ConfirmModal', () => ({
+  __esModule: true,
+  default: ({ isOpen, onConfirm, onClose, message }) =>
+    isOpen ? (
+      <div data-testid="confirm-modal">
+        <p>{message}</p>
+        <button onClick={onConfirm}>Confirm</button>
+        <button onClick={onClose}>Cancel</button>
+      </div>
+    ) : null,
+}));
+
 // Mock CSS
 jest.mock('./AdminStats.css', () => {});
 jest.mock('./AdminUsers.css', () => {});

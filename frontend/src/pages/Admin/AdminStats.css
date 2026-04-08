@@ -1,37 +1,125 @@
-.admin-stats { padding: clamp(12px, 2vw, 24px); }
-.admin-section-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: clamp(18px, 2.5vw, 24px); font-weight: 600;
-  color: #1e293b; margin-bottom: clamp(16px, 2vw, 24px);
+/* =====================================================
+   ADMIN STATS - Azarean Network
+   ===================================================== */
+
+.admin-stats {
+  padding: clamp(12px, 2vw, 24px);
 }
+
+.admin-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(18px, 2.5vw, 24px);
+  font-weight: 600;
+  color: #1a202c;
+  margin-bottom: clamp(16px, 2vw, 24px);
+}
+
 .admin-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(180px, 20vw, 240px), 1fr));
   gap: clamp(10px, 1.5vw, 16px);
 }
+
 .admin-stat-card {
-  background: #fff; border-radius: 12px; padding: clamp(12px, 1.5vw, 20px);
-  display: flex; align-items: center; gap: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: transform 0.15s, box-shadow 0.15s;
+  background: #fff;
+  border-radius: 12px;
+  padding: clamp(12px, 1.5vw, 20px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.admin-stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.admin-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+}
+
 .admin-stat-icon {
-  width: 44px; height: 44px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.admin-stat-value { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; color: #1e293b; line-height: 1; }
-.admin-stat-label { font-size: clamp(12px, 1.2vw, 14px); color: #64748b; margin-top: 2px; }
-.admin-stat-sub { font-size: 11px; color: #94a3b8; margin-top: 1px; }
 
-.skeleton-card { animation: pulse 1.5s ease-in-out infinite; }
-.skeleton-icon { width: 44px; height: 44px; border-radius: 10px; background: #e2e8f0; }
-.skeleton-text { width: 80px; height: 12px; border-radius: 4px; background: #e2e8f0; margin-top: 8px; }
-.skeleton-number { width: 50px; height: 20px; border-radius: 4px; background: #e2e8f0; margin-top: 4px; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.admin-stat-value {
+  font-size: clamp(20px, 2.5vw, 28px);
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1;
+}
 
+.admin-stat-label {
+  font-size: clamp(12px, 1.2vw, 14px);
+  color: #718096;
+  margin-top: 2px;
+}
+
+.admin-stat-sub {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-top: 1px;
+}
+
+/* Skeleton */
+.skeleton-card {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #e2e8f0;
+}
+
+.skeleton-text {
+  width: 80px;
+  height: 12px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  margin-top: 8px;
+}
+
+.skeleton-number {
+  width: 50px;
+  height: 20px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  margin-top: 4px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Refresh button */
 .admin-refresh-btn {
-  margin-top: clamp(16px, 2vw, 24px); padding: 8px 20px;
-  background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px;
-  color: #475569; font-size: 13px; cursor: pointer; transition: all 0.15s;
+  margin-top: clamp(16px, 2vw, 24px);
+  padding: clamp(10px, 1.5vw, 12px) clamp(16px, 2vw, 24px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-.admin-refresh-btn:hover { background: #e2e8f0; }
+
+.admin-refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}

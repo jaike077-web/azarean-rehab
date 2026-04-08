@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import AdminUserModal from './AdminUserModal';
+import { TableSkeleton } from '../../components/Skeleton';
+import ConfirmModal from '../../components/ConfirmModal';
 import { Users, Plus, Pencil, UserX, UserCheck, Unlock, Search } from 'lucide-react';
 import './AdminUsers.css';
 
@@ -92,16 +94,16 @@ function AdminUsers() {
     <div className="admin-users">
       <div className="admin-section-header">
         <h2 className="admin-section-title">
-          <Users size={22} />
+          <Users size={22} strokeWidth={1.8} />
           <span>Управление пользователями</span>
         </h2>
         <button className="admin-btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={16} /> Создать
+          <Plus size={16} strokeWidth={1.8} /> Создать
         </button>
       </div>
 
       <div className="admin-search-bar">
-        <Search size={16} />
+        <Search size={16} strokeWidth={1.8} />
         <input
           type="text"
           placeholder="Поиск по имени или email..."
@@ -111,62 +113,72 @@ function AdminUsers() {
       </div>
 
       {loading ? (
-        <div className="admin-loading">Загрузка...</div>
+        <TableSkeleton rows={8} columns={6} />
       ) : (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Имя</th>
-                <th>Email</th>
-                <th>Роль</th>
-                <th>Статус</th>
-                <th>Создан</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user.id} className={!user.is_active ? 'row-inactive' : ''}>
-                  <td className="td-name">{user.full_name}</td>
-                  <td className="td-email">{user.email}</td>
-                  <td>
-                    <span className={`admin-badge ${user.role === 'admin' ? 'badge-admin' : 'badge-instructor'}`}>
-                      {user.role === 'admin' ? 'Админ' : 'Инструктор'}
-                    </span>
-                  </td>
-                  <td>{getStatusBadge(user)}</td>
-                  <td className="td-date">{new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
-                  <td className="td-actions">
-                    <button className="admin-action-btn" title="Редактировать" onClick={() => setEditUser(user)}>
-                      <Pencil size={14} />
-                    </button>
-                    {user.is_active ? (
-                      <button className="admin-action-btn btn-danger" title="Деактивировать"
-                        onClick={() => setConfirmAction({ type: 'deactivate', user })}>
-                        <UserX size={14} />
-                      </button>
-                    ) : (
-                      <button className="admin-action-btn btn-success" title="Активировать"
-                        onClick={() => handleActivate(user)}>
-                        <UserCheck size={14} />
-                      </button>
-                    )}
-                    {user.locked_until && new Date(user.locked_until) > new Date() && (
-                      <button className="admin-action-btn btn-warning" title="Разблокировать"
-                        onClick={() => handleUnlock(user)}>
-                        <Unlock size={14} />
-                      </button>
-                    )}
-                  </td>
+        <>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Имя</th>
+                  <th>Email</th>
+                  <th>Роль</th>
+                  <th>Статус</th>
+                  <th>Создан</th>
+                  <th>Действия</th>
                 </tr>
-              ))}
-              {filteredUsers.length === 0 && (
-                <tr><td colSpan="6" className="td-empty">Пользователи не найдены</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredUsers.map(user => (
+                  <tr key={user.id} className={!user.is_active ? 'row-inactive' : ''}>
+                    <td className="td-name">{user.full_name}</td>
+                    <td className="td-email">{user.email}</td>
+                    <td>
+                      <span className={`admin-badge ${user.role === 'admin' ? 'badge-admin' : 'badge-instructor'}`}>
+                        {user.role === 'admin' ? 'Админ' : 'Инструктор'}
+                      </span>
+                    </td>
+                    <td>{getStatusBadge(user)}</td>
+                    <td className="td-date">{new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
+                    <td className="td-actions">
+                      <button className="admin-action-btn" title="Редактировать" onClick={() => setEditUser(user)}>
+                        <Pencil size={14} strokeWidth={1.8} />
+                      </button>
+                      {user.is_active ? (
+                        <button className="admin-action-btn btn-danger" title="Деактивировать"
+                          onClick={() => setConfirmAction({ type: 'deactivate', user })}>
+                          <UserX size={14} strokeWidth={1.8} />
+                        </button>
+                      ) : (
+                        <button className="admin-action-btn btn-success" title="Активировать"
+                          onClick={() => handleActivate(user)}>
+                          <UserCheck size={14} strokeWidth={1.8} />
+                        </button>
+                      )}
+                      {user.locked_until && new Date(user.locked_until) > new Date() && (
+                        <button className="admin-action-btn btn-warning" title="Разблокировать"
+                          onClick={() => handleUnlock(user)}>
+                          <Unlock size={14} strokeWidth={1.8} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!loading && filteredUsers.length === 0 && (
+            <div className="admin-empty-state">
+              <div className="empty-state-content">
+                <div className="empty-state-icon">
+                  <Users size={48} strokeWidth={1.8} />
+                </div>
+                <h3>{search ? 'Пользователи не найдены' : 'Нет пользователей'}</h3>
+                <p>{search ? 'Попробуйте изменить условия поиска' : 'Создайте первого пользователя'}</p>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {(showModal || editUser) && (
@@ -177,19 +189,18 @@ function AdminUsers() {
         />
       )}
 
-      {confirmAction && (
-        <div className="admin-modal-overlay" onClick={() => setConfirmAction(null)}>
-          <div className="admin-modal admin-confirm-modal" onClick={e => e.stopPropagation()}>
-            <h3>Подтверждение</h3>
-            <p>Деактивировать пользователя <strong>{confirmAction.user.full_name}</strong>?</p>
-            <p className="admin-confirm-note">Пользователь не сможет войти в систему.</p>
-            <div className="admin-modal-actions">
-              <button className="admin-btn-secondary" onClick={() => setConfirmAction(null)}>Отмена</button>
-              <button className="admin-btn-danger" onClick={() => handleDeactivate(confirmAction.user)}>Деактивировать</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => {
+          if (confirmAction?.type === 'deactivate') handleDeactivate(confirmAction.user);
+        }}
+        title="Деактивация пользователя"
+        message={`Деактивировать пользователя "${confirmAction?.user?.full_name}"? Он потеряет доступ к системе.`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={UserX}
+      />
     </div>
   );
 }

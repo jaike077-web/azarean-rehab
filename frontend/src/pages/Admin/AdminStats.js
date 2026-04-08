@@ -30,7 +30,7 @@ function AdminStats() {
     return (
       <div className="admin-stats">
         <h2 className="admin-section-title">
-          <Shield size={22} />
+          <Shield size={22} strokeWidth={1.8} />
           <span>Статистика платформы</span>
         </h2>
         <div className="admin-stats-grid">
@@ -68,7 +68,7 @@ function AdminStats() {
   return (
     <div className="admin-stats">
       <h2 className="admin-section-title">
-        <Shield size={22} />
+        <Shield size={22} strokeWidth={1.8} />
         <span>Статистика платформы</span>
       </h2>
 
@@ -78,7 +78,7 @@ function AdminStats() {
           return (
             <div key={i} className="admin-stat-card">
               <div className="admin-stat-icon" style={{ background: `${card.color}15`, color: card.color }}>
-                <Icon size={20} />
+                <Icon size={20} strokeWidth={1.8} />
               </div>
               <div className="admin-stat-info">
                 <div className="admin-stat-value">{card.value}</div>
