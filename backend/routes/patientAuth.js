@@ -850,6 +850,47 @@ router.delete('/avatar', authenticatePatient, async (req, res) => {
 });
 
 // =====================================================
+// GET /avatar — Отдача аватара текущего пациента
+// Заменяет публичный /uploads/avatars/* (HIGH security fix)
+// =====================================================
+router.get('/avatar', authenticatePatient, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT avatar_url FROM patients WHERE id = $1 AND is_active = true`,
+      [req.patient.id]
+    );
+
+    const avatarUrl = result.rows[0]?.avatar_url;
+    if (!avatarUrl) {
+      return res.status(404).json({ error: 'Not Found', message: 'Аватар не установлен' });
+    }
+
+    // avatar_url в БД имеет формат '/uploads/avatars/<filename>'
+    // Извлекаем только имя файла, игнорируя путь (защита от traversal даже если БД повреждена)
+    const filename = path.basename(avatarUrl);
+    const avatarsDir = path.resolve(__dirname, '..', 'uploads', 'avatars');
+    const filePath = path.resolve(avatarsDir, filename);
+
+    // Защита: проверяем что итоговый путь действительно внутри avatarsDir
+    if (!filePath.startsWith(avatarsDir + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+
+    // Кешируем у клиента на 5 минут — файлы неизменяемы (новый аватар = новый filename)
+    res.set('Cache-Control', 'private, max-age=300');
+    return res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Patient get-avatar error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении аватара' });
+  }
+});
+
+// =====================================================
 // OAuth — ЗАГЛУШКИ (реализация в будущих спринтах)
 // =====================================================
 

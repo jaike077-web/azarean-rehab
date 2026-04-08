@@ -15,6 +15,7 @@ jest.mock('../../../services/api', () => ({
     updateMe: jest.fn(),
     uploadAvatar: jest.fn(),
     deleteAvatar: jest.fn(),
+    fetchAvatarBlob: jest.fn(() => Promise.resolve({ data: new Blob(['x'], { type: 'image/jpeg' }) })),
     changePassword: jest.fn(),
   },
 }));
@@ -51,6 +52,14 @@ describe('ProfileScreen', () => {
     patientAuth.getMe.mockResolvedValue({
       data: { success: true, patient: mockPatient },
     });
+    patientAuth.fetchAvatarBlob.mockResolvedValue({
+      data: new Blob(['x'], { type: 'image/jpeg' }),
+    });
+    // jsdom не реализует URL.createObjectURL — мокаем
+    if (!global.URL.createObjectURL) {
+      global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+      global.URL.revokeObjectURL = jest.fn();
+    }
   });
 
   describe('Loading state', () => {

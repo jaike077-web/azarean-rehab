@@ -8,8 +8,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
 const ProfileScreen = ({ handleLogout }) => {
   const toast = useToast();
   const fileInputRef = useRef(null);
@@ -18,6 +16,8 @@ const ProfileScreen = ({ handleLogout }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  // Blob URL для аватара (endpoint теперь защищён JWT, <img> не может слать header напрямую)
+  const [avatarBlobUrl, setAvatarBlobUrl] = useState(null);
 
   // Form fields
   const [fullName, setFullName] = useState('');
@@ -51,6 +51,33 @@ const ProfileScreen = ({ handleLogout }) => {
 
     loadProfile();
   }, [toast]);
+
+  // Загрузка аватара как blob когда появляется/меняется avatar_url
+  useEffect(() => {
+    if (!profile?.avatar_url) {
+      setAvatarBlobUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    let createdUrl = null;
+
+    patientAuth
+      .fetchAvatarBlob()
+      .then((response) => {
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(response.data);
+        setAvatarBlobUrl(createdUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setAvatarBlobUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [profile?.avatar_url]);
 
   // Save profile
   const handleSaveProfile = async () => {
@@ -163,9 +190,10 @@ const ProfileScreen = ({ handleLogout }) => {
   // Helpers
   const getAvatarUrl = () => {
     if (!profile?.avatar_url) return null;
-    // If it's a full URL, use as-is; otherwise prepend API_URL
+    // Внешние URL (OAuth-провайдеры) отдаём как есть
     if (profile.avatar_url.startsWith('http')) return profile.avatar_url;
-    return `${API_URL}${profile.avatar_url}`;
+    // Локальные файлы — blob URL, полученный через защищённый endpoint
+    return avatarBlobUrl;
   };
 
   const getInitials = () => {

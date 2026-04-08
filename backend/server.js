@@ -132,9 +132,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Static file serving для загрузок (аватары и т.д.)
-const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ВНИМАНИЕ: каталог /uploads НЕ раздаётся как статика.
+// Аватары пациентов отдаются только через авторизованные эндпоинты
+// (см. GET /api/patient-auth/avatar), чтобы исключить публичный доступ.
 
 // Логирование запросов (без чувствительных данных)
 app.use((req, res, next) => {

@@ -454,6 +454,8 @@ patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-a
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
+// Скачивает аватар текущего пациента как blob (endpoint защищён JWT)
+patientAuth.fetchAvatarBlob = () => patientApi.get('/patient-auth/avatar', { responseType: 'blob' });
 // Переопределяем getMe и updateMe чтобы они тоже работали с patient JWT
 patientAuth.getMe = () => patientApi.get('/patient-auth/me');
 patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
