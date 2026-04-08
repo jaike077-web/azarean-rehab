@@ -36,13 +36,18 @@ router.post('/', authenticateProgressAccess, async (req, res) => {
       }
     }
 
-    // Проверяем что комплекс и упражнение существуют
-    const checkResult = await query(
-      `SELECT ce.id
-       FROM complex_exercises ce
-       WHERE ce.complex_id = $1 AND ce.exercise_id = $2`,
-      [complex_id, exercise_id]
-    );
+    // Проверяем что комплекс и упражнение существуют (+ ownership для инструктора)
+    const checkQuery = req.authType === 'jwt'
+      ? `SELECT ce.id FROM complex_exercises ce
+         JOIN complexes c ON ce.complex_id = c.id
+         WHERE ce.complex_id = $1 AND ce.exercise_id = $2 AND c.instructor_id = $3`
+      : `SELECT ce.id FROM complex_exercises ce
+         WHERE ce.complex_id = $1 AND ce.exercise_id = $2`;
+    const checkParams = req.authType === 'jwt'
+      ? [complex_id, exercise_id, req.user.id]
+      : [complex_id, exercise_id];
+
+    const checkResult = await query(checkQuery, checkParams);
 
     if (checkResult.rows.length === 0) {
       return res.status(404).json({

@@ -4,11 +4,13 @@ import { AuthProvider, useAuth } from './AuthContext';
 import { auth } from '../services/api';
 
 // Mock the API
+const mockClearTokens = jest.fn();
 jest.mock('../services/api', () => ({
   auth: {
     login: jest.fn(),
     getMe: jest.fn()
-  }
+  },
+  clearTokens: (...args) => mockClearTokens(...args)
 }));
 
 // Test component that uses useAuth
@@ -32,6 +34,10 @@ describe('AuthContext', () => {
   beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
+    mockClearTokens.mockImplementation(() => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refresh_token');
+    });
   });
 
   test('provides initial loading state', () => {

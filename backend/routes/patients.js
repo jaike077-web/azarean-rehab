@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { query } = require('../database/db');
+const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 
 // Получить всех своих пациентов
@@ -324,40 +324,66 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
 // Полное удаление пациента из БД
 router.delete('/:id/permanent', authenticateToken, async (req, res) => {
+  const client = await getClient();
+
   try {
     const { id } = req.params;
 
-    // Сначала удаляем все связанные комплексы
-    await query('DELETE FROM complex_exercises WHERE complex_id IN (SELECT id FROM complexes WHERE patient_id = $1)', [id]);
-    await query('DELETE FROM progress_logs WHERE complex_id IN (SELECT id FROM complexes WHERE patient_id = $1)', [id]);
-    await query('DELETE FROM complexes WHERE patient_id = $1', [id]);
-    
-    // Теперь удаляем пациента
-    const result = await query(
-      `DELETE FROM patients 
-       WHERE id = $1 AND created_by = $2 
-       RETURNING id`,
+    await client.query('BEGIN');
+
+    // Проверяем ownership до любых удалений
+    const patientCheck = await client.query(
+      'SELECT id FROM patients WHERE id = $1 AND created_by = $2',
       [id, req.user.id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
+    if (patientCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
         error: 'Not Found',
-        message: 'Пациент не найден' 
+        message: 'Пациент не найден'
       });
     }
 
+    // Удаляем все связанные данные в правильном порядке
+    // 1. Данные комплексов
+    await client.query('DELETE FROM progress_logs WHERE complex_id IN (SELECT id FROM complexes WHERE patient_id = $1)', [id]);
+    await client.query('DELETE FROM complex_exercises WHERE complex_id IN (SELECT id FROM complexes WHERE patient_id = $1)', [id]);
+    await client.query('DELETE FROM complexes WHERE patient_id = $1', [id]);
+
+    // 2. Данные реабилитации
+    await client.query('DELETE FROM messages WHERE program_id IN (SELECT id FROM rehab_programs WHERE patient_id = $1)', [id]);
+    await client.query('DELETE FROM rehab_programs WHERE patient_id = $1', [id]);
+
+    // 3. Дневник и стрики
+    await client.query('DELETE FROM diary_entries WHERE patient_id = $1', [id]);
+    await client.query('DELETE FROM streaks WHERE patient_id = $1', [id]);
+
+    // 4. Авторизация и уведомления
+    await client.query('DELETE FROM patient_refresh_tokens WHERE patient_id = $1', [id]);
+    await client.query('DELETE FROM patient_password_resets WHERE patient_id = $1', [id]);
+    await client.query('DELETE FROM notification_settings WHERE patient_id = $1', [id]);
+    await client.query('DELETE FROM telegram_link_codes WHERE patient_id = $1', [id]);
+
+    // 5. Удаляем самого пациента
+    await client.query('DELETE FROM patients WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+
     res.json({
       message: 'Пациент удалён навсегда',
-      id: result.rows[0].id
+      id: parseInt(id)
     });
 
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Ошибка полного удаления пациента:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при удалении пациента' 
+      message: 'Ошибка при удалении пациента'
     });
+  } finally {
+    client.release();
   }
 });
 

@@ -63,7 +63,10 @@ router.get('/phases', async (req, res) => {
  */
 router.get('/phases/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'ID фазы должен быть числом' });
+    }
 
     const phaseResult = await query(
       `SELECT * FROM rehab_phases WHERE id = $1 AND is_active = true`,
@@ -558,6 +561,10 @@ router.post('/my/messages', authenticatePatient, async (req, res) => {
 
     if (!program_id || !body || !body.trim()) {
       return res.status(400).json({ error: 'Validation Error', message: 'Программа и текст сообщения обязательны' });
+    }
+
+    if (body.trim().length > 5000) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Сообщение слишком длинное (макс. 5000 символов)' });
     }
 
     // Проверяем доступ

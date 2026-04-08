@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { ScrollText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TableSkeleton } from '../../components/Skeleton';
 import './AdminAuditLogs.css';
 
 const ACTION_LABELS = {
@@ -27,7 +28,9 @@ function AdminAuditLogs() {
   const toast = useToast();
 
   useEffect(() => {
-    admin.getUsers().then(res => setUsers(res.data?.data || [])).catch(() => {});
+    admin.getUsers().then(res => setUsers(res.data?.data || [])).catch(err => {
+      console.error('Ошибка загрузки пользователей для фильтра:', err);
+    });
   }, []);
 
   useEffect(() => { loadLogs(); }, [page, filters]);
@@ -62,7 +65,7 @@ function AdminAuditLogs() {
   return (
     <div className="admin-audit">
       <h2 className="admin-section-title">
-        <ScrollText size={22} />
+        <ScrollText size={22} strokeWidth={1.8} />
         <span>Журнал аудита</span>
         <span className="admin-title-badge">{total}</span>
       </h2>
@@ -85,7 +88,7 @@ function AdminAuditLogs() {
       </div>
 
       {loading ? (
-        <div className="admin-loading">Загрузка...</div>
+        <TableSkeleton rows={10} columns={6} />
       ) : (
         <>
           <div className="admin-table-wrap">
@@ -115,18 +118,27 @@ function AdminAuditLogs() {
                     <td className="td-ip">{log.ip_address || '—'}</td>
                   </tr>
                 ))}
-                {logs.length === 0 && (
-                  <tr><td colSpan="6" className="td-empty">Нет записей</td></tr>
-                )}
               </tbody>
             </table>
           </div>
 
           {totalPages > 1 && (
             <div className="admin-pagination">
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} /></button>
+              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} strokeWidth={1.8} /></button>
               <span>Стр. {page} из {totalPages}</span>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} /></button>
+              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} strokeWidth={1.8} /></button>
+            </div>
+          )}
+
+          {!loading && logs.length === 0 && (
+            <div className="admin-empty-state">
+              <div className="empty-state-content">
+                <div className="empty-state-icon">
+                  <ScrollText size={48} strokeWidth={1.8} />
+                </div>
+                <h3>Нет записей в журнале</h3>
+                <p>Действия пользователей будут отображаться здесь</p>
+              </div>
             </div>
           )}
         </>

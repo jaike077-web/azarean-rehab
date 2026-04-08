@@ -97,6 +97,10 @@ const ContactScreen = ({ dashboardData }) => {
 
   // Generate link code
   const handleGenerateCode = async () => {
+    // Очищаем предыдущие интервалы, если были
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    if (expiryTimerRef.current) clearInterval(expiryTimerRef.current);
+
     setCodeGenerating(true);
     try {
       const response = await rehab.generateTelegramCode();

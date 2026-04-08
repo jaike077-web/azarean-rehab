@@ -58,29 +58,42 @@ function safeJsonParse(value) {
 // УПРАВЛЕНИЕ ЮЗЕРАМИ
 // =====================================================
 
-// GET /api/admin/users — список всех юзеров
+// GET /api/admin/users — список всех юзеров (с пагинацией)
 router.get('/users', async (req, res) => {
   try {
-    const { role, is_active } = req.query;
+    const { role, is_active, page = 1, limit = 50 } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50));
+    const offset = (pageNum - 1) * limitNum;
 
-    let sql = `SELECT id, email, full_name, role, is_active, created_at, updated_at,
-                      failed_login_attempts, locked_until
-               FROM users WHERE 1=1`;
+    let whereClauses = [];
     const params = [];
 
     if (role) {
       params.push(role);
-      sql += ` AND role = $${params.length}`;
+      whereClauses.push(`role = $${params.length}`);
     }
     if (is_active !== undefined) {
       params.push(is_active === 'true');
-      sql += ` AND is_active = $${params.length}`;
+      whereClauses.push(`is_active = $${params.length}`);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    const whereSQL = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
-    const result = await query(sql, params);
-    res.json({ data: result.rows });
+    // Total count
+    const countResult = await query(`SELECT COUNT(*) as total FROM users ${whereSQL}`, params);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Data
+    const dataParams = [...params, limitNum, offset];
+    const sql = `SELECT id, email, full_name, role, is_active, created_at, updated_at,
+                        failed_login_attempts, locked_until
+                 FROM users ${whereSQL}
+                 ORDER BY created_at DESC
+                 LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`;
+
+    const result = await query(sql, dataParams);
+    res.json({ data: result.rows, total, page: pageNum, limit: limitNum });
   } catch (error) {
     console.error('Admin get users error:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения пользователей' });
@@ -128,8 +141,8 @@ router.post('/users', async (req, res) => {
       [email]
     );
     if (existing.rows.length > 0) {
-      return res.status(400).json({
-        error: 'Validation Error',
+      return res.status(409).json({
+        error: 'Conflict',
         message: 'Пользователь с таким email уже существует'
       });
     }
@@ -221,6 +234,9 @@ router.patch('/users/:id/deactivate', async (req, res) => {
 
     // Удалить refresh_tokens
     await query('DELETE FROM refresh_tokens WHERE user_id = $1', [id]);
+
+    // Деактивировать комплексы инструктора
+    await query('UPDATE complexes SET is_active = false, updated_at = NOW() WHERE instructor_id = $1 AND is_active = true', [id]);
 
     await logAudit(req, 'DEACTIVATE', 'user', parseInt(id), { email: result.rows[0].email });
     res.json({ data: result.rows[0], message: 'Пользователь деактивирован' });
@@ -344,8 +360,8 @@ router.get('/stats', async (req, res) => {
 router.get('/audit-logs', async (req, res) => {
   try {
     const { user_id, action, entity_type, from, to, page = 1, limit = 20 } = req.query;
-    const pageNum = Math.max(1, parseInt(page));
-    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
     const offset = (pageNum - 1) * limitNum;
 
     let whereClauses = [];

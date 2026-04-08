@@ -26,17 +26,28 @@ router.post('/', authenticateToken, async (req, res) => {
     } = req.body;
 
     // Валидация
-    if (!patient_id || !exercises || exercises.length === 0) {
+    if (!patient_id || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Validation Error',
-        message: 'ID пациента и список упражнений обязательны' 
+        message: 'ID пациента и список упражнений обязательны'
       });
     }
 
-    // Проверяем что пациент принадлежит этому инструктору
+    // Валидация структуры каждого упражнения
+    for (const ex of exercises) {
+      if (!ex.exercise_id || !ex.order_number) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Каждое упражнение должно содержать exercise_id и order_number'
+        });
+      }
+    }
+
+    // Проверяем что пациент принадлежит этому инструктору (FOR UPDATE предотвращает race condition)
     const patientCheck = await client.query(
-      'SELECT id FROM patients WHERE id = $1 AND created_by = $2',
+      'SELECT id FROM patients WHERE id = $1 AND created_by = $2 FOR UPDATE',
       [patient_id, req.user.id]
     );
 
@@ -64,7 +75,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Добавляем упражнения в комплекс
     for (const exercise of exercises) {
-      const durationSeconds = Number(exercise.duration_seconds) || 0;
+      const durationSeconds = Math.max(0, Number(exercise.duration_seconds) || 0);
       await client.query(
         `INSERT INTO complex_exercises 
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes) 
@@ -348,7 +359,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // Добавляем новые упражнения
     for (const exercise of exercises) {
-      const durationSeconds = Number(exercise.duration_seconds) || 0;
+      const durationSeconds = Math.max(0, Number(exercise.duration_seconds) || 0);
       await client.query(
         `INSERT INTO complex_exercises 
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
@@ -553,74 +564,48 @@ router.patch('/:id/restore', authenticateToken, async (req, res) => {
 
 // Полное удаление комплекса из БД
 router.delete('/:id/permanent', authenticateToken, async (req, res) => {
+  const client = await getClient();
+
   try {
     const { id } = req.params;
 
-    // Удаляем связанные данные
-    await query('DELETE FROM progress_logs WHERE complex_id = $1', [id]);
-    await query('DELETE FROM complex_exercises WHERE complex_id = $1', [id]);
-    
-    // Удаляем комплекс
-    const result = await query(
-      `DELETE FROM complexes 
-       WHERE id = $1 AND instructor_id = $2 
-       RETURNING id`,
+    await client.query('BEGIN');
+
+    // Сначала проверяем ownership
+    const complexCheck = await client.query(
+      'SELECT id FROM complexes WHERE id = $1 AND instructor_id = $2',
       [id, req.user.id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
+    if (complexCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
         error: 'Not Found',
-        message: 'Комплекс не найден' 
+        message: 'Комплекс не найден'
       });
     }
 
+    // Удаляем связанные данные в правильном порядке
+    await client.query('DELETE FROM progress_logs WHERE complex_id = $1', [id]);
+    await client.query('DELETE FROM complex_exercises WHERE complex_id = $1', [id]);
+    await client.query('DELETE FROM complexes WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+
     res.json({
       message: 'Комплекс удалён навсегда',
-      id: result.rows[0].id
+      id: parseInt(id)
     });
 
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Ошибка полного удаления комплекса:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при удалении комплекса' 
+      message: 'Ошибка при удалении комплекса'
     });
-  }
-});
-
-// GET /api/complexes/:id/exercises
-router.get('/:id/exercises', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const query = `
-      SELECT 
-        ce.exercise_id,
-        ce.order_number,
-        ce.sets,
-        ce.reps,
-        ce.duration_seconds,
-        ce.rest_seconds,
-        e.title,
-        e.body_region,
-        e.video_url
-      FROM complex_exercises ce
-      JOIN exercises e ON ce.exercise_id = e.id
-      WHERE ce.complex_id = $1
-      ORDER BY ce.order_number ASC
-    `;
-    
-    const result = await pool.query(query, [id]);
-    
-    res.json({
-      complexId: parseInt(id, 10),
-      exercises: result.rows
-    });
-    
-  } catch (error) {
-    console.error('Error fetching complex exercises:', error);
-    res.status(500).json({ error: 'Failed to fetch complex exercises' });
+  } finally {
+    client.release();
   }
 });
 

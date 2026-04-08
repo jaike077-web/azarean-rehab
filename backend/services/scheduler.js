@@ -47,8 +47,17 @@ function initScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
-  cronJobs = [exerciseJob, diaryJob, tipJob];
-  console.log('⏰ Scheduler запущен (3 задачи)');
+  // Ежедневно в 03:00 МСК — очистка expired tokens
+  const cleanupJob = cron.schedule('0 3 * * *', async () => {
+    try {
+      await cleanupExpiredTokens();
+    } catch (error) {
+      console.error('Scheduler error (cleanup):', error.message);
+    }
+  }, { timezone: 'Europe/Moscow' });
+
+  cronJobs = [exerciseJob, diaryJob, tipJob, cleanupJob];
+  console.log('⏰ Scheduler запущен (4 задачи)');
 }
 
 // =====================================================
@@ -56,23 +65,14 @@ function initScheduler() {
 // Проверяем каждую минуту, у кого reminder_time == сейчас
 // =====================================================
 async function sendExerciseReminders() {
-  // Текущее время в МСК (HH:MM)
-  const now = new Date();
-  const moscowTime = now.toLocaleTimeString('ru-RU', {
-    timeZone: 'Europe/Moscow',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-
+  // Сравниваем reminder_time с текущим временем в timezone каждого пациента
   const result = await query(
     `SELECT p.telegram_chat_id, p.full_name
      FROM notification_settings ns
      JOIN patients p ON ns.patient_id = p.id
      WHERE ns.exercise_reminders = true
        AND p.telegram_chat_id IS NOT NULL
-       AND TO_CHAR(ns.reminder_time, 'HH24:MI') = $1`,
-    [moscowTime]
+       AND TO_CHAR(ns.reminder_time, 'HH24:MI') = TO_CHAR(NOW() AT TIME ZONE COALESCE(ns.timezone, 'Europe/Moscow'), 'HH24:MI')`
   );
 
   for (const row of result.rows) {
@@ -148,6 +148,19 @@ async function sendDailyTip() {
 }
 
 // =====================================================
+// ОЧИСТКА EXPIRED TOKENS
+// =====================================================
+async function cleanupExpiredTokens() {
+  const result1 = await query('DELETE FROM refresh_tokens WHERE expires_at < NOW()');
+  const result2 = await query('DELETE FROM patient_refresh_tokens WHERE expires_at < NOW()');
+  const result3 = await query("DELETE FROM patient_password_resets WHERE expires_at < NOW()");
+  const total = (result1.rowCount || 0) + (result2.rowCount || 0) + (result3.rowCount || 0);
+  if (total > 0) {
+    console.log(`🧹 Очищено ${total} expired tokens`);
+  }
+}
+
+// =====================================================
 // ОСТАНОВКА
 // =====================================================
 function stopScheduler() {
@@ -162,4 +175,5 @@ module.exports = {
   sendExerciseReminders,
   sendDiaryReminders,
   sendDailyTip,
+  cleanupExpiredTokens,
 };

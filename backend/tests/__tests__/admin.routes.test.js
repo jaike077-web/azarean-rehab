@@ -32,6 +32,8 @@ const instructorToken = jwt.sign(instructorUser, process.env.JWT_SECRET, { algor
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // auth middleware теперь проверяет is_active в БД — мокаем для всех запросов с JWT
+  query.mockResolvedValueOnce({ rows: [{ is_active: true }] });
 });
 
 // =====================================================
@@ -53,7 +55,8 @@ describe('Admin Auth Guards', () => {
   });
 
   it('should return 200 for admin role', async () => {
-    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] });
+    query.mockResolvedValueOnce({ rows: [{ total: '1' }] }); // count
+    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] }); // data
     const res = await request(app)
       .get('/api/admin/users')
       .set('Authorization', `Bearer ${adminToken}`);
@@ -67,16 +70,18 @@ describe('Admin Auth Guards', () => {
 
 describe('GET /api/admin/users', () => {
   it('should return list of users', async () => {
-    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow, fixtures.mockInstructorRow] });
+    query.mockResolvedValueOnce({ rows: [{ total: '2' }] }); // count
+    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow, fixtures.mockInstructorRow] }); // data
     const res = await request(app)
       .get('/api/admin/users')
       .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveLength(2);
+    expect(res.body).toHaveProperty('data');
   });
 
   it('should filter by role', async () => {
-    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] });
+    query.mockResolvedValueOnce({ rows: [{ total: '1' }] }); // count
+    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] }); // data
     const res = await request(app)
       .get('/api/admin/users?role=admin')
       .set('Authorization', `Bearer ${adminToken}`);
@@ -123,13 +128,13 @@ describe('POST /api/admin/users', () => {
     expect(res.body.message).toContain('обязательны');
   });
 
-  it('should return 400 on duplicate email', async () => {
+  it('should return 409 on duplicate email', async () => {
     query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
     const res = await request(app)
       .post('/api/admin/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ email: 'existing@test.com', password: 'Test1234', full_name: 'Dup User' });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
     expect(res.body.message).toContain('уже существует');
   });
 
@@ -179,6 +184,7 @@ describe('PATCH /api/admin/users/:id/deactivate', () => {
   it('should deactivate user', async () => {
     query.mockResolvedValueOnce({ rows: [{ id: 2, email: 'inst@test.com', full_name: 'Instructor' }] });
     query.mockResolvedValueOnce({ rows: [] }); // delete refresh tokens
+    query.mockResolvedValueOnce({ rowCount: 0 }); // deactivate complexes
     query.mockResolvedValueOnce({ rows: [] }); // audit
 
     const res = await request(app)

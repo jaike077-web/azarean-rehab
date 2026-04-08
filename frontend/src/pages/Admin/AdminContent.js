@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Database, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video } from 'lucide-react';
+import { TableSkeleton } from '../../components/Skeleton';
+import ConfirmModal from '../../components/ConfirmModal';
 import './AdminContent.css';
 
 // =====================================================
@@ -12,6 +14,7 @@ function PhasesTab() {
   const [loading, setLoading] = useState(true);
   const [editPhase, setEditPhase] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
   const toast = useToast();
 
   const loadPhases = useCallback(async () => {
@@ -49,50 +52,73 @@ function PhasesTab() {
     } catch (err) { toast.error(err.response?.data?.message || 'Ошибка сохранения'); }
   };
 
-  const handleDelete = async (phase) => {
-    if (!window.confirm(`Деактивировать фазу "${phase.title}"?`)) return;
-    try { await admin.deletePhase(phase.id); toast.success('Фаза деактивирована'); loadPhases(); }
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try { await admin.deletePhase(deleteItem.id); toast.success('Фаза деактивирована'); loadPhases(); }
     catch { toast.error('Ошибка удаления'); }
+    setDeleteItem(null);
   };
 
   const openEdit = (phase) => { setEditPhase(phase); setShowForm(true); };
   const openCreate = () => { setEditPhase(null); setShowForm(true); };
 
-  if (loading) return <div className="admin-loading">Загрузка фаз...</div>;
+  if (loading) return <TableSkeleton rows={6} columns={7} />;
 
   return (
     <div>
       <div className="content-header">
         <span>{phases.length} фаз</span>
-        <button className="admin-btn-primary" onClick={openCreate}><Plus size={14} /> Создать</button>
+        <button className="admin-btn-primary" onClick={openCreate}><Plus size={14} strokeWidth={1.8} /> Создать</button>
       </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Название</th><th>Длительность</th><th>Активна</th><th>Действия</th></tr></thead>
-          <tbody>
-            {phases.map(p => (
-              <tr key={p.id} className={!p.is_active ? 'row-inactive' : ''}>
-                <td className="td-id">{p.id}</td>
-                <td>{p.program_type}</td>
-                <td>{p.phase_number}</td>
-                <td className="td-name">{p.title}</td>
-                <td>{p.duration_weeks ? `${p.duration_weeks} нед.` : '—'}</td>
-                <td>{p.is_active ? '✅' : '❌'}</td>
-                <td className="td-actions">
-                  <button className="admin-action-btn" onClick={() => openEdit(p)}><Pencil size={14} /></button>
-                  <button className="admin-action-btn btn-danger" onClick={() => handleDelete(p)}><Trash2 size={14} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {phases.length === 0 && (
+        <div className="admin-empty-state">
+          <div className="empty-state-content">
+            <div className="empty-state-icon"><BookOpen size={48} strokeWidth={1.8} /></div>
+            <h3>Нет фаз</h3>
+            <p>Создайте первую фазу реабилитации</p>
+          </div>
+        </div>
+      )}
+      {phases.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Название</th><th>Длительность</th><th>Активна</th><th>Действия</th></tr></thead>
+            <tbody>
+              {phases.map(p => (
+                <tr key={p.id} className={!p.is_active ? 'row-inactive' : ''}>
+                  <td className="td-id">{p.id}</td>
+                  <td>{p.program_type}</td>
+                  <td>{p.phase_number}</td>
+                  <td className="td-name">{p.title}</td>
+                  <td>{p.duration_weeks ? `${p.duration_weeks} нед.` : '—'}</td>
+                  <td>{p.is_active ? '✅' : '❌'}</td>
+                  <td className="td-actions">
+                    <button className="admin-action-btn" onClick={() => openEdit(p)}><Pencil size={14} strokeWidth={1.8} /></button>
+                    <button className="admin-action-btn btn-danger" onClick={() => setDeleteItem(p)}><Trash2 size={14} strokeWidth={1.8} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {showForm && <PhaseForm phase={editPhase} onSave={handleSave} onClose={() => { setShowForm(false); setEditPhase(null); }} />}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Деактивация фазы"
+        message={`Деактивировать фазу "${deleteItem?.title}"?`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
     </div>
   );
 }
 
 function PhaseForm({ phase, onSave, onClose }) {
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     program_type: 'acl', phase_number: '', title: '', subtitle: '', duration_weeks: '',
     description: '', teaser: '', icon: '', color: '', color_bg: '',
@@ -127,7 +153,7 @@ function PhaseForm({ phase, onSave, onClose }) {
       <div className="admin-modal admin-modal-wide" onClick={e => e.stopPropagation()}>
         <div className="admin-modal-header">
           <h3>{phase ? 'Редактировать фазу' : 'Создать фазу'}</h3>
-          <button className="admin-modal-close" onClick={onClose}><X size={18} /></button>
+          <button className="admin-modal-close" onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
         <div className="admin-modal-form content-form-grid">
           <div className="admin-form-group"><label>Тип</label><input value={form.program_type} onChange={e => set('program_type', e.target.value)} /></div>
@@ -141,8 +167,8 @@ function PhaseForm({ phase, onSave, onClose }) {
           <div className="admin-form-group full-width"><label>Критерии перехода (по строке)</label><textarea rows="2" value={form.criteria_next_text} onChange={e => set('criteria_next_text', e.target.value)} /></div>
           <div className="admin-form-group full-width"><label>Разрешено (по строке)</label><textarea rows="2" value={form.allowed_text} onChange={e => set('allowed_text', e.target.value)} /></div>
           <div className="admin-modal-actions">
-            <button className="admin-btn-secondary" onClick={onClose}>Отмена</button>
-            <button className="admin-btn-primary" onClick={() => onSave(form)}>Сохранить</button>
+            <button className="admin-btn-secondary" onClick={onClose} disabled={saving}>Отмена</button>
+            <button className="admin-btn-primary" disabled={saving} onClick={async () => { setSaving(true); try { await onSave(form); } finally { setSaving(false); } }}>{saving ? 'Сохранение...' : 'Сохранить'}</button>
           </div>
         </div>
       </div>
@@ -158,6 +184,7 @@ function TipsTab() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editTip, setEditTip] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
   const toast = useToast();
 
   const loadTips = useCallback(async () => {
@@ -181,42 +208,64 @@ function TipsTab() {
     } catch (err) { toast.error(err.response?.data?.message || 'Ошибка'); }
   };
 
-  const handleDelete = async (tip) => {
-    if (!window.confirm(`Деактивировать совет "${tip.title}"?`)) return;
-    try { await admin.deleteTip(tip.id); toast.success('Совет деактивирован'); loadTips(); }
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try { await admin.deleteTip(deleteItem.id); toast.success('Совет деактивирован'); loadTips(); }
     catch { toast.error('Ошибка удаления'); }
+    setDeleteItem(null);
   };
 
-  if (loading) return <div className="admin-loading">Загрузка советов...</div>;
+  if (loading) return <TableSkeleton rows={6} columns={7} />;
 
   return (
     <div>
       <div className="content-header">
         <span>{tips.length} советов</span>
-        <button className="admin-btn-primary" onClick={() => { setEditTip(null); setShowForm(true); }}><Plus size={14} /> Создать</button>
+        <button className="admin-btn-primary" onClick={() => { setEditTip(null); setShowForm(true); }}><Plus size={14} strokeWidth={1.8} /> Создать</button>
       </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Категория</th><th>Название</th><th>Активен</th><th>Действия</th></tr></thead>
-          <tbody>
-            {tips.map(t => (
-              <tr key={t.id} className={!t.is_active ? 'row-inactive' : ''}>
-                <td className="td-id">{t.id}</td>
-                <td>{t.program_type}</td>
-                <td>{t.phase_number || '—'}</td>
-                <td><span className="admin-badge badge-instructor">{t.category}</span></td>
-                <td className="td-name">{t.title}</td>
-                <td>{t.is_active ? '✅' : '❌'}</td>
-                <td className="td-actions">
-                  <button className="admin-action-btn" onClick={() => { setEditTip(t); setShowForm(true); }}><Pencil size={14} /></button>
-                  <button className="admin-action-btn btn-danger" onClick={() => handleDelete(t)}><Trash2 size={14} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {tips.length === 0 && (
+        <div className="admin-empty-state">
+          <div className="empty-state-content">
+            <div className="empty-state-icon"><Lightbulb size={48} strokeWidth={1.8} /></div>
+            <h3>Нет советов</h3>
+            <p>Создайте первый совет для пациентов</p>
+          </div>
+        </div>
+      )}
+      {tips.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Категория</th><th>Название</th><th>Активен</th><th>Действия</th></tr></thead>
+            <tbody>
+              {tips.map(t => (
+                <tr key={t.id} className={!t.is_active ? 'row-inactive' : ''}>
+                  <td className="td-id">{t.id}</td>
+                  <td>{t.program_type}</td>
+                  <td>{t.phase_number || '—'}</td>
+                  <td><span className="admin-badge badge-instructor">{t.category}</span></td>
+                  <td className="td-name">{t.title}</td>
+                  <td>{t.is_active ? '✅' : '❌'}</td>
+                  <td className="td-actions">
+                    <button className="admin-action-btn" onClick={() => { setEditTip(t); setShowForm(true); }}><Pencil size={14} strokeWidth={1.8} /></button>
+                    <button className="admin-action-btn btn-danger" onClick={() => setDeleteItem(t)}><Trash2 size={14} strokeWidth={1.8} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {showForm && <TipForm tip={editTip} onSave={handleSave} onClose={() => { setShowForm(false); setEditTip(null); }} />}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Деактивация совета"
+        message={`Деактивировать совет "${deleteItem?.title}"?`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
     </div>
   );
 }
@@ -234,7 +283,7 @@ function TipForm({ tip, onSave, onClose }) {
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
       <div className="admin-modal" onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header"><h3>{tip ? 'Редактировать совет' : 'Создать совет'}</h3><button className="admin-modal-close" onClick={onClose}><X size={18} /></button></div>
+        <div className="admin-modal-header"><h3>{tip ? 'Редактировать совет' : 'Создать совет'}</h3><button className="admin-modal-close" onClick={onClose}><X size={18} strokeWidth={1.8} /></button></div>
         <div className="admin-modal-form">
           <div className="admin-form-group"><label>Тип программы</label><input value={form.program_type} onChange={e => set('program_type', e.target.value)} /></div>
           <div className="admin-form-group"><label>Номер фазы</label><input type="number" value={form.phase_number} onChange={e => set('phase_number', e.target.value)} /></div>
@@ -266,6 +315,7 @@ function VideosTab() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editVideo, setEditVideo] = useState(null);
+  const [deleteItem, setDeleteItem] = useState(null);
   const toast = useToast();
 
   const loadData = useCallback(async () => {
@@ -288,42 +338,64 @@ function VideosTab() {
     } catch (err) { toast.error(err.response?.data?.message || 'Ошибка'); }
   };
 
-  const handleDelete = async (video) => {
-    if (!window.confirm(`Деактивировать видео "${video.title}"?`)) return;
-    try { await admin.deleteVideo(video.id); toast.success('Видео деактивировано'); loadData(); }
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try { await admin.deleteVideo(deleteItem.id); toast.success('Видео деактивировано'); loadData(); }
     catch { toast.error('Ошибка'); }
+    setDeleteItem(null);
   };
 
-  if (loading) return <div className="admin-loading">Загрузка видео...</div>;
+  if (loading) return <TableSkeleton rows={6} columns={7} />;
 
   return (
     <div>
       <div className="content-header">
         <span>{videos.length} видео</span>
-        <button className="admin-btn-primary" onClick={() => { setEditVideo(null); setShowForm(true); }}><Plus size={14} /> Создать</button>
+        <button className="admin-btn-primary" onClick={() => { setEditVideo(null); setShowForm(true); }}><Plus size={14} strokeWidth={1.8} /> Создать</button>
       </div>
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead><tr><th>ID</th><th>Фаза</th><th>Название</th><th>URL</th><th>Порядок</th><th>Активно</th><th>Действия</th></tr></thead>
-          <tbody>
-            {videos.map(v => (
-              <tr key={v.id} className={!v.is_active ? 'row-inactive' : ''}>
-                <td className="td-id">{v.id}</td>
-                <td>{v.phase_title || `Фаза ${v.phase_id}`}</td>
-                <td className="td-name">{v.title}</td>
-                <td className="td-url">{v.video_url ? '🔗' : '—'}</td>
-                <td>{v.order_number}</td>
-                <td>{v.is_active ? '✅' : '❌'}</td>
-                <td className="td-actions">
-                  <button className="admin-action-btn" onClick={() => { setEditVideo(v); setShowForm(true); }}><Pencil size={14} /></button>
-                  <button className="admin-action-btn btn-danger" onClick={() => handleDelete(v)}><Trash2 size={14} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {videos.length === 0 && (
+        <div className="admin-empty-state">
+          <div className="empty-state-content">
+            <div className="empty-state-icon"><Video size={48} strokeWidth={1.8} /></div>
+            <h3>Нет видео</h3>
+            <p>Добавьте первое обучающее видео</p>
+          </div>
+        </div>
+      )}
+      {videos.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>ID</th><th>Фаза</th><th>Название</th><th>URL</th><th>Порядок</th><th>Активно</th><th>Действия</th></tr></thead>
+            <tbody>
+              {videos.map(v => (
+                <tr key={v.id} className={!v.is_active ? 'row-inactive' : ''}>
+                  <td className="td-id">{v.id}</td>
+                  <td>{v.phase_title || `Фаза ${v.phase_id}`}</td>
+                  <td className="td-name">{v.title}</td>
+                  <td className="td-url">{v.video_url ? '🔗' : '—'}</td>
+                  <td>{v.order_number}</td>
+                  <td>{v.is_active ? '✅' : '❌'}</td>
+                  <td className="td-actions">
+                    <button className="admin-action-btn" onClick={() => { setEditVideo(v); setShowForm(true); }}><Pencil size={14} strokeWidth={1.8} /></button>
+                    <button className="admin-action-btn btn-danger" onClick={() => setDeleteItem(v)}><Trash2 size={14} strokeWidth={1.8} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {showForm && <VideoForm video={editVideo} phases={phases} onSave={handleSave} onClose={() => { setShowForm(false); setEditVideo(null); }} />}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Деактивация видео"
+        message={`Деактивировать видео "${deleteItem?.title}"?`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
     </div>
   );
 }
@@ -341,7 +413,7 @@ function VideoForm({ video, phases, onSave, onClose }) {
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
       <div className="admin-modal" onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header"><h3>{video ? 'Редактировать видео' : 'Создать видео'}</h3><button className="admin-modal-close" onClick={onClose}><X size={18} /></button></div>
+        <div className="admin-modal-header"><h3>{video ? 'Редактировать видео' : 'Создать видео'}</h3><button className="admin-modal-close" onClick={onClose}><X size={18} strokeWidth={1.8} /></button></div>
         <div className="admin-modal-form">
           <div className="admin-form-group"><label>Фаза</label>
             <select value={form.phase_id} onChange={e => set('phase_id', parseInt(e.target.value))}>
@@ -385,7 +457,7 @@ function AdminContent() {
   return (
     <div className="admin-content">
       <h2 className="admin-section-title">
-        <Database size={22} />
+        <Database size={22} strokeWidth={1.8} />
         <span>Управление контентом</span>
       </h2>
 

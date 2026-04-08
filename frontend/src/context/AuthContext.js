@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { auth } from '../services/api';
+import { auth, clearTokens } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
     } catch (error) {
       console.error('Ошибка загрузки пользователя:', error);
-      localStorage.removeItem('token');
+      clearTokens();
     } finally {
       setLoading(false);
     }
@@ -31,14 +31,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     const response = await auth.login(credentials);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
+    // api.js auth.login() уже сохраняет token + refresh_token через setTokens()
+    const { user } = response.data;
     setUser(user);
     return user;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    clearTokens(); // Удаляет и token, и refresh_token
     setUser(null);
   };
 

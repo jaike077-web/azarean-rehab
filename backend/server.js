@@ -117,8 +117,12 @@ const tokenLimiter = rateLimit({
   validate: { xForwardedForHeader: false }
 });
 
-// Применяем token лимит к /api/complexes/token/*
+// Применяем token лимит к /api/complexes/token/* и no-referrer (токен в URL)
 app.use('/api/complexes/token', tokenLimiter);
+app.use('/api/complexes/token', (req, res, next) => {
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
 
 // =====================================================
 // MIDDLEWARE
@@ -210,6 +214,9 @@ app.use('/api/patient-auth/register', authLimiter);
 app.use('/api/patient-auth', require('./routes/patientAuth'));
 
 // Реабилитационные программы (Спринт 1.1)
+// Rate limit на публичные endpoints (phases, tips доступны без авторизации)
+app.use('/api/rehab/phases', generalLimiter);
+app.use('/api/rehab/tips', generalLimiter);
 app.use('/api/rehab', require('./routes/rehab'));
 
 // Telegram привязка (Спринт 3)

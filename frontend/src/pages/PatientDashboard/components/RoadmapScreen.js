@@ -272,7 +272,7 @@ const PhaseStepper = ({ phases, currentPhaseNumber }) => {
         const icon = PHASE_ICONS[phase.icon] || '🎯';
 
         return (
-          <div key={phase.id || index} className="pd-stepper-row">
+          <div key={phase.id ?? `phase-${index}`} className="pd-stepper-row">
             {/* Connector line */}
             {index > 0 && (
               <div
@@ -369,7 +369,7 @@ const RoadmapScreen = ({ dashboardData }) => {
   // Render tab content
   const renderTabContent = () => {
     if (!currentPhase) {
-      return <p className="pd-bullet-empty">Загрузка данных фазы...</p>;
+      return <p className="pd-bullet-empty">{loading ? 'Загрузка данных фазы...' : 'Информация о фазе недоступна'}</p>;
     }
 
     const isFuturePhase = currentPhaseNumber < (dashboardData?.program?.current_phase || 1);

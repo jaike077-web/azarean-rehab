@@ -99,8 +99,8 @@ router.post('/register', async (req, res) => {
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({
-        error: 'Validation Error',
+      return res.status(409).json({
+        error: 'Conflict',
         message: 'Пользователь с таким email уже существует'
       });
     }

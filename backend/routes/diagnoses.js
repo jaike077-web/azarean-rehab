@@ -101,8 +101,8 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     if (duplicate.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
+      return res.status(409).json({
+        error: 'Conflict',
         message: 'Диагноз с таким названием уже существует'
       });
     }
@@ -174,8 +174,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     );
 
     if (duplicate.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
+      return res.status(409).json({
+        error: 'Conflict',
         message: 'Диагноз с таким названием уже существует'
       });
     }

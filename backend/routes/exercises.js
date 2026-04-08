@@ -423,6 +423,10 @@ router.post('/bulk', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Список упражнений обязателен' });
     }
 
+    if (exercises.length > 500) {
+      return res.status(400).json({ error: 'Максимум 500 упражнений за один импорт' });
+    }
+
     const results = {
       created: 0,
       failed: 0,

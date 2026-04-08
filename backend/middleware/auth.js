@@ -15,7 +15,7 @@ const authenticateToken = (req, res, next) => {
   }
 
   // Явно указываем алгоритм для защиты от algorithm confusion атак
-  jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }, (err, user) => {
+  jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] }, async (err, user) => {
     if (err) {
       const message = err.name === 'TokenExpiredError'
         ? 'Токен истек, выполните вход заново'
@@ -26,7 +26,24 @@ const authenticateToken = (req, res, next) => {
       });
     }
 
-    req.user = user; // Сохраняем данные пользователя в request
+    // Проверяем что пользователь не деактивирован
+    try {
+      const result = await query(
+        'SELECT is_active FROM users WHERE id = $1',
+        [user.id]
+      );
+      if (result.rows.length === 0 || !result.rows[0].is_active) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Аккаунт деактивирован'
+        });
+      }
+    } catch (dbError) {
+      console.error('Ошибка проверки статуса пользователя:', dbError.message);
+      return res.status(500).json({ error: 'Server Error' });
+    }
+
+    req.user = user;
     next();
   });
 };

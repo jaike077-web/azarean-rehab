@@ -512,7 +512,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
             e.currentTarget.style.backgroundColor = 'transparent';
           }}
         >
-          <span style={{ fontSize: '20px' }}>📷</span>
+          <span style={{ fontSize: '20px' }} aria-hidden="true">📷</span>
           Сфотографировать колено
         </button>
       </div>
@@ -523,6 +523,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Заметки (необязательно)"
+          maxLength={2000}
           rows={2}
           style={{
             width: '100%',

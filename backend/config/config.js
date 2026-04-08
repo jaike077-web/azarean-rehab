@@ -67,4 +67,17 @@ if (!config.database.password && config.nodeEnv === 'production') {
   throw new Error('FATAL ERROR: DB_PASSWORD is not defined in .env file');
 }
 
+if (!config.session.secret) {
+  console.warn('⚠️  SESSION_SECRET не задан — используется небезопасное значение по умолчанию');
+}
+
+if (config.nodeEnv === 'production') {
+  if (!config.telegram.botToken) {
+    console.warn('⚠️  TELEGRAM_BOT_TOKEN не задан — Telegram бот будет отключён');
+  }
+  if (!config.kinescope.apiKey) {
+    console.warn('⚠️  KINESCOPE_API_KEY не задан — интеграция с Kinescope недоступна');
+  }
+}
+
 module.exports = config;
