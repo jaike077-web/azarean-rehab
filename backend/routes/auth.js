@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { query } = require('../database/db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { hashToken } = require('../utils/tokens');
 const config = require('../config/config');
 
 // =====================================================
@@ -35,16 +36,17 @@ const validatePassword = (password) => {
   return errors;
 };
 
-// Генерация refresh token
+// Генерация refresh token — в БД хранится SHA-256 хэш, клиенту возвращается plaintext
 const generateRefreshToken = async (userId) => {
   const refreshToken = crypto.randomBytes(64).toString('hex');
+  const tokenHash = hashToken(refreshToken);
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 дней
 
   await query(
-    `INSERT INTO refresh_tokens (user_id, token, expires_at)
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
      VALUES ($1, $2, $3)
-     ON CONFLICT (user_id) DO UPDATE SET token = $2, expires_at = $3, created_at = NOW()`,
-    [userId, refreshToken, expiresAt]
+     ON CONFLICT (user_id) DO UPDATE SET token_hash = $2, expires_at = $3, created_at = NOW()`,
+    [userId, tokenHash, expiresAt]
   );
 
   return refreshToken;
@@ -54,8 +56,8 @@ const generateRefreshToken = async (userId) => {
 // ROUTES
 // =====================================================
 
-// Регистрация нового пользователя (инструктора/админа)
-router.post('/register', async (req, res) => {
+// Регистрация нового пользователя (инструктора/админа) — только для админов
+router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { email, password, full_name, role = 'instructor' } = req.body;
 
@@ -119,20 +121,8 @@ router.post('/register', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Генерируем JWT токен с явным указанием алгоритма
-    const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      },
-      config.jwt.secret,
-      { algorithm: 'HS256', expiresIn: config.jwt.expiresIn }
-    );
-
-    // Генерируем refresh token
-    const refreshToken = await generateRefreshToken(user.id);
-
+    // Админ создаёт аккаунт другому человеку — не логиним его сразу,
+    // токены не выдаём. Пусть он войдёт самостоятельно через /login.
     res.status(201).json({
       message: 'Пользователь успешно зарегистрирован',
       user: {
@@ -141,9 +131,7 @@ router.post('/register', async (req, res) => {
         full_name: user.full_name,
         role: user.role,
         created_at: user.created_at
-      },
-      token,
-      refresh_token: refreshToken
+      }
     });
 
   } catch (error) {
@@ -307,11 +295,11 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    // Проверяем refresh token
+    // Проверяем refresh token по хэшу
     const tokenResult = await query(
       `SELECT user_id FROM refresh_tokens
-       WHERE token = $1 AND expires_at > NOW()`,
-      [refresh_token]
+       WHERE token_hash = $1 AND expires_at > NOW()`,
+      [hashToken(refresh_token)]
     );
 
     if (tokenResult.rows.length === 0) {

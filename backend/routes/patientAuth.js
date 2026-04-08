@@ -17,6 +17,7 @@ const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { avatarUpload } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
+const { hashToken } = require('../utils/tokens');
 const config = require('../config/config');
 
 // =====================================================
@@ -35,18 +36,19 @@ const generateAccessToken = (patient) => {
 
 const generateRefreshToken = async (patientId) => {
   const token = crypto.randomBytes(64).toString('hex');
+  const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 дней
 
-  // Удаляем старый refresh token и создаём новый
+  // Удаляем старый refresh token и создаём новый (в БД хранится только хэш)
   await query(
     `DELETE FROM patient_refresh_tokens WHERE patient_id = $1`,
     [patientId]
   );
 
   await query(
-    `INSERT INTO patient_refresh_tokens (patient_id, token, expires_at)
+    `INSERT INTO patient_refresh_tokens (patient_id, token_hash, expires_at)
      VALUES ($1, $2, $3)`,
-    [patientId, token, expiresAt]
+    [patientId, tokenHash, expiresAt]
   );
 
   return token;
@@ -200,7 +202,8 @@ router.post('/login', async (req, res) => {
 
     // Ищем пациента
     const result = await query(
-      `SELECT id, email, full_name, phone, birth_date, avatar_url, password_hash, is_active
+      `SELECT id, email, full_name, phone, birth_date, avatar_url, password_hash, is_active,
+              failed_login_attempts, locked_until
        FROM patients WHERE email = $1`,
       [email]
     );
@@ -222,6 +225,15 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Проверяем блокировку аккаунта (5 попыток → 15 минут)
+    if (patient.locked_until && new Date(patient.locked_until) > new Date()) {
+      const minutesLeft = Math.ceil((new Date(patient.locked_until) - new Date()) / 60000);
+      return res.status(423).json({
+        error: 'Account Locked',
+        message: `Аккаунт заблокирован. Попробуйте через ${minutesLeft} минут.`
+      });
+    }
+
     // Нет пароля? (создан инструктором, ещё не регистрировался)
     if (!patient.password_hash) {
       return res.status(401).json({
@@ -233,10 +245,40 @@ router.post('/login', async (req, res) => {
     // Проверяем пароль
     const isMatch = await bcrypt.compare(password, patient.password_hash);
     if (!isMatch) {
-      return res.status(401).json({
-        error: 'Unauthorized',
-        message: 'Неверный email или пароль'
-      });
+      // Увеличиваем счётчик неудачных попыток
+      const attempts = (patient.failed_login_attempts || 0) + 1;
+
+      if (attempts >= 5) {
+        // Блокируем на 15 минут после 5 неудачных попыток
+        await query(
+          `UPDATE patients SET
+             failed_login_attempts = $1,
+             locked_until = NOW() + INTERVAL '15 minutes'
+           WHERE id = $2`,
+          [attempts, patient.id]
+        );
+        return res.status(423).json({
+          error: 'Account Locked',
+          message: 'Слишком много неудачных попыток. Аккаунт заблокирован на 15 минут.'
+        });
+      } else {
+        await query(
+          `UPDATE patients SET failed_login_attempts = $1 WHERE id = $2`,
+          [attempts, patient.id]
+        );
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: `Неверный email или пароль. Осталось попыток: ${5 - attempts}`
+        });
+      }
+    }
+
+    // Сбрасываем счётчик при успешном входе
+    if (patient.failed_login_attempts > 0 || patient.locked_until) {
+      await query(
+        `UPDATE patients SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+        [patient.id]
+      );
     }
 
     // Обновляем last_login_at
@@ -312,13 +354,13 @@ router.post('/refresh', async (req, res) => {
       });
     }
 
-    // Проверяем в БД
+    // Проверяем в БД по хэшу
     const result = await query(
       `SELECT rt.*, p.id as patient_id, p.email, p.full_name
        FROM patient_refresh_tokens rt
        JOIN patients p ON p.id = rt.patient_id
-       WHERE rt.token = $1 AND rt.expires_at > NOW()`,
-      [refreshToken]
+       WHERE rt.token_hash = $1 AND rt.expires_at > NOW()`,
+      [hashToken(refreshToken)]
     );
 
     if (result.rows.length === 0) {
@@ -388,14 +430,14 @@ router.post('/forgot-password', async (req, res) => {
       [patient.id]
     );
 
-    // Создаём новый токен
+    // Создаём новый токен (plaintext уходит в email, в БД — только хэш)
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 час
 
     await query(
-      `INSERT INTO patient_password_resets (patient_id, token, expires_at)
+      `INSERT INTO patient_password_resets (patient_id, token_hash, expires_at)
        VALUES ($1, $2, $3)`,
-      [patient.id, resetToken, expiresAt]
+      [patient.id, hashToken(resetToken), expiresAt]
     );
 
     // Отправляем email (пока заглушка)
@@ -436,13 +478,13 @@ router.post('/reset-password', async (req, res) => {
       });
     }
 
-    // Проверяем токен
+    // Проверяем токен по хэшу
     const result = await query(
       `SELECT pr.*, p.id as patient_id
        FROM patient_password_resets pr
        JOIN patients p ON p.id = pr.patient_id
-       WHERE pr.token = $1 AND pr.used = false AND pr.expires_at > NOW()`,
-      [token]
+       WHERE pr.token_hash = $1 AND pr.used = false AND pr.expires_at > NOW()`,
+      [hashToken(token)]
     );
 
     if (result.rows.length === 0) {

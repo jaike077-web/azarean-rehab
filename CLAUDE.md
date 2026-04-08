@@ -39,6 +39,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260211_extend
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260212_telegram_bot.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260213_admin_panel.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260406_audit_schema_fixes.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_patient_lockout.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_hash_tokens.sql
 ```
 
 ### 2. Переменные окружения
@@ -68,13 +70,25 @@ FRONTEND_URL=http://localhost:3000
 ```bash
 cd backend && npm install && npm run dev   # Express на :5000 (nodemon)
 cd frontend && npm install && npm start    # CRA на :3000, proxy -> :5000
+# Если :3000 занят (например, JARVIS Director на Fastify):
+cd frontend && PORT=3001 BROWSER=none npm start   # CRA на :3001
+# В этом случае добавить в backend/.env: CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 ```
+
+### Тестовые учётные данные (dev)
+
+- **Инструктор (admin):** `vadim@azarean.com` / `Test1234` (пароль сброшен 2026-04-08 через bcrypt в БД)
+- **Тестовый пациент:** id=14, `avi707@mail.ru` (Вадим, привязан к реальному Telegram — scheduler шлёт ему советы/напоминания при запущенном backend)
 
 ## Структура проекта
 
 ```
 Azarean_rehab/
 ├── CLAUDE.md                    # Этот файл
+├── docs/
+│   └── prototypes/              # Архивные single-file прототипы дизайна (референс)
+│       ├── README.md
+│       └── patient-dashboard-v2.jsx  # Исходный прототип PatientDashboard (Feb 2026)
 ├── backend/
 │   ├── server.js                # Express сервер, middleware, routing (381 строк)
 │   ├── config/
@@ -454,49 +468,56 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ## Известные баги и уязвимости
 
-### КРИТИЧЕСКИЕ (исправить немедленно)
-1. **POST /api/auth/register открыт** — любой может создать admin аккаунт
-2. **Refresh/reset токены в plaintext** в БД — при компрометации БД все сессии захвачены
-3. **Нет lockout для пациентов** — неограниченный brute-force
-4. ~~**Сломанный маршрут:** `complexes.js:614` — `pool` не определён~~ ✅ ИСПРАВЛЕНО (удалён дублирующий маршрут)
+> **Статус аудита (2026-04-08):** Большая часть багов из глобального аудита исправлена
+> в коммитах `cb9dc47` → `aef1bb8`. Ниже отмечены ✅ исправленные и ❌ оставшиеся.
+> Полный список см. [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md).
+
+### КРИТИЧЕСКИЕ (все 3 исправлены 2026-04-08)
+1. ✅ ~~**POST /api/auth/register открыт**~~ — теперь `authenticateToken + requireAdmin`, ответ без JWT (админ создаёт для другого юзера)
+2. ✅ ~~**Refresh/reset токены в plaintext**~~ — миграция `20260408_hash_tokens.sql`: `token` → `token_hash` (SHA-256 hex64), helper `backend/utils/tokens.js`
+3. ✅ ~~**Нет lockout для пациентов**~~ — миграция `20260408_patient_lockout.sql` + логика в `patientAuth.js` login (5 попыток → 15 мин)
+4. ✅ ~~**Сломанный маршрут:** `complexes.js:614` — `pool` не определён~~ (удалён)
+5. ✅ ~~**IDOR на permanent delete комплексов**~~ (добавлена транзакция + ownership check)
+6. ✅ ~~**Cascade delete пациента оставляет сироты**~~ (полный cleanup + транзакция)
+7. ✅ ~~**Race condition при создании комплекса**~~ (SELECT FOR UPDATE)
+8. ✅ ~~**Bulk import DoS**~~ (limit 500)
 
 ### ВЫСОКИЕ
-5. **`/uploads` публично** — аватары пациентов без авторизации
-6. ~~**Hard delete без проверки admin**~~ ✅ ИСПРАВЛЕНО (добавлена транзакция + ownership check)
-7. **Rate limiting выключен в dev** — если NODE_ENV ≠ production
-8. **AuthContext не хранит refresh_token** — auto-refresh не работает для инструкторов (`AuthContext.js:35`)
-9. **Patient JWT в localStorage** — уязвим к XSS (`PatientLogin.js:26`)
-10. **Access token пациента в URL** — утечка через referrer, browser history (`App.js:219`)
-11. **Scheduler хардкодит Europe/Moscow** — игнорирует пользовательский timezone (`scheduler.js:30,39,48`)
-12. **Inconsistent response formats** — разные роуты возвращают данные в разном формате
-13. **Невалидированные числовые params** — req.params.id без parseInt/isNaN check
-14. **Config не валидирует все env vars** — пропущены SESSION_SECRET, CORS_ORIGINS, TELEGRAM_BOT_TOKEN
-15. **change-password не инвалидирует refresh tokens** — старые сессии остаются активными
-16. **PatientDashboard бесконечный loading при 500** — loading не сбрасывается при ошибке
-17. **Публичные endpoints без rate limiting** — /phases/:type, /tips доступны без защиты
-18. **Admin NaN в LIMIT** — `parseInt('abc')` → NaN → SQL ошибка (`admin.js:346-348`)
+9. ❌ **`/uploads` публично** — аватары пациентов без авторизации
+10. ❌ **Rate limiting выключен в dev** — если NODE_ENV ≠ production (by design)
+11. ❌ **Patient JWT в localStorage** — уязвим к XSS (`PatientLogin.js:26`)
+12. ❌ **Access token пациента в URL** — частично митигировано через `Referrer-Policy: no-referrer`, но токен всё ещё в browser history
+13. ❌ **Inconsistent response formats** — разные роуты возвращают данные в разном формате
+14. ✅ ~~**AuthContext не хранит refresh_token**~~ (использует `clearTokens()` из api.js)
+15. ✅ ~~**Scheduler хардкодит Europe/Moscow**~~ (per-user tz из notification_settings)
+16. ✅ ~~**Config не валидирует все env vars**~~ (warnings для SESSION_SECRET, TELEGRAM_BOT_TOKEN, KINESCOPE_API_KEY)
+17. ✅ ~~**change-password не инвалидирует refresh tokens**~~ (false positive — уже удалял)
+18. ✅ ~~**PatientDashboard бесконечный loading при 500**~~ (false positive — уже был finally)
+19. ✅ ~~**Публичные endpoints без rate limiting**~~ (generalLimiter на /phases, /tips)
+20. ✅ ~~**Admin NaN в LIMIT**~~ (parseInt fallback || 1 / || 20)
+21. ✅ ~~**Невалидированные числовые params**~~ (bonus fix на /phases/:id после smoke-теста)
 
-### СРЕДНИЕ
-19. **validators.js — dead code** — все правила определены, но ни один роут их не использует
-20. **`SELECT *`** в patients — утекает password_hash в API responses
-21. **Dashboard stats = хардкод нулей** — endpoint существует, не вызывается
-22. **templates.update не отправляет body** — `api.put('/templates/${id}')` без `data`
-23. **EditComplex.handleAddExercise** — `toast.success('Ссылка скопирована!')` при дубле (copy-paste)
-24. **DiaryScreen** — структурированные данные сериализуются в текст `notes` (хрупкий парсинг)
-25. **80+ дублей CSS-классов** — глобальные стили конфликтуют
-26. **Patient email не UNIQUE** в БД → дубли аккаунтов, password reset ломается
-27. **Нет аудит-логов для чтения** данных пациентов (GDPR compliance)
-28. **Progress log IDOR** — не проверяет принадлежность комплекса пациенту
-29. **Деактивированный инструктор** с валидным JWT может создавать комплексы
-30. **Нет индекса** на `complex_exercises(exercise_id)` → медленные JOIN-ы
-31. **complexes.patient_id допускает NULL** → orphaned комплексы
-32. **Нет автоочистки** истёкших refresh tokens → bloat БД
-33. **Отрицательные duration_seconds** разрешены (`Number('-123') = -123`)
-34. **Нет лимита длины сообщений** в чате
-35. **Дубль email возвращает 400** вместо 409 Conflict
-36. **RoadmapScreen падает** при пустом phases array
-37. **ErrorBoundary не ловит** async ошибки из useEffect
-38. **ContactScreen дублирует polling intervals** при повторных кликах
+### СРЕДНИЕ (исправлены во время аудита)
+22. ❌ **validators.js — dead code** — все правила определены, но ни один роут их не использует
+23. ❌ **`SELECT *`** в patients — утекает password_hash в API responses
+24. ❌ **Dashboard stats = хардкод нулей** — endpoint существует, не вызывается
+25. ❌ **templates.update не отправляет body** — `api.put('/templates/${id}')` без `data`
+26. ❌ **EditComplex.handleAddExercise** — `toast.success('Ссылка скопирована!')` при дубле (copy-paste)
+27. ❌ **DiaryScreen** — структурированные данные сериализуются в текст `notes` (хрупкий парсинг)
+28. ❌ **80+ дублей CSS-классов** — глобальные стили конфликтуют
+29. ❌ **Нет аудит-логов для чтения** данных пациентов (GDPR compliance)
+30. ❌ **ErrorBoundary не ловит** async ошибки из useEffect
+31. ✅ ~~**Patient email не UNIQUE**~~ (partial UNIQUE index в миграции)
+32. ✅ ~~**Progress log IDOR**~~ (ownership check для JWT)
+33. ✅ ~~**Деактивированный инструктор** с валидным JWT~~ (auth middleware проверяет is_active в БД)
+34. ✅ ~~**Нет индекса** на `complex_exercises(exercise_id)`~~ (миграция)
+35. ✅ ~~**complexes.patient_id допускает NULL**~~ (NOT NULL в миграции)
+36. ✅ ~~**Нет автоочистки истёкших refresh tokens**~~ (cron 03:00 МСК)
+37. ✅ ~~**Отрицательные duration_seconds**~~ (Math.max(0, ...))
+38. ✅ ~~**Нет лимита длины сообщений**~~ (max 5000 chars)
+39. ✅ ~~**Дубль email возвращает 400**~~ (409 Conflict)
+40. ✅ ~~**RoadmapScreen падает** при пустом phases array~~
+41. ✅ ~~**ContactScreen дублирует polling intervals**~~ (cleanup перед generate)
 
 ## Структура тестов
 
