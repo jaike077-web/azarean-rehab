@@ -19,6 +19,19 @@ build/
 .env.*
 *.local
 
+# Test coverage
+coverage/
+
+# User-uploaded files (avatars, etc — keep dir, ignore contents)
+backend/uploads/
+
+# Claude Code settings (содержат локальные allow-правила и пароли)
+.claude/settings.json
+.claude/settings.local.json
+
+# Windows artifacts from bash redirect to `nul`
+/nul
+
 # Python (если вдруг есть)
 __pycache__/
 *.pyc
