@@ -7,7 +7,11 @@ const { authenticateToken } = require('../middleware/auth');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const result = await query(
-      `SELECT p.*, 
+      `SELECT p.id, p.full_name, p.email, p.phone, p.birth_date,
+              p.diagnosis, p.notes, p.is_active, p.avatar_url,
+              p.last_login_at, p.telegram_chat_id,
+              p.created_at, p.updated_at,
+              (p.password_hash IS NOT NULL) as is_registered,
               COUNT(DISTINCT c.id) as complexes_count
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id AND c.is_active = true
@@ -35,7 +39,11 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/trash', authenticateToken, async (req, res) => {
   try {
     const result = await query(
-      `SELECT p.*, 
+      `SELECT p.id, p.full_name, p.email, p.phone, p.birth_date,
+              p.diagnosis, p.notes, p.is_active, p.avatar_url,
+              p.last_login_at, p.telegram_chat_id,
+              p.created_at, p.updated_at,
+              (p.password_hash IS NOT NULL) as is_registered,
               COUNT(DISTINCT c.id) as complexes_count
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id
@@ -117,9 +125,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Получаем пациента
+    // Получаем пациента (без password_hash)
     const patientResult = await query(
-      `SELECT * FROM patients 
+      `SELECT id, full_name, email, phone, birth_date, diagnosis, notes,
+              is_active, avatar_url, last_login_at, telegram_chat_id,
+              created_at, updated_at,
+              (password_hash IS NOT NULL) as is_registered
+       FROM patients
        WHERE id = $1 AND created_by = $2 AND is_active = true`,
       [id, req.user.id]
     );
@@ -183,9 +195,12 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // ИЗМЕНЕНО: добавлен diagnosis в INSERT
     const result = await query(
-      `INSERT INTO patients (full_name, email, phone, birth_date, diagnosis, notes, created_by) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
-       RETURNING *`,
+      `INSERT INTO patients (full_name, email, phone, birth_date, diagnosis, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
+                 is_active, avatar_url, last_login_at, telegram_chat_id,
+                 created_at, updated_at,
+                 (password_hash IS NOT NULL) as is_registered`,
       [full_name.trim(), emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, req.user.id]
     );
 
@@ -220,7 +235,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // ИЗМЕНЕНО: добавлен diagnosis в UPDATE
     const result = await query(
-      `UPDATE patients 
+      `UPDATE patients
        SET full_name = COALESCE($1, full_name),
            email = $2,
            phone = $3,
@@ -229,7 +244,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
            notes = $6,
            updated_at = NOW()
        WHERE id = $7 AND created_by = $8 AND is_active = true
-       RETURNING *`,
+       RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
+                 is_active, avatar_url, last_login_at, telegram_chat_id,
+                 created_at, updated_at,
+                 (password_hash IS NOT NULL) as is_registered`,
       [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, id, req.user.id]
     );
 

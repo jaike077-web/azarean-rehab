@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContext';
 import { ToastProvider } from './context/ToastContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -11,7 +12,6 @@ import Dashboard from './pages/Dashboard';
 
 // Ленивая загрузка страниц
 const Patients = lazy(() => import('./pages/Patients'));
-const PatientView = lazy(() => import('./pages/PatientView'));
 const ViewProgress = lazy(() => import('./pages/ViewProgress'));
 const PatientProgress = lazy(() => import('./pages/PatientProgress'));
 const MyComplexes = lazy(() => import('./pages/MyComplexes'));
@@ -56,10 +56,13 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-// Защищённый роут для пациентов (Спринт 1.2)
+// Защищённый роут для пациентов (после миграции #11 — через cookie + контекст)
 function PatientRoute({ children }) {
-  const patientToken = localStorage.getItem('patient_token');
-  if (!patientToken) {
+  const { patient, loading } = usePatientAuth();
+  if (loading) {
+    return <LoadingSpinner message="Проверяем авторизацию..." />;
+  }
+  if (!patient) {
     return <Navigate to="/patient-login" state={{ from: '/patient-dashboard' }} />;
   }
   return children;
@@ -210,25 +213,17 @@ function AppRoutes() {
       />
 
       {/* ========================== */}
-      {/* ПУБЛИЧНЫЕ СТРАНИЦЫ (без авторизации) */}
-      {/* ========================== */}
-      
-      {/* Страница пациента по токену */}
-      <Route
-        path="/patient/:token"
-        element={<PatientView />}
-      />
-
-      {/* ========================== */}
       {/* АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1) */}
+      {/* PatientAuthProvider оборачивает только пациентские роуты, */}
+      {/* чтобы не дёргать getMe() на инструкторских страницах */}
       {/* ========================== */}
       <Route
         path="/patient-login"
-        element={<PatientLogin />}
+        element={<PatientAuthProvider><PatientLogin /></PatientAuthProvider>}
       />
       <Route
         path="/patient-register"
-        element={<PatientRegister />}
+        element={<PatientAuthProvider><PatientRegister /></PatientAuthProvider>}
       />
       <Route
         path="/patient-forgot-password"
@@ -245,9 +240,11 @@ function AppRoutes() {
       <Route
         path="/patient-dashboard"
         element={
-          <PatientRoute>
-            <PatientDashboard />
-          </PatientRoute>
+          <PatientAuthProvider>
+            <PatientRoute>
+              <PatientDashboard />
+            </PatientRoute>
+          </PatientAuthProvider>
         }
       />
 

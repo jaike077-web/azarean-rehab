@@ -44,9 +44,8 @@ BEGIN
     ORDER BY id LIMIT 1;
 
     IF cid IS NULL THEN
-        INSERT INTO complexes (patient_id, instructor_id, title, access_token, is_active)
-        VALUES (pid, uid, 'Комплекс после пластики ПКС — Фаза 1',
-                'test-acl-' || md5(random()::text || clock_timestamp()::text), true)
+        INSERT INTO complexes (patient_id, instructor_id, title, is_active)
+        VALUES (pid, uid, 'Комплекс после пластики ПКС — Фаза 1', true)
         RETURNING id INTO cid;
         RAISE NOTICE 'Создан комплекс id=%', cid;
     ELSE

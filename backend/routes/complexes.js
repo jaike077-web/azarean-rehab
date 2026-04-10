@@ -1,13 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
-
-// Генерация уникального токена для доступа пациента
-function generateAccessToken() {
-  return crypto.randomBytes(32).toString('hex');
-}
 
 // Создать новый комплекс для пациента
 router.post('/', authenticateToken, async (req, res) => {
@@ -59,16 +53,14 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Генерируем уникальный токен
-    const access_token = generateAccessToken();
-
-    // Создаем комплекс
+    // Создаем комплекс (access_token больше не генерируется — пациент получает
+    // доступ только через личный кабинет, см. миграцию 20260409_complexes_access_token_nullable.sql)
     const complexResult = await client.query(
-      `INSERT INTO complexes 
-       (patient_id, instructor_id, diagnosis_id, diagnosis_note, recommendations, warnings, access_token) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+      `INSERT INTO complexes
+       (patient_id, instructor_id, diagnosis_id, diagnosis_note, recommendations, warnings)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [patient_id, req.user.id, diagnosis_id, diagnosis_note, recommendations, warnings, access_token]
+      [patient_id, req.user.id, diagnosis_id, diagnosis_note, recommendations, warnings]
     );
 
     const complex = complexResult.rows[0];
@@ -137,8 +129,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({
       message: 'Комплекс успешно создан',
-      complex: fullComplexResult.rows[0],
-      patient_link: `http://localhost:5000/patient/${access_token}`
+      complex: fullComplexResult.rows[0]
     });
 
   } catch (error) {
@@ -297,9 +288,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Not Found',
-        message: 'Комплекс не найден' 
+        message: 'Комплекс не найден'
       });
     }
 
@@ -309,9 +300,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Ошибка получения комплекса:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при получении комплекса' 
+      message: 'Ошибка при получении комплекса'
     });
   }
 });
@@ -396,71 +387,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-
-// Получить комплекс по токену (для пациента - БЕЗ авторизации!)
-router.get('/token/:token', async (req, res) => {
-  try {
-    const { token } = req.params;
-
-    const result = await query(
-      `SELECT c.*,
-              p.full_name as patient_name,
-              d.name as diagnosis_name,
-              u.full_name as instructor_name,
-              u.email as instructor_email,
-              json_agg(
-                json_build_object(
-                  'id', ce.id,
-                  'order_number', ce.order_number,
-                  'sets', ce.sets,
-                  'reps', ce.reps,
-                  'duration_seconds', ce.duration_seconds,
-                  'rest_seconds', ce.rest_seconds,
-                  'notes', ce.notes,
-                  'exercise', json_build_object(
-                    'id', e.id,
-                    'title', e.title,
-                    'description', e.description,
-                    'video_url', e.video_url,
-                    'thumbnail_url', e.thumbnail_url,
-                    'difficulty_level', e.difficulty_level,
-                    'equipment', e.equipment,
-                    'instructions', e.instructions,
-                    'contraindications', e.contraindications,
-                    'tips', e.tips
-                  )
-                ) ORDER BY ce.order_number
-              ) as exercises
-       FROM complexes c
-       JOIN patients p ON c.patient_id = p.id
-       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
-       JOIN users u ON c.instructor_id = u.id
-       LEFT JOIN complex_exercises ce ON c.id = ce.complex_id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id
-       WHERE c.access_token = $1 AND c.is_active = true
-       GROUP BY c.id, p.full_name, d.name, u.full_name, u.email`,
-      [token]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        error: 'Not Found',
-        message: 'Комплекс не найден или ссылка недействительна' 
-      });
-    }
-
-    res.json({
-      complex: result.rows[0]
-    });
-
-  } catch (error) {
-    console.error('Ошибка получения комплекса по токену:', error);
-    res.status(500).json({ 
-      error: 'Server Error',
-      message: 'Ошибка при получении комплекса' 
-    });
-  }
-});
 
 // Получить все комплексы пациента
 router.get('/patient/:patient_id', authenticateToken, async (req, res) => {

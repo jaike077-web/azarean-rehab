@@ -185,13 +185,16 @@ describe('GET /api/rehab/my/exercises', () => {
       .set('Authorization', `Bearer ${validToken}`)
       .expect(200);
 
+    expect(response.body).toHaveProperty('success', true);
     expect(response.body).toHaveProperty('data');
     expect(response.body.data).toHaveProperty('program_id', 1);
     expect(response.body.data).toHaveProperty('complex_id', 10);
-    expect(response.body.data).toHaveProperty('access_token', 'abc-123-test-token');
-    expect(response.body.data).toHaveProperty('exercise_count', 8);
-    expect(response.body.data).toHaveProperty('program_title');
-    expect(response.body.data).toHaveProperty('complex_title');
+    expect(response.body.data).not.toHaveProperty('access_token');
+    expect(response.body.data).toHaveProperty('exercise_count', 1);
+    expect(response.body.data).toHaveProperty('exercises');
+    expect(Array.isArray(response.body.data.exercises)).toBe(true);
+    expect(response.body.data.exercises).toHaveLength(1);
+    expect(response.body.data.exercises[0].exercise).toHaveProperty('title', 'Разгибание колена');
   });
 
   it('should return 404 when no active program', async () => {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { usePatientAuth } from '../../context/PatientAuthContext';
 import { patientAuth } from '../../services/api';
 import './PatientLogin.css';
 
@@ -9,6 +10,7 @@ const PatientLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
+  const { login } = usePatientAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,9 +24,8 @@ const PatientLogin = () => {
     try {
       const response = await patientAuth.login({ email, password });
       const data = response.data || response;
-      if (data.token) {
-        localStorage.setItem('patient_token', data.token);
-      }
+      // Cookie уже установлена backend'ом — обновляем только контекст
+      login(data.patient || null);
       const name = data.patient?.full_name || '';
       toast.success(name ? `Добро пожаловать, ${name}!` : 'Вход выполнен!');
       // Переход на пациентский дашборд или на страницу, откуда пришли

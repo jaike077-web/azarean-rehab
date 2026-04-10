@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
-const { authenticateToken, authenticateProgressAccess } = require('../middleware/auth');
+const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
 
-// Отметить выполнение упражнения (требуется JWT или access_token комплекса)
-router.post('/', authenticateProgressAccess, async (req, res) => {
+// Отметить выполнение упражнения (JWT инструктора или JWT пациента через cookie/Bearer)
+router.post('/', authenticatePatientOrInstructor, async (req, res) => {
   try {
     const {
       complex_id,
@@ -27,8 +27,12 @@ router.post('/', authenticateProgressAccess, async (req, res) => {
     }
 
     // Проверка доступа: пациент может писать только в свой комплекс
-    if (req.authType === 'access_token') {
-      if (req.complex.id !== parseInt(complex_id)) {
+    if (req.authType === 'patient') {
+      const own = await query(
+        'SELECT 1 FROM complexes WHERE id = $1 AND patient_id = $2 AND is_active = true',
+        [complex_id, req.patient.id]
+      );
+      if (own.rows.length === 0) {
         return res.status(403).json({
           error: 'Forbidden',
           message: 'Нет доступа к этому комплексу'
@@ -89,14 +93,30 @@ router.post('/', authenticateProgressAccess, async (req, res) => {
   }
 });
 
-// Получить прогресс по комплексу (требуется JWT или access_token комплекса)
-router.get('/complex/:complex_id', authenticateProgressAccess, async (req, res) => {
+// Получить прогресс по комплексу (JWT инструктора или JWT пациента)
+router.get('/complex/:complex_id', authenticatePatientOrInstructor, async (req, res) => {
   try {
     const { complex_id } = req.params;
 
     // Проверка доступа: пациент может смотреть только свой комплекс
-    if (req.authType === 'access_token') {
-      if (req.complex.id !== parseInt(complex_id)) {
+    if (req.authType === 'patient') {
+      const own = await query(
+        'SELECT 1 FROM complexes WHERE id = $1 AND patient_id = $2 AND is_active = true',
+        [complex_id, req.patient.id]
+      );
+      if (own.rows.length === 0) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Нет доступа к этому комплексу'
+        });
+      }
+    } else if (req.authType === 'jwt') {
+      // Инструктор: проверяем что комплекс принадлежит ему
+      const own = await query(
+        'SELECT 1 FROM complexes WHERE id = $1 AND instructor_id = $2',
+        [complex_id, req.user.id]
+      );
+      if (own.rows.length === 0) {
         return res.status(403).json({
           error: 'Forbidden',
           message: 'Нет доступа к этому комплексу'
@@ -144,14 +164,29 @@ router.get('/complex/:complex_id', authenticateProgressAccess, async (req, res) 
   }
 });
 
-// Получить прогресс конкретного упражнения (требуется JWT или access_token комплекса)
-router.get('/exercise/:exercise_id/complex/:complex_id', authenticateProgressAccess, async (req, res) => {
+// Получить прогресс конкретного упражнения (JWT инструктора или JWT пациента)
+router.get('/exercise/:exercise_id/complex/:complex_id', authenticatePatientOrInstructor, async (req, res) => {
   try {
     const { exercise_id, complex_id } = req.params;
 
-    // Проверка доступа: пациент может смотреть только свой комплекс
-    if (req.authType === 'access_token') {
-      if (req.complex.id !== parseInt(complex_id)) {
+    // Проверка доступа по ownership (пациент → patient_id, инструктор → instructor_id)
+    if (req.authType === 'patient') {
+      const own = await query(
+        'SELECT 1 FROM complexes WHERE id = $1 AND patient_id = $2 AND is_active = true',
+        [complex_id, req.patient.id]
+      );
+      if (own.rows.length === 0) {
+        return res.status(403).json({
+          error: 'Forbidden',
+          message: 'Нет доступа к этому комплексу'
+        });
+      }
+    } else if (req.authType === 'jwt') {
+      const own = await query(
+        'SELECT 1 FROM complexes WHERE id = $1 AND instructor_id = $2',
+        [complex_id, req.user.id]
+      );
+      if (own.rows.length === 0) {
         return res.status(403).json({
           error: 'Forbidden',
           message: 'Нет доступа к этому комплексу'

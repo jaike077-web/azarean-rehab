@@ -68,7 +68,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Access-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400 // Кешировать preflight на 24 часа
 }));
 
@@ -101,27 +101,6 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Не считаем успешные входы
-});
-
-// Rate Limiting - для публичных endpoints с токенами (защита от brute force)
-const tokenLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 минут
-  max: 10, // 10 попыток
-  message: {
-    error: 'Too Many Requests',
-    message: 'Слишком много попыток. Попробуйте через 15 минут.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Используем стандартный IP без кастомного keyGenerator для IPv6 совместимости
-  validate: { xForwardedForHeader: false }
-});
-
-// Применяем token лимит к /api/complexes/token/* и no-referrer (токен в URL)
-app.use('/api/complexes/token', tokenLimiter);
-app.use('/api/complexes/token', (req, res, next) => {
-  res.setHeader('Referrer-Policy', 'no-referrer');
-  next();
 });
 
 // =====================================================
@@ -189,6 +168,14 @@ app.get('/health', async (req, res) => {
 });
 
 // =====================================================
+// CSRF защита для cookie-auth (после миграции #11)
+// =====================================================
+// Origin-check применяется к state-changing запросам на пациентские
+// и progress endpoints. Pattern не перекрывает /api/auth (инструктор
+// всё ещё через Bearer) и публичные /api/rehab/phases|tips.
+const { requireSameOrigin } = require('./middleware/originCheck');
+
+// =====================================================
 // API РОУТЫ
 // =====================================================
 
@@ -204,23 +191,25 @@ app.use('/api/diagnoses', require('./routes/diagnoses'));
 app.use('/api/complexes', require('./routes/complexes'));
 app.use('/api/exercises', require('./routes/exercises'));
 app.use('/api/import', require('./routes/import'));
-app.use('/api/progress', require('./routes/progress'));
+app.use('/api/progress', requireSameOrigin, require('./routes/progress'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/templates', require('./routes/templates'));
 
 // Авторизация пациентов (отдельная система!)
 app.use('/api/patient-auth/login', authLimiter);
 app.use('/api/patient-auth/register', authLimiter);
-app.use('/api/patient-auth', require('./routes/patientAuth'));
+app.use('/api/patient-auth', requireSameOrigin, require('./routes/patientAuth'));
 
 // Реабилитационные программы (Спринт 1.1)
 // Rate limit на публичные endpoints (phases, tips доступны без авторизации)
 app.use('/api/rehab/phases', generalLimiter);
 app.use('/api/rehab/tips', generalLimiter);
+// Origin-check для приватных /api/rehab/my/* (пациентские state-changing)
+app.use('/api/rehab/my', requireSameOrigin);
 app.use('/api/rehab', require('./routes/rehab'));
 
 // Telegram привязка (Спринт 3)
-app.use('/api/telegram', require('./routes/telegram'));
+app.use('/api/telegram', requireSameOrigin, require('./routes/telegram'));
 
 // Админ-панель (Спринт 4)
 app.use('/api/admin', require('./routes/admin'));

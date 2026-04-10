@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { rehab } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePatientAuth } from '../../context/PatientAuthContext';
 import HomeScreen from './components/HomeScreen';
 import RoadmapScreen from './components/RoadmapScreen';
 import DiaryScreen from './components/DiaryScreen';
@@ -49,6 +50,7 @@ export default function PatientDashboard() {
   const scrollRef = useRef(null);
   const toast = useToast();
   const navigate = useNavigate();
+  const { logout: ctxLogout } = usePatientAuth();
 
   useEffect(() => {
     const disclaimerAccepted = localStorage.getItem('patient_disclaimer_accepted');
@@ -97,8 +99,8 @@ export default function PatientDashboard() {
     setShowDisclaimer(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('patient_token');
+  const handleLogout = async () => {
+    await ctxLogout();
     navigate('/patient-login');
   };
 

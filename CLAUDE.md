@@ -12,7 +12,7 @@
 - **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары)
 - **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly refresh)
 - **Security:** helmet 8.1 (headers), express-rate-limit 8.2 (5 req/15 min auth, general in production)
-- **Тесты:** Jest 30.2 + Supertest 7.2 (127 backend + 146 frontend = 273 тестов)
+- **Тесты:** Jest 30.2 + Supertest 7.2 (152 backend + 157 frontend = 309 тестов)
 - **Runtime:** Node.js >= 20, nodemon 3.1 (dev)
 
 ## Запуск проекта
@@ -41,6 +41,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260213_admin_
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260406_audit_schema_fixes.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_patient_lockout.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_hash_tokens.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_access_token_nullable.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_drop_access_token.sql
 ```
 
 ### 2. Переменные окружения
@@ -98,16 +100,17 @@ Azarean_rehab/
 │   │   ├── schema.sql           # CREATE TABLE (основная схема)
 │   │   └── migrations/          # 12 SQL миграций (2024-09 — 2026-04)
 │   ├── middleware/
-│   │   ├── auth.js              # authenticateToken (+ is_active DB check), requireAdmin, authenticateProgressAccess
-│   │   ├── patientAuth.js       # authenticatePatient (JWT для пациентов)
+│   │   ├── auth.js              # authenticateToken (+ is_active DB check), requireAdmin, authenticatePatientOrInstructor
+│   │   ├── patientAuth.js       # authenticatePatient (cookie-first + Bearer fallback)
+│   │   ├── originCheck.js       # requireSameOrigin — CSRF для cookie auth
 │   │   ├── upload.js            # Multer: аватары (JPEG/PNG/WEBP, 2MB)
 │   │   └── validators.js        # express-validator правила (НЕ ПОДКЛЮЧЕНЫ к роутам!)
 │   ├── routes/
 │   │   ├── auth.js              # POST /register, /login, /refresh, /logout, GET /me
-│   │   ├── patientAuth.js       # Полный цикл: register, login, refresh, profile, avatar, password-reset
-│   │   ├── patients.js          # CRUD пациентов + soft/hard delete
+│   │   ├── patientAuth.js       # Полный цикл: register, login, refresh, profile, avatar, password-reset, my-complexes
+│   │   ├── patients.js          # CRUD пациентов + soft/hard delete + is_registered flag
 │   │   ├── exercises.js         # CRUD упражнений + Kinescope + bulk import
-│   │   ├── complexes.js         # CRUD комплексов + token-доступ + exercises ordering
+│   │   ├── complexes.js         # CRUD комплексов + exercises ordering (публичный /token/ УДАЛЁН)
 │   │   ├── diagnoses.js         # CRUD диагнозов
 │   │   ├── progress.js          # Отслеживание прогресса тренировок
 │   │   ├── templates.js         # Шаблоны упражнений
@@ -133,8 +136,9 @@ Azarean_rehab/
         ├── services/
         │   └── api.js           # Axios instances (api + patientApi) + ~50 функций
         ├── context/
-        │   ├── AuthContext.js    # { user, loading, login, logout }
-        │   └── ToastContext.js   # addToast(type, title?, message, duration?)
+        │   ├── AuthContext.js         # Инструктор { user, loading, login, logout }
+        │   ├── PatientAuthContext.js  # Пациент { patient, loading, login, logout } — через cookie
+        │   └── ToastContext.js        # addToast(type, title?, message, duration?)
         ├── hooks/
         │   └── useConfirm.js    # ConfirmModal hook
         ├── utils/
@@ -151,13 +155,12 @@ Azarean_rehab/
         │   ├── EditComplex.js   # Редактирование комплекса
         │   ├── MyComplexes.js   # Список комплексов
         │   ├── Trash.js         # Корзина (soft delete)
-        │   ├── PatientView.js   # Публичная страница по токену (БЕЗ авторизации, 858 строк)
         │   ├── ViewProgress.js  # Просмотр прогресса
         │   ├── PatientProgress.js # Прогресс-дашборд
         │   ├── ImportExercises.js # Импорт упражнений
         │   ├── Exercises/       # Библиотека: Exercises.js, ExerciseDetail.js + components/
         │   ├── PatientAuth/     # Login, Register, ForgotPassword, ResetPassword
-        │   ├── PatientDashboard/ # Мобильный дашборд: Home, Diary, Exercises, Roadmap, Profile, Contact
+        │   ├── PatientDashboard/ # Мобильный дашборд: Home, Diary, Exercises (v2 с ComplexDetailView/ExerciseRunner), Roadmap, Profile, Contact
         │   ├── Admin/           # AdminStats, AdminUsers, AdminAuditLogs, AdminContent, AdminSystem
         │   └── EditTemplate.js  # Редактирование шаблона
         └── components/
@@ -218,13 +221,14 @@ created_at TIMESTAMP, updated_at TIMESTAMP
 
 ### complexes (комплексы упражнений)
 ```sql
-id SERIAL PK, patient_id INT REFERENCES patients(id) ON DELETE CASCADE,
+id SERIAL PK, patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
 instructor_id INT REFERENCES users(id) ON DELETE SET NULL,
 diagnosis_id INT REFERENCES diagnoses(id) ON DELETE SET NULL,
 diagnosis_note VARCHAR(500), title VARCHAR(255),
 recommendations TEXT, warnings TEXT,
-access_token VARCHAR(64) UNIQUE NOT NULL,
 is_active BOOLEAN DEFAULT true, created_at TIMESTAMP, updated_at TIMESTAMP
+-- ПРИМЕЧАНИЕ: поле access_token удалено в миграции 20260409 вместе с публичным /patient/:token flow.
+-- Теперь доступ пациента только через личный кабинет (PatientAuthContext + JWT cookie).
 ```
 
 ### complex_exercises
@@ -313,34 +317,33 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 1. **Администраторы** — управление пользователями, контентом, система аудита
 2. **Инструкторы** — создание комплексов, отслеживание прогресса, управление пациентами
-3. **Пациенты** — доступ по уникальной ссылке (token) ИЛИ через собственную авторизацию
+3. **Пациенты** — только через личный кабинет (регистрация по email + логин)
 
-## Двойная система авторизации
+## Система авторизации
 
 ### Инструкторы (routes/auth.js)
-- JWT access token (1h) в Bearer header
-- Refresh token (7d) в БД
+- JWT access token (1h) в Bearer header в localStorage
+- Refresh token (7d) хранится в БД (SHA-256 хэш)
 - Account lockout: 5 failed attempts → 15 min
-- **КРИТИЧЕСКИЙ БАГ:** POST /register открыт без авторизации, можно создать admin!
+- POST /register защищён `authenticateToken + requireAdmin` (только админ создаёт)
 
 ### Пациенты (routes/patientAuth.js)
 - Отдельный JWT_SECRET (PATIENT_JWT_SECRET)
-- Access token (15 min), Refresh (30d) в httpOnly cookie
-- OAuth заготовка (Google)
+- **Access token (15 min) в httpOnly cookie `patient_access_token`** (SameSite=Strict, path=/api)
+- **Refresh token (30d) в httpOnly cookie `patient_refresh_token`** (SameSite=Lax, path=/api/patient-auth, SHA-256 в БД)
+- `PatientAuthContext` на фронте определяет "залогинен ли" через GET /me на mount
+- Account lockout: 5 failed attempts → 15 min
 - Password reset через email stub
-- **НЕТ account lockout** (уязвимость brute-force)
-
-### Публичный доступ по токену
-- `access_token` (64 символа) в URL: `/patient/:token`
-- Проверка через `authenticateProgressAccess` middleware
-- НЕ требует регистрации пациента
+- OAuth заготовка (Google)
+- **CSRF:** `requireSameOrigin` middleware на всех state-changing эндпоинтах (/patient-auth, /rehab/my, /telegram, /progress)
+- Bearer header fallback оставлен в middleware для тестов и API-клиентов
 
 ## API endpoints
 
 ### Auth (инструкторы)
 | Метод | Путь | Auth | Описание |
 |-------|------|------|----------|
-| POST | /api/auth/register | **НЕТ!** | Регистрация (УЯЗВИМОСТЬ — можно создать admin) |
+| POST | /api/auth/register | JWT + Admin | Создание юзера (только админ) |
 | POST | /api/auth/login | Нет | Логин → access + refresh tokens |
 | POST | /api/auth/refresh | Cookie | Обновить access token |
 | POST | /api/auth/logout | JWT | Удалить refresh token |
@@ -349,16 +352,20 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Auth (пациенты)
 | Метод | Путь | Auth | Описание |
 |-------|------|------|----------|
-| POST | /api/patient-auth/register | Нет | Регистрация пациента |
-| POST | /api/patient-auth/login | Нет | Логин пациента |
-| POST | /api/patient-auth/refresh | Cookie | Обновить access token |
-| GET | /api/patient-auth/profile | PatientJWT | Профиль |
-| PUT | /api/patient-auth/profile | PatientJWT | Обновить профиль |
-| PUT | /api/patient-auth/avatar | PatientJWT | Загрузить аватар |
-| POST | /api/patient-auth/change-password | PatientJWT | Сменить пароль |
-| POST | /api/patient-auth/forgot-password | Нет | Запрос сброса |
-| POST | /api/patient-auth/reset-password | Нет | Сброс пароля |
-| DELETE | /api/patient-auth/account | PatientJWT | Удалить аккаунт |
+| POST | /api/patient-auth/register | Нет | Регистрация → ставит access+refresh cookie |
+| POST | /api/patient-auth/login | Нет | Логин → ставит access+refresh cookie |
+| POST | /api/patient-auth/refresh | Cookie | Обновить access token (ротация) |
+| POST | /api/patient-auth/logout | Cookie | Удалить cookies + refresh tokens |
+| GET | /api/patient-auth/me | Cookie | Текущий пациент |
+| PUT | /api/patient-auth/me | Cookie | Обновить профиль |
+| POST | /api/patient-auth/upload-avatar | Cookie | Загрузить аватар |
+| GET | /api/patient-auth/avatar | Cookie | Скачать аватар как blob |
+| DELETE | /api/patient-auth/avatar | Cookie | Удалить аватар |
+| POST | /api/patient-auth/change-password | Cookie | Сменить пароль (инвалид. всех сессий) |
+| POST | /api/patient-auth/forgot-password | Нет | Запрос сброса (email stub) |
+| POST | /api/patient-auth/reset-password | Нет | Сброс пароля по токену |
+| GET | /api/patient-auth/my-complexes | Cookie | Все активные комплексы пациента |
+| GET | /api/patient-auth/my-complexes/:id | Cookie | Конкретный комплекс с упражнениями |
 
 ### Пациенты
 | Метод | Путь | Auth | Описание |
@@ -392,7 +399,6 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | DELETE | /api/complexes/:id | JWT | Soft delete |
 | PATCH | /api/complexes/:id/restore | JWT | Восстановить |
 | DELETE | /api/complexes/:id/permanent | JWT | Hard delete |
-| GET | /api/complexes/token/:token | **Нет** | Публичный доступ по токену |
 
 ### Прогресс
 | Метод | Путь | Auth | Описание |
@@ -468,8 +474,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ## Известные баги и уязвимости
 
-> **Статус аудита (2026-04-08):** Большая часть багов из глобального аудита исправлена
-> в коммитах `cb9dc47` → `aef1bb8`. Ниже отмечены ✅ исправленные и ❌ оставшиеся.
+> **Статус аудита (2026-04-09):** Все CRITICAL и 3 из 5 HIGH закрыты.
+> В миграции 20260409 удалён публичный /patient/:token flow целиком,
+> Patient JWT перенесён из localStorage в httpOnly cookie (SameSite=Strict + Origin check).
 > Полный список см. [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md).
 
 ### КРИТИЧЕСКИЕ (все 3 исправлены 2026-04-08)
@@ -483,11 +490,11 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 8. ✅ ~~**Bulk import DoS**~~ (limit 500)
 
 ### ВЫСОКИЕ
-9. ❌ **`/uploads` публично** — аватары пациентов без авторизации
+9. ✅ ~~**`/uploads` публично**~~ — аватары теперь через `/api/patient-auth/avatar` с JWT (коммит 432e09b)
 10. ❌ **Rate limiting выключен в dev** — если NODE_ENV ≠ production (by design)
-11. ❌ **Patient JWT в localStorage** — уязвим к XSS (`PatientLogin.js:26`)
-12. ❌ **Access token пациента в URL** — частично митигировано через `Referrer-Policy: no-referrer`, но токен всё ещё в browser history
-13. ❌ **Inconsistent response formats** — разные роуты возвращают данные в разном формате
+11. ✅ ~~**Patient JWT в localStorage**~~ — перенесено в httpOnly cookie `patient_access_token` (SameSite=Strict). CSRF закрыт Origin-check middleware. PatientAuthContext определяет "залогинен ли" через GET /me. Миграция 2026-04-09.
+12. ✅ ~~**Access token пациента в URL**~~ — публичный flow удалён ПОЛНОСТЬЮ. Нет `/patient/:token` роута, нет `GET /api/complexes/token/:token` эндпоинта, нет `authenticateProgressAccess` middleware. Колонка `complexes.access_token` дропнута. Миграция 2026-04-09.
+13. ❌ **Inconsistent response formats** — частично унифицировано в новых эндпоинтах (`{ success, data }`), старые не трогали
 14. ✅ ~~**AuthContext не хранит refresh_token**~~ (использует `clearTokens()` из api.js)
 15. ✅ ~~**Scheduler хардкодит Europe/Moscow**~~ (per-user tz из notification_settings)
 16. ✅ ~~**Config не валидирует все env vars**~~ (warnings для SESSION_SECRET, TELEGRAM_BOT_TOKEN, KINESCOPE_API_KEY)
@@ -499,7 +506,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ### СРЕДНИЕ (исправлены во время аудита)
 22. ❌ **validators.js — dead code** — все правила определены, но ни один роут их не использует
-23. ❌ **`SELECT *`** в patients — утекает password_hash в API responses
+23. ✅ ~~**`SELECT *`** в patients — утекает password_hash~~ — заменено на явный allowlist + `is_registered` computed (2026-04-09)
 24. ❌ **Dashboard stats = хардкод нулей** — endpoint существует, не вызывается
 25. ❌ **templates.update не отправляет body** — `api.put('/templates/${id}')` без `data`
 26. ❌ **EditComplex.handleAddExercise** — `toast.success('Ссылка скопирована!')` при дубле (copy-paste)
@@ -523,13 +530,15 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ```
 backend/tests/__tests__/
-├── admin.test.js              # Тесты admin API
-├── patientAuth.middleware.test.js # Тесты patient JWT middleware
-├── patientProfile.test.js     # Тесты профиля пациента
-├── rehab.test.js              # Тесты rehab API
-├── scheduler.test.js          # Тесты scheduler
-├── telegram.test.js           # Тесты Telegram API
-└── telegramBot.test.js        # Тесты Telegram бота
+├── admin.routes.test.js            # Admin API
+├── patientAuth.middleware.test.js  # Patient JWT middleware
+├── patientProfile.test.js          # Профиль пациента + my-complexes + avatar
+├── progress.routes.test.js         # Progress с patient JWT + instructor JWT
+├── originCheck.test.js             # CSRF Origin-check
+├── rehab.routes.test.js            # Rehab API
+├── scheduler.test.js               # Scheduler
+├── telegram.routes.test.js         # Telegram API
+└── telegramBot.test.js             # Telegram бот
 
 frontend/src/ (test files)
 ├── services/api.test.js       # Тесты API-сервиса
@@ -578,6 +587,29 @@ frontend/src/ (test files)
 - **Diary wizard:** pain → swelling → mobility → mood → sleep → notes (in-memory state, 10 min timeout)
 - **Cron:** exercise reminders (каждую минуту), diary reminders (21:00), daily tips (12:00) — Europe/Moscow
 - **Привязка:** пациент генерирует код на сайте → вводит в бот → telegram_chat_id записывается в patients
+
+## Планируемый деплой
+
+**Статус:** НЕ задеплоен. Планируется на тот же VDS что JARVIS (185.93.109.234).
+
+**Подготовленные credentials:**
+```
+База: azarean_db
+Пользователь: azarean_user
+Пароль: Azarean2026$Db!
+```
+
+**Планируемые субдомены:** app/rehab/api.azarean.ru → 185.93.109.234
+**КОНФЛИКТ:** `rehab.azarean.ru` и `api.azarean.ru` уже используются JARVIS. Нужна переконфигурация nginx или другие субдомены.
+
+См. `memory/deployment_plan.md` для полного чеклиста.
+
+## Git
+
+- **Repo:** https://github.com/jaike077-web/azarean-rehab.git
+- **100+ коммитов**, активная разработка через codex PRs
+- **Последний:** `99e374a` Sprint 4: Admin panel (12.02.2026)
+- **14 незакоммиченных файлов** Admin/ + Dashboard.js — только локально
 
 ## Kinescope интеграция
 

@@ -195,3 +195,183 @@ describe('DELETE /api/patient-auth/avatar', () => {
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 });
+
+// =====================================================
+// GET /api/patient-auth/my-complexes
+// =====================================================
+describe('GET /api/patient-auth/my-complexes', () => {
+
+  it('should return 401 without token', async () => {
+    const res = await request(app).get('/api/patient-auth/my-complexes');
+    expect(res.status).toBe(401);
+  });
+
+  it('should return empty list when patient has no complexes', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.complexes).toEqual([]);
+  });
+
+  it('should return list of patient complexes', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          title: 'Комплекс 1',
+          diagnosis_note: null,
+          recommendations: null,
+          warnings: null,
+          created_at: '2026-04-01T00:00:00.000Z',
+          diagnosis_name: 'ПКС',
+          instructor_name: 'Вадим',
+          exercises_count: '5',
+        },
+        {
+          id: 2,
+          title: 'Комплекс 2',
+          diagnosis_note: null,
+          recommendations: null,
+          warnings: null,
+          created_at: '2026-03-01T00:00:00.000Z',
+          diagnosis_name: 'Плечо',
+          instructor_name: 'Вадим',
+          exercises_count: '3',
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.complexes).toHaveLength(2);
+    expect(res.body.data.complexes[0].exercises_count).toBe(5);
+    expect(res.body.data.complexes[1].exercises_count).toBe(3);
+  });
+
+  it('should query with patient_id from JWT', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .get('/api/patient-auth/my-complexes')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE c.patient_id = $1'),
+      [testPatient.id]
+    );
+  });
+
+  it('should return 500 on DB error', async () => {
+    query.mockRejectedValueOnce(new Error('DB down'));
+
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(500);
+  });
+});
+
+// =====================================================
+// GET /api/patient-auth/my-complexes/:id
+// =====================================================
+describe('GET /api/patient-auth/my-complexes/:id', () => {
+
+  it('should return 401 without token', async () => {
+    const res = await request(app).get('/api/patient-auth/my-complexes/1');
+    expect(res.status).toBe(401);
+  });
+
+  it('should return 400 for invalid ID', async () => {
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes/notanumber')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should return 404 when complex does not belong to patient', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes/999')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should return complex with exercises', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 5,
+          title: 'Утро',
+          diagnosis_note: 'Аккуратно с коленом',
+          recommendations: 'Разминка обязательна',
+          warnings: null,
+          created_at: '2026-04-01T00:00:00.000Z',
+          diagnosis_name: 'ПКС',
+          instructor_name: 'Вадим',
+          exercises: [
+            {
+              id: 1,
+              order_number: 1,
+              sets: 3,
+              reps: 10,
+              duration_seconds: null,
+              rest_seconds: 30,
+              notes: null,
+              exercise: {
+                id: 100,
+                title: 'Приседания',
+                description: null,
+                video_url: null,
+                thumbnail_url: null,
+                kinescope_id: null,
+                exercise_type: 'strength',
+                difficulty_level: 2,
+                equipment: [],
+                instructions: null,
+                contraindications: null,
+                tips: null,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/patient-auth/my-complexes/5')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.complex.id).toBe(5);
+    expect(res.body.data.complex.exercises).toHaveLength(1);
+    expect(res.body.data.complex.exercises[0].exercise.title).toBe('Приседания');
+    expect(res.body.data.complex).not.toHaveProperty('access_token');
+  });
+
+  it('should filter by patient_id (ownership check)', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .get('/api/patient-auth/my-complexes/42')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('WHERE c.id = $1 AND c.patient_id = $2'),
+      [42, testPatient.id]
+    );
+  });
+});

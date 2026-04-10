@@ -75,9 +75,8 @@ describe('api.js - Patient JWT API', () => {
   });
 
   describe('rehab API methods', () => {
-    beforeEach(() => {
-      localStorage.setItem('patient_token', 'test-token');
-    });
+    // После миграции #11 patient auth через httpOnly cookie (ставится backend'ом).
+    // В юнит-тестах мокаем axios напрямую, поэтому cookie не нужна.
 
     it('getDashboard calls get on /rehab/my/dashboard', async () => {
       const m = getMocks();

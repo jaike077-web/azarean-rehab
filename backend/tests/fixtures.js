@@ -125,8 +125,36 @@ const mockExerciseRow = {
   complex_id: 10,
   program_title: 'ACL Rehab Phase 1',
   complex_title: 'Утренний комплекс',
-  access_token: 'abc-123-test-token',
-  exercise_count: '8',
+  diagnosis_name: 'PKS',
+  diagnosis_note: null,
+  recommendations: null,
+  warnings: null,
+  instructor_name: 'Вадим Азарян',
+  exercises: [
+    {
+      id: 1,
+      order_number: 1,
+      sets: 3,
+      reps: 10,
+      duration_seconds: null,
+      rest_seconds: 30,
+      notes: null,
+      exercise: {
+        id: 100,
+        title: 'Разгибание колена',
+        description: 'Базовое упражнение',
+        video_url: 'https://kinescope.io/embed/xyz',
+        thumbnail_url: null,
+        kinescope_id: 'xyz',
+        exercise_type: 'strength',
+        difficulty_level: 1,
+        equipment: [],
+        instructions: null,
+        contraindications: null,
+        tips: null,
+      },
+    },
+  ],
 };
 
 // Sprint 3 — Telegram

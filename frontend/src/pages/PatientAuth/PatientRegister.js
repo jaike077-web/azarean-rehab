@@ -3,12 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Phone, Lock, EyeOff, Eye, Check } from 'lucide-react';
 import { patientAuth } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { usePatientAuth } from '../../context/PatientAuthContext';
 import './PatientLogin.css';
 import './PatientRegister.css';
 
 function PatientRegister() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { login } = usePatientAuth();
 
   const [full_name, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -62,11 +64,10 @@ function PatientRegister() {
         password
       });
       const data = response.data || response;
-      if (data.token) {
-        localStorage.setItem('patient_token', data.token);
-      }
+      // Backend на регистрации уже поставил cookie — сразу залогиниваем
+      login(data.patient || null);
       toast.success('Аккаунт создан!');
-      navigate('/patient-login');
+      navigate('/patient-dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Ошибка при регистрации';
       setError(msg);

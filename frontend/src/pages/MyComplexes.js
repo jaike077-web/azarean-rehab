@@ -13,8 +13,7 @@ import {
   ClipboardList, 
   BarChart3, 
   FileText, 
-  Edit2, 
-  Link2, 
+  Edit2,
   Trash2,
   X,
   Lightbulb,
@@ -171,11 +170,6 @@ useEffect(() => {
         }
       }
     });
-  };
-
-  const handleOpenPatientView = (token) => {
-    const link = `${window.location.origin}/patient/${token}`;
-    window.open(link, '_blank', 'noopener,noreferrer');
   };
 
   const handleViewProgress = (complexId) => {
@@ -471,19 +465,6 @@ useEffect(() => {
     aria-label="Редактировать"
   >
     <Edit2 size={18} />
-  </button>
-
-  <button
-    type="button"
-    className="btn-copy-link icon-btn"
-    onClick={(event) => {
-      event.stopPropagation();
-      handleOpenPatientView(complex.access_token);
-    }}
-    title="Открыть страницу пациента в новой вкладке"
-    aria-label="Открыть страницу пациента в новой вкладке"
-  >
-    <Link2 size={18} />
   </button>
 
   <button

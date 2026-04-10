@@ -59,61 +59,59 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware для проверки access_token комплекса (для пациентов) или JWT (для инструкторов)
-// Используется для endpoints прогресса
-const authenticateProgressAccess = async (req, res, next) => {
-  // 1. Сначала проверяем JWT (для инструкторов)
+// Composite middleware: принимает либо JWT инструктора, либо JWT пациента
+// (из cookie patient_access_token или Authorization Bearer header).
+// Используется для /api/progress где обе роли легитимны.
+//
+// После успеха:
+//   - Инструктор: req.user, req.authType = 'jwt'
+//   - Пациент:    req.patient, req.authType = 'patient'
+const authenticatePatientOrInstructor = async (req, res, next) => {
+  // 1. Пациент: сначала cookie, потом Bearer
+  const patientCookie = req.cookies && req.cookies.patient_access_token;
   const authHeader = req.headers['authorization'];
-  const jwtToken = authHeader && authHeader.split(' ')[1];
+  const bearerToken = authHeader && authHeader.split(' ')[1];
 
-  if (jwtToken) {
+  if (patientCookie) {
     try {
-      const user = jwt.verify(jwtToken, config.jwt.secret, { algorithms: ['HS256'] });
+      const decoded = jwt.verify(patientCookie, config.patient.jwtSecret, { algorithms: ['HS256'] });
+      req.patient = decoded;
+      req.authType = 'patient';
+      return next();
+    } catch (_) { /* переходим дальше */ }
+  }
+
+  if (bearerToken) {
+    // 2a. Пробуем как JWT инструктора
+    try {
+      const user = jwt.verify(bearerToken, config.jwt.secret, { algorithms: ['HS256'] });
+      // Проверяем что инструктор активен
+      const result = await query('SELECT is_active FROM users WHERE id = $1', [user.id]);
+      if (result.rows.length === 0 || !result.rows[0].is_active) {
+        return res.status(403).json({ error: 'Forbidden', message: 'Аккаунт деактивирован' });
+      }
       req.user = user;
       req.authType = 'jwt';
       return next();
-    } catch (err) {
-      // JWT недействителен, продолжаем проверку access_token
-    }
+    } catch (_) { /* переходим дальше */ }
+
+    // 2b. Пробуем как JWT пациента (fallback для тестов/API-клиентов)
+    try {
+      const decoded = jwt.verify(bearerToken, config.patient.jwtSecret, { algorithms: ['HS256'] });
+      req.patient = decoded;
+      req.authType = 'patient';
+      return next();
+    } catch (_) { /* переходим дальше */ }
   }
 
-  // 2. Проверяем access_token комплекса (для пациентов)
-  const accessToken = req.headers['x-access-token'] || req.query.access_token || req.body?.access_token;
-
-  if (!accessToken) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'Требуется авторизация (JWT токен или access_token комплекса)'
-    });
-  }
-
-  try {
-    const result = await query(
-      'SELECT id, patient_id FROM complexes WHERE access_token = $1 AND is_active = true',
-      [accessToken]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Недействительный или неактивный access_token'
-      });
-    }
-
-    req.complex = result.rows[0];
-    req.authType = 'access_token';
-    next();
-  } catch (error) {
-    console.error('Auth progress access error:', error.message);
-    res.status(500).json({
-      error: 'Server Error',
-      message: 'Ошибка проверки авторизации'
-    });
-  }
+  return res.status(401).json({
+    error: 'Unauthorized',
+    message: 'Требуется авторизация'
+  });
 };
 
 module.exports = {
   authenticateToken,
   requireAdmin,
-  authenticateProgressAccess
+  authenticatePatientOrInstructor
 };

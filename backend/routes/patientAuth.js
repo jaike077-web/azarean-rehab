@@ -73,6 +73,30 @@ const clearRefreshCookie = (res) => {
   });
 };
 
+// Access cookie — заменяет хранение JWT в localStorage (баг #11).
+// SameSite=Strict достаточен для CSRF-защиты т.к. нет сценария
+// "открыть страницу по внешней ссылке залогиненным".
+const ACCESS_COOKIE_MAX_AGE_MS = 15 * 60 * 1000; // 15 минут
+
+const setAccessCookie = (res, token) => {
+  res.cookie('patient_access_token', token, {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'strict',
+    maxAge: ACCESS_COOKIE_MAX_AGE_MS,
+    path: '/api'
+  });
+};
+
+const clearAccessCookie = (res) => {
+  res.clearCookie('patient_access_token', {
+    httpOnly: true,
+    secure: config.nodeEnv === 'production',
+    sameSite: 'strict',
+    path: '/api'
+  });
+};
+
 // =====================================================
 // POST /register — Регистрация пациента
 // =====================================================
@@ -161,9 +185,11 @@ router.post('/register', async (req, res) => {
     const accessToken = generateAccessToken(patient);
     const refreshToken = await generateRefreshToken(patient.id);
 
-    // Устанавливаем refresh cookie
+    // Устанавливаем cookies (access + refresh)
+    setAccessCookie(res, accessToken);
     setRefreshCookie(res, refreshToken);
 
+    // token в теле оставляем на переходный период (backward compat)
     res.status(201).json({
       success: true,
       token: accessToken,
@@ -291,6 +317,7 @@ router.post('/login', async (req, res) => {
     const accessToken = generateAccessToken(patient);
     const refreshToken = await generateRefreshToken(patient.id);
 
+    setAccessCookie(res, accessToken);
     setRefreshCookie(res, refreshToken);
 
     res.json({
@@ -326,6 +353,7 @@ router.post('/logout', authenticatePatient, async (req, res) => {
       [req.patient.id]
     );
 
+    clearAccessCookie(res);
     clearRefreshCookie(res);
 
     res.json({ success: true, message: 'Вы вышли из системы' });
@@ -378,6 +406,7 @@ router.post('/refresh', async (req, res) => {
     const newAccessToken = generateAccessToken(patient);
     const newRefreshToken = await generateRefreshToken(patient.id);
 
+    setAccessCookie(res, newAccessToken);
     setRefreshCookie(res, newRefreshToken);
 
     res.json({
@@ -527,66 +556,6 @@ router.post('/reset-password', async (req, res) => {
     res.status(500).json({
       error: 'Server Error',
       message: 'Ошибка при сбросе пароля'
-    });
-  }
-});
-
-// =====================================================
-// POST /link-token — Привязка ссылки-токена к аккаунту
-// =====================================================
-router.post('/link-token', authenticatePatient, async (req, res) => {
-  try {
-    const { access_token } = req.body;
-
-    if (!access_token) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        message: 'access_token обязателен'
-      });
-    }
-
-    // Ищем комплекс по токену
-    const complexResult = await query(
-      `SELECT id, patient_id FROM complexes WHERE access_token = $1 AND is_active = true`,
-      [access_token]
-    );
-
-    if (complexResult.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Not Found',
-        message: 'Комплекс с таким токеном не найден'
-      });
-    }
-
-    const complex = complexResult.rows[0];
-
-    // Если комплекс уже привязан к другому пациенту — ошибка
-    if (complex.patient_id && complex.patient_id !== req.patient.id) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Этот комплекс уже привязан к другому пациенту'
-      });
-    }
-
-    // Привязываем к текущему пациенту (если ещё не привязан)
-    if (!complex.patient_id) {
-      await query(
-        `UPDATE complexes SET patient_id = $1 WHERE id = $2`,
-        [req.patient.id, complex.id]
-      );
-    }
-
-    res.json({
-      success: true,
-      message: 'Комплекс успешно привязан к аккаунту',
-      complex_id: complex.id
-    });
-
-  } catch (error) {
-    console.error('Patient link-token error:', error);
-    res.status(500).json({
-      error: 'Server Error',
-      message: 'Ошибка при привязке токена'
     });
   }
 });
@@ -887,6 +856,146 @@ router.get('/avatar', authenticatePatient, async (req, res) => {
   } catch (error) {
     console.error('Patient get-avatar error:', error);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении аватара' });
+  }
+});
+
+// =====================================================
+// GET /my-complexes — Список всех активных комплексов пациента
+// Используется новым ExercisesScreen для раздела "Все мои комплексы".
+// =====================================================
+router.get('/my-complexes', authenticatePatient, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT c.id,
+              c.title,
+              c.diagnosis_note,
+              c.recommendations,
+              c.warnings,
+              c.created_at,
+              d.name as diagnosis_name,
+              u.full_name as instructor_name,
+              COUNT(ce.id) as exercises_count
+       FROM complexes c
+       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+       LEFT JOIN users u ON c.instructor_id = u.id
+       LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
+       WHERE c.patient_id = $1 AND c.is_active = true
+       GROUP BY c.id, d.name, u.full_name
+       ORDER BY c.created_at DESC`,
+      [req.patient.id]
+    );
+
+    const complexes = result.rows.map(row => ({
+      ...row,
+      exercises_count: parseInt(row.exercises_count, 10) || 0,
+    }));
+
+    res.json({
+      success: true,
+      data: { complexes }
+    });
+  } catch (error) {
+    console.error('Patient my-complexes error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при получении комплексов'
+    });
+  }
+});
+
+// =====================================================
+// GET /my-complexes/:id — Конкретный комплекс со всеми упражнениями
+// Возвращает 404 если комплекс не принадлежит пациенту (не 403 —
+// чтобы не раскрывать существование чужих записей).
+// =====================================================
+router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
+  try {
+    const complexId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(complexId) || complexId <= 0) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'Некорректный ID комплекса'
+      });
+    }
+
+    const result = await query(
+      `SELECT c.id,
+              c.title,
+              c.diagnosis_note,
+              c.recommendations,
+              c.warnings,
+              c.created_at,
+              d.name as diagnosis_name,
+              u.full_name as instructor_name,
+              json_agg(
+                json_build_object(
+                  'id', ce.id,
+                  'order_number', ce.order_number,
+                  'sets', ce.sets,
+                  'reps', ce.reps,
+                  'duration_seconds', ce.duration_seconds,
+                  'rest_seconds', ce.rest_seconds,
+                  'notes', ce.notes,
+                  'exercise', json_build_object(
+                    'id', e.id,
+                    'title', e.title,
+                    'description', e.description,
+                    'video_url', e.video_url,
+                    'thumbnail_url', e.thumbnail_url,
+                    'kinescope_id', e.kinescope_id,
+                    'exercise_type', e.exercise_type,
+                    'difficulty_level', e.difficulty_level,
+                    'equipment', e.equipment,
+                    'instructions', e.instructions,
+                    'contraindications', e.contraindications,
+                    'tips', e.tips
+                  )
+                ) ORDER BY ce.order_number
+              ) as exercises
+       FROM complexes c
+       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+       LEFT JOIN users u ON c.instructor_id = u.id
+       LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id
+       WHERE c.id = $1 AND c.patient_id = $2 AND c.is_active = true
+       GROUP BY c.id, d.name, u.full_name`,
+      [complexId, req.patient.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Комплекс не найден'
+      });
+    }
+
+    const row = result.rows[0];
+    const exercises = Array.isArray(row.exercises) && row.exercises[0]?.exercise
+      ? row.exercises
+      : [];
+
+    res.json({
+      success: true,
+      data: {
+        complex: {
+          id: row.id,
+          title: row.title,
+          diagnosis_name: row.diagnosis_name,
+          diagnosis_note: row.diagnosis_note,
+          recommendations: row.recommendations,
+          warnings: row.warnings,
+          instructor_name: row.instructor_name,
+          created_at: row.created_at,
+          exercises,
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Patient my-complex detail error:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при получении комплекса'
+    });
   }
 });
 

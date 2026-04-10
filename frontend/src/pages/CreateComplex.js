@@ -26,13 +26,9 @@ import {
   GripVertical,
   X,
   Check,
-  Copy,
   Home,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
-  MessageCircle,
-  Send,
   Save,
   Folder,
 } from 'lucide-react';
@@ -165,7 +161,6 @@ function CreateComplex() {
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
 
   // Определяем тач-устройство
@@ -306,9 +301,7 @@ function CreateComplex() {
         })
       };
 
-      const response = await complexes.create(complexData);
-      const token = response.data.complex.access_token;
-      setGeneratedLink(`${window.location.origin}/patient/${token}`);
+      await complexes.create(complexData);
       setStep(4);
       toast.success('Комплекс успешно создан!');
     } catch (err) {
@@ -320,21 +313,6 @@ function CreateComplex() {
     }
   };
 
-  const copyLink = () => {
-    navigator.clipboard.writeText(generatedLink);
-    toast.success('Ссылка скопирована!');
-  };
-
-  const shareWhatsApp = () => {
-    const message = `Ваша программа реабилитации готова! Перейдите по ссылке: ${generatedLink}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-  };
-
-  const shareTelegram = () => {
-    const message = `Ваша программа реабилитации готова!`;
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(generatedLink)}&text=${encodeURIComponent(message)}`, '_blank');
-  };
-
   const resetForm = () => {
     setStep(1);
     setSelectedPatient(null);
@@ -343,7 +321,6 @@ function CreateComplex() {
     setRecommendations('');
     setWarnings('');
     setSelectedExercises([]);
-    setGeneratedLink('');
     setError('');
   };
 
@@ -696,61 +673,35 @@ function CreateComplex() {
           <div className="success-icon">
             <Check size={64} color="#48bb78" />
           </div>
-          <h2>Комплекс создан!</h2>
-          <p>Пациент: <strong>{selectedPatient?.full_name}</strong></p>
+          <h2>Комплекс создан</h2>
+          <p>
+            Пациент <strong>{selectedPatient?.full_name}</strong> увидит его в личном кабинете
+          </p>
           <p>Упражнений: <strong>{selectedExercises.length}</strong></p>
-          
-          <div className="generated-link-box">
-            <label>Ссылка для пациента:</label>
-            <div className="link-input">
-              <input
-                type="text"
-                value={generatedLink}
-                readOnly
-              />
-              <button className="btn-copy" onClick={copyLink}>
-                <Copy size={18} /> Копировать
-              </button>
-            </div>
-          </div>
 
-          <div className="success-actions">
-            {/* Основные действия */}
-            <button 
-              className="btn-primary" 
-              onClick={() => window.open(generatedLink, '_blank')}
-              title="Открыть страницу пациента в новой вкладке"
-            >
-              <ExternalLink size={18} /> Перейти на комплекс
-            </button>
-            
-            {/* Кнопки мессенджеров */}
-            <div className="messenger-buttons">
-              <button 
-                className="btn-whatsapp" 
-                onClick={shareWhatsApp}
-                title="Отправить ссылку через WhatsApp"
-              >
-                <MessageCircle size={18} /> WhatsApp
-              </button>
-              <button 
-                className="btn-telegram" 
-                onClick={shareTelegram}
-                title="Отправить ссылку через Telegram"
-              >
-                <Send size={18} /> Telegram
-              </button>
+          {!selectedPatient?.is_registered && (
+            <div className="info-hint" style={{
+              marginTop: 16, padding: 12,
+              background: '#F0F7FF', border: '1px solid #D4E5F7',
+              borderRadius: 8, fontSize: 13, color: '#2d3748', textAlign: 'left'
+            }}>
+              <strong>Пациент ещё не зарегистрирован</strong><br/>
+              Передайте ему ссылку для регистрации:<br/>
+              <code style={{ userSelect: 'all', wordBreak: 'break-all' }}>
+                {window.location.origin}/patient-register
+              </code><br/>
+              При регистрации он должен указать email <strong>{selectedPatient?.email || '—'}</strong>
             </div>
+          )}
 
-            {/* Сохранить как шаблон */}
-            <button 
-              className="btn-save-template" 
+          <div className="success-actions" style={{ marginTop: 20 }}>
+            <button
+              className="btn-save-template"
               onClick={() => setShowSaveTemplateModal(true)}
             >
               <Save size={18} /> Сохранить как шаблон
             </button>
 
-            {/* Навигация */}
             <div className="navigation-buttons">
               <button className="btn-secondary" onClick={resetForm}>
                 <Plus size={18} /> Новый комплекс

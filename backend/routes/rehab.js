@@ -1108,24 +1108,64 @@ async function updateStreak(patientId, programId, dateStr) {
 }
 
 // =====================================================
-// ПАЦИЕНТ: Упражнения (получить access_token комплекса)
+// ПАЦИЕНТ: Упражнения активной программы реабилитации
 // =====================================================
 
 /**
  * GET /api/rehab/my/exercises
- * Получить access_token комплекса из активной программы пациента
+ * Возвращает "сегодняшний" комплекс — тот, что прикреплён к активной
+ * rehab_programs пациента. Включает полный список упражнений.
+ * 404 если активной программы с complex_id нет.
  */
 router.get('/my/exercises', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
 
     const result = await query(
-      `SELECT rp.id as program_id, rp.complex_id, rp.title as program_title,
-              c.title as complex_title, c.access_token,
-              (SELECT COUNT(*) FROM complex_exercises WHERE complex_id = c.id) as exercise_count
+      `SELECT rp.id as program_id,
+              rp.complex_id,
+              rp.title as program_title,
+              c.title as complex_title,
+              c.diagnosis_note,
+              c.recommendations,
+              c.warnings,
+              d.name as diagnosis_name,
+              u.full_name as instructor_name,
+              json_agg(
+                json_build_object(
+                  'id', ce.id,
+                  'order_number', ce.order_number,
+                  'sets', ce.sets,
+                  'reps', ce.reps,
+                  'duration_seconds', ce.duration_seconds,
+                  'rest_seconds', ce.rest_seconds,
+                  'notes', ce.notes,
+                  'exercise', json_build_object(
+                    'id', e.id,
+                    'title', e.title,
+                    'description', e.description,
+                    'video_url', e.video_url,
+                    'thumbnail_url', e.thumbnail_url,
+                    'kinescope_id', e.kinescope_id,
+                    'exercise_type', e.exercise_type,
+                    'difficulty_level', e.difficulty_level,
+                    'equipment', e.equipment,
+                    'instructions', e.instructions,
+                    'contraindications', e.contraindications,
+                    'tips', e.tips
+                  )
+                ) ORDER BY ce.order_number
+              ) as exercises
        FROM rehab_programs rp
        JOIN complexes c ON c.id = rp.complex_id
+       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+       LEFT JOIN users u ON c.instructor_id = u.id
+       LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id
        WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
+         AND c.is_active = true
+       GROUP BY rp.id, rp.complex_id, rp.title, c.title, c.diagnosis_note,
+                c.recommendations, c.warnings, d.name, u.full_name, rp.created_at
        ORDER BY rp.created_at DESC
        LIMIT 1`,
       [patientId]
@@ -1139,15 +1179,25 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
     }
 
     const row = result.rows[0];
+    // Если упражнений нет, json_agg вернёт [{... exercise: null ...}] — нормализуем
+    const exercises = Array.isArray(row.exercises) && row.exercises[0]?.exercise
+      ? row.exercises
+      : [];
 
     res.json({
+      success: true,
       data: {
         program_id: row.program_id,
         complex_id: row.complex_id,
-        access_token: row.access_token,
         program_title: row.program_title,
         complex_title: row.complex_title,
-        exercise_count: parseInt(row.exercise_count, 10),
+        diagnosis_name: row.diagnosis_name,
+        diagnosis_note: row.diagnosis_note,
+        recommendations: row.recommendations,
+        warnings: row.warnings,
+        instructor_name: row.instructor_name,
+        exercise_count: exercises.length,
+        exercises,
       },
     });
   } catch (error) {

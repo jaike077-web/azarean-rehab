@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Базовый URL для API
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Базовый URL для API.
+// В dev CRA проксирует /api → localhost:5000 через setupProxy.js.
+// Пустой default = same-origin = cookies SameSite=Strict работают.
+// В production REACT_APP_API_URL задаётся явно (или пусто если single-origin за nginx).
+const API_URL = process.env.REACT_APP_API_URL || '';
 const API_BASE_URL = `${API_URL}/api`;
 
 // =====================================================
@@ -147,22 +150,6 @@ api.interceptors.response.use(
 );
 
 // =====================================================
-// API ДЛЯ ПАЦИЕНТОВ (с X-Access-Token)
-// =====================================================
-
-// Создаём отдельный инстанс для запросов пациентов
-const createPatientApi = (accessToken) => {
-  const patientApi = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Access-Token': accessToken,
-    },
-  });
-  return patientApi;
-};
-
-// =====================================================
 // API МЕТОДЫ
 // =====================================================
 
@@ -214,7 +201,6 @@ export const complexes = {
   create: (data) => api.post('/complexes', data),
   getOne: (id) => api.get(`/complexes/${id}`),
   getExercises: (id) => api.get(`/complexes/${id}/exercises`),
-  getByToken: (token) => axios.get(`${API_BASE_URL}/complexes/token/${token}`),
   getByPatient: (patientId) => api.get(`/complexes/patient/${patientId}`),
   getAll: () => api.get('/complexes'),
   update: (id, data) => api.put(`/complexes/${id}`, data),
@@ -224,32 +210,13 @@ export const complexes = {
   deletePermanent: (id) => api.delete(`/complexes/${id}/permanent`),
 };
 
-// Прогресс
+// Прогресс (для инструктора через JWT)
+// Прогресс пациента отправляется через progressPatient (ниже, использует patientApi)
 export const progress = {
-  // Для пациента (с access_token)
-  create: (data, accessToken) => {
-    if (accessToken) {
-      const patientApi = createPatientApi(accessToken);
-      return patientApi.post('/progress', data);
-    }
-    // Fallback для инструктора
-    return api.post('/progress', data);
-  },
-
-  // Для пациента (с access_token)
-  getByComplex: (complexId, accessToken) => {
-    if (accessToken) {
-      const patientApi = createPatientApi(accessToken);
-      return patientApi.get(`/progress/complex/${complexId}`);
-    }
-    // Fallback для инструктора
-    return api.get(`/progress/complex/${complexId}`);
-  },
-
-  // С авторизацией (для инструктора)
+  create: (data) => api.post('/progress', data),
+  getByComplex: (complexId) => api.get(`/progress/complex/${complexId}`),
+  // Алиас для совместимости с ViewProgress.js
   getByComplexAuth: (complexId) => api.get(`/progress/complex/${complexId}`),
-
-  // Прогресс пациента (только для инструктора)
   getPatientProgress: (patientId) => api.get(`/progress/patient/${patientId}`),
 };
 
@@ -334,111 +301,88 @@ export const templates = {
 
 // =====================================================
 // АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1)
+// Методы определяются здесь как заглушки, переопределяются ниже
+// на patientApi (withCredentials: true для cookie auth).
 // =====================================================
-export const patientAuth = {
-  register: (data) => api.post('/patient-auth/register', data),
-  login: (data) => api.post('/patient-auth/login', data),
-  logout: () => api.post('/patient-auth/logout'),
-  refresh: () => api.post('/patient-auth/refresh'),
-  forgotPassword: (email) => api.post('/patient-auth/forgot-password', { email }),
-  resetPassword: (data) => api.post('/patient-auth/reset-password', data),
-  linkToken: (data) => api.post('/patient-auth/link-token', data),
-  getMe: () => api.get('/patient-auth/me'),
-  updateMe: (data) => api.put('/patient-auth/me', data),
-};
+export const patientAuth = {};
 
 // =====================================================
 // API ДЛЯ РЕАБИЛИТАЦИИ ПАЦИЕНТОВ (с JWT Bearer + auto-refresh)
 // =====================================================
 
-// Singleton axios instance для пациентов (аналог `api` для инструкторов)
+// Singleton axios instance для пациентов.
+// После миграции #11 авторизация через httpOnly cookies:
+//   - patient_access_token (SameSite=Strict, 15 мин) — ставится бэком на login/refresh
+//   - patient_refresh_token (SameSite=Lax, 30 дней, path: /api/patient-auth)
+// Нет ни Authorization header, ни localStorage. withCredentials обязателен.
 const patientApi = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // для httpOnly cookie patient_refresh_token
+  withCredentials: true,
 });
-
-// Request interceptor — подставляет patient_token из localStorage
-patientApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('patient_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Флаги для предотвращения множественных refresh запросов (пациент)
 let isPatientRefreshing = false;
 let patientFailedQueue = [];
 
-const processPatientQueue = (error, token = null) => {
-  patientFailedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
+const processPatientQueue = (error) => {
+  patientFailedQueue.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve();
   });
   patientFailedQueue = [];
 };
 
-// Response interceptor — auto-refresh при 403 "токен истёк"
+// Response interceptor — auto-refresh при 401/403 "токен истёк"
 patientApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Обработка 403 — токен истёк
-    if (error.response?.status === 403 && !originalRequest._retry) {
-      const errorMessage = error.response?.data?.message || '';
+    // Пути к которым auto-refresh НЕ применяется (чтобы не зациклиться)
+    const url = originalRequest?.url || '';
+    const skipRefresh = url.includes('/patient-auth/refresh') ||
+                        url.includes('/patient-auth/login') ||
+                        url.includes('/patient-auth/register') ||
+                        url.includes('/patient-auth/me');
 
-      if (errorMessage.includes('истек') || errorMessage.includes('expired')) {
-        if (isPatientRefreshing) {
-          // Если уже идёт refresh, ждём его завершения
-          return new Promise((resolve, reject) => {
-            patientFailedQueue.push({ resolve, reject });
-          }).then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return patientApi(originalRequest);
-          }).catch(err => Promise.reject(err));
-        }
+    const status = error.response?.status;
+    const errorMessage = error.response?.data?.message || '';
+    const tokenExpired =
+      (status === 401 || status === 403) &&
+      (errorMessage.includes('истек') || errorMessage.includes('expired') || status === 401);
 
-        originalRequest._retry = true;
-        isPatientRefreshing = true;
-
-        try {
-          // Refresh через httpOnly cookie (withCredentials: true)
-          const response = await axios.post(
-            `${API_BASE_URL}/patient-auth/refresh`,
-            {},
-            { withCredentials: true }
-          );
-
-          const newToken = response.data.token;
-          localStorage.setItem('patient_token', newToken);
-
-          processPatientQueue(null, newToken);
-
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          return patientApi(originalRequest);
-        } catch (refreshError) {
-          processPatientQueue(refreshError, null);
-          localStorage.removeItem('patient_token');
-          window.location.href = '/patient-login';
-          return Promise.reject(refreshError);
-        } finally {
-          isPatientRefreshing = false;
-        }
+    if (tokenExpired && !originalRequest._retry && !skipRefresh) {
+      if (isPatientRefreshing) {
+        return new Promise((resolve, reject) => {
+          patientFailedQueue.push({ resolve, reject });
+        }).then(() => patientApi(originalRequest))
+          .catch((err) => Promise.reject(err));
       }
-    }
 
-    // 401 — не авторизован
-    if (error.response?.status === 401) {
-      localStorage.removeItem('patient_token');
-      window.location.href = '/patient-login';
+      originalRequest._retry = true;
+      isPatientRefreshing = true;
+
+      try {
+        // Refresh через httpOnly cookie (withCredentials: true)
+        // Bearer больше не используется — новая cookie ставится backend'ом
+        await axios.post(
+          `${API_BASE_URL}/patient-auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+        processPatientQueue(null);
+        return patientApi(originalRequest);
+      } catch (refreshError) {
+        processPatientQueue(refreshError);
+        // Оповещаем приложение через кастомный event — PatientAuthContext слушает
+        try {
+          window.dispatchEvent(new CustomEvent('patient-auth-expired'));
+        } catch (_) {}
+        return Promise.reject(refreshError);
+      } finally {
+        isPatientRefreshing = false;
+      }
     }
 
     return Promise.reject(error);
@@ -448,17 +392,31 @@ patientApi.interceptors.response.use(
 // Deprecated: оставлено для обратной совместимости
 const createPatientJwtApi = () => patientApi;
 
-// Спринт 2 — Профиль пациента (используют patientApi для правильного JWT)
+// Все методы пациентской авторизации — через patientApi (withCredentials: true)
+patientAuth.register = (data) => patientApi.post('/patient-auth/register', data);
+patientAuth.login = (data) => patientApi.post('/patient-auth/login', data);
+patientAuth.logout = () => patientApi.post('/patient-auth/logout');
+patientAuth.refresh = () => patientApi.post('/patient-auth/refresh');
+patientAuth.forgotPassword = (email) => patientApi.post('/patient-auth/forgot-password', { email });
+patientAuth.resetPassword = (data) => patientApi.post('/patient-auth/reset-password', data);
+patientAuth.getMe = () => patientApi.get('/patient-auth/me');
+patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
 patientAuth.changePassword = (data) => patientApi.post('/patient-auth/change-password', data);
 patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 });
 patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
-// Скачивает аватар текущего пациента как blob (endpoint защищён JWT)
 patientAuth.fetchAvatarBlob = () => patientApi.get('/patient-auth/avatar', { responseType: 'blob' });
-// Переопределяем getMe и updateMe чтобы они тоже работали с patient JWT
-patientAuth.getMe = () => patientApi.get('/patient-auth/me');
-patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
+patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
+patientAuth.getMyComplex = (id) => patientApi.get(`/patient-auth/my-complexes/${id}`);
+
+// Прогресс пациента — отдельный объект, использует patientApi (cookie + JWT)
+export const progressPatient = {
+  create: (data) => patientApi.post('/progress', data),
+  getByComplex: (complexId) => patientApi.get(`/progress/complex/${complexId}`),
+  getByExercise: (exerciseId, complexId) =>
+    patientApi.get(`/progress/exercise/${exerciseId}/complex/${complexId}`),
+};
 
 export const rehab = {
   // Dashboard (агрегированные данные)
@@ -547,4 +505,4 @@ export const admin = {
 // =====================================================
 // ЭКСПОРТ УТИЛИТ
 // =====================================================
-export { setTokens, clearTokens, getToken, getRefreshToken, createPatientApi, createPatientJwtApi, patientApi };
+export { setTokens, clearTokens, getToken, getRefreshToken, createPatientJwtApi, patientApi };

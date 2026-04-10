@@ -75,7 +75,6 @@ CREATE TABLE complexes (
     diagnosis_note VARCHAR(500), -- дополнительная информация о диагнозе
     recommendations TEXT,
     warnings TEXT,
-    access_token VARCHAR(64) UNIQUE NOT NULL, -- для доступа пациента по ссылке
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
@@ -119,7 +118,6 @@ CREATE INDEX idx_exercises_difficulty ON exercises(difficulty);
 CREATE INDEX idx_patients_created_by ON patients(created_by);
 CREATE INDEX idx_complexes_patient ON complexes(patient_id);
 CREATE INDEX idx_complexes_instructor ON complexes(instructor_id);
-CREATE INDEX idx_complexes_token ON complexes(access_token);
 CREATE INDEX idx_complex_exercises_complex ON complex_exercises(complex_id);
 CREATE INDEX idx_progress_complex ON progress_logs(complex_id);
 CREATE INDEX idx_progress_exercise ON progress_logs(exercise_id);

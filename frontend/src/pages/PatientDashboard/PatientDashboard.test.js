@@ -22,6 +22,16 @@ jest.mock('../../context/ToastContext', () => ({
   useToast: () => mockToast,
 }));
 
+jest.mock('../../context/PatientAuthContext', () => ({
+  usePatientAuth: () => ({
+    patient: { id: 14, email: 'test@patient.com', full_name: 'Тест' },
+    loading: false,
+    login: jest.fn(),
+    logout: jest.fn(),
+    refresh: jest.fn(),
+  }),
+}));
+
 jest.mock('react-router-dom');
 
 jest.mock('./components/HomeScreen');
