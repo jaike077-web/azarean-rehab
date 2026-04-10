@@ -15,7 +15,7 @@ const { query } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
-const { avatarUpload } = require('../middleware/upload');
+const { avatarUpload, processAvatar } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const config = require('../config/config');
@@ -718,7 +718,7 @@ router.post('/upload-avatar', authenticatePatient, (req, res, next) => {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           error: 'File Too Large',
-          message: 'Максимальный размер файла — 2MB'
+          message: 'Максимальный размер файла — 10MB'
         });
       }
       return res.status(400).json({
@@ -728,7 +728,7 @@ router.post('/upload-avatar', authenticatePatient, (req, res, next) => {
     }
     next();
   });
-}, async (req, res) => {
+}, processAvatar, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({

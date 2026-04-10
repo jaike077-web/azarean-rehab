@@ -117,8 +117,8 @@ const ProfileScreen = ({ handleLogout }) => {
       toast.error('Ошибка', 'Разрешены только JPEG, PNG, WEBP');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Ошибка', 'Максимальный размер — 2MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Ошибка', 'Максимальный размер — 10MB');
       return;
     }
 

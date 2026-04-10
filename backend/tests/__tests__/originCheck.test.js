@@ -53,13 +53,14 @@ describe('requireSameOrigin middleware', () => {
     });
   });
 
-  it('блокирует POST без Origin', () => {
+  it('пропускает POST без Origin в dev (CRA proxy не шлёт Origin)', () => {
     const req = mkReq('POST', null);
     const res = mkRes();
     const next = jest.fn();
     requireSameOrigin(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(next).not.toHaveBeenCalled();
+    // В development mode отсутствие Origin допускается
+    // (CRA proxy strip'ает header). В production блокируется.
+    expect(next).toHaveBeenCalled();
   });
 
   it('блокирует PUT/DELETE/PATCH с чужим Origin', () => {
