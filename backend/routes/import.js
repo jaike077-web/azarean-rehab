@@ -62,10 +62,12 @@ router.get('/kinescope/preview', async (req, res) => {
     }));
 
     res.json({
+      data: {
+        videos: videosWithStatus,
+        newVideos: videosWithStatus.filter((video) => !video.alreadyImported).length,
+        existingVideos: videosWithStatus.filter((video) => video.alreadyImported).length,
+      },
       total: videosWithStatus.length,
-      newVideos: videosWithStatus.filter((video) => !video.alreadyImported).length,
-      existingVideos: videosWithStatus.filter((video) => video.alreadyImported).length,
-      videos: videosWithStatus,
     });
   } catch (error) {
     console.error('Error fetching Kinescope videos:', error);
@@ -187,8 +189,8 @@ router.post('/kinescope/execute', async (req, res) => {
     console.log('======================');
 
     res.json({
+      data: importResults,
       message: 'Import completed',
-      results: importResults,
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -323,8 +325,8 @@ router.post('/csv', upload.single('file'), async (req, res) => {
     await client.query('COMMIT');
 
     res.json({
+      data: importResults,
       message: 'CSV import completed',
-      results: importResults,
     });
   } catch (error) {
     await client.query('ROLLBACK');

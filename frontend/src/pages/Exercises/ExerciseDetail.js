@@ -42,9 +42,7 @@ const ExerciseDetail = () => {
 
         const response = await exercises.getById(id);
 
-        // Поддержка разных форматов ответа API
-        const payload = response.data || response;
-        const ex = payload.exercise || payload;
+        const ex = response.data;
 
         if (!ex) {
           throw new Error('Упражнение не найдено');

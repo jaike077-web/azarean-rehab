@@ -17,7 +17,7 @@ function AdminStats() {
     try {
       setLoading(true);
       const response = await admin.getStats();
-      setStats(response.data?.data || response.data);
+      setStats(response.data);
     } catch (error) {
       console.error('Failed to load stats:', error);
       toast.error('Ошибка загрузки статистики');

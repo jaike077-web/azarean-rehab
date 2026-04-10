@@ -38,14 +38,14 @@ const ExercisesScreen = () => {
       return Promise.reject(err);
     });
     const allReq = patientAuth.getMyComplexes().catch((err) => {
-      if (err.response?.status === 404) return { data: { data: { complexes: [] } } };
+      if (err.response?.status === 404) return { data: [] };
       return Promise.reject(err);
     });
 
     try {
       const [todayRes, allRes] = await Promise.all([todayReq, allReq]);
-      const td = todayRes?.data?.data || todayRes?.data || null;
-      const all = allRes?.data?.data?.complexes || allRes?.data?.complexes || [];
+      const td = todayRes?.data || null;
+      const all = allRes?.data || [];
       setTodayComplex(td);
       setMyComplexes(all);
     } catch (err) {

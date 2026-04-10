@@ -136,13 +136,13 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
 
         // Load diary history
         const entriesRes = await rehab.getDiaryEntries({ limit: 30 });
-        setEntries(entriesRes.data?.data || entriesRes.data?.entries || []);
+        setEntries(entriesRes.data || []);
 
         // Check if today's entry exists
         const todayISO = new Date().toISOString().split('T')[0];
         try {
           const todayRes = await rehab.getDiaryEntry(todayISO);
-          const todayEntry = todayRes.data?.data ?? todayRes.data;
+          const todayEntry = todayRes.data;
           if (todayEntry) {
             const entry = todayEntry;
             // Pre-fill form with today's data
@@ -249,7 +249,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
 
       // Reload entries
       const entriesRes = await rehab.getDiaryEntries({ limit: 30 });
-      setEntries(entriesRes.data?.data || entriesRes.data?.entries || []);
+      setEntries(entriesRes.data || []);
 
       if (onDiarySaved) {
         onDiarySaved();

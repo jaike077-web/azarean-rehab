@@ -18,7 +18,7 @@ function PhasesTab() {
   const toast = useToast();
 
   const loadPhases = useCallback(async () => {
-    try { setLoading(true); const res = await admin.getPhases(); setPhases(res.data?.data || []); }
+    try { setLoading(true); const res = await admin.getPhases(); setPhases(res.data || []); }
     catch { toast.error('Ошибка загрузки фаз'); }
     finally { setLoading(false); }
   }, [toast]);
@@ -188,7 +188,7 @@ function TipsTab() {
   const toast = useToast();
 
   const loadTips = useCallback(async () => {
-    try { setLoading(true); const res = await admin.getTips(); setTips(res.data?.data || []); }
+    try { setLoading(true); const res = await admin.getTips(); setTips(res.data || []); }
     catch { toast.error('Ошибка загрузки советов'); }
     finally { setLoading(false); }
   }, [toast]);
@@ -322,8 +322,8 @@ function VideosTab() {
     try {
       setLoading(true);
       const [vRes, pRes] = await Promise.all([admin.getVideos(), admin.getPhases()]);
-      setVideos(vRes.data?.data || []);
-      setPhases(pRes.data?.data || []);
+      setVideos(vRes.data || []);
+      setPhases(pRes.data || []);
     } catch { toast.error('Ошибка загрузки'); }
     finally { setLoading(false); }
   }, [toast]);

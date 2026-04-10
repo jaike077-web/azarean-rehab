@@ -37,7 +37,7 @@ const ProfileScreen = ({ handleLogout }) => {
       setLoading(true);
       try {
         const response = await patientAuth.getMe();
-        const patient = response.data?.patient || response.data?.data?.patient || response.data;
+        const patient = response.data;
         setProfile(patient);
         setFullName(patient.full_name || '');
         setPhone(patient.phone || '');
@@ -93,7 +93,7 @@ const ProfileScreen = ({ handleLogout }) => {
         phone: phone.trim() || null,
         birth_date: birthDate || null,
       });
-      const updated = response.data?.patient || response.data?.data?.patient || response.data;
+      const updated = response.data;
       setProfile(updated);
       toast.success('Сохранено', 'Профиль обновлён');
     } catch (error) {

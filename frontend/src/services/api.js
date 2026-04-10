@@ -70,11 +70,22 @@ api.interceptors.request.use(
 );
 
 // =====================================================
-// RESPONSE INTERCEPTOR (с автообновлением токена)
+// RESPONSE INTERCEPTOR (нормализация + автообновление токена)
 // =====================================================
 
+// Разворачиваем стандартный формат { data: <payload>, message?, total? }
+// После interceptor: response.data = <payload>, response.meta = { message, total, ... }
+const unwrapResponse = (response) => {
+  if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+    const { data, ...meta } = response.data;
+    response.data = data;
+    response.meta = meta;
+  }
+  return response;
+};
+
 api.interceptors.response.use(
-  (response) => response,
+  unwrapResponse,
   async (error) => {
     const originalRequest = error.config;
 
@@ -121,7 +132,8 @@ api.interceptors.response.use(
             refresh_token: refreshToken
           });
 
-          const { token, refresh_token } = response.data;
+          // Raw axios — без unwrap interceptor, формат { data: { token, refresh_token } }
+          const { token, refresh_token } = response.data.data;
           setTokens(token, refresh_token);
 
           processQueue(null, token);
@@ -157,19 +169,15 @@ api.interceptors.response.use(
 export const auth = {
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
-    // Сохраняем оба токена при логине
-    if (response.data.token) {
+    // После unwrap: response.data = { user, token, refresh_token }
+    if (response.data?.token) {
       setTokens(response.data.token, response.data.refresh_token);
     }
     return response;
   },
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    // Сохраняем оба токена при регистрации
-    if (response.data.token) {
-      setTokens(response.data.token, response.data.refresh_token);
-    }
-    return response;
+    // Регистрация: админ создаёт аккаунт, токены не выдаются
+    return api.post('/auth/register', userData);
   },
   getMe: () => api.get('/auth/me'),
   logout: async () => {
@@ -243,11 +251,7 @@ export const exercises = {
     return api.get(`/exercises?${params.toString()}`);
   },
 
-  getById: async (id) => {
-    const res = await api.get(`/exercises/${id}`);
-    const data = res.data;
-    return data.exercise || data;
-  },
+  getById: (id) => api.get(`/exercises/${id}`),
 
   create: (data) => api.post('/exercises', data),
   update: (id, data) => api.put(`/exercises/${id}`, data),
@@ -333,9 +337,9 @@ const processPatientQueue = (error) => {
   patientFailedQueue = [];
 };
 
-// Response interceptor — auto-refresh при 401/403 "токен истёк"
+// Response interceptor — unwrap + auto-refresh при 401/403 "токен истёк"
 patientApi.interceptors.response.use(
-  (response) => response,
+  unwrapResponse,
   async (error) => {
     const originalRequest = error.config;
 

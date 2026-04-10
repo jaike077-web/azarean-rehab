@@ -42,7 +42,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
     try {
       setLoading(true);
       const response = await exercises.getAll();
-      setExercisesList(response.data.exercises || []);
+      setExercisesList(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки:', err);
       setError('Не удалось загрузить упражнения');

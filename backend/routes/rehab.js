@@ -1185,7 +1185,6 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
       : [];
 
     res.json({
-      success: true,
       data: {
         program_id: row.program_id,
         complex_id: row.complex_id,

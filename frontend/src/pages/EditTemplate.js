@@ -204,7 +204,7 @@ function EditTemplate() {
     const loadExercises = async () => {
       try {
         const response = await exercises.getAll();
-        setAvailableExercises(response.data.exercises || []);
+        setAvailableExercises(response.data || []);
       } catch (err) {
         console.error('Ошибка загрузки упражнений:', err);
       }
@@ -213,7 +213,7 @@ function EditTemplate() {
     const loadDiagnoses = async () => {
       try {
         const response = await diagnoses.getAll();
-        setDiagnosesList(response.data.diagnoses || []);
+        setDiagnosesList(response.data || []);
       } catch (err) {
         console.error('Ошибка загрузки диагнозов:', err);
       }

@@ -78,7 +78,7 @@ useEffect(() => {
     try {
       setLoading(true);
       const response = await complexes.getAll();
-      setComplexesList(response.data.complexes || []);
+      setComplexesList(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки комплексов:', err);
       setError('Не удалось загрузить комплексы');
@@ -91,7 +91,7 @@ useEffect(() => {
     try {
       setTemplatesLoading(true);
       const response = await templates.getAll();
-      const data = response.data?.items || response.data?.templates || response.data || [];
+      const data = response.data || [];
       setTemplatesList(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Ошибка загрузки шаблонов:', err);
@@ -182,8 +182,8 @@ useEffect(() => {
       // Загружаем детали комплекса с упражнениями
       const response = await complexes.getOne(complex.id);
 
-      // Backend возвращает { complex: { exercises: [...] } }
-      const exercisesData = response.data.complex?.exercises || [];
+      // Backend возвращает { data: { exercises: [...] } }
+      const exercisesData = response.data?.exercises || [];
       
       // Преобразуем формат данных
       const formattedExercises = exercisesData

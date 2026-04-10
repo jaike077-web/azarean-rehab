@@ -94,7 +94,7 @@ describe('POST /api/progress — patient JWT', () => {
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.progress).toHaveProperty('complex_id', 1);
+    expect(res.body.data).toHaveProperty('complex_id', 1);
 
     // Убедимся что первый запрос был ownership check через patient_id
     expect(query).toHaveBeenNthCalledWith(
@@ -170,7 +170,7 @@ describe('GET /api/progress/complex/:complex_id — patient ownership', () => {
       .set('Authorization', `Bearer ${patientToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('logs');
-    expect(res.body).toHaveProperty('statistics');
+    expect(res.body.data).toHaveProperty('logs');
+    expect(res.body.data).toHaveProperty('statistics');
   });
 });

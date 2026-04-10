@@ -148,7 +148,6 @@ describe('DELETE /api/telegram/unlink', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
     expect(res.body.data.connected).toBe(false);
     expect(res.body.message).toMatch(/отвязан/i);
   });

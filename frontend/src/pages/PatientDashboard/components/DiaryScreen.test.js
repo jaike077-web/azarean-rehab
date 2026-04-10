@@ -36,7 +36,7 @@ describe('DiaryScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    rehab.getDiaryEntries.mockResolvedValue({ data: { entries: mockDiaryEntries } });
+    rehab.getDiaryEntries.mockResolvedValue({ data: mockDiaryEntries });
     rehab.getDiaryEntry.mockRejectedValue(new Error('Not found'));
   });
 

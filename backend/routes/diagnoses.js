@@ -25,13 +25,13 @@ router.get('/', authenticateToken, async (req, res) => {
     `);
 
     res.json({
-      success: true,
-      diagnoses: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
   } catch (error) {
     console.error('Ошибка получения диагнозов:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при получении диагнозов'
     });
   }
@@ -61,19 +61,18 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        success: false,
+        error: 'Not Found',
         message: 'Диагноз не найден'
       });
     }
 
     res.json({
-      success: true,
-      diagnosis: result.rows[0]
+      data: result.rows[0]
     });
   } catch (error) {
     console.error('Ошибка получения диагноза:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при получении диагноза'
     });
   }
@@ -88,7 +87,7 @@ router.post('/', authenticateToken, async (req, res) => {
   // Валидация
   if (!name || name.trim() === '') {
     return res.status(400).json({
-      success: false,
+      error: 'Validation Error',
       message: 'Название диагноза обязательно'
     });
   }
@@ -125,14 +124,13 @@ router.post('/', authenticateToken, async (req, res) => {
     ]);
 
     res.status(201).json({
-      success: true,
-      message: 'Диагноз успешно создан',
-      diagnosis: result.rows[0]
+      data: result.rows[0],
+      message: 'Диагноз успешно создан'
     });
   } catch (error) {
     console.error('Ошибка создания диагноза:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при создании диагноза'
     });
   }
@@ -148,7 +146,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   // Валидация
   if (!name || name.trim() === '') {
     return res.status(400).json({
-      success: false,
+      error: 'Validation Error',
       message: 'Название диагноза обязательно'
     });
   }
@@ -162,7 +160,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (exists.rows.length === 0) {
       return res.status(404).json({
-        success: false,
+        error: 'Not Found',
         message: 'Диагноз не найден'
       });
     }
@@ -205,14 +203,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
     ]);
 
     res.json({
-      success: true,
-      message: 'Диагноз успешно обновлен',
-      diagnosis: result.rows[0]
+      data: result.rows[0],
+      message: 'Диагноз успешно обновлен'
     });
   } catch (error) {
     console.error('Ошибка обновления диагноза:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при обновлении диагноза'
     });
   }
@@ -233,7 +230,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     if (exists.rows.length === 0) {
       return res.status(404).json({
-        success: false,
+        error: 'Not Found',
         message: 'Диагноз не найден'
       });
     }
@@ -246,7 +243,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     if (parseInt(inUse.rows[0].count) > 0) {
       return res.status(400).json({
-        success: false,
+        error: 'Validation Error',
         message: `Диагноз используется в ${inUse.rows[0].count} комплекс(ах). Удаление невозможно.`
       });
     }
@@ -259,13 +256,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     `, [id]);
 
     res.json({
-      success: true,
       message: 'Диагноз успешно удален'
     });
   } catch (error) {
     console.error('Ошибка удаления диагноза:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при удалении диагноза'
     });
   }
@@ -287,20 +283,19 @@ router.post('/:id/restore', authenticateToken, async (req, res) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        success: false,
+        error: 'Not Found',
         message: 'Диагноз не найден'
       });
     }
 
     res.json({
-      success: true,
-      message: 'Диагноз успешно восстановлен',
-      diagnosis: result.rows[0]
+      data: result.rows[0],
+      message: 'Диагноз успешно восстановлен'
     });
   } catch (error) {
     console.error('Ошибка восстановления диагноза:', error);
     res.status(500).json({
-      success: false,
+      error: 'Server Error',
       message: 'Ошибка при восстановлении диагноза'
     });
   }

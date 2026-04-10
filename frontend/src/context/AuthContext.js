@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       const response = await auth.getMe();
-      setUser(response.data.user);
+      setUser(response.data);
     } catch (error) {
       console.error('Ошибка загрузки пользователя:', error);
       clearTokens();
@@ -32,7 +32,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     const response = await auth.login(credentials);
     // api.js auth.login() уже сохраняет token + refresh_token через setTokens()
-    const { user } = response.data;
+    // После unwrap interceptor response.data = { user, token, refresh_token }
+    const user = response.data?.user || response.data;
     setUser(user);
     return user;
   };

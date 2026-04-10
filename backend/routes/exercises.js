@@ -16,7 +16,7 @@ router.get('/kinescope/thumbnail/:videoId', authenticateToken, async (req, res) 
     const apiToken = process.env.KINESCOPE_API_TOKEN;
 
     if (!apiToken) {
-      return res.status(500).json({ error: 'Kinescope API токен не настроен' });
+      return res.status(500).json({ error: 'Kinescope API токен не настроен', message: 'Kinescope API токен не настроен' });
     }
 
     const response = await fetch(`https://api.kinescope.io/v1/videos/${videoId}`, {
@@ -28,26 +28,28 @@ router.get('/kinescope/thumbnail/:videoId', authenticateToken, async (req, res) 
 
     if (!response.ok) {
       console.error('Kinescope API error:', response.status);
-      return res.status(response.status).json({ error: 'Ошибка получения данных из Kinescope' });
+      return res.status(response.status).json({ error: 'Ошибка получения данных из Kinescope', message: 'Ошибка получения данных из Kinescope' });
     }
 
     const data = await response.json();
-    
+
     // Kinescope возвращает poster в разных форматах
-    const posterUrl = data.data?.poster?.original || 
-                      data.data?.poster?.lg || 
+    const posterUrl = data.data?.poster?.original ||
+                      data.data?.poster?.lg ||
                       data.data?.poster?.md ||
                       data.data?.poster ||
                       null;
 
-    res.json({ 
-      thumbnail_url: posterUrl,
-      title: data.data?.title,
-      duration: data.data?.duration
+    res.json({
+      data: {
+        thumbnail_url: posterUrl,
+        title: data.data?.title,
+        duration: data.data?.duration
+      }
     });
   } catch (error) {
     console.error('Error fetching Kinescope thumbnail:', error);
-    res.status(500).json({ error: 'Ошибка при получении превью' });
+    res.status(500).json({ error: 'Ошибка при получении превью', message: 'Ошибка при получении превью' });
   }
 });
 
@@ -175,7 +177,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const total = parseInt(countResult.rows[0].count);
 
     res.json({
-      exercises: result.rows,
+      data: result.rows,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -185,7 +187,7 @@ router.get('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching exercises:', error);
-    res.status(500).json({ error: 'Ошибка при загрузке упражнений' });
+    res.status(500).json({ error: 'Ошибка при загрузке упражнений', message: 'Ошибка при загрузке упражнений' });
   }
 });
 
@@ -207,10 +209,10 @@ router.get('/stats/summary', authenticateToken, async (req, res) => {
       WHERE is_active = true
     `);
 
-    res.json(stats.rows[0]);
+    res.json({ data: stats.rows[0] });
   } catch (error) {
     console.error('Error fetching stats:', error);
-    res.status(500).json({ error: 'Ошибка при загрузке статистики' });
+    res.status(500).json({ error: 'Ошибка при загрузке статистики', message: 'Ошибка при загрузке статистики' });
   }
 });
 
@@ -228,13 +230,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Упражнение не найдено' });
+      return res.status(404).json({ error: 'Упражнение не найдено', message: 'Упражнение не найдено' });
     }
 
-    res.json(result.rows[0]);
+    res.json({ data: result.rows[0] });
   } catch (error) {
     console.error('Error fetching exercise:', error);
-    res.status(500).json({ error: 'Ошибка при загрузке упражнения' });
+    res.status(500).json({ error: 'Ошибка при загрузке упражнения', message: 'Ошибка при загрузке упражнения' });
   }
 });
 
@@ -277,18 +279,18 @@ router.post('/', authenticateToken, async (req, res) => {
     // ========================================
     
     if (!title || !title.trim()) {
-      return res.status(400).json({ error: 'Название упражнения обязательно' });
+      return res.status(400).json({ error: 'Название упражнения обязательно', message: 'Название упражнения обязательно' });
     }
 
     if (!video_url || !video_url.trim()) {
-      return res.status(400).json({ error: 'Ссылка на видео обязательна' });
+      return res.status(400).json({ error: 'Ссылка на видео обязательна', message: 'Ссылка на видео обязательна' });
     }
 
     // Валидация URL
     try {
       new URL(video_url);
     } catch (e) {
-      return res.status(400).json({ error: 'Некорректная ссылка на видео' });
+      return res.status(400).json({ error: 'Некорректная ссылка на видео', message: 'Некорректная ссылка на видео' });
     }
 
     // ========================================
@@ -334,18 +336,18 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Валидация сложности (1-5)
     if (difficulty_level < 1 || difficulty_level > 5) {
-      return res.status(400).json({ error: 'Уровень сложности должен быть от 1 до 5' });
+      return res.status(400).json({ error: 'Уровень сложности должен быть от 1 до 5', message: 'Уровень сложности должен быть от 1 до 5' });
     }
 
     // Валидация массивов
     if (!Array.isArray(equipment)) {
-      return res.status(400).json({ error: 'equipment должен быть массивом' });
+      return res.status(400).json({ error: 'equipment должен быть массивом', message: 'equipment должен быть массивом' });
     }
     if (!Array.isArray(position)) {
-      return res.status(400).json({ error: 'position должен быть массивом' });
+      return res.status(400).json({ error: 'position должен быть массивом', message: 'position должен быть массивом' });
     }
     if (!Array.isArray(rehab_phases)) {
-      return res.status(400).json({ error: 'rehab_phases должен быть массивом' });
+      return res.status(400).json({ error: 'rehab_phases должен быть массивом', message: 'rehab_phases должен быть массивом' });
     }
 
     // ========================================
@@ -400,12 +402,12 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Упражнение создано',
-      exercise: result.rows[0]
+      data: result.rows[0],
+      message: 'Упражнение создано'
     });
   } catch (error) {
     console.error('Error creating exercise:', error);
-    res.status(500).json({ error: 'Ошибка при создании упражнения' });
+    res.status(500).json({ error: 'Ошибка при создании упражнения', message: 'Ошибка при создании упражнения' });
   }
 });
 
@@ -420,11 +422,11 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     const { exercises } = req.body;
 
     if (!Array.isArray(exercises) || exercises.length === 0) {
-      return res.status(400).json({ error: 'Список упражнений обязателен' });
+      return res.status(400).json({ error: 'Список упражнений обязателен', message: 'Список упражнений обязателен' });
     }
 
     if (exercises.length > 500) {
-      return res.status(400).json({ error: 'Максимум 500 упражнений за один импорт' });
+      return res.status(400).json({ error: 'Максимум 500 упражнений за один импорт', message: 'Максимум 500 упражнений за один импорт' });
     }
 
     const results = {
@@ -532,13 +534,13 @@ router.post('/bulk', authenticateToken, async (req, res) => {
     await client.query('COMMIT');
 
     res.status(201).json({
-      message: 'Импорт завершен',
-      results,
+      data: results,
+      message: 'Импорт завершен'
     });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error creating exercises in bulk:', error);
-    res.status(500).json({ error: 'Ошибка при массовом создании упражнений' });
+    res.status(500).json({ error: 'Ошибка при массовом создании упражнений', message: 'Ошибка при массовом создании упражнений' });
   } finally {
     client.release();
   }
@@ -574,17 +576,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // Валидация обязательных полей
     if (!title || !title.trim()) {
-      return res.status(400).json({ error: 'Название упражнения обязательно' });
+      return res.status(400).json({ error: 'Название упражнения обязательно', message: 'Название упражнения обязательно' });
     }
 
     if (!video_url || !video_url.trim()) {
-      return res.status(400).json({ error: 'Ссылка на видео обязательна' });
+      return res.status(400).json({ error: 'Ссылка на видео обязательна', message: 'Ссылка на видео обязательна' });
     }
 
     try {
       new URL(video_url);
     } catch (e) {
-      return res.status(400).json({ error: 'Некорректная ссылка на видео' });
+      return res.status(400).json({ error: 'Некорректная ссылка на видео', message: 'Некорректная ссылка на видео' });
     }
 
     // Проверка существования упражнения
@@ -594,7 +596,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     );
 
     if (existing.rows.length === 0) {
-      return res.status(404).json({ error: 'Упражнение не найдено' });
+      return res.status(404).json({ error: 'Упражнение не найдено', message: 'Упражнение не найдено' });
     }
 
     // ========================================
@@ -683,12 +685,12 @@ router.put('/:id', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      message: 'Упражнение обновлено',
-      exercise: result.rows[0]
+      data: result.rows[0],
+      message: 'Упражнение обновлено'
     });
   } catch (error) {
     console.error('Error updating exercise:', error);
-    res.status(500).json({ error: 'Ошибка при обновлении упражнения' });
+    res.status(500).json({ error: 'Ошибка при обновлении упражнения', message: 'Ошибка при обновлении упражнения' });
   }
 });
 
@@ -707,25 +709,25 @@ router.post('/:id/fetch-thumbnail', authenticateToken, async (req, res) => {
     );
 
     if (existing.rows.length === 0) {
-      return res.status(404).json({ error: 'Упражнение не найдено' });
+      return res.status(404).json({ error: 'Упражнение не найдено', message: 'Упражнение не найдено' });
     }
 
     const exercise = existing.rows[0];
-    
+
     if (!exercise.video_url || !exercise.video_url.includes('kinescope.io')) {
-      return res.status(400).json({ error: 'Видео не из Kinescope' });
+      return res.status(400).json({ error: 'Видео не из Kinescope', message: 'Видео не из Kinescope' });
     }
 
     const kinescopeMatch = exercise.video_url.match(/kinescope\.io\/(?:embed\/|watch\/)?([a-zA-Z0-9]+)/);
     if (!kinescopeMatch) {
-      return res.status(400).json({ error: 'Не удалось извлечь ID видео' });
+      return res.status(400).json({ error: 'Не удалось извлечь ID видео', message: 'Не удалось извлечь ID видео' });
     }
 
     const videoId = kinescopeMatch[1];
     const apiToken = process.env.KINESCOPE_API_TOKEN;
-    
+
     if (!apiToken) {
-      return res.status(500).json({ error: 'Kinescope API токен не настроен' });
+      return res.status(500).json({ error: 'Kinescope API токен не настроен', message: 'Kinescope API токен не настроен' });
     }
 
     const response = await fetch(`https://api.kinescope.io/v1/videos/${videoId}`, {
@@ -736,17 +738,17 @@ router.post('/:id/fetch-thumbnail', authenticateToken, async (req, res) => {
     });
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'Ошибка Kinescope API' });
+      return res.status(response.status).json({ error: 'Ошибка Kinescope API', message: 'Ошибка Kinescope API' });
     }
 
     const data = await response.json();
-    const thumbnailUrl = data.data?.poster?.original || 
-                         data.data?.poster?.lg || 
+    const thumbnailUrl = data.data?.poster?.original ||
+                         data.data?.poster?.lg ||
                          data.data?.poster?.md ||
                          null;
 
     if (!thumbnailUrl) {
-      return res.status(404).json({ error: 'Превью не найдено в Kinescope' });
+      return res.status(404).json({ error: 'Превью не найдено в Kinescope', message: 'Превью не найдено в Kinescope' });
     }
 
     // Обновляем в БД
@@ -755,13 +757,13 @@ router.post('/:id/fetch-thumbnail', authenticateToken, async (req, res) => {
       [thumbnailUrl, id]
     );
 
-    res.json({ 
-      message: 'Превью обновлено',
-      thumbnail_url: thumbnailUrl 
+    res.json({
+      data: { thumbnail_url: thumbnailUrl },
+      message: 'Превью обновлено'
     });
   } catch (error) {
     console.error('Error fetching thumbnail:', error);
-    res.status(500).json({ error: 'Ошибка при получении превью' });
+    res.status(500).json({ error: 'Ошибка при получении превью', message: 'Ошибка при получении превью' });
   }
 });
 
@@ -773,12 +775,12 @@ router.post('/fetch-all-thumbnails', authenticateToken, async (req, res) => {
   try {
     // Только admin может запускать массовое обновление
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Недостаточно прав' });
+      return res.status(403).json({ error: 'Недостаточно прав', message: 'Недостаточно прав' });
     }
 
     const apiToken = process.env.KINESCOPE_API_TOKEN;
     if (!apiToken) {
-      return res.status(500).json({ error: 'Kinescope API токен не настроен' });
+      return res.status(500).json({ error: 'Kinescope API токен не настроен', message: 'Kinescope API токен не настроен' });
     }
 
     // Получаем все упражнения без thumbnail с Kinescope видео
@@ -837,15 +839,17 @@ router.post('/fetch-all-thumbnails', authenticateToken, async (req, res) => {
       }
     }
 
-    res.json({ 
-      message: 'Обновление завершено',
-      total: exercises.rows.length,
-      updated,
-      failed
+    res.json({
+      data: {
+        total: exercises.rows.length,
+        updated,
+        failed
+      },
+      message: 'Обновление завершено'
     });
   } catch (error) {
     console.error('Error fetching all thumbnails:', error);
-    res.status(500).json({ error: 'Ошибка при обновлении превью' });
+    res.status(500).json({ error: 'Ошибка при обновлении превью', message: 'Ошибка при обновлении превью' });
   }
 });
 
@@ -859,7 +863,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     // Проверка прав (только admin может удалять)
     if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Недостаточно прав' });
+      return res.status(403).json({ error: 'Недостаточно прав', message: 'Недостаточно прав' });
     }
 
     const result = await query(
@@ -868,13 +872,13 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Упражнение не найдено' });
+      return res.status(404).json({ error: 'Упражнение не найдено', message: 'Упражнение не найдено' });
     }
 
     res.json({ message: 'Упражнение удалено' });
   } catch (error) {
     console.error('Error deleting exercise:', error);
-    res.status(500).json({ error: 'Ошибка при удалении упражнения' });
+    res.status(500).json({ error: 'Ошибка при удалении упражнения', message: 'Ошибка при удалении упражнения' });
   }
 });
 

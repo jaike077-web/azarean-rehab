@@ -19,7 +19,8 @@ export function PatientAuthProvider({ children }) {
   const refresh = useCallback(async () => {
     try {
       const res = await patientAuth.getMe();
-      const data = res.data?.patient || res.data?.data?.patient || null;
+      // После unwrap interceptor res.data = patient объект напрямую
+      const data = res.data || null;
       setPatient(data);
       return data;
     } catch (_) {

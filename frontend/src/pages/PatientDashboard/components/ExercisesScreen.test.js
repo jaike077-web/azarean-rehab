@@ -59,17 +59,15 @@ describe('ExercisesScreen v2', () => {
     it('показывает карточку "Ваш комплекс на сегодня"', async () => {
       rehab.getMyExercises.mockResolvedValue({
         data: {
-          data: {
-            program_id: 1,
-            complex_id: 10,
-            complex_title: 'Утренний комплекс',
-            exercise_count: 5,
-            exercises: [mockExercise],
-          },
+          program_id: 1,
+          complex_id: 10,
+          complex_title: 'Утренний комплекс',
+          exercise_count: 5,
+          exercises: [mockExercise],
         },
       });
       patientAuth.getMyComplexes.mockResolvedValue({
-        data: { data: { complexes: [{ id: 10, diagnosis_name: 'ПКС', exercises_count: 5, instructor_name: 'Вадим' }] } },
+        data: [{ id: 10, diagnosis_name: 'ПКС', exercises_count: 5, instructor_name: 'Вадим' }],
       });
 
       render(<ExercisesScreen />);
@@ -82,17 +80,13 @@ describe('ExercisesScreen v2', () => {
 
     it('показывает "Другие комплексы" только для не-сегодняшних', async () => {
       rehab.getMyExercises.mockResolvedValue({
-        data: { data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня', exercise_count: 3 } },
+        data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня', exercise_count: 3 },
       });
       patientAuth.getMyComplexes.mockResolvedValue({
-        data: {
-          data: {
-            complexes: [
-              { id: 10, diagnosis_name: 'Сегодня', exercises_count: 3 }, // исключается
-              { id: 20, diagnosis_name: 'Плечо', exercises_count: 7, instructor_name: 'Вадим' },
-            ],
-          },
-        },
+        data: [
+          { id: 10, diagnosis_name: 'Сегодня', exercises_count: 3 }, // исключается
+          { id: 20, diagnosis_name: 'Плечо', exercises_count: 7, instructor_name: 'Вадим' },
+        ],
       });
 
       render(<ExercisesScreen />);
@@ -109,14 +103,10 @@ describe('ExercisesScreen v2', () => {
     it('показывает список "Мои комплексы"', async () => {
       rehab.getMyExercises.mockRejectedValue({ response: { status: 404 } });
       patientAuth.getMyComplexes.mockResolvedValue({
-        data: {
-          data: {
-            complexes: [
-              { id: 1, diagnosis_name: 'Плечо', exercises_count: 5, instructor_name: 'Вадим' },
-              { id: 2, diagnosis_name: 'Колено', exercises_count: 3, instructor_name: 'Вадим' },
-            ],
-          },
-        },
+        data: [
+          { id: 1, diagnosis_name: 'Плечо', exercises_count: 5, instructor_name: 'Вадим' },
+          { id: 2, diagnosis_name: 'Колено', exercises_count: 3, instructor_name: 'Вадим' },
+        ],
       });
 
       render(<ExercisesScreen />);
@@ -134,7 +124,7 @@ describe('ExercisesScreen v2', () => {
     it('показывает empty state', async () => {
       rehab.getMyExercises.mockRejectedValue({ response: { status: 404 } });
       patientAuth.getMyComplexes.mockResolvedValue({
-        data: { data: { complexes: [] } },
+        data: [],
       });
 
       render(<ExercisesScreen />);
@@ -149,23 +139,19 @@ describe('ExercisesScreen v2', () => {
   describe('Навигация list → complex → runner', () => {
     it('click на "Начать тренировку" открывает ComplexDetailView', async () => {
       rehab.getMyExercises.mockResolvedValue({
-        data: { data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня', exercise_count: 1 } },
+        data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня', exercise_count: 1 },
       });
-      patientAuth.getMyComplexes.mockResolvedValue({ data: { data: { complexes: [] } } });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [] });
       patientAuth.getMyComplex.mockResolvedValue({
         data: {
-          data: {
-            complex: {
-              id: 10,
-              title: 'Сегодня',
-              diagnosis_name: 'ПКС',
-              diagnosis_note: null,
-              recommendations: null,
-              warnings: null,
-              instructor_name: 'Вадим',
-              exercises: [mockExercise],
-            },
-          },
+          id: 10,
+          title: 'Сегодня',
+          diagnosis_name: 'ПКС',
+          diagnosis_note: null,
+          recommendations: null,
+          warnings: null,
+          instructor_name: 'Вадим',
+          exercises: [mockExercise],
         },
       });
 
@@ -187,20 +173,16 @@ describe('ExercisesScreen v2', () => {
 
     it('click на упражнение открывает ExerciseRunner', async () => {
       rehab.getMyExercises.mockResolvedValue({
-        data: { data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня' } },
+        data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня' },
       });
-      patientAuth.getMyComplexes.mockResolvedValue({ data: { data: { complexes: [] } } });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [] });
       patientAuth.getMyComplex.mockResolvedValue({
         data: {
-          data: {
-            complex: {
-              id: 10,
-              title: 'Сегодня',
-              diagnosis_name: 'ПКС',
-              instructor_name: 'Вадим',
-              exercises: [mockExercise],
-            },
-          },
+          id: 10,
+          title: 'Сегодня',
+          diagnosis_name: 'ПКС',
+          instructor_name: 'Вадим',
+          exercises: [mockExercise],
         },
       });
 
@@ -220,15 +202,11 @@ describe('ExercisesScreen v2', () => {
 
     it('кнопка "Выполнено" вызывает progressPatient.create', async () => {
       rehab.getMyExercises.mockResolvedValue({
-        data: { data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня' } },
+        data: { program_id: 1, complex_id: 10, complex_title: 'Сегодня' },
       });
-      patientAuth.getMyComplexes.mockResolvedValue({ data: { data: { complexes: [] } } });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [] });
       patientAuth.getMyComplex.mockResolvedValue({
-        data: {
-          data: {
-            complex: { id: 10, diagnosis_name: 'ПКС', instructor_name: 'Вадим', exercises: [mockExercise] },
-          },
-        },
+        data: { id: 10, diagnosis_name: 'ПКС', instructor_name: 'Вадим', exercises: [mockExercise] },
       });
       progressPatient.create.mockResolvedValue({ data: { progress: { id: 1 } } });
 

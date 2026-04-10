@@ -339,7 +339,7 @@ const RoadmapScreen = ({ dashboardData }) => {
       try {
         setLoading(true);
         const response = await rehab.getPhases();
-        setPhases(response.data?.data || response.data?.phases || []);
+        setPhases(response.data || []);
       } catch (error) {
         console.error('Failed to fetch phases:', error);
         setPhases([]);

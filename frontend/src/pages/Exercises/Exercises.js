@@ -63,7 +63,7 @@ function Exercises() {
       setLoading(true);
       setError('');
       const response = await exercises.getAll();
-      setExercisesList(response.data.exercises || []);
+      setExercisesList(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки упражнений:', err);
       setError(err.response?.data?.message || 'Не удалось загрузить упражнения');

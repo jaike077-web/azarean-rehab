@@ -9,8 +9,8 @@
 - **Frontend:** React 19 + CRA (react-scripts 5.0) + JavaScript (нет TypeScript) + Axios + @dnd-kit (drag-and-drop)
 - **БД:** PostgreSQL 18 (dev)
 - **Видео:** Kinescope API (хостинг ~1000 упражнений, thumbnail generation)
-- **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары)
-- **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly refresh)
+- **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары), sharp 0.34 (сжатие изображений)
+- **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly access+refresh cookies)
 - **Security:** helmet 8.1 (headers), express-rate-limit 8.2 (5 req/15 min auth, general in production)
 - **Тесты:** Jest 30.2 + Supertest 7.2 (152 backend + 157 frontend = 309 тестов)
 - **Runtime:** Node.js >= 20, nodemon 3.1 (dev)
@@ -103,7 +103,7 @@ Azarean_rehab/
 │   │   ├── auth.js              # authenticateToken (+ is_active DB check), requireAdmin, authenticatePatientOrInstructor
 │   │   ├── patientAuth.js       # authenticatePatient (cookie-first + Bearer fallback)
 │   │   ├── originCheck.js       # requireSameOrigin — CSRF для cookie auth
-│   │   ├── upload.js            # Multer: аватары (JPEG/PNG/WEBP, 2MB)
+│   │   ├── upload.js            # Multer + Sharp: аватары (до 10MB → 400×400 JPEG q80)
 │   │   └── validators.js        # express-validator правила (НЕ ПОДКЛЮЧЕНЫ к роутам!)
 │   ├── routes/
 │   │   ├── auth.js              # POST /register, /login, /refresh, /logout, GET /me
@@ -443,6 +443,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **JWT algorithm:** explicit `{ algorithms: ['HS256'] }` в verify (предотвращает algorithm confusion)
 - **Rate limiting:** authLimiter (5/15min), tokenLimiter, generalLimiter (production only!)
 - **Audit logging:** admin actions → audit_logs таблица
+- **API response format:** Все эндпоинты возвращают `{ data: <payload>, message? }` для успеха и `{ error: string, message: string }` для ошибок. Списки: `{ data: [...], total? }`. Пагинация: `{ data: [...], pagination: {...} }`. Без `success` поля.
 - **Express-validator правила определены в validators.js но НЕ ПОДКЛЮЧЕНЫ к роутам!** (dead code)
 - Статические файлы `/uploads` доступны без авторизации (уязвимость)
 
@@ -450,6 +451,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **JavaScript, нет TypeScript** — PropTypes только в PatientDashboard
 - **Глобальные CSS** — НЕ CSS Modules. 80+ дублей классов (`btn-primary` в 5 файлах, `modal-overlay` в 7). PatientDashboard использует `pd-` prefix convention
 - **Два Axios instance:** `api` (инструктор, Bearer), `patientApi` (пациент, httpOnly cookie)
+- **Unwrap interceptor:** оба instance разворачивают `{ data: <payload>, message?, total? }` → `response.data = <payload>`, `response.meta = { message, total, ... }`
 - **Auto-refresh:** interceptor на 403 + "истек" строка → refresh → retry queue
 - **Dashboard = tab-container** (`activeTab` state), НЕ роуты
 - **React.lazy** для всех страниц кроме Login и Dashboard
@@ -494,7 +496,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 10. ❌ **Rate limiting выключен в dev** — если NODE_ENV ≠ production (by design)
 11. ✅ ~~**Patient JWT в localStorage**~~ — перенесено в httpOnly cookie `patient_access_token` (SameSite=Strict). CSRF закрыт Origin-check middleware. PatientAuthContext определяет "залогинен ли" через GET /me. Миграция 2026-04-09.
 12. ✅ ~~**Access token пациента в URL**~~ — публичный flow удалён ПОЛНОСТЬЮ. Нет `/patient/:token` роута, нет `GET /api/complexes/token/:token` эндпоинта, нет `authenticateProgressAccess` middleware. Колонка `complexes.access_token` дропнута. Миграция 2026-04-09.
-13. ❌ **Inconsistent response formats** — частично унифицировано в новых эндпоинтах (`{ success, data }`), старые не трогали
+13. ✅ ~~**Inconsistent response formats**~~ — все 13 роут-файлов стандартизированы: `{ data: <payload>, message? }` для успеха, `{ error, message }` для ошибок. Frontend unwrap interceptor в api.js автоматически разворачивает `response.data.data` → `response.data`
 14. ✅ ~~**AuthContext не хранит refresh_token**~~ (использует `clearTokens()` из api.js)
 15. ✅ ~~**Scheduler хардкодит Europe/Moscow**~~ (per-user tz из notification_settings)
 16. ✅ ~~**Config не валидирует все env vars**~~ (warnings для SESSION_SECRET, TELEGRAM_BOT_TOKEN, KINESCOPE_API_KEY)

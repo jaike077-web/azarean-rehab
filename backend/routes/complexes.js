@@ -128,8 +128,8 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Комплекс успешно создан',
-      complex: fullComplexResult.rows[0]
+      data: fullComplexResult.rows[0],
+      message: 'Комплекс успешно создан'
     });
 
   } catch (error) {
@@ -165,8 +165,8 @@ router.get('/', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      total: result.rows.length,
-      complexes: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -197,8 +197,8 @@ router.get('/trash/list', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      total: result.rows.length,
-      complexes: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -231,8 +231,7 @@ router.get('/:id/exercises', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      complexId: id,
-      exercises: result.rows
+      data: { complexId: id, exercises: result.rows }
     });
   } catch (error) {
     console.error('Error fetching complex exercises:', error);
@@ -295,7 +294,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      complex: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {
@@ -371,8 +370,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     await client.query('COMMIT');
 
     res.json({
-      message: 'Комплекс успешно обновлён',
-      complex_id: id
+      data: { complex_id: id },
+      message: 'Комплекс успешно обновлён'
     });
 
   } catch (error) {
@@ -407,8 +406,8 @@ router.get('/patient/:patient_id', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      total: result.rows.length,
-      complexes: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -441,8 +440,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message: 'Комплекс успешно удален',
-      id: result.rows[0].id
+      data: { id: result.rows[0].id },
+      message: 'Комплекс успешно удален'
     });
 
   } catch (error) {
@@ -475,8 +474,8 @@ router.patch('/:id/restore', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message: 'Комплекс успешно восстановлен',
-      id: result.rows[0].id
+      data: { id: result.rows[0].id },
+      message: 'Комплекс успешно восстановлен'
     });
 
   } catch (error) {
@@ -519,8 +518,8 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
     await client.query('COMMIT');
 
     res.json({
-      message: 'Комплекс удалён навсегда',
-      id: parseInt(id)
+      data: { id: parseInt(id) },
+      message: 'Комплекс удалён навсегда'
     });
 
   } catch (error) {

@@ -124,14 +124,14 @@ router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
     // Админ создаёт аккаунт другому человеку — не логиним его сразу,
     // токены не выдаём. Пусть он войдёт самостоятельно через /login.
     res.status(201).json({
-      message: 'Пользователь успешно зарегистрирован',
-      user: {
+      data: {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
         role: user.role,
         created_at: user.created_at
-      }
+      },
+      message: 'Пользователь успешно зарегистрирован'
     });
 
   } catch (error) {
@@ -235,15 +235,17 @@ router.post('/login', async (req, res) => {
     const refreshToken = await generateRefreshToken(user.id);
 
     res.json({
-      message: 'Вход выполнен успешно',
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          full_name: user.full_name,
+          role: user.role
+        },
+        token,
+        refresh_token: refreshToken
       },
-      token,
-      refresh_token: refreshToken
+      message: 'Вход выполнен успешно'
     });
 
   } catch (error) {
@@ -271,7 +273,7 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      user: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {
@@ -341,9 +343,8 @@ router.post('/refresh', async (req, res) => {
     const newRefreshToken = await generateRefreshToken(user.id);
 
     res.json({
-      message: 'Токен обновлен',
-      token,
-      refresh_token: newRefreshToken
+      data: { token, refresh_token: newRefreshToken },
+      message: 'Токен обновлен'
     });
 
   } catch (error) {

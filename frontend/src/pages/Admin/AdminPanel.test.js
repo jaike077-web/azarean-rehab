@@ -89,7 +89,7 @@ describe('AdminStats', () => {
   };
 
   it('should render stats cards after loading', async () => {
-    admin.getStats.mockResolvedValueOnce({ data: { data: mockStats } });
+    admin.getStats.mockResolvedValueOnce({ data: mockStats });
 
     await act(async () => { render(<AdminStats />); });
 
@@ -108,7 +108,7 @@ describe('AdminStats', () => {
   });
 
   it('should have refresh button', async () => {
-    admin.getStats.mockResolvedValueOnce({ data: { data: mockStats } });
+    admin.getStats.mockResolvedValueOnce({ data: mockStats });
     await act(async () => { render(<AdminStats />); });
 
     await waitFor(() => {
@@ -129,7 +129,7 @@ describe('AdminUsers', () => {
   ];
 
   it('should render users table', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: mockUsers } });
+    admin.getUsers.mockResolvedValueOnce({ data: mockUsers });
 
     await act(async () => { render(<AdminUsers />); });
 
@@ -140,7 +140,7 @@ describe('AdminUsers', () => {
   });
 
   it('should filter users by search', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: mockUsers } });
+    admin.getUsers.mockResolvedValueOnce({ data: mockUsers });
 
     await act(async () => { render(<AdminUsers />); });
 
@@ -154,7 +154,7 @@ describe('AdminUsers', () => {
   });
 
   it('should have create button', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: mockUsers } });
+    admin.getUsers.mockResolvedValueOnce({ data: mockUsers });
     await act(async () => { render(<AdminUsers />); });
 
     await waitFor(() => {
@@ -163,7 +163,7 @@ describe('AdminUsers', () => {
   });
 
   it('should show role badges', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: mockUsers } });
+    admin.getUsers.mockResolvedValueOnce({ data: mockUsers });
     await act(async () => { render(<AdminUsers />); });
 
     await waitFor(() => {
@@ -184,8 +184,8 @@ describe('AdminAuditLogs', () => {
   ];
 
   it('should render audit logs table', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: [{ id: 1, full_name: 'Admin' }] } });
-    admin.getAuditLogs.mockResolvedValueOnce({ data: { data: mockLogs, total: 1, page: 1, totalPages: 1 } });
+    admin.getUsers.mockResolvedValueOnce({ data: [{ id: 1, full_name: 'Admin' }] });
+    admin.getAuditLogs.mockResolvedValueOnce({ data: mockLogs, meta: { total: 1, page: 1, totalPages: 1 } });
 
     await act(async () => { render(<AdminAuditLogs />); });
 
@@ -195,8 +195,8 @@ describe('AdminAuditLogs', () => {
   });
 
   it('should show filter dropdowns', async () => {
-    admin.getUsers.mockResolvedValueOnce({ data: { data: [] } });
-    admin.getAuditLogs.mockResolvedValueOnce({ data: { data: [], total: 0, page: 1, totalPages: 1 } });
+    admin.getUsers.mockResolvedValueOnce({ data: [] });
+    admin.getAuditLogs.mockResolvedValueOnce({ data: [], meta: { total: 0, page: 1, totalPages: 1 } });
 
     await act(async () => { render(<AdminAuditLogs />); });
 
@@ -215,7 +215,7 @@ import AdminContent from './AdminContent';
 
 describe('AdminContent', () => {
   it('should render content tabs', async () => {
-    admin.getPhases.mockResolvedValueOnce({ data: { data: [] } });
+    admin.getPhases.mockResolvedValueOnce({ data: [] });
 
     await act(async () => { render(<AdminContent />); });
 
@@ -226,12 +226,12 @@ describe('AdminContent', () => {
   });
 
   it('should switch between tabs', async () => {
-    admin.getPhases.mockResolvedValueOnce({ data: { data: [] } });
+    admin.getPhases.mockResolvedValueOnce({ data: [] });
 
     await act(async () => { render(<AdminContent />); });
 
     // Click on Tips tab
-    admin.getTips.mockResolvedValueOnce({ data: { data: [] } });
+    admin.getTips.mockResolvedValueOnce({ data: [] });
     await act(async () => {
       fireEvent.click(screen.getByText('Советы'));
     });
@@ -262,7 +262,7 @@ describe('AdminSystem', () => {
   };
 
   it('should render system info', async () => {
-    admin.getSystemInfo.mockResolvedValueOnce({ data: { data: mockSystemInfo } });
+    admin.getSystemInfo.mockResolvedValueOnce({ data: mockSystemInfo });
 
     await act(async () => { render(<AdminSystem />); });
 
@@ -275,7 +275,7 @@ describe('AdminSystem', () => {
   });
 
   it('should show DB connected status', async () => {
-    admin.getSystemInfo.mockResolvedValueOnce({ data: { data: mockSystemInfo } });
+    admin.getSystemInfo.mockResolvedValueOnce({ data: mockSystemInfo });
 
     await act(async () => { render(<AdminSystem />); });
 
@@ -285,7 +285,7 @@ describe('AdminSystem', () => {
   });
 
   it('should show Telegram bot status', async () => {
-    admin.getSystemInfo.mockResolvedValueOnce({ data: { data: mockSystemInfo } });
+    admin.getSystemInfo.mockResolvedValueOnce({ data: mockSystemInfo });
 
     await act(async () => { render(<AdminSystem />); });
 
@@ -296,7 +296,7 @@ describe('AdminSystem', () => {
   });
 
   it('should have refresh button', async () => {
-    admin.getSystemInfo.mockResolvedValueOnce({ data: { data: mockSystemInfo } });
+    admin.getSystemInfo.mockResolvedValueOnce({ data: mockSystemInfo });
 
     await act(async () => { render(<AdminSystem />); });
 

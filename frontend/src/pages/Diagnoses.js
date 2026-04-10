@@ -64,7 +64,7 @@ function Diagnoses() {
     try {
       setLoading(true);
       const response = await diagnoses.getAll();
-      const data = response.data?.diagnoses || response.diagnoses || [];
+      const data = response.data || [];
       setDiagnosesList(data);
       setFilteredDiagnoses(data);
     } catch (error) {

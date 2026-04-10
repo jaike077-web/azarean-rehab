@@ -189,18 +189,16 @@ router.post('/register', async (req, res) => {
     setAccessCookie(res, accessToken);
     setRefreshCookie(res, refreshToken);
 
-    // token в теле оставляем на переходный период (backward compat)
     res.status(201).json({
-      success: true,
-      token: accessToken,
-      patient: {
+      data: {
         id: patient.id,
         email: patient.email,
         full_name: patient.full_name,
         phone: patient.phone,
         birth_date: patient.birth_date,
         avatar_url: patient.avatar_url
-      }
+      },
+      message: 'Регистрация выполнена успешно'
     });
 
   } catch (error) {
@@ -321,16 +319,15 @@ router.post('/login', async (req, res) => {
     setRefreshCookie(res, refreshToken);
 
     res.json({
-      success: true,
-      token: accessToken,
-      patient: {
+      data: {
         id: patient.id,
         email: patient.email,
         full_name: patient.full_name,
         phone: patient.phone,
         birth_date: patient.birth_date,
         avatar_url: patient.avatar_url
-      }
+      },
+      message: 'Вход выполнен успешно'
     });
 
   } catch (error) {
@@ -356,7 +353,7 @@ router.post('/logout', authenticatePatient, async (req, res) => {
     clearAccessCookie(res);
     clearRefreshCookie(res);
 
-    res.json({ success: true, message: 'Вы вышли из системы' });
+    res.json({ message: 'Вы вышли из системы' });
 
   } catch (error) {
     console.error('Patient logout error:', error);
@@ -410,8 +407,7 @@ router.post('/refresh', async (req, res) => {
     setRefreshCookie(res, newRefreshToken);
 
     res.json({
-      success: true,
-      token: newAccessToken
+      message: 'Токен обновлен'
     });
 
   } catch (error) {
@@ -446,7 +442,6 @@ router.post('/forgot-password', async (req, res) => {
     // Всегда отвечаем успехом (защита от перебора email)
     if (result.rows.length === 0) {
       return res.json({
-        success: true,
         message: 'Если аккаунт с таким email существует, на него отправлена ссылка для сброса пароля'
       });
     }
@@ -473,7 +468,6 @@ router.post('/forgot-password', async (req, res) => {
     await sendPasswordResetEmail(patient.email, resetToken);
 
     res.json({
-      success: true,
       message: 'Если аккаунт с таким email существует, на него отправлена ссылка для сброса пароля'
     });
 
@@ -547,7 +541,6 @@ router.post('/reset-password', async (req, res) => {
     );
 
     res.json({
-      success: true,
       message: 'Пароль успешно изменён. Войдите с новым паролем.'
     });
 
@@ -580,8 +573,7 @@ router.get('/me', authenticatePatient, async (req, res) => {
     }
 
     res.json({
-      success: true,
-      patient: result.rows[0]
+      data: result.rows[0]
     });
 
   } catch (error) {
@@ -619,8 +611,8 @@ router.put('/me', authenticatePatient, async (req, res) => {
     }
 
     res.json({
-      success: true,
-      patient: result.rows[0]
+      data: result.rows[0],
+      message: 'Профиль обновлён'
     });
 
   } catch (error) {
@@ -695,7 +687,6 @@ router.post('/change-password', authenticatePatient, async (req, res) => {
     );
 
     res.json({
-      success: true,
       message: 'Пароль успешно изменён. Необходимо войти заново.'
     });
 
@@ -763,8 +754,8 @@ router.post('/upload-avatar', authenticatePatient, (req, res, next) => {
     );
 
     res.json({
-      success: true,
-      avatar_url: avatarUrl
+      data: { avatar_url: avatarUrl },
+      message: 'Аватар загружен'
     });
 
   } catch (error) {
@@ -805,7 +796,6 @@ router.delete('/avatar', authenticatePatient, async (req, res) => {
     );
 
     res.json({
-      success: true,
       message: 'Аватар удалён'
     });
 
@@ -891,8 +881,8 @@ router.get('/my-complexes', authenticatePatient, async (req, res) => {
     }));
 
     res.json({
-      success: true,
-      data: { complexes }
+      data: complexes,
+      total: complexes.length
     });
   } catch (error) {
     console.error('Patient my-complexes error:', error);
@@ -975,19 +965,16 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
       : [];
 
     res.json({
-      success: true,
       data: {
-        complex: {
-          id: row.id,
-          title: row.title,
-          diagnosis_name: row.diagnosis_name,
-          diagnosis_note: row.diagnosis_note,
-          recommendations: row.recommendations,
-          warnings: row.warnings,
-          instructor_name: row.instructor_name,
-          created_at: row.created_at,
-          exercises,
-        }
+        id: row.id,
+        title: row.title,
+        diagnosis_name: row.diagnosis_name,
+        diagnosis_note: row.diagnosis_note,
+        recommendations: row.recommendations,
+        warnings: row.warnings,
+        instructor_name: row.instructor_name,
+        created_at: row.created_at,
+        exercises,
       }
     });
   } catch (error) {

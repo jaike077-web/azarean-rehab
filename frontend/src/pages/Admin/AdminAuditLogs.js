@@ -28,7 +28,7 @@ function AdminAuditLogs() {
   const toast = useToast();
 
   useEffect(() => {
-    admin.getUsers().then(res => setUsers(res.data?.data || [])).catch(err => {
+    admin.getUsers().then(res => setUsers(res.data || [])).catch(err => {
       console.error('Ошибка загрузки пользователей для фильтра:', err);
     });
   }, []);
@@ -41,10 +41,9 @@ function AdminAuditLogs() {
       const params = { page, limit: 20 };
       Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
       const response = await admin.getAuditLogs(params);
-      const data = response.data;
-      setLogs(data.data || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
+      setLogs(response.data || []);
+      setTotal(response.meta?.total || 0);
+      setTotalPages(response.meta?.totalPages || 1);
     } catch (error) {
       toast.error('Ошибка загрузки аудит-логов');
     } finally {

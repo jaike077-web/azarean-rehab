@@ -22,8 +22,8 @@ router.get('/', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      total: result.rows.length,
-      patients: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -54,8 +54,8 @@ router.get('/trash', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      total: result.rows.length,
-      patients: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -113,10 +113,10 @@ router.get('/with-progress', authenticateToken, async (req, res) => {
       has_progress: parseInt(row.total_sessions, 10) > 0
     }));
 
-    res.json(patients);
+    res.json({ data: patients });
   } catch (error) {
     console.error('Ошибка получения пациентов с прогрессом:', error);
-    res.status(500).json({ error: 'Failed to fetch patients' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении пациентов с прогрессом' });
   }
 });
 
@@ -159,8 +159,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     );
 
     res.json({
-      patient,
-      complexes: complexesResult.rows
+      data: { patient, complexes: complexesResult.rows }
     });
 
   } catch (error) {
@@ -205,8 +204,8 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Пациент успешно создан',
-      patient: result.rows[0]
+      data: result.rows[0],
+      message: 'Пациент успешно создан'
     });
 
   } catch (error) {
@@ -259,8 +258,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message: 'Данные пациента успешно обновлены',
-      patient: result.rows[0]
+      data: result.rows[0],
+      message: 'Данные пациента успешно обновлены'
     });
 
   } catch (error) {
@@ -293,8 +292,8 @@ router.patch('/:id/restore', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message: 'Пациент успешно восстановлен',
-      id: result.rows[0].id
+      data: { id: result.rows[0].id },
+      message: 'Пациент успешно восстановлен'
     });
 
   } catch (error) {
@@ -327,8 +326,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      message: 'Пациент успешно удален',
-      id: result.rows[0].id
+      data: { id: result.rows[0].id },
+      message: 'Пациент успешно удален'
     });
 
   } catch (error) {
@@ -389,8 +388,8 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
     await client.query('COMMIT');
 
     res.json({
-      message: 'Пациент удалён навсегда',
-      id: parseInt(id)
+      data: { id: parseInt(id) },
+      message: 'Пациент удалён навсегда'
     });
 
   } catch (error) {

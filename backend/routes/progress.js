@@ -80,8 +80,8 @@ router.post('/', authenticatePatientOrInstructor, async (req, res) => {
     );
 
     res.status(201).json({
-      message: 'Прогресс успешно сохранен',
-      progress: result.rows[0]
+      data: result.rows[0],
+      message: 'Прогресс успешно сохранен'
     });
 
   } catch (error) {
@@ -150,9 +150,8 @@ router.get('/complex/:complex_id', authenticatePatientOrInstructor, async (req, 
     );
 
     res.json({
-      total: result.rows.length,
-      logs: result.rows,
-      statistics: statsResult.rows[0]
+      data: { logs: result.rows, statistics: statsResult.rows[0] },
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -203,8 +202,8 @@ router.get('/exercise/:exercise_id/complex/:complex_id', authenticatePatientOrIn
     );
 
     res.json({
-      total: result.rows.length,
-      logs: result.rows
+      data: result.rows,
+      total: result.rows.length
     });
 
   } catch (error) {
@@ -265,7 +264,7 @@ router.get('/patient/:patientId', authenticateToken, async (req, res) => {
     const patientResult = await query(patientQuery, [patientId]);
 
     if (patientResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Patient not found' });
+      return res.status(404).json({ error: 'Not Found', message: 'Пациент не найден' });
     }
 
     const overallStatsQuery = `
@@ -290,20 +289,22 @@ router.get('/patient/:patientId', authenticateToken, async (req, res) => {
     };
 
     res.json({
-      patient: patientResult.rows[0],
-      complexes: complexesResult.rows.map((row) => ({
-        ...row,
-        total_sessions: parseInt(row.total_sessions, 10) || 0,
-        total_logs: parseInt(row.total_logs, 10) || 0,
-        completed_count: parseInt(row.completed_count, 10) || 0,
-        avg_pain: parseFloat(row.avg_pain) || 0,
-        avg_difficulty: parseFloat(row.avg_difficulty) || 0
-      })),
-      overallStats
+      data: {
+        patient: patientResult.rows[0],
+        complexes: complexesResult.rows.map((row) => ({
+          ...row,
+          total_sessions: parseInt(row.total_sessions, 10) || 0,
+          total_logs: parseInt(row.total_logs, 10) || 0,
+          completed_count: parseInt(row.completed_count, 10) || 0,
+          avg_pain: parseFloat(row.avg_pain) || 0,
+          avg_difficulty: parseFloat(row.avg_difficulty) || 0
+        })),
+        overallStats
+      }
     });
   } catch (error) {
     console.error('Error fetching patient progress:', error);
-    res.status(500).json({ error: 'Failed to fetch patient progress' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении прогресса пациента' });
   }
 });
 

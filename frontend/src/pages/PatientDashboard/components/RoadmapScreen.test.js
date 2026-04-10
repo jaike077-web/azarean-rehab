@@ -34,7 +34,7 @@ const { rehab } = require('../../../services/api');
 describe('RoadmapScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    rehab.getPhases.mockResolvedValue({ data: { phases: mockPhases } });
+    rehab.getPhases.mockResolvedValue({ data: mockPhases });
   });
 
   describe('loading state', () => {

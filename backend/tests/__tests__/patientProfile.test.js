@@ -128,7 +128,7 @@ describe('POST /api/patient-auth/change-password', () => {
       .send({ old_password: 'oldpassword', new_password: 'newpassword123' });
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    // success field removed — проверяем status
     expect(res.body.message).toMatch(/изменён/i);
     // Should have called query 3 times: SELECT, UPDATE, DELETE
     expect(query).toHaveBeenCalledTimes(3);
@@ -159,7 +159,7 @@ describe('DELETE /api/patient-auth/avatar', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    // success field removed — проверяем status
     expect(res.body.message).toMatch(/удалён/i);
     expect(fs.unlinkSync).toHaveBeenCalled();
   });
@@ -174,7 +174,7 @@ describe('DELETE /api/patient-auth/avatar', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    // success field removed — проверяем status
     // Should not try to delete a file
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
@@ -191,7 +191,7 @@ describe('DELETE /api/patient-auth/avatar', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
+    // success field removed — проверяем status
     expect(fs.unlinkSync).not.toHaveBeenCalled();
   });
 });
@@ -214,8 +214,8 @@ describe('GET /api/patient-auth/my-complexes', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.complexes).toEqual([]);
+    // success field removed — проверяем status
+    expect(res.body.data).toEqual([]);
   });
 
   it('should return list of patient complexes', async () => {
@@ -251,10 +251,10 @@ describe('GET /api/patient-auth/my-complexes', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.complexes).toHaveLength(2);
-    expect(res.body.data.complexes[0].exercises_count).toBe(5);
-    expect(res.body.data.complexes[1].exercises_count).toBe(3);
+    // success field removed — проверяем status
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].exercises_count).toBe(5);
+    expect(res.body.data[1].exercises_count).toBe(3);
   });
 
   it('should query with patient_id from JWT', async () => {
@@ -355,11 +355,11 @@ describe('GET /api/patient-auth/my-complexes/:id', () => {
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.complex.id).toBe(5);
-    expect(res.body.data.complex.exercises).toHaveLength(1);
-    expect(res.body.data.complex.exercises[0].exercise.title).toBe('Приседания');
-    expect(res.body.data.complex).not.toHaveProperty('access_token');
+    // success field removed — проверяем status
+    expect(res.body.data.id).toBe(5);
+    expect(res.body.data.exercises).toHaveLength(1);
+    expect(res.body.data.exercises[0].exercise.title).toBe('Приседания');
+    expect(res.body.data).not.toHaveProperty('access_token');
   });
 
   it('should filter by patient_id (ownership check)', async () => {

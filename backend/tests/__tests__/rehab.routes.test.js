@@ -185,7 +185,6 @@ describe('GET /api/rehab/my/exercises', () => {
       .set('Authorization', `Bearer ${validToken}`)
       .expect(200);
 
-    expect(response.body).toHaveProperty('success', true);
     expect(response.body).toHaveProperty('data');
     expect(response.body.data).toHaveProperty('program_id', 1);
     expect(response.body.data).toHaveProperty('complex_id', 10);

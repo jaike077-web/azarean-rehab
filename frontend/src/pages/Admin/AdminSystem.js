@@ -14,7 +14,7 @@ function AdminSystem() {
     try {
       setLoading(true);
       const response = await admin.getSystemInfo();
-      setInfo(response.data?.data || response.data);
+      setInfo(response.data);
     } catch (error) {
       toast.error('Ошибка загрузки системной информации');
     } finally {

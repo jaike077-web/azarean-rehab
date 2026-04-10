@@ -37,10 +37,10 @@ router.get('/', async (req, res) => {
       ORDER BY t.created_at DESC
     `, params);
 
-    res.json({ templates: result.rows });
+    res.json({ data: result.rows });
   } catch (err) {
     console.error('Ошибка получения шаблонов:', err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
   }
 });
 
@@ -60,12 +60,12 @@ router.get('/:id', async (req, res) => {
     `, [id, req.user.id]);
 
     if (templateResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Шаблон не найден' });
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон не найден' });
     }
 
     // Получаем упражнения шаблона
     const exercisesResult = await query(`
-      SELECT 
+      SELECT
         te.*,
         e.title,
         e.body_region,
@@ -77,12 +77,11 @@ router.get('/:id', async (req, res) => {
     `, [id]);
 
     res.json({
-      template: templateResult.rows[0],
-      exercises: exercisesResult.rows
+      data: { template: templateResult.rows[0], exercises: exercisesResult.rows }
     });
   } catch (err) {
     console.error('Ошибка получения шаблона:', err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
   }
 });
 
@@ -94,7 +93,7 @@ router.post('/', async (req, res) => {
     const { name, description, diagnosis_id, exercises } = req.body;
 
     if (!name || !exercises || exercises.length === 0) {
-      return res.status(400).json({ message: 'Название и упражнения обязательны' });
+      return res.status(400).json({ error: 'Validation Error', message: 'Название и упражнения обязательны' });
     }
 
     // Создаём шаблон
@@ -125,13 +124,13 @@ router.post('/', async (req, res) => {
       ]);
     }
 
-    res.status(201).json({ 
-      message: 'Шаблон создан',
-      template 
+    res.status(201).json({
+      data: template,
+      message: 'Шаблон создан'
     });
   } catch (err) {
     console.error('Ошибка создания шаблона:', err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
   }
 });
 
@@ -150,7 +149,7 @@ router.put('/:id', async (req, res) => {
     );
 
     if (checkResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Шаблон не найден' });
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон не найден' });
     }
 
     // Обновляем шаблон
@@ -188,7 +187,7 @@ router.put('/:id', async (req, res) => {
     res.json({ message: 'Шаблон обновлён' });
   } catch (err) {
     console.error('Ошибка обновления шаблона:', err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
   }
 });
 
@@ -205,13 +204,13 @@ router.delete('/:id', async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Шаблон не найден' });
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон не найден' });
     }
 
     res.json({ message: 'Шаблон удалён' });
   } catch (err) {
     console.error('Ошибка удаления шаблона:', err);
-    res.status(500).json({ message: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
   }
 });
 

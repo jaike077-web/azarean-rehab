@@ -20,7 +20,7 @@ const ComplexDetailView = ({ complexId, onBack, onSelectExercise }) => {
       try {
         const res = await patientAuth.getMyComplex(complexId);
         if (cancelled) return;
-        const data = res.data?.data?.complex || res.data?.complex;
+        const data = res.data;
         setComplex(data);
       } catch (err) {
         if (cancelled) return;

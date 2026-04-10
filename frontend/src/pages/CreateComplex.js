@@ -198,9 +198,9 @@ function CreateComplex() {
         diagnoses.getAll(),
         exercises.getAll(),
       ]);
-      setPatientsList(patientsRes.data.patients);
-      setDiagnosesList(diagnosesRes.data.diagnoses);
-      setExercisesList(exercisesRes.data.exercises);
+      setPatientsList(patientsRes.data);
+      setDiagnosesList(diagnosesRes.data);
+      setExercisesList(exercisesRes.data);
     } catch (err) {
       console.error('Ошибка загрузки данных:', err);
       setError('Не удалось загрузить данные');

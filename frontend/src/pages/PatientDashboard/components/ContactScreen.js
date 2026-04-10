@@ -63,7 +63,7 @@ const ContactScreen = ({ dashboardData }) => {
     const loadTelegramStatus = async () => {
       try {
         const response = await rehab.getTelegramStatus();
-        const data = response.data?.data || response.data;
+        const data = response.data;
         setTelegramConnected(data?.connected || false);
       } catch (error) {
         // Silently catch
@@ -75,7 +75,7 @@ const ContactScreen = ({ dashboardData }) => {
     const loadNotifications = async () => {
       try {
         const response = await rehab.getNotifications();
-        const notifData = response.data?.data || response.data;
+        const notifData = response.data;
         if (notifData) {
           setNotifications(notifData);
         }
@@ -104,7 +104,7 @@ const ContactScreen = ({ dashboardData }) => {
     setCodeGenerating(true);
     try {
       const response = await rehab.generateTelegramCode();
-      const data = response.data?.data || response.data;
+      const data = response.data;
       setLinkCode(data.code);
 
       // Start countdown timer
@@ -125,7 +125,7 @@ const ContactScreen = ({ dashboardData }) => {
       pollingRef.current = setInterval(async () => {
         try {
           const statusRes = await rehab.getTelegramStatus();
-          const statusData = statusRes.data?.data || statusRes.data;
+          const statusData = statusRes.data;
           if (statusData?.connected) {
             setTelegramConnected(true);
             setLinkCode(null);

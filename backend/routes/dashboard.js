@@ -42,10 +42,12 @@ router.get('/stats', authenticateToken, async (req, res) => {
       : 0;
 
     res.json({
-      patients_count: parseInt(patientsResult.rows[0].count),
-      complexes_count: parseInt(complexesResult.rows[0].count),
-      exercises_count: parseInt(exercisesResult.rows[0].count),
-      completion_percent: completionPercent
+      data: {
+        patients_count: parseInt(patientsResult.rows[0].count),
+        complexes_count: parseInt(complexesResult.rows[0].count),
+        exercises_count: parseInt(exercisesResult.rows[0].count),
+        completion_percent: completionPercent,
+      },
     });
 
   } catch (error) {

@@ -22,7 +22,7 @@ function AdminUsers() {
     try {
       setLoading(true);
       const response = await admin.getUsers();
-      setUsers(response.data?.data || response.data || []);
+      setUsers(response.data || []);
     } catch (error) {
       toast.error('Ошибка загрузки пользователей');
     } finally {

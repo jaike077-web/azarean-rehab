@@ -54,7 +54,7 @@ describe('AuthContext', () => {
   test('loads user when token exists', async () => {
     localStorage.setItem('token', 'test-token');
     auth.getMe.mockResolvedValueOnce({
-      data: { user: { id: 1, email: 'test@test.com' } }
+      data: { id: 1, email: 'test@test.com' }
     });
 
     render(

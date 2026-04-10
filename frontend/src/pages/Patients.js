@@ -84,7 +84,7 @@ function Patients() {
     try {
       setLoading(true);
       const response = await patients.getAll();
-      setPatientsList(response.data.patients || []);
+      setPatientsList(response.data || []);
     } catch (err) {
       console.error('Ошибка загрузки пациентов:', err);
       setError('Не удалось загрузить список пациентов');

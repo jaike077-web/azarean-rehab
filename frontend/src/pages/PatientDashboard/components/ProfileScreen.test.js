@@ -50,7 +50,7 @@ describe('ProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     patientAuth.getMe.mockResolvedValue({
-      data: { success: true, patient: mockPatient },
+      data: mockPatient,
     });
     patientAuth.fetchAvatarBlob.mockResolvedValue({
       data: new Blob(['x'], { type: 'image/jpeg' }),
@@ -141,7 +141,7 @@ describe('ProfileScreen', () => {
   describe('Save profile', () => {
     it('calls updateMe on save button click', async () => {
       patientAuth.updateMe.mockResolvedValue({
-        data: { success: true, patient: mockPatient },
+        data: mockPatient,
       });
 
       render(<ProfileScreen handleLogout={mockHandleLogout} />);
@@ -229,10 +229,7 @@ describe('ProfileScreen', () => {
 
     it('renders "Удалить" button when avatar exists', async () => {
       patientAuth.getMe.mockResolvedValue({
-        data: {
-          success: true,
-          patient: { ...mockPatient, avatar_url: '/uploads/avatars/test.jpg' },
-        },
+        data: { ...mockPatient, avatar_url: '/uploads/avatars/test.jpg' },
       });
 
       render(<ProfileScreen handleLogout={mockHandleLogout} />);

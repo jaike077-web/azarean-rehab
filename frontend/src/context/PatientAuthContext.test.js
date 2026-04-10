@@ -38,7 +38,7 @@ describe('PatientAuthContext', () => {
 
   it('устанавливает patient если getMe успешен', async () => {
     patientAuth.getMe.mockResolvedValue({
-      data: { patient: { id: 14, full_name: 'Вадим' } },
+      data: { id: 14, full_name: 'Вадим' },
     });
 
     render(
@@ -88,7 +88,7 @@ describe('PatientAuthContext', () => {
   });
 
   it('logout вызывает api.logout и очищает state', async () => {
-    patientAuth.getMe.mockResolvedValue({ data: { patient: { id: 14, full_name: 'Вадим' } } });
+    patientAuth.getMe.mockResolvedValue({ data: { id: 14, full_name: 'Вадим' } });
     patientAuth.logout.mockResolvedValue({});
 
     render(

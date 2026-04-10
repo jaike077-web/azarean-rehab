@@ -75,7 +75,7 @@ export default function PatientDashboard() {
       try {
         setLoading(true);
         const response = await rehab.getDashboard();
-        setDashboardData(response.data.data || response.data);
+        setDashboardData(response.data);
       } catch (error) {
         console.error('Failed to fetch dashboard:', error);
         toast.error('Ошибка загрузки', 'Не удалось загрузить данные панели');

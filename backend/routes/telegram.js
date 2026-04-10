@@ -76,7 +76,7 @@ router.delete('/unlink', authenticatePatient, async (req, res) => {
       [req.patient.id]
     );
 
-    res.json({ success: true, message: 'Telegram отвязан', data: { connected: false } });
+    res.json({ data: { connected: false }, message: 'Telegram отвязан' });
   } catch (error) {
     console.error('Error unlinking telegram:', error);
     res.status(500).json({ error: 'Server Error', message: 'Не удалось отвязать Telegram' });

@@ -170,7 +170,7 @@ function EditComplex() {
     try {
       setLoading(true);
       const response = await complexes.getOne(id);
-      const complexData = response.data.complex;
+      const complexData = response.data;
 
       setPatientName(complexData.patient_name);
       setDiagnosisId(complexData.diagnosis_id || '');
@@ -214,7 +214,7 @@ function EditComplex() {
     try {
       setExercisesLoading(true);
       const response = await exercises.getAll();
-      setAvailableExercises(response.data.exercises);
+      setAvailableExercises(response.data);
     } catch (err) {
       console.error('Ошибка загрузки упражнений:', err);
     } finally {

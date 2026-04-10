@@ -36,8 +36,8 @@ function Trash() {
         patients.getTrash(),
         complexes.getTrash()
       ]);
-      setDeletedPatients(patientsRes.data.patients);
-      setDeletedComplexes(complexesRes.data.complexes);
+      setDeletedPatients(patientsRes.data);
+      setDeletedComplexes(complexesRes.data);
     } catch (err) {
       console.error('Ошибка загрузки корзины:', err);
     } finally {

@@ -40,9 +40,9 @@ function ViewProgress() {
           complexes.getExercises(complexId)
         ]);
 
-        const complexPayload = complexRes.data?.complex || complexRes.data;
-        const progressPayload = progressRes.data?.items || progressRes.data || {};
-        const exercisesPayload = exercisesRes.data?.exercises || [];
+        const complexPayload = complexRes.data;
+        const progressPayload = progressRes.data || {};
+        const exercisesPayload = exercisesRes.data || [];
 
         const progressLogs = progressPayload.logs || [];
         const statistics = progressPayload.statistics || {};
