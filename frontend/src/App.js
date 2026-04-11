@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -213,40 +213,22 @@ function AppRoutes() {
       />
 
       {/* ========================== */}
-      {/* АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1) */}
-      {/* PatientAuthProvider оборачивает только пациентские роуты, */}
-      {/* чтобы не дёргать getMe() на инструкторских страницах */}
+      {/* ПАЦИЕНТСКИЕ РОУТЫ — один PatientAuthProvider на все */}
       {/* ========================== */}
-      <Route
-        path="/patient-login"
-        element={<PatientAuthProvider><PatientLogin /></PatientAuthProvider>}
-      />
-      <Route
-        path="/patient-register"
-        element={<PatientAuthProvider><PatientRegister /></PatientAuthProvider>}
-      />
-      <Route
-        path="/patient-forgot-password"
-        element={<PatientForgotPassword />}
-      />
-      <Route
-        path="/patient-reset-password/:token"
-        element={<PatientResetPassword />}
-      />
-
-      {/* ========================== */}
-      {/* ПАЦИЕНТСКИЙ ДАШБОРД (Спринт 1.2) */}
-      {/* ========================== */}
-      <Route
-        path="/patient-dashboard"
-        element={
-          <PatientAuthProvider>
+      <Route element={<PatientAuthProvider><Outlet /></PatientAuthProvider>}>
+        <Route path="/patient-login" element={<PatientLogin />} />
+        <Route path="/patient-register" element={<PatientRegister />} />
+        <Route path="/patient-forgot-password" element={<PatientForgotPassword />} />
+        <Route path="/patient-reset-password/:token" element={<PatientResetPassword />} />
+        <Route
+          path="/patient-dashboard"
+          element={
             <PatientRoute>
               <PatientDashboard />
             </PatientRoute>
-          </PatientAuthProvider>
-        }
-      />
+          }
+        />
+      </Route>
 
       {/* ========================== */}
       {/* 404 */}

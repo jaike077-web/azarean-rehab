@@ -22,15 +22,17 @@ export function PatientAuthProvider({ children }) {
       // После unwrap interceptor res.data = patient объект напрямую
       const data = res.data || null;
       setPatient(data);
+      setLoading(false);
       return data;
     } catch (_) {
       setPatient(null);
+      setLoading(false);
       return null;
     }
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false));
+    refresh();
   }, [refresh]);
 
   // Вызывается PatientLogin/PatientRegister после успешного API-ответа.

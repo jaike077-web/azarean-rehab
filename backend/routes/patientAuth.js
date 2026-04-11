@@ -82,7 +82,7 @@ const setAccessCookie = (res, token) => {
   res.cookie('patient_access_token', token, {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: ACCESS_COOKIE_MAX_AGE_MS,
     path: '/api'
   });
@@ -92,7 +92,7 @@ const clearAccessCookie = (res) => {
   res.clearCookie('patient_access_token', {
     httpOnly: true,
     secure: config.nodeEnv === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/api'
   });
 };

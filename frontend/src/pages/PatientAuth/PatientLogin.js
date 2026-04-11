@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
@@ -10,13 +10,19 @@ const PatientLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const { login } = usePatientAuth();
+  const { patient, login } = usePatientAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Если пациент уже в контексте — редирект на дашборд
+  if (patient) {
+    return <Navigate to="/patient-dashboard" replace />;
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -24,11 +30,11 @@ const PatientLogin = () => {
     try {
       const response = await patientAuth.login({ email, password });
       const data = response.data || response;
-      // Cookie уже установлена backend'ом — обновляем только контекст
-      login(data.patient || null);
       const name = data.patient?.full_name || '';
       toast.success(name ? `Добро пожаловать, ${name}!` : 'Вход выполнен!');
-      // Переход на пациентский дашборд или на страницу, откуда пришли
+      // Cookie установлена backend'ом — обновляем контекст (один провайдер с dashboard)
+      login(data.patient || null);
+      // Навигация — теперь в одном провайдере, PatientRoute увидит patient
       const redirectTo = location.state?.from;
       navigate(redirectTo && redirectTo !== '/patient-login' ? redirectTo : '/patient-dashboard');
     } catch (err) {

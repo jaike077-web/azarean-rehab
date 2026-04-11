@@ -17,6 +17,7 @@ jest.mock('../../../services/api', () => ({
   },
   progressPatient: {
     create: jest.fn(),
+    getByExercise: jest.fn().mockResolvedValue({ data: [] }),
   },
 }));
 
@@ -53,6 +54,8 @@ const mockExercise = {
 describe('ExercisesScreen v2', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // ExerciseRunner вызывает getByExercise при mount — нужен мок после clearAllMocks
+    progressPatient.getByExercise.mockResolvedValue({ data: [] });
   });
 
   describe('State A — активная программа + доп. комплексы', () => {
