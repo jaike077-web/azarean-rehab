@@ -329,9 +329,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ### Пациенты (routes/patientAuth.js)
 - Отдельный JWT_SECRET (PATIENT_JWT_SECRET)
-- **Access token (15 min) в httpOnly cookie `patient_access_token`** (SameSite=Strict, path=/api)
+- **Access token (15 min) в httpOnly cookie `patient_access_token`** (SameSite=Lax, path=/api)
 - **Refresh token (30d) в httpOnly cookie `patient_refresh_token`** (SameSite=Lax, path=/api/patient-auth, SHA-256 в БД)
 - `PatientAuthContext` на фронте определяет "залогинен ли" через GET /me на mount
+- **Один `PatientAuthProvider`** на все пациентские роуты (login, register, forgot-password, reset-password, dashboard) через layout Route + Outlet в App.js
 - Account lockout: 5 failed attempts → 15 min
 - Password reset через email stub
 - OAuth заготовка (Google)
@@ -476,9 +477,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ## Известные баги и уязвимости
 
-> **Статус аудита (2026-04-09):** Все CRITICAL и 3 из 5 HIGH закрыты.
+> **Статус аудита (2026-04-10):** Все CRITICAL и 3 из 5 HIGH закрыты. #13 (response formats) закрыт.
 > В миграции 20260409 удалён публичный /patient/:token flow целиком,
 > Patient JWT перенесён из localStorage в httpOnly cookie (SameSite=Strict + Origin check).
+> В коммите 4a32f35 все 13 роут-файлов стандартизированы к единому формату `{ data, message? }`.
 > Полный список см. [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md).
 
 ### КРИТИЧЕСКИЕ (все 3 исправлены 2026-04-08)
@@ -494,7 +496,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### ВЫСОКИЕ
 9. ✅ ~~**`/uploads` публично**~~ — аватары теперь через `/api/patient-auth/avatar` с JWT (коммит 432e09b)
 10. ❌ **Rate limiting выключен в dev** — если NODE_ENV ≠ production (by design)
-11. ✅ ~~**Patient JWT в localStorage**~~ — перенесено в httpOnly cookie `patient_access_token` (SameSite=Strict). CSRF закрыт Origin-check middleware. PatientAuthContext определяет "залогинен ли" через GET /me. Миграция 2026-04-09.
+11. ✅ ~~**Patient JWT в localStorage**~~ — перенесено в httpOnly cookie `patient_access_token` (SameSite=Lax, было Strict → Lax 2026-04-11 из-за проблем с navigate()). CSRF закрыт Origin-check middleware. PatientAuthContext определяет "залогинен ли" через GET /me. Один PatientAuthProvider на все пациентские роуты (layout Route + Outlet).
 12. ✅ ~~**Access token пациента в URL**~~ — публичный flow удалён ПОЛНОСТЬЮ. Нет `/patient/:token` роута, нет `GET /api/complexes/token/:token` эндпоинта, нет `authenticateProgressAccess` middleware. Колонка `complexes.access_token` дропнута. Миграция 2026-04-09.
 13. ✅ ~~**Inconsistent response formats**~~ — все 13 роут-файлов стандартизированы: `{ data: <payload>, message? }` для успеха, `{ error, message }` для ошибок. Frontend unwrap interceptor в api.js автоматически разворачивает `response.data.data` → `response.data`
 14. ✅ ~~**AuthContext не хранит refresh_token**~~ (использует `clearTokens()` из api.js)
@@ -610,8 +612,8 @@ frontend/src/ (test files)
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Последний:** `99e374a` Sprint 4: Admin panel (12.02.2026)
-- **14 незакоммиченных файлов** Admin/ + Dashboard.js — только локально
+- **Последний:** `907e1ea` feat: ExerciseRunner v2 — RPE zones, rest timer, pain gradient (11.04.2026, не запушен)
+- Предыдущий: `4a32f35` refactor: unify API response format (#13) (10.04.2026, запушен)
 
 ## Kinescope интеграция
 
