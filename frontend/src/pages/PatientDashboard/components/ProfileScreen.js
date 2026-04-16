@@ -8,6 +8,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Camera, ClipboardList, Lock, Info, ChevronDown, LogOut } from 'lucide-react';
 import { patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { Card } from './ui';
 
 const ProfileScreen = ({ handleLogout }) => {
   const toast = useToast();
@@ -246,7 +247,7 @@ const ProfileScreen = ({ handleLogout }) => {
       <h1 className="pd-screen-title">Профиль</h1>
 
       {/* ===== Avatar Section ===== */}
-      <div className="pd-section pd-profile-avatar-section">
+      <Card variant="secondary" className="pd-section pd-profile-avatar-section">
         <div className="pd-profile-avatar-wrapper" onClick={handleAvatarClick}>
           {avatarUploading ? (
             <div className="pd-profile-avatar pd-profile-avatar--loading">
@@ -298,10 +299,10 @@ const ProfileScreen = ({ handleLogout }) => {
             </button>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* ===== Personal Data ===== */}
-      <div className="pd-section">
+      <Card variant="secondary" className="pd-section">
         <div className="pd-section-header">
           <ClipboardList size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Личные данные</h3>
@@ -356,10 +357,10 @@ const ProfileScreen = ({ handleLogout }) => {
         >
           {saving ? 'Сохранение...' : 'Сохранить изменения'}
         </button>
-      </div>
+      </Card>
 
       {/* ===== Change Password ===== */}
-      <div className="pd-section">
+      <Card variant="secondary" className="pd-section">
         <button
           className="pd-profile-collapse-btn"
           onClick={() => setShowPasswordSection(!showPasswordSection)}
@@ -418,10 +419,10 @@ const ProfileScreen = ({ handleLogout }) => {
             </button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ===== Account Info ===== */}
-      <div className="pd-section">
+      <Card variant="inline" className="pd-section">
         <div className="pd-section-header">
           <Info size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Информация</h3>
@@ -441,7 +442,7 @@ const ProfileScreen = ({ handleLogout }) => {
             {profile?.auth_provider === 'local' ? 'Email/пароль' : profile?.auth_provider || '—'}
           </span>
         </div>
-      </div>
+      </Card>
 
       {/* ===== Logout ===== */}
       <button className="pd-profile-logout-btn" onClick={handleLogout}>

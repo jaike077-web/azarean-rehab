@@ -10,6 +10,7 @@ import DiaryScreen from './components/DiaryScreen';
 import ContactScreen from './components/ContactScreen';
 import ExercisesScreen from './components/ExercisesScreen';
 import ProfileScreen from './components/ProfileScreen';
+import { TabBar } from './components/ui';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -215,24 +216,11 @@ export default function PatientDashboard() {
         </div>
       </div>
 
-      <nav className="pd-bottom-nav">
-        {NAV.map((item) => (
-          <button
-            key={item.id}
-            className={`pd-nav-btn ${screen === item.id ? 'pd-nav-btn--active' : ''} ${item.accent ? 'pd-nav-btn--accent' : ''}`}
-            onClick={() => { setScreen(item.id); setScreenParams(null); }}
-          >
-            {item.accent ? (
-              <div className="pd-nav-btn-circle">
-                <item.Icon size={22} className="pd-nav-btn-icon" />
-              </div>
-            ) : (
-              <item.Icon size={20} className="pd-nav-btn-icon" />
-            )}
-            <span className="pd-nav-btn-label">{item.label}</span>
-          </button>
-        ))}
-      </nav>
+      <TabBar
+        items={NAV}
+        activeId={screen}
+        onChange={(id) => { setScreen(id); setScreenParams(null); }}
+      />
     </div>
   );
 }

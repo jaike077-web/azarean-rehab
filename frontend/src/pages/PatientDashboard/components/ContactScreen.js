@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { Card } from './ui';
 
 const QUICK_MSGS = [
   {
@@ -212,7 +213,7 @@ const ContactScreen = ({ dashboardData }) => {
       <h1 className="pd-screen-title">Связь</h1>
 
       {/* Emergency Card */}
-      <div className="pd-emergency">
+      <Card variant="secondary" className="pd-emergency">
         <h3 className="pd-emergency-title">
           <AlertTriangle size={18} />
           <span>Экстренная ситуация</span>
@@ -247,10 +248,10 @@ const ContactScreen = ({ dashboardData }) => {
             <li>Следуйте инструкциям врача</li>
           </ol>
         </div>
-      </div>
+      </Card>
 
       {/* Quick Messages Section */}
-      <div className="pd-section">
+      <Card variant="secondary" className="pd-section">
         <div className="pd-section-header">
           <MessageSquare size={18} className="pd-section-icon" />
           <h2 className="pd-section-title">Быстрое сообщение</h2>
@@ -279,10 +280,10 @@ const ContactScreen = ({ dashboardData }) => {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Telegram Bot Section */}
-      <div className="pd-section">
+      <Card variant="secondary" className="pd-section">
         <div className="pd-section-header">
           <Bot size={18} className="pd-section-icon" />
           <h2 className="pd-section-title">Telegram-уведомления</h2>
@@ -360,10 +361,10 @@ const ContactScreen = ({ dashboardData }) => {
             </button>
           </>
         )}
-      </div>
+      </Card>
 
       {/* Notification Settings Section */}
-      <div className="pd-section">
+      <Card variant="inline" className="pd-section">
         <div className="pd-section-header">
           <Bell size={18} className="pd-section-icon" />
           <h2 className="pd-section-title">Настройки уведомлений</h2>
@@ -442,7 +443,7 @@ const ContactScreen = ({ dashboardData }) => {
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

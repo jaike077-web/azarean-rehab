@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Shield, RefreshCw, Dumbbell, Activity, Zap, Trophy, Target, Lightbulb, Video, ClipboardList, AlertTriangle, Hand, Map, FileText, Play } from 'lucide-react';
 import { rehab } from '../../../services/api';
+import { ProgressRing, Card } from './ui';
 
 // Phase icon mapping — lucide components
 const PHASE_ICONS = {
@@ -20,82 +21,28 @@ const getWeeksSinceSurgery = (surgeryDate) => {
   return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
 };
 
-// ProgressArc Component - SVG full-circle donut progress visualization
-const ProgressArc = ({ currentWeek, totalWeeks, phase }) => {
+// ProgressArc wrapper — теперь использует shared ProgressRing
+const ProgressArcWrapper = ({ currentWeek, totalWeeks, phase }) => {
   const percentage = useMemo(() => {
     if (!totalWeeks || totalWeeks === 0) return 0;
     return Math.min(100, Math.round((currentWeek / totalWeeks) * 100));
   }, [currentWeek, totalWeeks]);
 
-  // SVG donut calculations
-  const size = 140;
-  const strokeWidth = 12;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (circumference * percentage) / 100;
-  const center = size / 2;
-
   return (
     <div className="pd-progress-arc">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={phase?.color || '#1A8A6A'} />
-            <stop offset="100%" stopColor={phase?.color2 || '#3B82C8'} />
-          </linearGradient>
-        </defs>
-
-        {/* Background ring */}
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="#ECEEF3"
-          strokeWidth={strokeWidth}
-        />
-
-        {/* Progress ring */}
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="url(#progressGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${center} ${center})`}
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-        />
-
-        {/* Percentage text centered inside the donut */}
-        <text
-          x={center}
-          y={center}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize="26"
-          fontWeight="800"
-          fontFamily="'Nunito Sans', sans-serif"
-          fill="#171C2B"
-        >
-          {percentage}%
-        </text>
-      </svg>
-
-      <div className="pd-progress-arc-text">
-        <div className="pd-progress-arc-percentage" style={{ display: 'none' }}>{percentage}%</div>
-        <div className="pd-progress-arc-label">
-          {phase?.name || 'Фаза'} · Неделя {currentWeek}
-        </div>
-      </div>
+      <ProgressRing
+        value={percentage}
+        size={140}
+        strokeWidth={12}
+        color={phase?.color || 'var(--pd-primary, #0D9488)'}
+        color2={phase?.color2 || '#06B6D4'}
+        sublabel={`${phase?.name || 'Фаза'} · Неделя ${currentWeek}`}
+      />
     </div>
   );
 };
 
-ProgressArc.propTypes = {
+ProgressArcWrapper.propTypes = {
   currentWeek: PropTypes.number.isRequired,
   totalWeeks: PropTypes.number.isRequired,
   phase: PropTypes.shape({
@@ -317,7 +264,7 @@ const HomeScreen = ({ dashboardData, goTo }) => {
     <div className="pd-home-screen">
       {/* Training Card — блок "Начать тренировку" (самый верх) */}
       {todayComplex && (
-        <div className="pd-card pd-training-card">
+        <Card variant="hero" className="pd-training-card" gradient="var(--pd-gradient-primary, linear-gradient(135deg, #0D9488, #06B6D4))">
           <div className="pd-training-header">
             <Dumbbell size={22} className="pd-training-icon" />
             <div className="pd-training-info">
@@ -336,7 +283,7 @@ const HomeScreen = ({ dashboardData, goTo }) => {
             <Play size={18} />
             Начать тренировку
           </button>
-        </div>
+        </Card>
       )}
 
       {/* Greeting */}
@@ -347,8 +294,8 @@ const HomeScreen = ({ dashboardData, goTo }) => {
         <Hand size={22} className="pd-greeting-emoji" />
       </div>
 
-      {/* Progress Arc */}
-      <ProgressArc
+      {/* Progress Ring */}
+      <ProgressArcWrapper
         currentWeek={currentWeek}
         totalWeeks={totalWeeks}
         phase={phase}

@@ -16,6 +16,7 @@ import { rehab, patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import ComplexDetailView from './ComplexDetailView';
 import ExerciseRunner from './ExerciseRunner';
+import { Card } from './ui';
 
 const ExercisesScreen = ({ screenParams }) => {
   const toast = useToast();
@@ -176,7 +177,7 @@ const ExercisesScreen = ({ screenParams }) => {
 
       {todayComplex && (
         // State A — сегодняшний комплекс (hero)
-        <div className="pd-today-card">
+        <Card variant="hero" className="pd-today-card" gradient="var(--pd-gradient-primary, linear-gradient(135deg, #0D9488, #06B6D4))">
           <div className="pd-today-badge">
             <Dumbbell size={18} />
             <span>Сегодня</span>
@@ -197,7 +198,7 @@ const ExercisesScreen = ({ screenParams }) => {
           <p className="pd-today-hint">
             Отмечайте выполнение и уровень боли для каждого упражнения
           </p>
-        </div>
+        </Card>
       )}
 
       {otherComplexes.length > 0 && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Thermometer, Ruler, Dumbbell, Sparkles, Camera, CheckCircle2, XCircle } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { Card } from './ui';
 
 const PAIN_EMOJIS = ["😌", "😌", "🙂", "😐", "😐", "😟", "😣", "😣", "😖", "😖", "🥵"];
 

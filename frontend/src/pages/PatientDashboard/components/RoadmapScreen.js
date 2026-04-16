@@ -6,6 +6,7 @@ import {
   AlertTriangle, BarChart3, MessageCircle, Check, Info, Plus, Minus, PartyPopper
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
+import { ProgressRing } from './ui';
 
 // Phase icon mapping (lucide components)
 const PHASE_ICONS = {
@@ -36,63 +37,23 @@ const TABS = [
   { id: 'faq', label: 'FAQ', Icon: MessageCircle },
 ];
 
-// ProgressArc Component (reused from HomeScreen)
+// ProgressArc wrapper — использует shared ProgressRing
 const ProgressArc = ({ currentWeek, totalWeeks, phase }) => {
   const percentage = useMemo(() => {
     if (!totalWeeks || totalWeeks === 0) return 0;
     return Math.min(100, Math.round((currentWeek / totalWeeks) * 100));
   }, [currentWeek, totalWeeks]);
 
-  const size = 140;
-  const strokeWidth = 12;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (circumference * percentage) / 100;
-  const center = size / 2;
-
   return (
     <div className="pd-progress-arc">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <defs>
-          <linearGradient id="roadmapProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={phase?.color || '#1A8A6A'} />
-            <stop offset="100%" stopColor={phase?.color2 || '#3B82C8'} />
-          </linearGradient>
-        </defs>
-
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="#ECEEF3" strokeWidth={strokeWidth} />
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="url(#roadmapProgressGradient)"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${center} ${center})`}
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-        />
-        <text
-          x={center}
-          y={center}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fontSize="26"
-          fontWeight="800"
-          fontFamily="'Nunito Sans', sans-serif"
-          fill="#171C2B"
-        >
-          {percentage}%
-        </text>
-      </svg>
-
-      <div className="pd-progress-arc-text">
-        <div className="pd-progress-arc-label">
-          {phase?.name || 'Фаза'} · Неделя {currentWeek}
-        </div>
-      </div>
+      <ProgressRing
+        value={percentage}
+        size={140}
+        strokeWidth={12}
+        color={phase?.color || 'var(--pd-primary, #0D9488)'}
+        color2={phase?.color2 || '#06B6D4'}
+        sublabel={`${phase?.name || 'Фаза'} · Неделя ${currentWeek}`}
+      />
     </div>
   );
 };
