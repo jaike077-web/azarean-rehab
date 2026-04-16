@@ -109,7 +109,7 @@ const ComplexDetailView = ({ complexId, onBack, onSelectExercise }) => {
           {complex.exercises.map((ce) => (
             <button
               key={ce.id}
-              onClick={() => onSelectExercise(ce)}
+              onClick={() => onSelectExercise(ce, complex.exercises)}
               style={exerciseCardStyle}
               data-testid={`exercise-card-${ce.exercise?.id}`}
             >

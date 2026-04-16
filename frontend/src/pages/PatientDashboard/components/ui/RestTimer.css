@@ -1,0 +1,85 @@
+.pd-rest-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+/* Presets */
+.pd-rest-timer-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pd-rest-timer-preset {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pd-neutral-300, #D4D4D4);
+  background: transparent;
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pd-neutral-700, #404040);
+  cursor: pointer;
+  transition: all 150ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.pd-rest-timer-preset--active {
+  background: var(--pd-primary, #0D9488);
+  border-color: var(--pd-primary, #0D9488);
+  color: #fff;
+  font-weight: 600;
+}
+.pd-rest-timer-preset:active {
+  transform: scale(0.95);
+}
+
+/* Ring */
+.pd-rest-timer-ring {
+  position: relative;
+}
+
+/* Controls */
+.pd-rest-timer-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.pd-rest-timer-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 150ms ease-out;
+}
+.pd-rest-timer-ctrl:active {
+  transform: scale(0.9);
+}
+
+.pd-rest-timer-ctrl--reset {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--pd-neutral-100, #F5F5F5);
+  color: var(--pd-neutral-600, #525252);
+}
+
+.pd-rest-timer-ctrl--main {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--pd-primary, #0D9488);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+.pd-rest-timer-ctrl--pause {
+  background: var(--pd-warning, #F59E0B);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}

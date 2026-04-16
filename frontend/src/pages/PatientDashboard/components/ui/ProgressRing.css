@@ -1,0 +1,25 @@
+.pd-progress-ring {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pd-progress-ring-fill {
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pd-progress-ring-label {
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pd-text2, #6B7280);
+  text-align: center;
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-progress-ring-fill {
+    transition: none;
+  }
+}

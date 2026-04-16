@@ -1,0 +1,63 @@
+.pd-difficulty-scale {
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-difficulty-groups {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pd-difficulty-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-difficulty-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  color: var(--pd-neutral-500, #737373);
+  text-align: center;
+}
+
+.pd-difficulty-group-buttons {
+  display: flex;
+  gap: 3px;
+}
+
+.pd-difficulty-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 2px solid var(--pd-neutral-300, #D4D4D4);
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  padding: 0;
+  background: transparent;
+}
+.pd-difficulty-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.pd-difficulty-btn--selected {
+  transform: scale(1.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.pd-difficulty-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

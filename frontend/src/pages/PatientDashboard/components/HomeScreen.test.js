@@ -4,11 +4,18 @@ import '@testing-library/jest-dom';
 import HomeScreen from './HomeScreen';
 import { mockDashboardData, mockDashboardDataNoProgram } from '../../../test-utils/mockData';
 
+jest.mock('../../../services/api', () => ({
+  rehab: { getMyExercises: jest.fn() },
+}));
+
+const { rehab } = require('../../../services/api');
+
 describe('HomeScreen', () => {
   const mockGoTo = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
+    rehab.getMyExercises.mockResolvedValue({ data: null });
   });
 
   describe('loading state', () => {

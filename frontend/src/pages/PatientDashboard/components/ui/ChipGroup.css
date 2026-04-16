@@ -1,0 +1,41 @@
+.pd-chip-group-v2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pd-chip-v2 {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--pd-neutral-300, #D4D4D4);
+  background: transparent;
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pd-neutral-700, #404040);
+  cursor: pointer;
+  transition: all 200ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.pd-chip-v2--active {
+  background: var(--pd-primary, #0D9488);
+  border-color: var(--pd-primary, #0D9488);
+  color: #fff;
+  font-weight: 600;
+}
+
+.pd-chip-v2:active {
+  transform: scale(0.95);
+}
+
+.pd-chip-v2-icon {
+  font-size: 16px;
+  line-height: 1;
+}

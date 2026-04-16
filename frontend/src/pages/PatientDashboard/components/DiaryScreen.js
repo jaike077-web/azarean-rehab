@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Thermometer, Ruler, Dumbbell, Sparkles, Camera, CheckCircle2, XCircle } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
@@ -57,18 +58,11 @@ const PainSlider = ({ value, onChange }) => {
 
   return (
     <div className="pd-pain-slider">
-      <div style={{ marginBottom: '16px', textAlign: 'center' }}>
-        <div style={{ fontSize: '13px', color: 'var(--pd-text2)', marginBottom: '8px' }}>
-          Общий уровень боли за день
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '32px' }}>{PAIN_EMOJIS[value]}</span>
-          <span style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            fontFamily: 'var(--pd-font-display)',
-            color: getPainColor(value)
-          }}>
+      <div className="pd-pain-slider-head">
+        <div className="pd-pain-slider-caption">Общий уровень боли за день</div>
+        <div className="pd-pain-slider-display">
+          <span className="pd-pain-slider-emoji">{PAIN_EMOJIS[value]}</span>
+          <span className="pd-pain-slider-value" style={{ color: getPainColor(value) }}>
             {value}
           </span>
         </div>
@@ -79,15 +73,7 @@ const PainSlider = ({ value, onChange }) => {
         max="10"
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
-        style={{
-          width: '100%',
-          height: '8px',
-          borderRadius: '4px',
-          background: 'linear-gradient(to right, #22C55E 0%, #22C55E 30%, #EAB308 30%, #EAB308 60%, #EF4444 60%, #EF4444 100%)',
-          outline: 'none',
-          WebkitAppearance: 'none',
-          appearance: 'none',
-        }}
+        className="pd-pain-slider-input"
       />
       <div className="pd-pain-slider-labels">
         <span className="pd-pain-slider-label">Нет боли</span>
@@ -153,32 +139,33 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
             const lines = notes.split('\n');
 
             lines.forEach(line => {
-              if (line.includes('Боль:')) {
-                const times = line.split(':')[1]?.trim().split(',').map(t => t.trim()) || [];
+              const afterColon = line.split(':').slice(1).join(':').trim();
+              if (line.includes('Боль:') && afterColon) {
+                const times = afterColon.split(',').map(t => t.trim()).filter(Boolean);
                 setPainTimes(times);
               }
-              if (line.includes('Разгибание:')) {
-                const ext = line.split(':')[1]?.trim().toLowerCase();
+              if (line.includes('Разгибание:') && afterColon) {
+                const ext = afterColon.toLowerCase();
                 if (ext.includes('полное')) setExtension('full');
                 else if (ext.includes('почти')) setExtension('almost');
                 else if (ext.includes('ограничено')) setExtension('limited');
               }
-              if (line.includes('Сгибание:')) {
-                const flex = line.split(':')[1]?.trim();
+              if (line.includes('Сгибание:') && afterColon) {
+                const flex = afterColon;
                 if (flex.includes('60')) setFlexion('60');
                 else if (flex.includes('90')) setFlexion('90');
                 else if (flex.includes('120+')) setFlexion('120+');
                 else if (flex.includes('120')) setFlexion('120');
               }
-              if (line.includes('Упражнения:')) {
-                const ex = line.split(':')[1]?.trim();
+              if (line.includes('Упражнения:') && afterColon) {
+                const ex = afterColon;
                 if (ex.includes('3+')) setExercisesDone('3+');
                 else if (ex.includes('2')) setExercisesDone('2');
                 else if (ex.includes('1')) setExercisesDone('1');
                 else if (ex.includes('Не')) setExercisesDone('0');
               }
-              if (line.includes('Улучшения:')) {
-                const impr = line.split(':')[1]?.trim().split(',').map(i => i.trim()) || [];
+              if (line.includes('Улучшения:') && afterColon) {
+                const impr = afterColon.split(',').map(i => i.trim()).filter(Boolean);
                 setImprovements(impr);
               }
             });
@@ -209,15 +196,17 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
   }, [toast]);
 
   const togglePainTime = (id) => {
-    setPainTimes(prev =>
-      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
-    );
+    setPainTimes(prev => {
+      const arr = Array.isArray(prev) ? prev : [];
+      return arr.includes(id) ? arr.filter(t => t !== id) : [...arr, id];
+    });
   };
 
   const toggleImprovement = (id) => {
-    setImprovements(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    setImprovements(prev => {
+      const arr = Array.isArray(prev) ? prev : [];
+      return arr.includes(id) ? arr.filter(i => i !== id) : [...arr, id];
+    });
   };
 
   const handleSave = async () => {
@@ -280,43 +269,22 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
   const bestStreak = dashboardData?.streak?.best || 0;
 
   return (
-    <div className="pd-fade-in">
+    <div className="pd-diary-screen pd-fade-in">
       {/* Title */}
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{
-          fontSize: '20px',
-          fontWeight: '800',
-          fontFamily: 'var(--pd-font-display)',
-          color: 'var(--pd-text)',
-          marginBottom: '4px',
-        }}>
-          Дневник
-        </h1>
-        <p style={{ fontSize: '14px', color: 'var(--pd-text2)', margin: 0 }}>
-          Как вы сегодня?
-        </p>
+      <div className="pd-diary-header">
+        <h1 className="pd-screen-title">Дневник</h1>
+        <p className="pd-diary-subtitle">Как вы сегодня?</p>
       </div>
 
       {/* Success Banner */}
       {saved && (
-        <div
-          className="pd-section pd-fade-in"
-          style={{
-            backgroundColor: '#F0FDF4',
-            borderColor: '#86EFAC',
-            marginBottom: '16px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>✅</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#16A34A', marginBottom: '2px' }}>
-                Отлично! Запись сохранена
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--pd-text2)' }}>
-                Серия: {currentStreak} {currentStreak === 1 ? 'день' : currentStreak < 5 ? 'дня' : 'дней'}
-                {bestStreak > currentStreak && ` • Рекорд: ${bestStreak}`}
-              </div>
+        <div className="pd-diary-success pd-fade-in">
+          <CheckCircle2 size={22} className="pd-diary-success-icon" />
+          <div className="pd-diary-success-body">
+            <div className="pd-diary-success-title">Отлично! Запись сохранена</div>
+            <div className="pd-diary-success-sub">
+              Серия: {currentStreak} {currentStreak === 1 ? 'день' : currentStreak < 5 ? 'дня' : 'дней'}
+              {bestStreak > currentStreak && ` • Рекорд: ${bestStreak}`}
             </div>
           </div>
         </div>
@@ -325,27 +293,20 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       {/* Pain Section */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span className="pd-section-icon">🌡️</span>
+          <Thermometer size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Боль</h3>
         </div>
 
         <PainSlider value={pain} onChange={setPain} />
 
-        <div style={{ marginTop: '16px' }}>
-          <div style={{ fontSize: '13px', color: 'var(--pd-text2)', marginBottom: '10px' }}>
-            Когда болело?
-          </div>
+        <div className="pd-diary-field">
+          <div className="pd-diary-field-label">Когда болело?</div>
           <div className="pd-chip-group">
             {PAIN_TIMES.map(pt => (
               <button
                 key={pt.id}
                 className={`pd-chip ${painTimes.includes(pt.id) ? 'pd-chip--active' : ''}`}
                 onClick={() => togglePainTime(pt.id)}
-                style={painTimes.includes(pt.id) ? {
-                  borderColor: '#FDE68A',
-                  backgroundColor: '#FFFBEB',
-                  color: '#B45309',
-                } : {}}
               >
                 {pt.label}
               </button>
@@ -357,7 +318,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       {/* Swelling Section */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span className="pd-section-icon">📐</span>
+          <Ruler size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Отёк</h3>
         </div>
 
@@ -365,16 +326,16 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           {SWELLING_OPTS.map(opt => (
             <button
               key={opt.val}
-              className="pd-opt-btn"
+              className={`pd-opt-btn ${swelling === opt.val ? 'pd-opt-btn--active' : ''}`}
               onClick={() => setSwelling(opt.val)}
               style={swelling === opt.val ? {
                 borderColor: opt.border,
                 backgroundColor: opt.bg,
                 color: opt.color,
-              } : {}}
+              } : undefined}
             >
-              <div style={{ fontSize: '18px', marginBottom: '4px' }}>{opt.icon}</div>
-              <div style={{ fontSize: '12px' }}>{opt.label}</div>
+              <div className="pd-opt-btn-symbol">{opt.icon}</div>
+              <div className="pd-opt-btn-label">{opt.label}</div>
             </button>
           ))}
         </div>
@@ -383,7 +344,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       {/* Exercises Section */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span className="pd-section-icon">💪</span>
+          <Dumbbell size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Упражнения</h3>
         </div>
 
@@ -391,16 +352,16 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           {EXERCISES_OPTS.map(opt => (
             <button
               key={opt.v}
-              className="pd-opt-btn"
+              className={`pd-opt-btn ${exercisesDone === opt.v ? 'pd-opt-btn--active' : ''}`}
               onClick={() => setExercisesDone(opt.v)}
               style={exercisesDone === opt.v ? {
                 borderColor: opt.brd,
                 backgroundColor: opt.bg,
                 color: opt.clr,
-              } : {}}
+              } : undefined}
             >
-              <div style={{ fontSize: '18px', marginBottom: '4px' }}>{opt.ic}</div>
-              <div style={{ fontSize: '11px' }}>{opt.l}</div>
+              <div className="pd-opt-btn-symbol">{opt.ic}</div>
+              <div className="pd-opt-btn-label">{opt.l}</div>
             </button>
           ))}
         </div>
@@ -409,25 +370,23 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       {/* ROM Section */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span className="pd-section-icon">📐</span>
+          <Ruler size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Объём движений</h3>
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '13px', color: 'var(--pd-text2)', marginBottom: '8px' }}>
-            Разгибание
-          </div>
+        <div className="pd-diary-field">
+          <div className="pd-diary-field-label">Разгибание</div>
           <div className="pd-opt-btn-group">
             {EXTENSION_OPTS.map(opt => (
               <button
                 key={opt.val}
-                className="pd-opt-btn"
+                className={`pd-opt-btn ${extension === opt.val ? 'pd-opt-btn--active' : ''}`}
                 onClick={() => setExtension(opt.val)}
                 style={extension === opt.val ? {
                   borderColor: opt.border,
                   backgroundColor: opt.bg,
                   color: opt.color,
-                } : {}}
+                } : undefined}
               >
                 {opt.label}
               </button>
@@ -435,21 +394,19 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           </div>
         </div>
 
-        <div>
-          <div style={{ fontSize: '13px', color: 'var(--pd-text2)', marginBottom: '8px' }}>
-            Сгибание
-          </div>
+        <div className="pd-diary-field">
+          <div className="pd-diary-field-label">Сгибание</div>
           <div className="pd-opt-btn-group">
             {FLEXION_OPTS.map(opt => (
               <button
                 key={opt.val}
-                className="pd-opt-btn"
+                className={`pd-opt-btn ${flexion === opt.val ? 'pd-opt-btn--active' : ''}`}
                 onClick={() => setFlexion(opt.val)}
                 style={flexion === opt.val ? {
                   borderColor: opt.border,
                   backgroundColor: opt.bg,
                   color: opt.color,
-                } : {}}
+                } : undefined}
               >
                 {opt.label}
               </button>
@@ -461,7 +418,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       {/* Improvements Section */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span className="pd-section-icon">✨</span>
+          <Sparkles size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Что стало лучше?</h3>
         </div>
 
@@ -469,13 +426,8 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           {IMPROVEMENTS.map(imp => (
             <button
               key={imp.id}
-              className={`pd-chip ${improvements.includes(imp.id) ? 'pd-chip--active' : ''}`}
+              className={`pd-chip pd-chip--improvement ${improvements.includes(imp.id) ? 'pd-chip--improvement-active' : ''}`}
               onClick={() => toggleImprovement(imp.id)}
-              style={improvements.includes(imp.id) ? {
-                borderColor: '#A7F3D0',
-                backgroundColor: '#EDFAF5',
-                color: '#1A8A6A',
-              } : {}}
             >
               {imp.label}
             </button>
@@ -484,36 +436,10 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       </div>
 
       {/* Photo Button */}
-      <div className="pd-section" style={{ marginBottom: '12px' }}>
-        <button
-          style={{
-            width: '100%',
-            padding: '16px',
-            borderRadius: 'var(--pd-radius-sm)',
-            border: '2px dashed var(--pd-border)',
-            backgroundColor: 'transparent',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            fontSize: '13px',
-            fontWeight: '600',
-            color: 'var(--pd-text2)',
-            fontFamily: 'var(--pd-font)',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--pd-accent)';
-            e.currentTarget.style.backgroundColor = '#F0FAF7';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--pd-border)';
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }}
-        >
-          <span style={{ fontSize: '20px' }} aria-hidden="true">📷</span>
-          Сфотографировать колено
+      <div className="pd-section pd-section--tight">
+        <button className="pd-diary-photo-btn">
+          <Camera size={18} />
+          <span>Сфотографировать колено</span>
         </button>
       </div>
 
@@ -525,24 +451,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           placeholder="Заметки (необязательно)"
           maxLength={2000}
           rows={2}
-          style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: 'var(--pd-radius-sm)',
-            border: '1.5px solid var(--pd-border)',
-            fontSize: '13px',
-            fontFamily: 'var(--pd-font)',
-            color: 'var(--pd-text)',
-            resize: 'vertical',
-            outline: 'none',
-            transition: 'border-color 0.2s ease',
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = 'var(--pd-accent)';
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = 'var(--pd-border)';
-          }}
+          className="pd-diary-notes"
         />
       </div>
 
@@ -550,47 +459,15 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        style={{
-          width: '100%',
-          padding: '16px',
-          borderRadius: 'var(--pd-radius)',
-          border: 'none',
-          background: 'linear-gradient(135deg, #2B7CB8, #1A8A6A)',
-          color: 'white',
-          fontSize: '15px',
-          fontWeight: '700',
-          fontFamily: 'var(--pd-font)',
-          cursor: saving ? 'not-allowed' : 'pointer',
-          boxShadow: 'var(--pd-shadow-md)',
-          transition: 'all 0.2s ease',
-          opacity: saving ? 0.6 : 1,
-          marginBottom: '24px',
-        }}
-        onMouseEnter={(e) => {
-          if (!saving) {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(43, 124, 184, 0.3)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = 'var(--pd-shadow-md)';
-        }}
+        className="pd-diary-save-btn"
       >
         {saving ? 'Сохранение...' : 'Сохранить отчёт'}
       </button>
 
       {/* Diary History */}
       {entries.length > 0 && (
-        <div style={{ marginTop: '24px' }}>
-          <h3 style={{
-            fontSize: '15px',
-            fontWeight: '700',
-            color: 'var(--pd-text)',
-            marginBottom: '12px',
-          }}>
-            История
-          </h3>
+        <div className="pd-diary-history">
+          <h3 className="pd-screen-subtitle">История</h3>
 
           <div className="pd-diary-entries">
             {entries.map((entry, index) => (
@@ -604,9 +481,8 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
                   </div>
                 </div>
 
-                <div className="pd-diary-entry-content" style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    {/* Pain Level */}
+                <div className="pd-diary-entry-content">
+                  <div className="pd-diary-entry-metrics">
                     <div>
                       <div className="pd-diary-entry-label">Боль</div>
                       <div
@@ -619,7 +495,6 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
                       </div>
                     </div>
 
-                    {/* Swelling */}
                     {entry.swelling !== null && entry.swelling !== undefined && (
                       <div>
                         <div className="pd-diary-entry-label">Отёк</div>
@@ -629,11 +504,12 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
                       </div>
                     )}
 
-                    {/* Exercises */}
                     <div>
                       <div className="pd-diary-entry-label">Упражнения</div>
                       <div className="pd-diary-entry-value">
-                        {entry.exercises_done ? '✅' : '❌'}
+                        {entry.exercises_done
+                          ? <CheckCircle2 size={16} color="#1A8A6A" />
+                          : <XCircle size={16} color="#D94235" />}
                       </div>
                     </div>
                   </div>

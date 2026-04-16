@@ -5,6 +5,7 @@
 // =====================================================
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Camera, ClipboardList, Lock, Info, ChevronDown, LogOut } from 'lucide-react';
 import { patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
@@ -222,34 +223,34 @@ const ProfileScreen = ({ handleLogout }) => {
   // Loading skeleton
   if (loading) {
     return (
-      <div>
-        <h1 className="pd-profile-page-title">Профиль</h1>
-        <div className="pd-section" style={{ textAlign: 'center', padding: '30px 18px' }}>
-          <div className="pd-skeleton pd-skeleton--circle" style={{ width: 100, height: 100, margin: '0 auto 16px' }}></div>
-          <div className="pd-skeleton pd-skeleton--title" style={{ width: '50%', margin: '0 auto 8px' }}></div>
-          <div className="pd-skeleton pd-skeleton--text" style={{ width: '35%', margin: '0 auto' }}></div>
+      <div className="pd-profile-screen">
+        <h1 className="pd-screen-title">Профиль</h1>
+        <div className="pd-section pd-profile-loading-hero">
+          <div className="pd-skeleton pd-skeleton--circle pd-profile-loading-avatar"></div>
+          <div className="pd-skeleton pd-skeleton--title pd-profile-loading-title"></div>
+          <div className="pd-skeleton pd-skeleton--text pd-profile-loading-text"></div>
         </div>
         <div className="pd-section">
-          <div className="pd-skeleton pd-skeleton--text" style={{ width: '30%' }}></div>
-          <div className="pd-skeleton pd-skeleton--card" style={{ height: 44 }}></div>
-          <div className="pd-skeleton pd-skeleton--text" style={{ width: '30%', marginTop: 12 }}></div>
-          <div className="pd-skeleton pd-skeleton--card" style={{ height: 44 }}></div>
+          <div className="pd-skeleton pd-skeleton--text pd-profile-loading-field"></div>
+          <div className="pd-skeleton pd-skeleton--card pd-profile-loading-input"></div>
+          <div className="pd-skeleton pd-skeleton--text pd-profile-loading-field"></div>
+          <div className="pd-skeleton pd-skeleton--card pd-profile-loading-input"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="pd-profile-screen">
       {/* Title */}
-      <h1 className="pd-profile-page-title">Профиль</h1>
+      <h1 className="pd-screen-title">Профиль</h1>
 
       {/* ===== Avatar Section ===== */}
       <div className="pd-section pd-profile-avatar-section">
         <div className="pd-profile-avatar-wrapper" onClick={handleAvatarClick}>
           {avatarUploading ? (
             <div className="pd-profile-avatar pd-profile-avatar--loading">
-              <span style={{ fontSize: 24 }}>...</span>
+              <span>…</span>
             </div>
           ) : getAvatarUrl() ? (
             <img
@@ -263,7 +264,7 @@ const ProfileScreen = ({ handleLogout }) => {
             </div>
           )}
           <div className="pd-profile-avatar-badge">
-            <span style={{ fontSize: 14 }}>📷</span>
+            <Camera size={14} />
           </div>
         </div>
 
@@ -302,7 +303,7 @@ const ProfileScreen = ({ handleLogout }) => {
       {/* ===== Personal Data ===== */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span style={{ fontSize: 18 }}>📋</span>
+          <ClipboardList size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Личные данные</h3>
         </div>
 
@@ -363,16 +364,14 @@ const ProfileScreen = ({ handleLogout }) => {
           className="pd-profile-collapse-btn"
           onClick={() => setShowPasswordSection(!showPasswordSection)}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 18 }}>🔒</span>
+          <div className="pd-profile-collapse-head">
+            <Lock size={18} className="pd-section-icon" />
             <span className="pd-section-title">Сменить пароль</span>
           </div>
-          <span
-            className="pd-profile-collapse-chevron"
-            style={{ transform: showPasswordSection ? 'rotate(180deg)' : 'rotate(0deg)' }}
-          >
-            ▾
-          </span>
+          <ChevronDown
+            size={18}
+            className={`pd-profile-collapse-chevron ${showPasswordSection ? 'pd-profile-collapse-chevron--open' : ''}`}
+          />
         </button>
 
         {showPasswordSection && (
@@ -424,7 +423,7 @@ const ProfileScreen = ({ handleLogout }) => {
       {/* ===== Account Info ===== */}
       <div className="pd-section">
         <div className="pd-section-header">
-          <span style={{ fontSize: 18 }}>ℹ️</span>
+          <Info size={18} className="pd-section-icon" />
           <h3 className="pd-section-title">Информация</h3>
         </div>
 
@@ -446,11 +445,12 @@ const ProfileScreen = ({ handleLogout }) => {
 
       {/* ===== Logout ===== */}
       <button className="pd-profile-logout-btn" onClick={handleLogout}>
-        Выйти из аккаунта
+        <LogOut size={16} />
+        <span>Выйти из аккаунта</span>
       </button>
 
       {/* Bottom spacer */}
-      <div style={{ height: 20 }} />
+      <div className="pd-bottom-spacer" />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield, User } from 'lucide-react';
 import { rehab } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
@@ -12,11 +13,11 @@ import ProfileScreen from './components/ProfileScreen';
 import './PatientDashboard.css';
 
 const NAV = [
-  { id: 0, icon: '🏠', label: 'Главная' },
-  { id: 1, icon: '🗺️', label: 'Путь' },
-  { id: 4, icon: '🏋️', label: 'Упражнения', accent: true },
-  { id: 2, icon: '📝', label: 'Дневник' },
-  { id: 3, icon: '💬', label: 'Связь' },
+  { id: 0, Icon: Home, label: 'Главная' },
+  { id: 1, Icon: Map, label: 'Путь' },
+  { id: 4, Icon: Dumbbell, label: 'Упражнения', accent: true },
+  { id: 2, Icon: FileText, label: 'Дневник' },
+  { id: 3, Icon: MessageCircle, label: 'Связь' },
 ];
 
 const StreakBadge = ({ days, best, atRisk }) => {
@@ -31,7 +32,7 @@ const StreakBadge = ({ days, best, atRisk }) => {
 
   return (
     <div className="pd-streak">
-      <span className="pd-streak-emoji">🔥</span>
+      <Flame size={16} className="pd-streak-emoji" />
       <div className="pd-streak-info">
         <div className="pd-streak-days">{days}</div>
         {statusText && <div className="pd-streak-status">{statusText}</div>}
@@ -44,6 +45,7 @@ export { StreakBadge };
 
 export default function PatientDashboard() {
   const [screen, setScreen] = useState(0);
+  const [screenParams, setScreenParams] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
@@ -61,7 +63,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap';
+    link.href = 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,500;6..12,600;6..12,700&display=swap';
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
@@ -115,9 +117,15 @@ export default function PatientDashboard() {
       );
     }
 
+    const goTo = (id, params = null) => {
+      setScreen(id);
+      setScreenParams(params);
+    };
+
     const screenProps = {
       dashboardData,
-      goTo: setScreen,
+      goTo,
+      screenParams,
       handleLogout,
     };
 
@@ -146,7 +154,7 @@ export default function PatientDashboard() {
           <div className="pd-disclaimer-content">
             <div className="pd-disclaimer-icon">
               <div className="pd-disclaimer-icon-gradient">
-                <span className="pd-disclaimer-icon-emoji">🛡️</span>
+                <Shield size={18} className="pd-disclaimer-icon-emoji" />
               </div>
             </div>
 
@@ -193,10 +201,10 @@ export default function PatientDashboard() {
           )}
           <button
             className={`pd-header-avatar-btn ${screen === 5 ? 'pd-header-avatar-btn--active' : ''}`}
-            onClick={() => setScreen(5)}
+            onClick={() => { setScreen(5); setScreenParams(null); }}
             aria-label="Профиль"
           >
-            <span className="pd-header-avatar-icon">👤</span>
+            <User size={20} className="pd-header-avatar-icon" />
           </button>
         </div>
       </header>
@@ -212,14 +220,14 @@ export default function PatientDashboard() {
           <button
             key={item.id}
             className={`pd-nav-btn ${screen === item.id ? 'pd-nav-btn--active' : ''} ${item.accent ? 'pd-nav-btn--accent' : ''}`}
-            onClick={() => setScreen(item.id)}
+            onClick={() => { setScreen(item.id); setScreenParams(null); }}
           >
             {item.accent ? (
               <div className="pd-nav-btn-circle">
-                <span className="pd-nav-btn-icon">{item.icon}</span>
+                <item.Icon size={22} className="pd-nav-btn-icon" />
               </div>
             ) : (
-              <span className="pd-nav-btn-icon">{item.icon}</span>
+              <item.Icon size={20} className="pd-nav-btn-icon" />
             )}
             <span className="pd-nav-btn-label">{item.label}</span>
           </button>

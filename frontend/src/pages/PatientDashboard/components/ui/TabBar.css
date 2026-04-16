@@ -1,0 +1,73 @@
+.pd-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding-top: 6px;
+  z-index: 1000;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pd-tabbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  min-width: 56px;
+  transition: color 200ms ease-out;
+}
+
+.pd-tabbar-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  color: var(--pd-neutral-500, #737373);
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+.pd-tabbar-icon-wrap--active {
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--pd-primary, #0D9488);
+}
+
+.pd-tabbar-label {
+  font-family: var(--pd-font, 'Manrope', sans-serif);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--pd-neutral-500, #737373);
+  line-height: 1;
+}
+
+.pd-tabbar-btn--active .pd-tabbar-label {
+  color: var(--pd-primary, #0D9488);
+  font-weight: 600;
+}
+
+/* Accent button (Exercises) — slightly elevated */
+.pd-tabbar-btn--accent .pd-tabbar-icon-wrap--active {
+  background: var(--pd-primary, #0D9488);
+  color: #fff;
+  border-radius: 14px;
+  width: 48px;
+  height: 32px;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+}

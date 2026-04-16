@@ -52,10 +52,10 @@ import { rehab } from '../../services/api';
 import { mockNavigate } from 'react-router-dom';
 
 describe('StreakBadge Component', () => {
-  it('renders fire emoji', () => {
-    render(<StreakBadge days={5} best={10} atRisk={false} />);
+  it('renders flame icon', () => {
+    const { container } = render(<StreakBadge days={5} best={10} atRisk={false} />);
 
-    expect(screen.getByText('🔥')).toBeInTheDocument();
+    expect(container.querySelector('.pd-streak-emoji')).toBeInTheDocument();
   });
 
   it('displays the number of days', () => {
@@ -85,7 +85,7 @@ describe('StreakBadge Component', () => {
   it('shows no status text when days=0 and best=0', () => {
     const { container } = render(<StreakBadge days={0} best={0} atRisk={false} />);
 
-    expect(screen.getByText('🔥')).toBeInTheDocument();
+    expect(container.querySelector('.pd-streak-emoji')).toBeInTheDocument();
     expect(screen.getByText('0')).toBeInTheDocument();
     expect(container.querySelector('.pd-streak-status')).not.toBeInTheDocument();
   });
@@ -283,7 +283,7 @@ describe('PatientDashboard Component', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('🔥')).toBeInTheDocument();
+      expect(document.querySelector('.pd-streak-emoji')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument(); // mockDashboardData.streak.current
     });
   });

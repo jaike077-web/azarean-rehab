@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
+import {
+  Shield, RefreshCw, Dumbbell, Activity, Zap, Trophy,
+  Target, Ban, CheckCircle2, Snowflake, Home as HomeIcon,
+  AlertTriangle, BarChart3, MessageCircle, Check, Info, Plus, Minus, PartyPopper
+} from 'lucide-react';
 import { rehab } from '../../../services/api';
 
-// Phase icon mapping
+// Phase icon mapping (lucide components)
 const PHASE_ICONS = {
-  shield: '🛡️',
-  move: '🔄',
-  dumbbell: '💪',
-  activity: '🏃',
-  trophy: '⚡',
-  star: '🏆',
+  shield: Shield,
+  move: RefreshCw,
+  dumbbell: Dumbbell,
+  activity: Activity,
+  trophy: Zap,
+  star: Trophy,
 };
 
 // Calculate weeks since surgery
@@ -19,16 +24,16 @@ const getWeeksSinceSurgery = (surgeryDate) => {
   return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
 };
 
-// Tab configuration
+// Tab configuration (icons = lucide components)
 const TABS = [
-  { id: 'goals', label: 'Цели', icon: '🎯' },
-  { id: 'restrictions', label: 'Нельзя', icon: '⛔' },
-  { id: 'allowed', label: 'Можно', icon: '✅' },
-  { id: 'pain', label: 'Боль', icon: '❄️' },
-  { id: 'daily', label: 'Быт', icon: '🏠' },
-  { id: 'red_flags', label: 'Врач', icon: '🚨' },
-  { id: 'criteria_next', label: 'Переход', icon: '📊' },
-  { id: 'faq', label: 'FAQ', icon: '💬' },
+  { id: 'goals', label: 'Цели', Icon: Target },
+  { id: 'restrictions', label: 'Нельзя', Icon: Ban },
+  { id: 'allowed', label: 'Можно', Icon: CheckCircle2 },
+  { id: 'pain', label: 'Боль', Icon: Snowflake },
+  { id: 'daily', label: 'Быт', Icon: HomeIcon },
+  { id: 'red_flags', label: 'Врач', Icon: AlertTriangle },
+  { id: 'criteria_next', label: 'Переход', Icon: BarChart3 },
+  { id: 'faq', label: 'FAQ', Icon: MessageCircle },
 ];
 
 // ProgressArc Component (reused from HomeScreen)
@@ -38,44 +43,52 @@ const ProgressArc = ({ currentWeek, totalWeeks, phase }) => {
     return Math.min(100, Math.round((currentWeek / totalWeeks) * 100));
   }, [currentWeek, totalWeeks]);
 
-  const size = 200;
+  const size = 140;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
-  const circumference = radius * Math.PI;
+  const circumference = 2 * Math.PI * radius;
   const offset = circumference - (circumference * percentage) / 100;
+  const center = size / 2;
 
   return (
     <div className="pd-progress-arc">
-      <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="roadmapProgressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={phase?.color || '#1A8A6A'} />
-            <stop offset="100%" stopColor={phase?.color2 || '#2B7CB8'} />
+            <stop offset="100%" stopColor={phase?.color2 || '#3B82C8'} />
           </linearGradient>
         </defs>
 
-        <path
-          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="#ECEEF3" strokeWidth={strokeWidth} />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
           fill="none"
-          stroke="#E2E8F0"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-        />
-
-        <path
-          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
-          fill="none"
-          stroke="url(#progressGradient)"
+          stroke="url(#roadmapProgressGradient)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          transform={`rotate(-90 ${center} ${center})`}
           style={{ transition: 'stroke-dashoffset 0.6s ease' }}
         />
+        <text
+          x={center}
+          y={center}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize="26"
+          fontWeight="800"
+          fontFamily="'Nunito Sans', sans-serif"
+          fill="#171C2B"
+        >
+          {percentage}%
+        </text>
       </svg>
 
       <div className="pd-progress-arc-text">
-        <div className="pd-progress-arc-percentage">{percentage}%</div>
         <div className="pd-progress-arc-label">
           {phase?.name || 'Фаза'} · Неделя {currentWeek}
         </div>
@@ -182,7 +195,7 @@ const Criteria = ({ items, color }) => {
                 backgroundColor: checkedItems[index] ? color || '#1A8A6A' : 'transparent'
               }}
             >
-              {checkedItems[index] && '✓'}
+              {checkedItems[index] && <Check size={14} strokeWidth={3} color="#fff" />}
             </span>
             <span className="pd-criteria-text">{item}</span>
           </li>
@@ -191,7 +204,8 @@ const Criteria = ({ items, color }) => {
 
       {allChecked && (
         <div className="pd-criteria-success">
-          <span>🎉</span> Отлично! Вы готовы к следующей фазе. Обсудите переход со специалистом.
+          <PartyPopper size={18} />
+          <span>Отлично! Вы готовы к следующей фазе. Обсудите переход со специалистом.</span>
         </div>
       )}
     </div>
@@ -237,7 +251,7 @@ const FAQ = ({ items, color }) => {
                 className="pd-faq-toggle"
                 style={{ color: isOpen ? color || '#1A8A6A' : '#718096' }}
               >
-                {isOpen ? '−' : '+'}
+                {isOpen ? <Minus size={18} /> : <Plus size={18} />}
               </span>
             </button>
             {isOpen && (
@@ -268,8 +282,7 @@ const PhaseStepper = ({ phases, currentPhaseNumber }) => {
         const phaseNumber = phase.phase_number;
         const isPast = phaseNumber < currentPhaseNumber;
         const isActive = phaseNumber === currentPhaseNumber;
-        const isFuture = phaseNumber > currentPhaseNumber;
-        const icon = PHASE_ICONS[phase.icon] || '🎯';
+        const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
 
         return (
           <div key={phase.id ?? `phase-${index}`} className="pd-stepper-row">
@@ -290,10 +303,11 @@ const PhaseStepper = ({ phases, currentPhaseNumber }) => {
               style={{
                 backgroundColor: isActive ? phase.color : isPast ? '#48BB78' : '#E2E8F0',
                 borderColor: isActive ? phase.color : 'transparent',
-                boxShadow: isActive ? `0 0 0 4px ${phase.color}20` : 'none'
+                boxShadow: isActive ? `0 0 0 4px ${phase.color}20` : 'none',
+                color: isActive || isPast ? '#fff' : '#5A6275',
               }}
             >
-              {isPast ? '✓' : icon}
+              {isPast ? <Check size={18} strokeWidth={3} /> : <PhaseIcon size={18} />}
             </div>
 
             {/* Phase info */}
@@ -377,7 +391,7 @@ const RoadmapScreen = ({ dashboardData }) => {
     if (isFuturePhase) {
       return (
         <div className="pd-future-phase-notice">
-          <span className="pd-future-phase-icon">🎯</span>
+          <Target size={22} className="pd-future-phase-icon" />
           <p>Детали этой фазы станут доступны, когда вы до неё дойдёте</p>
         </div>
       );
@@ -419,7 +433,7 @@ const RoadmapScreen = ({ dashboardData }) => {
   return (
     <div className="pd-roadmap-screen">
       {/* Title */}
-      <h1 className="pd-roadmap-title">Дорожная карта</h1>
+      <h1 className="pd-screen-title">Дорожная карта</h1>
 
       {/* Progress Arc */}
       {dashboardData?.phase && (
@@ -438,7 +452,7 @@ const RoadmapScreen = ({ dashboardData }) => {
 
       {/* Info Note */}
       <div className="pd-info-note">
-        <span className="pd-info-note-icon">ℹ️</span>
+        <Info size={18} className="pd-info-note-icon" />
         <p className="pd-info-note-text">
           Сроки фаз ориентировочные. Переход происходит по готовности и решению вашего специалиста.
         </p>
@@ -447,20 +461,25 @@ const RoadmapScreen = ({ dashboardData }) => {
       {/* Content Tabs */}
       <div className="pd-tabs-wrapper">
         <div className="pd-tabs">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`pd-tab ${tab === t.id ? 'pd-tab--active' : ''}`}
-              onClick={() => setTab(t.id)}
-              style={{
-                borderBottomColor: tab === t.id ? currentPhase?.color || '#1A8A6A' : 'transparent',
-                backgroundColor: tab === t.id ? `${currentPhase?.color || '#1A8A6A'}10` : 'transparent'
-              }}
-            >
-              <span className="pd-tab-icon">{t.icon}</span>
-              <span className="pd-tab-label">{t.label}</span>
-            </button>
-          ))}
+          {TABS.map((t) => {
+            const TabIcon = t.Icon;
+            const isActive = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                className={`pd-tab ${isActive ? 'pd-tab--active' : ''}`}
+                onClick={() => setTab(t.id)}
+                style={{
+                  borderBottomColor: isActive ? currentPhase?.color || '#1A8A6A' : 'transparent',
+                  backgroundColor: isActive ? `${currentPhase?.color || '#1A8A6A'}10` : 'transparent',
+                  color: isActive ? currentPhase?.color || '#1A8A6A' : undefined,
+                }}
+              >
+                <TabIcon size={16} className="pd-tab-icon" />
+                <span className="pd-tab-label">{t.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

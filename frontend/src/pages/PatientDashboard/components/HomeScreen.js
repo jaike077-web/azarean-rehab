@@ -1,14 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { Shield, RefreshCw, Dumbbell, Activity, Zap, Trophy, Target, Lightbulb, Video, ClipboardList, AlertTriangle, Hand, Map, FileText, Play } from 'lucide-react';
+import { rehab } from '../../../services/api';
 
-// Phase icon mapping
+// Phase icon mapping — lucide components
 const PHASE_ICONS = {
-  shield: '🛡️',
-  move: '🔄',
-  dumbbell: '💪',
-  activity: '🏃',
-  trophy: '⚡',
-  star: '🏆',
+  shield: Shield,
+  move: RefreshCw,
+  dumbbell: Dumbbell,
+  activity: Activity,
+  trophy: Zap,
+  star: Trophy,
 };
 
 // Calculate weeks since surgery
@@ -18,54 +20,73 @@ const getWeeksSinceSurgery = (surgeryDate) => {
   return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
 };
 
-// ProgressArc Component - SVG semi-circle progress visualization
+// ProgressArc Component - SVG full-circle donut progress visualization
 const ProgressArc = ({ currentWeek, totalWeeks, phase }) => {
   const percentage = useMemo(() => {
     if (!totalWeeks || totalWeeks === 0) return 0;
     return Math.min(100, Math.round((currentWeek / totalWeeks) * 100));
   }, [currentWeek, totalWeeks]);
 
-  // SVG Arc calculations
-  const size = 200;
+  // SVG donut calculations
+  const size = 140;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
-  const circumference = radius * Math.PI; // Half circle
+  const circumference = 2 * Math.PI * radius;
   const offset = circumference - (circumference * percentage) / 100;
+  const center = size / 2;
 
   return (
     <div className="pd-progress-arc">
-      <svg width={size} height={size / 2 + 20} viewBox={`0 0 ${size} ${size / 2 + 20}`}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <defs>
-          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={phase?.color || '#1A8A6A'} />
-            <stop offset="100%" stopColor={phase?.color2 || '#2B7CB8'} />
+            <stop offset="100%" stopColor={phase?.color2 || '#3B82C8'} />
           </linearGradient>
         </defs>
 
-        {/* Background arc */}
-        <path
-          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+        {/* Background ring */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
           fill="none"
-          stroke="#E2E8F0"
+          stroke="#ECEEF3"
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
         />
 
-        {/* Progress arc */}
-        <path
-          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+        {/* Progress ring */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
           fill="none"
           stroke="url(#progressGradient)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          transform={`rotate(-90 ${center} ${center})`}
           style={{ transition: 'stroke-dashoffset 0.6s ease' }}
         />
+
+        {/* Percentage text centered inside the donut */}
+        <text
+          x={center}
+          y={center}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize="26"
+          fontWeight="800"
+          fontFamily="'Nunito Sans', sans-serif"
+          fill="#171C2B"
+        >
+          {percentage}%
+        </text>
       </svg>
 
       <div className="pd-progress-arc-text">
-        <div className="pd-progress-arc-percentage">{percentage}%</div>
+        <div className="pd-progress-arc-percentage" style={{ display: 'none' }}>{percentage}%</div>
         <div className="pd-progress-arc-label">
           {phase?.name || 'Фаза'} · Неделя {currentWeek}
         </div>
@@ -86,7 +107,7 @@ ProgressArc.propTypes = {
 
 // StatusCard Component - Phase info card
 const StatusCard = ({ phase, currentWeek }) => {
-  const icon = PHASE_ICONS[phase?.icon] || '🎯';
+  const PhaseIcon = PHASE_ICONS[phase?.icon] || Target;
   const bgColor = phase?.color || '#1A8A6A';
 
   return (
@@ -97,8 +118,8 @@ const StatusCard = ({ phase, currentWeek }) => {
         borderLeft: `4px solid ${bgColor}`
       }}
     >
-      <div className="pd-status-card-icon" style={{ fontSize: '32px' }}>
-        {icon}
+      <div className="pd-status-card-icon">
+        <PhaseIcon size={28} />
       </div>
       <div className="pd-status-card-content">
         <div className="pd-status-card-title">
@@ -136,7 +157,7 @@ const TipCard = ({ tip }) => {
   return (
     <div className="pd-tip">
       <div className="pd-tip-header">
-        <span className="pd-tip-icon">💡</span>
+        <Lightbulb size={18} className="pd-tip-icon" />
         <span className="pd-tip-label">Совет дня</span>
       </div>
       <div className="pd-tip-title">{tip.title}</div>
@@ -180,10 +201,10 @@ const VideoCard = ({ video, phaseColor }) => {
             className="pd-video-card-placeholder"
             style={{ background: `linear-gradient(135deg, ${phaseColor}40, ${phaseColor}20)` }}
           >
-            🎬
+            <Video size={24} />
           </div>
         )}
-        <div className="pd-video-card-play">▶</div>
+        <div className="pd-video-card-play"><Play size={16} /></div>
       </div>
       <div className="pd-video-card-info">
         <div className="pd-video-card-title">{video.title}</div>
@@ -235,7 +256,7 @@ const LoadingSkeleton = () => (
 // EmptyState Component
 const EmptyState = ({ goTo }) => (
   <div className="pd-empty-state">
-    <div className="pd-empty-state-icon">📋</div>
+    <div className="pd-empty-state-icon"><ClipboardList size={36} /></div>
     <h3 className="pd-empty-state-title">Программа не создана</h3>
     <p className="pd-empty-state-text">
       Ваш инструктор ещё не создал программу реабилитации.
@@ -262,6 +283,14 @@ const HomeScreen = ({ dashboardData, goTo }) => {
   const tip = dashboardData?.tip;
   const diaryFilledToday = dashboardData?.diaryFilledToday;
 
+  // Сегодняшний комплекс для блока "Начать тренировку"
+  const [todayComplex, setTodayComplex] = useState(null);
+  useEffect(() => {
+    rehab.getMyExercises()
+      .then((res) => setTodayComplex(res.data || null))
+      .catch(() => {});
+  }, []);
+
   // Calculate current week (must be before any early returns)
   const currentWeek = useMemo(() =>
     getWeeksSinceSurgery(program?.surgery_date),
@@ -286,12 +315,36 @@ const HomeScreen = ({ dashboardData, goTo }) => {
 
   return (
     <div className="pd-home-screen">
+      {/* Training Card — блок "Начать тренировку" (самый верх) */}
+      {todayComplex && (
+        <div className="pd-card pd-training-card">
+          <div className="pd-training-header">
+            <Dumbbell size={22} className="pd-training-icon" />
+            <div className="pd-training-info">
+              <div className="pd-training-title">
+                {todayComplex.complex_title || 'Комплекс упражнений'}
+              </div>
+              {todayComplex.exercise_count && (
+                <div className="pd-training-sub">{todayComplex.exercise_count} упражнений</div>
+              )}
+            </div>
+          </div>
+          <button
+            className="pd-training-btn"
+            onClick={() => goTo(4, { autoStart: true, complexId: todayComplex.complex_id })}
+          >
+            <Play size={18} />
+            Начать тренировку
+          </button>
+        </div>
+      )}
+
       {/* Greeting */}
       <div className="pd-greeting">
         <h2 className="pd-greeting-text">
           Добрый день, <strong>{patientName}</strong>
         </h2>
-        <span className="pd-greeting-emoji">👋</span>
+        <Hand size={22} className="pd-greeting-emoji" />
       </div>
 
       {/* Progress Arc */}
@@ -319,7 +372,7 @@ const HomeScreen = ({ dashboardData, goTo }) => {
           onClick={() => goTo(4)}
           aria-label="Упражнения"
         >
-          <span className="pd-quick-action-icon">🏋️</span>
+          <Dumbbell size={20} className="pd-quick-action-icon" />
           <span className="pd-quick-action-label">Упражнения</span>
         </button>
         <button
@@ -327,7 +380,7 @@ const HomeScreen = ({ dashboardData, goTo }) => {
           onClick={() => goTo(2)}
           aria-label="Дневник"
         >
-          <span className="pd-quick-action-icon">📝</span>
+          <FileText size={20} className="pd-quick-action-icon" />
           <span className="pd-quick-action-label">Дневник</span>
           {diaryFilledToday && (
             <span className="pd-quick-action-badge">✓</span>
@@ -338,14 +391,14 @@ const HomeScreen = ({ dashboardData, goTo }) => {
           onClick={() => goTo(1)}
           aria-label="Дорожная карта"
         >
-          <span className="pd-quick-action-icon">🗺️</span>
+          <Map size={20} className="pd-quick-action-icon" />
           <span className="pd-quick-action-label">Путь</span>
         </button>
       </div>
 
       {/* Videos Section */}
       {phase?.videos && phase.videos.length > 0 && (
-        <SectionCard icon="🎬" title="Видео для вас">
+        <SectionCard icon={<Video size={18} />} title="Видео для вас">
           <div className="pd-video-grid">
             {phase.videos.map((video, index) => (
               <VideoCard
@@ -363,7 +416,7 @@ const HomeScreen = ({ dashboardData, goTo }) => {
         className="pd-emergency-btn"
         onClick={() => goTo(3)}
       >
-        <span className="pd-emergency-icon">🚨</span>
+        <AlertTriangle size={18} className="pd-emergency-icon" />
         <span className="pd-emergency-text">Экстренная связь</span>
       </button>
     </div>

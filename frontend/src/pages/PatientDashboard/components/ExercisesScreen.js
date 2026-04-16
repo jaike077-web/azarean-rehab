@@ -10,13 +10,14 @@
 // Клик по упражнению → ExerciseRunner
 // =====================================================
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Dumbbell, ChevronRight, Play } from 'lucide-react';
 import { rehab, patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import ComplexDetailView from './ComplexDetailView';
 import ExerciseRunner from './ExerciseRunner';
 
-const ExercisesScreen = () => {
+const ExercisesScreen = ({ screenParams }) => {
   const toast = useToast();
 
   // Данные
@@ -28,6 +29,7 @@ const ExercisesScreen = () => {
   const [view, setView] = useState('list'); // 'list' | 'complex' | 'runner'
   const [selectedComplexId, setSelectedComplexId] = useState(null);
   const [selectedExercise, setSelectedExercise] = useState(null);
+  const [complexExercises, setComplexExercises] = useState([]);
   const [sessionId, setSessionId] = useState(null);
 
   const loadAll = useCallback(async () => {
@@ -59,21 +61,46 @@ const ExercisesScreen = () => {
     loadAll();
   }, [loadAll]);
 
-  // Открытие комплекса
-  const openComplex = (id) => {
+  // Автозапуск из HomeScreen (screenParams.autoStart)
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (screenParams?.autoStart && screenParams?.complexId && !autoStarted.current) {
+      autoStarted.current = true;
+      openComplex(screenParams.complexId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screenParams]);
+
+  // Открытие комплекса → сразу Runner (минуя ComplexDetailView)
+  const openComplex = async (id) => {
     setSelectedComplexId(id);
-    setSessionId(Date.now()); // новая тренировочная сессия
-    setView('complex');
+    setSessionId(Date.now());
+    try {
+      const res = await patientAuth.getMyComplex(id);
+      const data = res.data;
+      if (data.exercises?.length > 0) {
+        setComplexExercises(data.exercises);
+        setSelectedExercise(data.exercises[0]);
+        setView('runner');
+      } else {
+        // Пустой комплекс — fallback на детальный вид
+        setView('complex');
+      }
+    } catch {
+      toast.error('Ошибка', 'Не удалось загрузить комплекс');
+    }
   };
 
   const backToList = () => {
     setView('list');
     setSelectedComplexId(null);
     setSelectedExercise(null);
+    setComplexExercises([]);
   };
 
-  const openRunner = (complexExercise) => {
+  const openRunner = (complexExercise, allExercises) => {
     setSelectedExercise(complexExercise);
+    setComplexExercises(Array.isArray(allExercises) ? allExercises : [complexExercise]);
     setView('runner');
   };
 
@@ -89,10 +116,11 @@ const ExercisesScreen = () => {
     return (
       <ExerciseRunner
         complexId={selectedComplexId}
-        complexExercise={selectedExercise}
+        exercises={complexExercises}
+        startExerciseId={selectedExercise?.exercise?.id}
         sessionId={sessionId}
-        onBack={backToComplex}
-        onComplete={backToComplex}
+        onBack={backToList}
+        onComplete={backToList}
       />
     );
   }
@@ -112,8 +140,8 @@ const ExercisesScreen = () => {
   // ======================================================
   if (loading) {
     return (
-      <div>
-        <h1 style={titleStyle}>Упражнения</h1>
+      <div className="pd-exercises-screen">
+        <h1 className="pd-screen-title">Упражнения</h1>
         <div className="pd-section">
           <div className="pd-skeleton pd-skeleton--title"></div>
           <div className="pd-skeleton pd-skeleton--card" style={{ marginTop: 12 }}></div>
@@ -130,41 +158,43 @@ const ExercisesScreen = () => {
   const hasAnything = todayComplex || myComplexes.length > 0;
 
   return (
-    <div>
-      <h1 style={titleStyle}>Упражнения</h1>
+    <div className="pd-exercises-screen">
+      <h1 className="pd-screen-title">Упражнения</h1>
 
       {!hasAnything && (
         // State C — ничего нет
         <div className="pd-empty-state">
-          <div className="pd-empty-icon">
-            <span style={{ fontSize: 36 }}>🏋️</span>
+          <div className="pd-empty-state-icon">
+            <Dumbbell size={36} />
           </div>
-          <h2 className="pd-empty-title">Комплекс не назначен</h2>
-          <p className="pd-empty-text">
+          <h2 className="pd-empty-state-title">Комплекс не назначен</h2>
+          <p className="pd-empty-state-text">
             Инструктор ещё не назначил вам комплекс. Свяжитесь с ним через раздел «Связь».
           </p>
         </div>
       )}
 
       {todayComplex && (
-        // State A — сегодняшний комплекс (крупно)
-        <div className="pd-section">
-          <div style={todayIconStyle}>
-            <span style={{ fontSize: 36 }}>🏋️</span>
+        // State A — сегодняшний комплекс (hero)
+        <div className="pd-today-card">
+          <div className="pd-today-badge">
+            <Dumbbell size={18} />
+            <span>Сегодня</span>
           </div>
-          <h2 style={todayTitleStyle}>Ваш комплекс на сегодня</h2>
-          <p style={todaySubStyle}>
+          <h2 className="pd-today-title">Ваш комплекс на сегодня</h2>
+          <p className="pd-today-sub">
             {todayComplex.complex_title || todayComplex.program_title || 'Комплекс упражнений'}
             {todayComplex.exercise_count ? ` · ${todayComplex.exercise_count} упражнений` : ''}
           </p>
           <button
             onClick={() => openComplex(todayComplex.complex_id)}
-            style={todayButtonStyle}
+            className="pd-today-btn"
             data-testid="start-today-btn"
           >
+            <Play size={18} />
             Начать тренировку
           </button>
-          <p style={todayHintStyle}>
+          <p className="pd-today-hint">
             Отмечайте выполнение и уровень боли для каждого упражнения
           </p>
         </div>
@@ -172,27 +202,30 @@ const ExercisesScreen = () => {
 
       {otherComplexes.length > 0 && (
         <>
-          <h2 style={{ ...titleStyle, fontSize: 16, marginTop: 24, marginBottom: 8 }}>
+          <h2 className="pd-screen-subtitle">
             {todayComplex ? 'Другие комплексы' : 'Мои комплексы'}
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="pd-complex-list">
             {otherComplexes.map((c) => (
               <button
                 key={c.id}
                 onClick={() => openComplex(c.id)}
-                style={cardStyle}
+                className="pd-complex-card"
                 data-testid={`complex-card-${c.id}`}
               >
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--pd-text)', marginBottom: 4 }}>
+                <div className="pd-complex-card-icon">
+                  <Dumbbell size={20} />
+                </div>
+                <div className="pd-complex-card-body">
+                  <div className="pd-complex-card-title">
                     {c.diagnosis_name || c.title || 'Комплекс'}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--pd-text2)' }}>
+                  <div className="pd-complex-card-meta">
                     {c.instructor_name ? `${c.instructor_name} · ` : ''}
                     {c.exercises_count || 0} упражнений
                   </div>
                 </div>
-                <div style={{ fontSize: 20, color: 'var(--pd-text3)' }}>›</div>
+                <ChevronRight size={18} className="pd-complex-card-chevron" />
               </button>
             ))}
           </div>
@@ -200,80 +233,6 @@ const ExercisesScreen = () => {
       )}
     </div>
   );
-};
-
-// Стили
-const titleStyle = {
-  fontSize: 20,
-  fontWeight: 800,
-  fontFamily: 'var(--pd-font-display)',
-  color: 'var(--pd-text)',
-  marginBottom: 16,
-};
-
-const todayIconStyle = {
-  width: 80,
-  height: 80,
-  borderRadius: '50%',
-  background: 'linear-gradient(135deg, var(--pd-accent), var(--pd-accent2))',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  margin: '0 auto 16px',
-};
-
-const todayTitleStyle = {
-  fontSize: 17,
-  fontWeight: 700,
-  fontFamily: 'var(--pd-font-display)',
-  color: 'var(--pd-text)',
-  textAlign: 'center',
-  marginBottom: 8,
-};
-
-const todaySubStyle = {
-  fontSize: 13,
-  color: 'var(--pd-text2)',
-  textAlign: 'center',
-  marginBottom: 20,
-};
-
-const todayButtonStyle = {
-  width: '100%',
-  padding: 16,
-  borderRadius: 'var(--pd-radius)',
-  border: 'none',
-  background: 'linear-gradient(135deg, var(--pd-accent), var(--pd-accent2))',
-  color: 'white',
-  fontSize: 15,
-  fontWeight: 700,
-  fontFamily: 'var(--pd-font)',
-  cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(26, 138, 106, 0.35)',
-  minHeight: 48,
-};
-
-const todayHintStyle = {
-  fontSize: 12,
-  color: 'var(--pd-text3)',
-  textAlign: 'center',
-  marginTop: 14,
-  lineHeight: 1.5,
-};
-
-const cardStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  padding: 14,
-  background: 'var(--pd-surface)',
-  border: '1px solid var(--pd-border)',
-  borderRadius: 'var(--pd-radius-sm)',
-  cursor: 'pointer',
-  width: '100%',
-  minHeight: 64,
-  textAlign: 'left',
-  fontFamily: 'inherit',
 };
 
 export default ExercisesScreen;
