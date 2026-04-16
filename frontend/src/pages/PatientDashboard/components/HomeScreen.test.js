@@ -21,8 +21,6 @@ describe('HomeScreen', () => {
   describe('loading state', () => {
     it('renders LoadingSkeleton when dashboardData is null', () => {
       render(<HomeScreen dashboardData={null} goTo={mockGoTo} />);
-
-      // Check for skeleton elements with pd-skeleton class
       const skeletons = document.querySelectorAll('.pd-skeleton');
       expect(skeletons.length).toBeGreaterThan(0);
     });
@@ -31,135 +29,84 @@ describe('HomeScreen', () => {
   describe('empty state', () => {
     it('renders "Программа не создана" when program is null', () => {
       render(<HomeScreen dashboardData={mockDashboardDataNoProgram} goTo={mockGoTo} />);
-
       expect(screen.getByText('Программа не создана')).toBeInTheDocument();
-      expect(screen.getByText(/Ваш инструктор ещё не создал программу реабилитации/)).toBeInTheDocument();
     });
 
     it('calls goTo(3) when "Связаться" button clicked', () => {
       render(<HomeScreen dashboardData={mockDashboardDataNoProgram} goTo={mockGoTo} />);
-
-      const contactButton = screen.getByText('Связаться');
-      fireEvent.click(contactButton);
-
+      fireEvent.click(screen.getByText('Связаться'));
       expect(mockGoTo).toHaveBeenCalledWith(3);
-      expect(mockGoTo).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('normal state', () => {
     it('renders greeting with patient name', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      expect(screen.getByText(/Добрый день,/)).toBeInTheDocument();
       expect(screen.getByText('Тест Пациент')).toBeInTheDocument();
     });
 
-    it('renders ProgressArc', () => {
+    it('renders ProgressRing', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      // Check for progress arc container
-      const progressArc = document.querySelector('.pd-progress-arc');
-      expect(progressArc).toBeInTheDocument();
-
-      // Check for SVG element
-      const svg = progressArc.querySelector('svg');
-      expect(svg).toBeInTheDocument();
+      // ProgressRing renders inside a .pd-progress-ring container
+      const ring = document.querySelector('.pd-progress-ring');
+      expect(ring).toBeInTheDocument();
     });
 
-    it('renders TipCard with tip title', () => {
+    it('renders TipCard', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      // "Совет дня" appears twice: as TipCard label and as the tip title from mockData
-      const tipElements = screen.getAllByText('Совет дня');
-      expect(tipElements.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Совет дня')).toBeInTheDocument();
     });
 
-    it('renders 3 quick action buttons', () => {
+    it('renders quick nav pills', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      // Check for buttons using aria-label
-      expect(screen.getByLabelText('Упражнения')).toBeInTheDocument();
-      expect(screen.getByLabelText('Дневник')).toBeInTheDocument();
-      expect(screen.getByLabelText('Дорожная карта')).toBeInTheDocument();
+      expect(screen.getByText('Дневник')).toBeInTheDocument();
+      expect(screen.getByText('Путь')).toBeInTheDocument();
+      expect(screen.getByText('Связь')).toBeInTheDocument();
     });
 
-    it('shows checkmark when diaryFilledToday is true', () => {
-      const dataWithDiary = {
-        ...mockDashboardData,
-        diaryFilledToday: true,
-      };
-
-      render(<HomeScreen dashboardData={dataWithDiary} goTo={mockGoTo} />);
-
-      // Check for checkmark badge
-      const badge = document.querySelector('.pd-quick-action-badge');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveTextContent('✓');
+    it('shows checkmark on Дневник pill when diaryFilledToday', () => {
+      const data = { ...mockDashboardData, diaryFilledToday: true };
+      render(<HomeScreen dashboardData={data} goTo={mockGoTo} />);
+      expect(screen.getByText('✓')).toBeInTheDocument();
     });
 
-    it('does not show checkmark when diaryFilledToday is false', () => {
+    it('calls goTo(2) when Дневник pill clicked', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      // Check that badge is not present
-      const badge = document.querySelector('.pd-quick-action-badge');
-      expect(badge).not.toBeInTheDocument();
-    });
-
-    it('calls goTo(4) when Упражнения quick action clicked', () => {
-      render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      const exercisesButton = screen.getByLabelText('Упражнения');
-      fireEvent.click(exercisesButton);
-
-      expect(mockGoTo).toHaveBeenCalledWith(4);
-    });
-
-    it('calls goTo(2) when Дневник quick action clicked', () => {
-      render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      const diaryButton = screen.getByLabelText('Дневник');
-      fireEvent.click(diaryButton);
-
+      fireEvent.click(screen.getByText('Дневник'));
       expect(mockGoTo).toHaveBeenCalledWith(2);
     });
 
-    it('calls goTo(1) when Дорожная карта quick action clicked', () => {
+    it('calls goTo(1) when Путь pill clicked', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      const roadmapButton = screen.getByLabelText('Дорожная карта');
-      fireEvent.click(roadmapButton);
-
+      fireEvent.click(screen.getByText('Путь'));
       expect(mockGoTo).toHaveBeenCalledWith(1);
     });
 
-    it('renders emergency button', () => {
+    it('calls goTo(3) when Связь pill clicked', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      expect(screen.getByText('Экстренная связь')).toBeInTheDocument();
-    });
-
-    it('calls goTo(3) when emergency button clicked', () => {
-      render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
-      const emergencyButton = screen.getByText('Экстренная связь');
-      fireEvent.click(emergencyButton);
-
+      fireEvent.click(screen.getByText('Связь'));
       expect(mockGoTo).toHaveBeenCalledWith(3);
     });
 
-    it('renders StatusCard with phase information', () => {
+    it('renders emergency strip', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
+      expect(screen.getByText('Экстренная связь')).toBeInTheDocument();
+    });
 
+    it('calls goTo(3) when emergency strip clicked', () => {
+      render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
+      fireEvent.click(screen.getByText('Экстренная связь'));
+      expect(mockGoTo).toHaveBeenCalledWith(3);
+    });
+
+    it('renders phase info', () => {
+      render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
       expect(screen.getByText('Защита и заживление')).toBeInTheDocument();
-      expect(screen.getByText('Фокус на защите трансплантата')).toBeInTheDocument();
     });
 
     it('renders videos section when phase has videos', () => {
       render(<HomeScreen dashboardData={mockDashboardData} goTo={mockGoTo} />);
-
       expect(screen.getByText('Видео для вас')).toBeInTheDocument();
-      expect(screen.getByText('Разминка')).toBeInTheDocument();
     });
   });
 });

@@ -67,32 +67,33 @@ describe('DiaryScreen', () => {
       });
     });
 
-    it('renders PainSlider with default value', async () => {
+    it('renders PainScale with default value', async () => {
       render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
 
       await waitFor(() => {
-        const rangeInput = screen.getByRole('slider');
-        expect(rangeInput).toBeInTheDocument();
-        expect(rangeInput).toHaveValue('3');
+        // PainScale renders 11 buttons (0-10), button "3" should be selected (aria-pressed)
+        const btn3 = screen.getByLabelText('Уровень боли 3 из 10');
+        expect(btn3).toBeInTheDocument();
+        expect(btn3).toHaveAttribute('aria-pressed', 'true');
       });
     });
 
-    it('renders pain emoji for default level', async () => {
+    it('renders pain label for default level', async () => {
       render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
 
       await waitFor(() => {
-        // Pain level 3 corresponds to 😐 emoji
-        expect(screen.getByText('😐')).toBeInTheDocument();
+        // PainScale shows text label for selected level
+        expect(screen.getByText('Терпимо')).toBeInTheDocument();
       });
     });
 
-    it('updates pain emoji when slider changes', async () => {
+    it('updates pain when button clicked', async () => {
       render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
 
       await waitFor(() => {
-        const rangeInput = screen.getByRole('slider');
-        fireEvent.change(rangeInput, { target: { value: '8' } });
-        expect(screen.getByText('😖')).toBeInTheDocument();
+        const btn8 = screen.getByLabelText('Уровень боли 8 из 10');
+        fireEvent.click(btn8);
+        expect(btn8).toHaveAttribute('aria-pressed', 'true');
       });
     });
 

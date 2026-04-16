@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Thermometer, Ruler, Dumbbell, Sparkles, Camera, CheckCircle2, XCircle } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { Card } from './ui';
-
-const PAIN_EMOJIS = ["😌", "😌", "🙂", "😐", "😐", "😟", "😣", "😣", "😖", "😖", "🥵"];
+import { Card, PainScale } from './ui';
 
 const PAIN_TIMES = [
   { id: 'morning', label: '🌅 Утро' },
@@ -49,40 +47,6 @@ const IMPROVEMENTS = [
   { id: 'mood', label: '💪 Настроение' },
   { id: 'custom', label: '✏️ Своё' },
 ];
-
-const PainSlider = ({ value, onChange }) => {
-  const getPainColor = (val) => {
-    if (val <= 3) return '#1A8A6A';
-    if (val <= 6) return '#C88B0A';
-    return '#D94235';
-  };
-
-  return (
-    <div className="pd-pain-slider">
-      <div className="pd-pain-slider-head">
-        <div className="pd-pain-slider-caption">Общий уровень боли за день</div>
-        <div className="pd-pain-slider-display">
-          <span className="pd-pain-slider-emoji">{PAIN_EMOJIS[value]}</span>
-          <span className="pd-pain-slider-value" style={{ color: getPainColor(value) }}>
-            {value}
-          </span>
-        </div>
-      </div>
-      <input
-        type="range"
-        min="0"
-        max="10"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
-        className="pd-pain-slider-input"
-      />
-      <div className="pd-pain-slider-labels">
-        <span className="pd-pain-slider-label">Нет боли</span>
-        <span className="pd-pain-slider-label">Сильная</span>
-      </div>
-    </div>
-  );
-};
 
 const formatDate = (isoDate) => {
   if (!isoDate) return '';
@@ -298,7 +262,7 @@ export default function DiaryScreen({ dashboardData, onDiarySaved }) {
           <h3 className="pd-section-title">Боль</h3>
         </div>
 
-        <PainSlider value={pain} onChange={setPain} />
+        <PainScale value={pain} onChange={setPain} />
 
         <div className="pd-diary-field">
           <div className="pd-diary-field-label">Когда болело?</div>
