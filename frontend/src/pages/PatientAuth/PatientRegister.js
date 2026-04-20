@@ -63,9 +63,11 @@ function PatientRegister() {
         phone: phone || undefined,
         password
       });
-      const data = response.data || response;
+      // unwrap interceptor разворачивает { data: <patient>, message } → response.data = <patient>
+      // Бэк отдаёт patient плоско в data (не data.patient), см. backend/routes/patientAuth.js:189
+      const patientData = response.data || null;
       // Backend на регистрации уже поставил cookie — сразу залогиниваем
-      login(data.patient || null);
+      login(patientData);
       toast.success('Аккаунт создан!');
       navigate('/patient-dashboard');
     } catch (err) {

@@ -36,11 +36,13 @@ const PatientLogin = () => {
     setLoading(true);
     try {
       const response = await patientAuth.login({ email, password });
-      const data = response.data || response;
-      const name = data.patient?.full_name || '';
+      // unwrap interceptor разворачивает { data: <patient>, message } → response.data = <patient>
+      // Бэк отдаёт patient плоско в data (не data.patient), см. backend/routes/patientAuth.js:321
+      const patientData = response.data || null;
+      const name = patientData?.full_name || '';
       toast.success(name ? `Добро пожаловать, ${name}!` : 'Вход выполнен!');
       // Cookie установлена backend'ом — обновляем контекст (один провайдер с dashboard)
-      login(data.patient || null);
+      login(patientData);
       // Навигация — теперь в одном провайдере, PatientRoute увидит patient
       const redirectTo = location.state?.from;
       navigate(redirectTo && redirectTo !== '/patient-login' ? redirectTo : '/patient-dashboard');
