@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield, User } from 'lucide-react';
+import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield } from 'lucide-react';
 import { rehab } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
@@ -10,7 +10,7 @@ import DiaryScreen from './components/DiaryScreen';
 import ContactScreen from './components/ContactScreen';
 import ExercisesScreen from './components/ExercisesScreen';
 import ProfileScreen from './components/ProfileScreen';
-import { TabBar } from './components/ui';
+import { TabBar, AvatarBtn } from './components/ui';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -50,10 +50,13 @@ export default function PatientDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  // Profile теперь не таб, а full-screen overlay поверх любого экрана.
+  const [profileOpen, setProfileOpen] = useState(false);
   const scrollRef = useRef(null);
   const toast = useToast();
   const navigate = useNavigate();
-  const { logout: ctxLogout } = usePatientAuth();
+  const { patient, logout: ctxLogout } = usePatientAuth();
+  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
 
   useEffect(() => {
     const disclaimerAccepted = localStorage.getItem('patient_disclaimer_accepted');
@@ -123,11 +126,16 @@ export default function PatientDashboard() {
       setScreenParams(params);
     };
 
+    // onOpenProfile передаётся в каждый экран — внутри они вызывают
+    // через AvatarBtn в правом верхнем углу. Profile рендерится отдельно
+    // как overlay (см. ниже), поэтому в switch его больше нет.
     const screenProps = {
       dashboardData,
       goTo,
       screenParams,
       handleLogout,
+      onOpenProfile: () => setProfileOpen(true),
+      patient,
     };
 
     switch (screen) {
@@ -141,8 +149,6 @@ export default function PatientDashboard() {
         return <ContactScreen {...screenProps} />;
       case 4:
         return <ExercisesScreen {...screenProps} />;
-      case 5:
-        return <ProfileScreen {...screenProps} />;
       default:
         return <HomeScreen {...screenProps} />;
     }
@@ -200,13 +206,14 @@ export default function PatientDashboard() {
               atRisk={dashboardData.streak.atRisk}
             />
           )}
-          <button
-            className={`pd-header-avatar-btn ${screen === 5 ? 'pd-header-avatar-btn--active' : ''}`}
-            onClick={() => { setScreen(5); setScreenParams(null); }}
-            aria-label="Профиль"
-          >
-            <User size={20} className="pd-header-avatar-icon" />
-          </button>
+          {/* Avatar в правом верхнем — единая точка входа в Profile overlay
+              со всех экранов. AvatarBtn также появится в шапках каждого
+              экрана при их редизайне (Checkpoints 4–7). */}
+          <AvatarBtn
+            initial={initial}
+            onClick={() => setProfileOpen(true)}
+            ariaLabel="Профиль"
+          />
         </div>
       </header>
 
@@ -221,6 +228,16 @@ export default function PatientDashboard() {
         activeId={screen}
         onChange={(id) => { setScreen(id); setScreenParams(null); }}
       />
+
+      {/* Profile overlay — full-screen, поверх дашборда. Закрывается стрелкой
+          назад в шапке Profile (передаётся через onClose). */}
+      {profileOpen && (
+        <ProfileScreen
+          onClose={() => setProfileOpen(false)}
+          handleLogout={handleLogout}
+          goTo={(id) => { setProfileOpen(false); setScreen(id); setScreenParams(null); }}
+        />
+      )}
     </div>
   );
 }
