@@ -3,8 +3,9 @@
 // Стратегии: cache-first для статики, network-first для API
 // =====================================================
 
-const CACHE_NAME = 'azarean-v1';
-const API_CACHE = 'azarean-api-v1';
+// Бамп версии при изменении SW — `activate` снесёт все кеши с другим именем.
+const CACHE_NAME = 'azarean-v2';
+const API_CACHE = 'azarean-api-v2';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
