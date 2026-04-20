@@ -1,0 +1,72 @@
+/* Multi-channel CTA — primary button + accordion (см. MessengerCTA.js) */
+.pd-messenger-cta {
+  width: 100%;
+}
+
+.pd-messenger-cta-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 14px;
+  color: #fff;
+  text-decoration: none;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 800;
+  transition: transform 100ms ease, filter 100ms ease;
+}
+
+.pd-messenger-cta-primary:hover {
+  filter: brightness(1.05);
+}
+
+.pd-messenger-cta-primary:active {
+  transform: scale(0.98);
+}
+
+.pd-messenger-cta-toggle {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--pd-n500);
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pd-messenger-cta-others {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.pd-messenger-cta-other {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1.5px solid;
+  background: transparent;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.pd-messenger-cta-other:hover {
+  background: var(--pd-color-primary-bg);
+}

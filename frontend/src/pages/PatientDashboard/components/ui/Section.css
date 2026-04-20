@@ -1,0 +1,30 @@
+/* Section header (см. Section.js) */
+.pd-section {
+  margin-bottom: 16px;
+}
+
+.pd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 0 2px;
+}
+
+.pd-section-icon {
+  color: var(--pd-n600);
+  flex-shrink: 0;
+}
+
+.pd-section-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+}
+
+.pd-section-sub {
+  font-size: 0.68rem;
+  color: var(--pd-n400);
+  margin-left: auto;
+}

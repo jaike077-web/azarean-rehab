@@ -1,0 +1,40 @@
+/* Pill chip — round-button с опциональной иконкой (см. Pill.js) */
+.pd-pill {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 17px;
+  border: 1.5px solid var(--pd-n300);
+  background: transparent;
+  color: var(--pd-n600);
+  font-size: 0.76rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 180ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pd-pill:hover {
+  border-color: var(--pd-color-primary);
+  color: var(--pd-color-primary);
+}
+
+.pd-pill--active {
+  border: none;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pd-pill--active:hover {
+  color: #fff;
+}
+
+.pd-pill svg {
+  flex-shrink: 0;
+  color: currentColor;
+  stroke: currentColor;
+}

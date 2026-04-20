@@ -1,0 +1,38 @@
+/* iOS-style toggle (см. Switch.js) */
+.pd-switch {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--pd-n300);
+  padding: 2px;
+  cursor: pointer;
+  border: none;
+  transition: background 180ms ease;
+  flex-shrink: 0;
+  display: inline-block;
+  position: relative;
+}
+
+.pd-switch--on {
+  background: var(--pd-color-primary);
+}
+
+.pd-switch--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pd-switch-knob {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: #fff;
+  transform: translateX(0);
+  transition: transform 180ms ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.pd-switch--on .pd-switch-knob {
+  transform: translateX(18px);
+}

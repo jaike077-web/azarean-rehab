@@ -1,0 +1,74 @@
+/* iOS-style строка настроек (см. SettingsRow.js) */
+.pd-settings-row {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 14px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--pd-n100);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: inherit;
+}
+
+.pd-settings-row--last {
+  border-bottom: none;
+}
+
+.pd-settings-row--readonly {
+  cursor: default;
+}
+
+.pd-settings-row-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-settings-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-settings-row-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pd-n800);
+}
+
+.pd-settings-row--destructive .pd-settings-row-label {
+  font-weight: 700;
+  color: var(--pd-color-err);
+}
+
+.pd-settings-row-value {
+  font-size: 0.7rem;
+  color: var(--pd-n500);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pd-settings-row--readonly .pd-settings-row-value {
+  color: var(--pd-n400);
+}
+
+.pd-settings-row-chevron {
+  color: var(--pd-n300);
+  flex-shrink: 0;
+}
+
+.pd-settings-row-dot {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+  flex-shrink: 0;
+}
