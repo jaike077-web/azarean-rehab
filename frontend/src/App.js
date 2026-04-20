@@ -217,8 +217,18 @@ function AppRoutes() {
 
       {/* ========================== */}
       {/* ПАЦИЕНТСКИЕ РОУТЫ — один PatientAuthProvider на все */}
+      {/* Внутренний Suspense с PatientSplash перехватывает lazy-load */}
+      {/* пациентских страниц раньше внешнего LoadingSpinner (фиолетовый */}
+      {/* gradient инструкторского fallback'а в пациентском flow выглядит */}
+      {/* как чужой бренд). */}
       {/* ========================== */}
-      <Route element={<PatientAuthProvider><Outlet /></PatientAuthProvider>}>
+      <Route element={
+        <PatientAuthProvider>
+          <Suspense fallback={<PatientSplash />}>
+            <Outlet />
+          </Suspense>
+        </PatientAuthProvider>
+      }>
         <Route path="/patient-login" element={<PatientLogin />} />
         <Route path="/patient-register" element={<PatientRegister />} />
         <Route path="/patient-forgot-password" element={<PatientForgotPassword />} />
