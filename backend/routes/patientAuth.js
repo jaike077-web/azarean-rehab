@@ -590,18 +590,51 @@ router.get('/me', authenticatePatient, async (req, res) => {
 // =====================================================
 router.put('/me', authenticatePatient, async (req, res) => {
   try {
-    const { full_name, phone, birth_date, avatar_url } = req.body;
+    // Жёсткий allowlist. email/birth_date/diagnosis/surgery_date — read-only
+    // (правит только инструктор/админ через свои роуты). avatar_url — через
+    // отдельный POST /upload-avatar. Любые лишние поля в req.body тихо
+    // игнорируются — это защита от подмены email и т.п.
+    const ALLOWED = ['full_name', 'phone'];
+    const updates = {};
+    for (const key of ALLOWED) {
+      if (key in req.body) updates[key] = req.body[key];
+    }
 
-    const result = await query(
-      `UPDATE patients
-       SET full_name = COALESCE(NULLIF($1, ''), full_name),
-           phone = COALESCE($2, phone),
-           birth_date = COALESCE($3, birth_date),
-           avatar_url = COALESCE($4, avatar_url)
-       WHERE id = $5 AND is_active = true
-       RETURNING id, email, full_name, phone, birth_date, avatar_url, email_verified, auth_provider`,
-      [full_name || null, phone || null, birth_date || null, avatar_url || null, req.patient.id]
-    );
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        error: 'NO_FIELDS',
+        message: 'Нет полей для обновления'
+      });
+    }
+
+    // Динамический UPDATE через параметризованный запрос — ключи берутся
+    // из ALLOWED (фиксированный whitelist), значения через $N. SQL injection = 0.
+    const setClauses = [];
+    const params = [];
+    let idx = 1;
+    for (const key of Object.keys(updates)) {
+      if (key === 'full_name') {
+        // Защита от пустого имени — оставляем старое значение
+        setClauses.push(`full_name = COALESCE(NULLIF($${idx}, ''), full_name)`);
+        params.push(updates.full_name);
+      } else {
+        // phone: пустая строка → NULL (сохранить как «не указан»)
+        setClauses.push(`${key} = $${idx}`);
+        params.push(updates[key] === '' ? null : updates[key]);
+      }
+      idx += 1;
+    }
+    params.push(req.patient.id);
+
+    const sql = `
+      UPDATE patients
+      SET ${setClauses.join(', ')}
+      WHERE id = $${idx} AND is_active = true
+      RETURNING id, email, full_name, phone, birth_date, avatar_url,
+                email_verified, auth_provider, telegram_chat_id,
+                last_login_at, created_at, updated_at
+    `;
+    const result = await query(sql, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
