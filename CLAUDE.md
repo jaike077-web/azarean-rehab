@@ -578,8 +578,6 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | 8 | MEDIUM | **Нет аудит-логов для чтения** данных пациентов (GDPR compliance) |
 | 9 | LOW | **ErrorBoundary не ловит** async ошибки из useEffect |
 | 10 | LOW | **messages.sender_id** — нет FK constraint |
-| 11 | BUG | **DiaryScreen crash** — `TypeError: Cannot convert undefined or null to object at entries` при клике |
-| 12 | BUG | **F5 flicker** — при обновлении страницы на /patient-dashboard мелькает логин пока PatientAuthProvider делает getMe() |
 
 ## Завершённые исправления (защита от регрессий)
 
@@ -622,6 +620,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 30. **Дубль email возвращает 400** → 409 Conflict
 31. **RoadmapScreen падает при пустом phases array** → guard
 32. **ContactScreen дублирует polling intervals** → cleanup перед generate
+
+### BUG (закрытые v12 redesign — 2026-04-20)
+33. **DiaryScreen crash `Cannot convert undefined or null to object`** → stale запись. Поиск по PatientDashboard tree не нашёл ни одного `Object.entries`/`Object.keys`/`Object.values` без guard'а; stack-trace указывал на `ContactScreen.js:552` вне границ файла (всего 451 строка) — артефакт старого бандла. Ручная проверка в dev-браузере на тапе «Дневник» — console чистая.
+34. **F5 flicker — мелькает Login на /patient-dashboard** → новый `<PatientSplash/>` (full-screen logo+spinner) показывается пока `PatientAuthProvider.loading=true`. `PatientRoute` и `PatientLogin` оба проверяют `authLoading` перед рендером.
 
 ## Структура тестов
 
