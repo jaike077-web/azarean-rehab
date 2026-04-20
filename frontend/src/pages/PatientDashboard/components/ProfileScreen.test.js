@@ -1,10 +1,9 @@
 // =====================================================
-// TESTS: ProfileScreen component
-// Sprint 2 — Профиль пациента
+// TESTS: ProfileScreen v12 (overlay)
 // =====================================================
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ProfileScreen from './ProfileScreen';
 
@@ -18,6 +17,11 @@ jest.mock('../../../services/api', () => ({
     fetchAvatarBlob: jest.fn(() => Promise.resolve({ data: new Blob(['x'], { type: 'image/jpeg' }) })),
     changePassword: jest.fn(),
   },
+  rehab: {
+    getTelegramStatus: jest.fn(() => Promise.resolve({ data: { linked: false } })),
+    generateTelegramCode: jest.fn(),
+    unlinkTelegram: jest.fn(),
+  },
 }));
 
 // Mock toast
@@ -29,14 +33,15 @@ jest.mock('../../../context/ToastContext', () => ({
   }),
 }));
 
-const { patientAuth } = require('../../../services/api');
-
+// Mock PatientAuthContext — overlay читает patient оттуда
+const mockRefresh = jest.fn();
 const mockPatient = {
   id: 14,
   email: 'avi707@mail.ru',
   full_name: 'Вадим',
   phone: '+7 999 123 4567',
   birth_date: '1990-05-15T00:00:00.000Z',
+  diagnosis: 'ПКС · Левое колено',
   avatar_url: null,
   email_verified: false,
   auth_provider: 'local',
@@ -44,222 +49,279 @@ const mockPatient = {
   created_at: '2026-02-10T08:00:00.000Z',
 };
 
-describe('ProfileScreen', () => {
-  const mockHandleLogout = jest.fn();
+jest.mock('../../../context/PatientAuthContext', () => ({
+  usePatientAuth: () => ({
+    patient: mockPatient,
+    loading: false,
+    login: jest.fn(),
+    logout: jest.fn(),
+    refresh: mockRefresh,
+  }),
+}));
 
+const { patientAuth, rehab } = require('../../../services/api');
+
+const setup = (overrides = {}) => {
+  const props = {
+    onClose: jest.fn(),
+    handleLogout: jest.fn(),
+    goTo: jest.fn(),
+    ...overrides,
+  };
+  const utils = render(<ProfileScreen {...props} />);
+  return { ...utils, props };
+};
+
+describe('ProfileScreen overlay (v12)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    patientAuth.getMe.mockResolvedValue({
-      data: mockPatient,
-    });
-    patientAuth.fetchAvatarBlob.mockResolvedValue({
-      data: new Blob(['x'], { type: 'image/jpeg' }),
-    });
-    // jsdom не реализует URL.createObjectURL — мокаем
+    rehab.getTelegramStatus.mockResolvedValue({ data: { linked: false } });
     if (!global.URL.createObjectURL) {
       global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
       global.URL.revokeObjectURL = jest.fn();
     }
   });
 
-  describe('Loading state', () => {
-    it('renders skeleton while loading', () => {
-      // Don't resolve the promise yet
-      patientAuth.getMe.mockReturnValue(new Promise(() => {}));
+  // -----------------------------
+  // Identity
+  // -----------------------------
+  describe('Identity block', () => {
+    it('renders title "Профиль"', () => {
+      setup();
+      expect(screen.getByRole('heading', { name: 'Профиль', level: 1 })).toBeInTheDocument();
+    });
 
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+    it('renders patient name in identity block', () => {
+      const { container } = setup();
+      const identity = container.querySelector('.pd-profile-identity-name');
+      expect(identity).toHaveTextContent('Вадим');
+    });
 
-      // Should show skeletons
-      const skeletons = document.querySelectorAll('.pd-skeleton');
-      expect(skeletons.length).toBeGreaterThan(0);
+    it('renders patient email in identity block', () => {
+      const { container } = setup();
+      const emailEl = container.querySelector('.pd-profile-identity-email');
+      expect(emailEl).toHaveTextContent('avi707@mail.ru');
+    });
+
+    it('renders initial "В" inside avatar circle', () => {
+      const { container } = setup();
+      const initialEl = container.querySelector('.pd-profile-identity-avatar--initial');
+      expect(initialEl).toBeInTheDocument();
+      expect(initialEl).toHaveTextContent('В');
+    });
+
+    it('renders diagnosis chip in identity block', () => {
+      const { container } = setup();
+      const chip = container.querySelector('.pd-profile-identity-chip');
+      expect(chip).toBeInTheDocument();
+      expect(chip).toHaveTextContent('ПКС · Левое колено');
     });
   });
 
-  describe('Profile data display', () => {
-    it('renders patient name after loading', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+  // -----------------------------
+  // Read-only fields
+  // -----------------------------
+  describe('Read-only fields (no inputs)', () => {
+    it('does NOT render email as <input>', () => {
+      setup();
+      expect(screen.queryByDisplayValue('avi707@mail.ru')).not.toBeInTheDocument();
+      // А email-row — есть, как display row
+      expect(screen.getByText('Email')).toBeInTheDocument();
+    });
+
+    it('does NOT render diagnosis as <input>', () => {
+      setup();
+      expect(screen.queryByDisplayValue('ПКС · Левое колено')).not.toBeInTheDocument();
+    });
+
+    it('does NOT render birth_date as editable input (no date input)', () => {
+      const { container } = setup();
+      expect(container.querySelector('input[type="date"]')).not.toBeInTheDocument();
+    });
+  });
+
+  // -----------------------------
+  // Edit modal — name
+  // -----------------------------
+  describe('Edit modal: name', () => {
+    it('opens edit modal on name SettingsRow tap', () => {
+      setup();
+      // Имя в Личное → клик на «Имя»
+      fireEvent.click(screen.getByRole('button', { name: /^Имя/ }));
+      // Edit sheet появился
+      expect(screen.getByRole('dialog', { name: /Редактировать Имя/ })).toBeInTheDocument();
+      // input предзаполнен текущим именем
+      expect(screen.getByDisplayValue('Вадим')).toBeInTheDocument();
+    });
+
+    it('saves name via PUT /me with new value', async () => {
+      patientAuth.updateMe.mockResolvedValue({ data: { ...mockPatient, full_name: 'Вадим Иванов' } });
+
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Имя/ }));
+
+      const input = screen.getByDisplayValue('Вадим');
+      fireEvent.change(input, { target: { value: 'Вадим Иванов' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
 
       await waitFor(() => {
-        expect(screen.getByText('Вадим')).toBeInTheDocument();
+        expect(patientAuth.updateMe).toHaveBeenCalledWith({ full_name: 'Вадим Иванов' });
       });
     });
 
-    it('renders patient email', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+    it('triggers refresh() on PatientAuthContext after successful save', async () => {
+      patientAuth.updateMe.mockResolvedValue({ data: { ...mockPatient, full_name: 'Новое' } });
 
-      await waitFor(() => {
-        expect(screen.getByText('avi707@mail.ru')).toBeInTheDocument();
-      });
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Имя/ }));
+      fireEvent.change(screen.getByDisplayValue('Вадим'), { target: { value: 'Новое' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
+
+      await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
     });
 
-    it('renders page title "Профиль"', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Профиль')).toBeInTheDocument();
-      });
+    it('cancels edit on Отмена click — no API call', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Имя/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+      expect(patientAuth.updateMe).not.toHaveBeenCalled();
     });
 
-    it('renders initials when no avatar', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+    it('closes edit modal on backdrop click', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Имя/ }));
+      const backdrop = screen.getByRole('dialog', { name: /Редактировать Имя/ });
+      fireEvent.click(backdrop);
+      expect(screen.queryByRole('dialog', { name: /Редактировать Имя/ })).not.toBeInTheDocument();
+    });
+  });
 
-      await waitFor(() => {
-        expect(screen.getByText('В')).toBeInTheDocument();
-      });
+  // -----------------------------
+  // Edit modal — phone
+  // -----------------------------
+  describe('Edit modal: phone', () => {
+    it('opens edit modal on phone SettingsRow tap', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Телефон/ }));
+      expect(screen.getByRole('dialog', { name: /Редактировать Телефон/ })).toBeInTheDocument();
     });
 
-    it('renders form fields with correct values', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+    it('saves phone via PUT /me', async () => {
+      patientAuth.updateMe.mockResolvedValue({ data: { ...mockPatient, phone: '+79991234567' } });
+
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Телефон/ }));
+
+      const input = screen.getByDisplayValue('+7 999 123 4567');
+      fireEvent.change(input, { target: { value: '+79991234567' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
 
       await waitFor(() => {
-        const nameInput = screen.getByDisplayValue('Вадим');
-        expect(nameInput).toBeInTheDocument();
-
-        const phoneInput = screen.getByDisplayValue('+7 999 123 4567');
-        expect(phoneInput).toBeInTheDocument();
-      });
-    });
-
-    it('renders email as readonly', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        const emailInput = screen.getByDisplayValue('avi707@mail.ru');
-        expect(emailInput).toHaveAttribute('readOnly');
-      });
-    });
-
-    it('renders auth provider info', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Email/пароль')).toBeInTheDocument();
+        expect(patientAuth.updateMe).toHaveBeenCalledWith({ phone: '+79991234567' });
       });
     });
   });
 
-  describe('Save profile', () => {
-    it('calls updateMe on save button click', async () => {
-      patientAuth.updateMe.mockResolvedValue({
-        data: mockPatient,
-      });
-
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Вадим')).toBeInTheDocument();
-      });
-
-      const saveBtn = screen.getByText('Сохранить изменения');
-      fireEvent.click(saveBtn);
-
-      await waitFor(() => {
-        expect(patientAuth.updateMe).toHaveBeenCalledWith({
-          full_name: 'Вадим',
-          phone: '+7 999 123 4567',
-          birth_date: '1990-05-15',
-        });
-      });
+  // -----------------------------
+  // Curator → Contact tab
+  // -----------------------------
+  describe('Curator action', () => {
+    it('clicking Куратор calls goTo(3) (Contact tab)', () => {
+      const { props } = setup();
+      fireEvent.click(screen.getByRole('button', { name: /^Куратор/ }));
+      expect(props.goTo).toHaveBeenCalledWith(3);
     });
   });
 
+  // -----------------------------
+  // Sections
+  // -----------------------------
+  describe('Section labels', () => {
+    it('renders «Личное» section', () => {
+      setup();
+      expect(screen.getByText('Личное')).toBeInTheDocument();
+    });
+
+    it('renders «Реабилитация» section', () => {
+      setup();
+      expect(screen.getByText('Реабилитация')).toBeInTheDocument();
+    });
+
+    it('renders «Связь» section with disabled messenger picker placeholder', () => {
+      setup();
+      expect(screen.getByText('Связь')).toBeInTheDocument();
+      expect(screen.getByText('Основной канал связи')).toBeInTheDocument();
+      // Hint про «Скоро»
+      expect(screen.getByText(/Скоро/)).toBeInTheDocument();
+    });
+
+    it('renders «Безопасность» section with «Сменить пароль»', () => {
+      setup();
+      expect(screen.getByText('Безопасность')).toBeInTheDocument();
+      expect(screen.getByText('Сменить пароль')).toBeInTheDocument();
+    });
+
+    it('renders «Прочее» section with logout', () => {
+      setup();
+      expect(screen.getByText('Прочее')).toBeInTheDocument();
+      expect(screen.getByText('Выйти из аккаунта')).toBeInTheDocument();
+    });
+  });
+
+  // -----------------------------
+  // Password change collapse
+  // -----------------------------
   describe('Password change', () => {
-    it('shows password section when collapse button clicked', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      // Wait for profile data to load
-      await waitFor(() => {
-        expect(screen.getByText('Личные данные')).toBeInTheDocument();
-      });
-
-      const collapseBtn = screen.getByText('Сменить пароль');
-      fireEvent.click(collapseBtn);
-
-      await waitFor(() => {
-        expect(screen.getByPlaceholderText('Введите текущий пароль')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Минимум 8 символов')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('Повторите новый пароль')).toBeInTheDocument();
-      });
+    it('password inputs hidden by default', () => {
+      setup();
+      expect(screen.queryByPlaceholderText('Текущий пароль')).not.toBeInTheDocument();
     });
 
-    it('password section is hidden by default', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      // Wait for profile data to load
-      await waitFor(() => {
-        expect(screen.getByText('Личные данные')).toBeInTheDocument();
-      });
-
-      // Password fields should not be visible initially
-      expect(screen.queryByPlaceholderText('Введите текущий пароль')).not.toBeInTheDocument();
+    it('expands password inputs on Сменить пароль tap', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: /Сменить пароль/ }));
+      expect(screen.getByPlaceholderText('Текущий пароль')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Новый пароль (мин. 8 символов)')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Повторите новый пароль')).toBeInTheDocument();
     });
   });
 
-  describe('Avatar', () => {
-    it('renders hidden file input', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Вадим')).toBeInTheDocument();
-      });
-
-      const fileInput = screen.getByTestId('avatar-file-input');
-      expect(fileInput).toBeInTheDocument();
-      expect(fileInput).toHaveAttribute('type', 'file');
-      expect(fileInput).toHaveStyle({ display: 'none' });
-    });
-
-    it('renders "Изменить фото" button', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Изменить фото')).toBeInTheDocument();
-      });
-    });
-
-    it('does not render "Удалить" button when no avatar', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Вадим')).toBeInTheDocument();
-      });
-
-      expect(screen.queryByText('Удалить')).not.toBeInTheDocument();
-    });
-
-    it('renders "Удалить" button when avatar exists', async () => {
-      patientAuth.getMe.mockResolvedValue({
-        data: { ...mockPatient, avatar_url: '/uploads/avatars/test.jpg' },
-      });
-
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Удалить')).toBeInTheDocument();
-      });
-    });
-  });
-
+  // -----------------------------
+  // Logout
+  // -----------------------------
   describe('Logout', () => {
-    it('renders logout button', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
+    it('clicking «Выйти из аккаунта» calls handleLogout', () => {
+      const { props } = setup();
+      fireEvent.click(screen.getByRole('button', { name: /Выйти из аккаунта/ }));
+      expect(props.handleLogout).toHaveBeenCalled();
+    });
+  });
 
-      await waitFor(() => {
-        expect(screen.getByText('Выйти из аккаунта')).toBeInTheDocument();
-      });
+  // -----------------------------
+  // Close overlay
+  // -----------------------------
+  describe('Close overlay', () => {
+    it('back button calls onClose', () => {
+      const { props } = setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Назад' }));
+      expect(props.onClose).toHaveBeenCalled();
+    });
+  });
+
+  // -----------------------------
+  // Avatar
+  // -----------------------------
+  describe('Avatar', () => {
+    it('renders hidden avatar file input', () => {
+      setup();
+      const input = screen.getByTestId('avatar-file-input');
+      expect(input).toHaveAttribute('type', 'file');
     });
 
-    it('calls handleLogout when logout button clicked', async () => {
-      render(<ProfileScreen handleLogout={mockHandleLogout} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Выйти из аккаунта')).toBeInTheDocument();
-      });
-
-      const logoutBtn = screen.getByText('Выйти из аккаунта');
-      fireEvent.click(logoutBtn);
-
-      expect(mockHandleLogout).toHaveBeenCalledTimes(1);
+    it('camera button is enabled when not uploading', () => {
+      setup();
+      const cameraBtn = screen.getByRole('button', { name: /Изменить фото/i });
+      expect(cameraBtn).not.toBeDisabled();
     });
   });
 });

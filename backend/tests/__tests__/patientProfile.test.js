@@ -138,6 +138,162 @@ describe('POST /api/patient-auth/change-password', () => {
 // =====================================================
 // DELETE /api/patient-auth/avatar
 // =====================================================
+// =====================================================
+// PUT /api/patient-auth/me — strict allowlist (full_name, phone)
+// =====================================================
+describe('PUT /api/patient-auth/me — allowlist', () => {
+
+  it('should return 401 without token', async () => {
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .send({ full_name: 'Hacker' });
+    expect(res.status).toBe(401);
+  });
+
+  it('should update full_name when provided', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Новое Имя', phone: null }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ full_name: 'Новое Имя' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.full_name).toBe('Новое Имя');
+
+    // Проверяем что в SQL ушёл только full_name + id (нет email, нет diagnosis)
+    expect(query).toHaveBeenCalledTimes(1);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/full_name = COALESCE/);
+    expect(sql).not.toMatch(/email\s*=/);
+    expect(sql).not.toMatch(/diagnosis\s*=/);
+    expect(sql).not.toMatch(/birth_date\s*=/);
+    expect(sql).not.toMatch(/avatar_url\s*=/);
+    expect(params).toEqual(['Новое Имя', 14]);
+  });
+
+  it('should update phone when provided', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Тест', phone: '+79991234567' }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ phone: '+79991234567' });
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/phone = \$1/);
+    expect(params).toEqual(['+79991234567', 14]);
+  });
+
+  it('should IGNORE email field even if sent', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Test', phone: null }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ full_name: 'Test', email: 'hacker@evil.com' });
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    // SQL не должен содержать email = ...
+    expect(sql).not.toMatch(/email\s*=/);
+    // params не должны содержать email значения
+    expect(params).not.toContain('hacker@evil.com');
+  });
+
+  it('should IGNORE diagnosis field', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Test', phone: null }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ full_name: 'Test', diagnosis: 'Inject diagnosis' });
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).not.toMatch(/diagnosis\s*=/);
+    expect(params).not.toContain('Inject diagnosis');
+  });
+
+  it('should IGNORE birth_date and avatar_url fields', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Test', phone: null }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        full_name: 'Test',
+        birth_date: '2000-01-01',
+        avatar_url: '/uploads/evil.jpg',
+      });
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).not.toMatch(/birth_date\s*=/);
+    expect(sql).not.toMatch(/avatar_url\s*=/);
+    expect(params).not.toContain('2000-01-01');
+    expect(params).not.toContain('/uploads/evil.jpg');
+  });
+
+  it('should return 400 when no allowed fields are sent', async () => {
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ email: 'x@y.com', diagnosis: 'X' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('NO_FIELDS');
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when body is empty object', async () => {
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('NO_FIELDS');
+  });
+
+  it('should return 404 when patient row not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ full_name: 'Test' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('phone="" → NULL (allow user to clear phone)', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 14, email: 'test@patient.com', full_name: 'Test', phone: null }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ phone: '' });
+
+    expect(res.status).toBe(200);
+    const [, params] = query.mock.calls[0];
+    expect(params[0]).toBeNull();
+  });
+});
+
 describe('DELETE /api/patient-auth/avatar', () => {
 
   it('should return 401 without token', async () => {
