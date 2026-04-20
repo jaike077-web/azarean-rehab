@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContext';
 import { ToastProvider } from './context/ToastContext';
 import LoadingSpinner from './components/LoadingSpinner';
+import PatientSplash from './components/PatientSplash';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Критические страницы - загружаются сразу
@@ -56,11 +57,13 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-// Защищённый роут для пациентов (после миграции #11 — через cookie + контекст)
+// Защищённый роут для пациентов (после миграции #11 — через cookie + контекст).
+// Пока PatientAuthProvider делает getMe() — показываем PatientSplash
+// (а не Login-форму), это закрывает баг #12 (F5 flicker).
 function PatientRoute({ children }) {
   const { patient, loading } = usePatientAuth();
   if (loading) {
-    return <LoadingSpinner message="Проверяем авторизацию..." />;
+    return <PatientSplash />;
   }
   if (!patient) {
     return <Navigate to="/patient-login" state={{ from: '/patient-dashboard' }} />;

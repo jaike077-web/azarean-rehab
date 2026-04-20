@@ -4,19 +4,26 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
 import { patientAuth } from '../../services/api';
+import PatientSplash from '../../components/PatientSplash';
 import './PatientLogin.css';
 
 const PatientLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-  const { patient, login } = usePatientAuth();
+  const { patient, login, loading: authLoading } = usePatientAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Пока контекст проверяет cookie через getMe() — показываем splash,
+  // иначе при F5 на /patient-login авторизованного пользователя мелькает форма.
+  if (authLoading) {
+    return <PatientSplash />;
+  }
 
   // Если пациент уже в контексте — редирект на дашборд
   if (patient) {
