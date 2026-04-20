@@ -131,6 +131,82 @@
   --pd-duration-progress: 1200ms;
 }
 
+/* ==========================================================================
+   v12 design tokens — semantic aliases + warm neutrals + brand colors
+   Добавлены для портирования azarean-v12-final.jsx. Существующие --pd-*
+   переменные не переименовываем — это набор поверх, через который компоненты
+   v12 берут цвета без обращения к объекту C из прототипа.
+   ========================================================================== */
+.pd-container {
+  /* Primary teal — семантические алиасы */
+  --pd-color-primary: var(--pd-primary);
+  --pd-color-primary-dark: var(--pd-primary-600);
+  --pd-color-primary-mid: #14B8A6; /* v12 tealMid — между --pd-primary-400/500 */
+  --pd-color-primary-bg: var(--pd-primary-50);
+  --pd-color-primary-light: var(--pd-primary-200);
+
+  /* Accent orange */
+  --pd-color-accent: var(--pd-accent-warm);
+  --pd-color-accent-bg: var(--pd-accent-warm-100);
+
+  /* Warm peach — мягкий тёплый акцент (куратор, soft chips) */
+  --pd-color-warm: #FFB088;
+  --pd-color-warm-dark: #FF8A5C;
+
+  /* Semantic aliases */
+  --pd-color-ok: var(--pd-success);
+  --pd-color-ok-bg: var(--pd-success-light);
+  --pd-color-warn: var(--pd-warning);
+  --pd-color-warn-bg: var(--pd-warning-light);
+  --pd-color-err: var(--pd-error);
+  --pd-color-err-bg: var(--pd-error-light);
+
+  /* Тёплая нейтральная палитра v12 (отличается от существующей slate-based) */
+  --pd-color-warm-n50:  #F9F8F5;
+  --pd-color-warm-n100: #F0EEE9;
+  --pd-color-warm-n200: #DFDDD5;
+  --pd-color-warm-n300: #C3C0B5;
+  --pd-color-warm-n400: #8C887E;
+  --pd-color-warm-n500: #636057;
+  --pd-color-warm-n600: #484640;
+  --pd-color-warm-n700: #33322D;
+  --pd-color-warm-n800: #1F1E1B;
+  --pd-color-warm-n900: #0D0D0A;
+
+  /* Surfaces v12 */
+  --pd-color-bg: #F8FAF7;
+  --pd-color-white: #FFFFFF;
+
+  /* Hero gradient (тёмная тил-карточка на Home) */
+  --pd-color-hero-grad: linear-gradient(145deg, #0A1A1F 0%, #0F3D3A 100%);
+
+  /* Pain scale — алиасы (DVPRS 11 цветов; значения совпадают с --pd-pain-N) */
+  --pd-color-pain-0:  var(--pd-pain-0);
+  --pd-color-pain-1:  var(--pd-pain-1);
+  --pd-color-pain-2:  var(--pd-pain-2);
+  --pd-color-pain-3:  var(--pd-pain-3);
+  --pd-color-pain-4:  var(--pd-pain-4);
+  --pd-color-pain-5:  var(--pd-pain-5);
+  --pd-color-pain-6:  var(--pd-pain-6);
+  --pd-color-pain-7:  var(--pd-pain-7);
+  --pd-color-pain-8:  var(--pd-pain-8);
+  --pd-color-pain-9:  var(--pd-pain-9);
+  --pd-color-pain-10: var(--pd-pain-10);
+
+  /* Phase colors — алиасы (значения совпадают с --pd-phase-N) */
+  --pd-color-phase-1: var(--pd-phase-1);
+  --pd-color-phase-2: var(--pd-phase-2);
+  --pd-color-phase-3: var(--pd-phase-3);
+  --pd-color-phase-4: var(--pd-phase-4);
+  --pd-color-phase-5: var(--pd-phase-5);
+  --pd-color-phase-6: var(--pd-phase-6);
+
+  /* Brand colors мессенджеров */
+  --pd-color-tg:  #0088CC;
+  --pd-color-wa:  #25D366;
+  --pd-color-max: #FF0032;
+}
+
 /* Staggered fade-in (ref: .fi class) */
 @keyframes pd-fi {
   from { opacity: 0; transform: translateY(8px); }
