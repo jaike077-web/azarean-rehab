@@ -26,9 +26,10 @@ export const IcMax = ({ size = 20, color = 'currentColor' }) => (
 // Конфиг каналов связи. URL-ы — единая точка правды для всех виджетов
 // (MessengerCTA, ProfileScreen messenger picker, ContactScreen).
 //
-// Telegram URL: https://t.me/AzareanBot — bot username взят из текста сообщения
-// в backend/services/telegramBot.js (строка с «Подключить @AzareanBot»).
-// Если в проде используется другой бот, поменять здесь в одном месте.
+// Telegram URL: https://t.me/azarean_rehab_bot — реальный username студийного
+// бота, подтверждён пользователем (отличается от устаревшей строки
+// «@AzareanBot» в backend/services/telegramBot.js — её надо будет освежить
+// при ребрендинге бота).
 //
 // WhatsApp / MAX — телефоны/handles студии Azarean Network (Екатеринбург).
 export const MESSENGERS = {
@@ -36,7 +37,7 @@ export const MESSENGERS = {
     name: 'Telegram',
     short: 'TG',
     color: 'var(--pd-color-tg)',
-    url: 'https://t.me/AzareanBot',
+    url: 'https://t.me/azarean_rehab_bot',
   },
   whatsapp: {
     name: 'WhatsApp',
