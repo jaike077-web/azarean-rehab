@@ -5,6 +5,7 @@ import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContex
 import { ToastProvider } from './context/ToastContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PatientSplash from './components/PatientSplash';
+import PatientDashboardSkeleton from './pages/PatientDashboard/PatientDashboardSkeleton';
 import ErrorBoundary from './components/ErrorBoundary';
 
 // Критические страницы - загружаются сразу
@@ -58,12 +59,13 @@ function ProtectedRoute({ children }) {
 }
 
 // Защищённый роут для пациентов (после миграции #11 — через cookie + контекст).
-// Пока PatientAuthProvider делает getMe() — показываем PatientSplash
-// (а не Login-форму), это закрывает баг #12 (F5 flicker).
+// Пока PatientAuthProvider делает getMe() — показываем скелетон каркаса
+// дашборда (форма реального экрана), это закрывает баг #12 (F5 flicker)
+// и даёт цельную смену состояний без layout-shift.
 function PatientRoute({ children }) {
   const { patient, loading } = usePatientAuth();
   if (loading) {
-    return <PatientSplash />;
+    return <PatientDashboardSkeleton />;
   }
   if (!patient) {
     return <Navigate to="/patient-login" state={{ from: '/patient-dashboard' }} />;
@@ -217,10 +219,10 @@ function AppRoutes() {
 
       {/* ========================== */}
       {/* ПАЦИЕНТСКИЕ РОУТЫ — один PatientAuthProvider на все */}
-      {/* Внутренний Suspense с PatientSplash перехватывает lazy-load */}
-      {/* пациентских страниц раньше внешнего LoadingSpinner (фиолетовый */}
-      {/* gradient инструкторского fallback'а в пациентском flow выглядит */}
-      {/* как чужой бренд). */}
+      {/* Внешний Suspense (PatientSplash) перехватывает lazy-load для */}
+      {/* auth-страниц (логин/регистрация — форма-шейп, скелетон не подходит). */}
+      {/* Дашборд оборачивается в свой Suspense со скелетоном каркаса — */}
+      {/* плавный переход без layout-shift при F5. */}
       {/* ========================== */}
       <Route element={
         <PatientAuthProvider>
@@ -237,7 +239,9 @@ function AppRoutes() {
           path="/patient-dashboard"
           element={
             <PatientRoute>
-              <PatientDashboard />
+              <Suspense fallback={<PatientDashboardSkeleton />}>
+                <PatientDashboard />
+              </Suspense>
             </PatientRoute>
           }
         />
