@@ -27,10 +27,12 @@ export default function usePatientAvatarBlob(avatarUrl) {
       return undefined;
     }
 
-    // Локальный файл — догружаем blob с куки
+    // Локальный файл — догружаем blob с куки.
+    // avatarUrl передаём как cache-buster — backend ставит max-age=300 на ответ,
+    // без него смена фото не подхватится 5 минут (тот же URL → стейл из кеша).
     let cancelled = false;
     let createdUrl = null;
-    patientAuth.fetchAvatarBlob()
+    patientAuth.fetchAvatarBlob(avatarUrl)
       .then((res) => {
         if (cancelled) return;
         createdUrl = URL.createObjectURL(res.data);

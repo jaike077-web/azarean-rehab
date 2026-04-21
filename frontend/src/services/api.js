@@ -415,7 +415,16 @@ patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-a
   headers: { 'Content-Type': undefined },
 });
 patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
-patientAuth.fetchAvatarBlob = () => patientApi.get('/patient-auth/avatar', { responseType: 'blob' });
+// Cache-buster по avatar_url — backend ставит max-age=300 на ответ,
+// без буста смена аватара не подхватится в течение 5 минут (URL endpoint
+// один и тот же, физический файл другой). Передаём filename из avatar_url
+// как ?v= параметр, чтобы новый аватар = новый URL = новый кеш-entry.
+patientAuth.fetchAvatarBlob = (cacheKey) => {
+  const url = cacheKey
+    ? `/patient-auth/avatar?v=${encodeURIComponent(cacheKey)}`
+    : '/patient-auth/avatar';
+  return patientApi.get(url, { responseType: 'blob' });
+};
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
 patientAuth.getMyComplex = (id) => patientApi.get(`/patient-auth/my-complexes/${id}`);
 
