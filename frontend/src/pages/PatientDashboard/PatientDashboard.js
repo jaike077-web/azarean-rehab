@@ -11,6 +11,7 @@ import ContactScreen from './components/ContactScreen';
 import ExercisesScreen from './components/ExercisesScreen';
 import ProfileScreen from './components/ProfileScreen';
 import { TabBar, AvatarBtn } from './components/ui';
+import usePatientAvatarBlob from './hooks/usePatientAvatarBlob';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -57,6 +58,7 @@ export default function PatientDashboard() {
   const navigate = useNavigate();
   const { patient, logout: ctxLogout } = usePatientAuth();
   const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
 
   useEffect(() => {
     const disclaimerAccepted = localStorage.getItem('patient_disclaimer_accepted');
@@ -211,6 +213,7 @@ export default function PatientDashboard() {
               экрана при их редизайне (Checkpoints 4–7). */}
           <AvatarBtn
             initial={initial}
+            avatarSrc={avatarSrc}
             onClick={() => setProfileOpen(true)}
             ariaLabel="Профиль"
           />

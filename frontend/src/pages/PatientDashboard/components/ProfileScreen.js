@@ -23,6 +23,7 @@ import { patientAuth, rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { usePatientAuth } from '../../../context/PatientAuthContext';
 import { SettingsRow } from './ui';
+import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
 import './ProfileScreen.css';
 
 // Tab id для Contact (см. NAV в PatientDashboard.js)
@@ -137,7 +138,7 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
   const [profile, setProfile] = useState(ctxPatient || null);
   const [loading, setLoading] = useState(!ctxPatient);
   const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarBlobUrl, setAvatarBlobUrl] = useState(null);
+  const avatarBlobUrl = usePatientAvatarBlob(profile?.avatar_url);
 
   // Edit modal
   const [editField, setEditField] = useState(null); // 'name' | 'phone' | null
@@ -170,26 +171,8 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
       .finally(() => setLoading(false));
   }, [ctxPatient, toast]);
 
-  // Avatar blob — endpoint защищён cookie, <img> не сошлёт креды
-  useEffect(() => {
-    if (!profile?.avatar_url) {
-      setAvatarBlobUrl(null);
-      return undefined;
-    }
-    let cancelled = false;
-    let createdUrl = null;
-    patientAuth.fetchAvatarBlob()
-      .then((res) => {
-        if (cancelled) return;
-        createdUrl = URL.createObjectURL(res.data);
-        setAvatarBlobUrl(createdUrl);
-      })
-      .catch(() => { if (!cancelled) setAvatarBlobUrl(null); });
-    return () => {
-      cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [profile?.avatar_url]);
+  // Avatar blob теперь через usePatientAvatarBlob (см. выше) — единый
+  // источник истины и для шапки дашборда, и для identity-блока.
 
   // Telegram статус — однократно при открытии overlay
   useEffect(() => {
@@ -317,9 +300,8 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
     else onClose();
   };
 
-  const avatarSrc = profile?.avatar_url
-    ? (profile.avatar_url.startsWith('http') ? profile.avatar_url : avatarBlobUrl)
-    : null;
+  // usePatientAvatarBlob уже разруливает оба варианта (http vs локальный)
+  const avatarSrc = avatarBlobUrl;
 
   return (
     <div
