@@ -550,17 +550,20 @@ router.get('/my/messages', authenticatePatient, async (req, res) => {
       }
     }
 
-    // m.* включает linked_diary_id и channel (добавлены миграцией 20260421).
-    // В Checkpoint 5 сюда добавится JOIN на diary_entries для linked_diary_date
-    // (ContactScreen feedback card отображает дату записи дневника).
+    // m.* включает linked_diary_id и channel (миграция 20260421).
+    // JOIN на diary_entries возвращает entry_date как text, чтобы избежать
+    // проблем с часовым поясом в JSON-сериализации (правило проекта —
+    // PostgreSQL DATE → text когда отдаём клиенту).
     let sql = `SELECT m.*,
                 CASE
                   WHEN m.sender_type = 'patient' THEN p.full_name
                   WHEN m.sender_type = 'instructor' THEN u.full_name
-                END as sender_name
+                END as sender_name,
+                de.entry_date::text AS linked_diary_date
                FROM messages m
                LEFT JOIN patients p ON m.sender_type = 'patient' AND m.sender_id = p.id
                LEFT JOIN users u ON m.sender_type = 'instructor' AND m.sender_id = u.id
+               LEFT JOIN diary_entries de ON de.id = m.linked_diary_id
                WHERE m.program_id IN (
                  SELECT id FROM rehab_programs WHERE patient_id = $1
                )`;
