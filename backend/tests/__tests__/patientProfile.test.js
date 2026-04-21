@@ -294,6 +294,110 @@ describe('PUT /api/patient-auth/me — allowlist', () => {
   });
 });
 
+// =====================================================
+// preferred_messenger (Checkpoint 2 — multi-channel)
+// =====================================================
+describe('preferred_messenger', () => {
+
+  it('GET /me возвращает preferred_messenger', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 14, email: 'test@patient.com', full_name: 'Тест',
+        preferred_messenger: 'telegram',
+      }],
+    });
+
+    const res = await request(app)
+      .get('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.preferred_messenger).toBe('telegram');
+    // Проверяем что SELECT включает preferred_messenger
+    const [sql] = query.mock.calls[0];
+    expect(sql).toMatch(/preferred_messenger/);
+  });
+
+  it('PUT /me обновляет preferred_messenger на whatsapp', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 14, email: 'test@patient.com', full_name: 'Тест',
+        preferred_messenger: 'whatsapp',
+      }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ preferred_messenger: 'whatsapp' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.preferred_messenger).toBe('whatsapp');
+
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/preferred_messenger = \$\d/);
+    expect(params).toContain('whatsapp');
+  });
+
+  it('PUT /me принимает все три значения: telegram / whatsapp / max', async () => {
+    for (const value of ['telegram', 'whatsapp', 'max']) {
+      query.mockResolvedValueOnce({
+        rows: [{ id: 14, email: 'test@patient.com', full_name: 'Тест', preferred_messenger: value }],
+      });
+
+      const res = await request(app)
+        .put('/api/patient-auth/me')
+        .set('Authorization', `Bearer ${validToken}`)
+        .send({ preferred_messenger: value });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.preferred_messenger).toBe(value);
+    }
+  });
+
+  it('PUT /me отклоняет невалидное значение (skype) → 400 INVALID_MESSENGER', async () => {
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ preferred_messenger: 'skype' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('INVALID_MESSENGER');
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it('PUT /me отклоняет пустую строку как messenger', async () => {
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ preferred_messenger: '' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('INVALID_MESSENGER');
+  });
+
+  it('PUT /me совмещает full_name + preferred_messenger в одном запросе', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 14, email: 'test@patient.com', full_name: 'Имя',
+        preferred_messenger: 'max',
+      }],
+    });
+
+    const res = await request(app)
+      .put('/api/patient-auth/me')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ full_name: 'Имя', preferred_messenger: 'max' });
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/full_name/);
+    expect(sql).toMatch(/preferred_messenger/);
+    expect(params).toContain('Имя');
+    expect(params).toContain('max');
+  });
+});
+
 describe('DELETE /api/patient-auth/avatar', () => {
 
   it('should return 401 without token', async () => {

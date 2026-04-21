@@ -503,6 +503,70 @@ describe('GET /api/rehab/my/streak', () => {
 // AUTHENTICATED ENDPOINTS - Messages
 // =====================================================
 
+// =====================================================
+// GET /my/messages — linked_diary_id + channel (Checkpoint 2)
+// =====================================================
+describe('GET /api/rehab/my/messages — linked_diary_id + channel', () => {
+  it('возвращает linked_diary_id и channel в response (m.* SELECT)', async () => {
+    const { query } = require('../../database/db');
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1,
+          patient_id: 14,
+          program_id: 5,
+          sender_type: 'instructor',
+          sender_id: 7,
+          content: 'Хорошо, продолжайте',
+          is_read: false,
+          created_at: '2026-04-21T08:00:00Z',
+          linked_diary_id: 42,
+          channel: 'in_app',
+          sender_name: 'Татьяна',
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0]).toHaveProperty('linked_diary_id', 42);
+    expect(res.body.data[0]).toHaveProperty('channel', 'in_app');
+  });
+
+  it('linked_diary_id может быть null для сообщений без привязки', async () => {
+    const { query } = require('../../database/db');
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 2,
+          patient_id: 14,
+          program_id: 5,
+          sender_type: 'patient',
+          sender_id: 14,
+          content: 'Здравствуйте',
+          is_read: true,
+          created_at: '2026-04-21T08:00:00Z',
+          linked_diary_id: null,
+          channel: null,
+          sender_name: 'Вадим',
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].linked_diary_id).toBeNull();
+    expect(res.body.data[0].channel).toBeNull();
+  });
+});
+
 describe('POST /api/rehab/my/messages', () => {
   it('should return 401 without token', async () => {
     const response = await request(app)
