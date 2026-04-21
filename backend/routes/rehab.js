@@ -508,6 +508,9 @@ router.get('/my/messages', authenticatePatient, async (req, res) => {
       }
     }
 
+    // m.* включает linked_diary_id и channel (добавлены миграцией 20260421).
+    // В Checkpoint 5 сюда добавится JOIN на diary_entries для linked_diary_date
+    // (ContactScreen feedback card отображает дату записи дневника).
     let sql = `SELECT m.*,
                 CASE
                   WHEN m.sender_type = 'patient' THEN p.full_name
