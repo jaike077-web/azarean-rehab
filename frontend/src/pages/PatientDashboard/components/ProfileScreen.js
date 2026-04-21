@@ -17,12 +17,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   ChevronLeft, ChevronDown, Camera, X, Heart, User, Mail, Phone,
-  Calendar, Lock, LogOut, Info, HelpCircle, MessageSquare, Bot, Bell, Loader,
+  Calendar, Lock, LogOut, Info, HelpCircle, Bot, Bell, Loader,
 } from 'lucide-react';
 import { patientAuth, rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { usePatientAuth } from '../../../context/PatientAuthContext';
-import { SettingsRow } from './ui';
+import {
+  SettingsRow,
+  MessengerCTA,
+  MESSENGERS,
+  MESSENGER_ICONS,
+  MESSENGER_KEYS,
+} from './ui';
 import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
 import './ProfileScreen.css';
 
@@ -132,7 +138,7 @@ EditSheet.propTypes = {
 // =====================================================
 function ProfileScreen({ onClose, handleLogout, goTo }) {
   const toast = useToast();
-  const { patient: ctxPatient, refresh } = usePatientAuth();
+  const { patient: ctxPatient, refresh, updatePatient } = usePatientAuth();
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(ctxPatient || null);
@@ -156,6 +162,10 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
   const [tgStatus, setTgStatus] = useState(null);
   const [tgCode, setTgCode] = useState(null);
   const [tgGenerating, setTgGenerating] = useState(false);
+
+  // Messenger picker (Checkpoint 3)
+  const [showMessengerPicker, setShowMessengerPicker] = useState(false);
+  const [messengerSaving, setMessengerSaving] = useState(false);
 
   // Подгрузка профиля если в контексте пусто (например, прямой mount overlay)
   useEffect(() => {
@@ -314,6 +324,35 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
     else onClose();
   };
 
+  // Смена предпочитаемого канала связи. Optimistic update UI + rollback
+  // на ошибке (правило паттерна из плана checkpoint 3).
+  // updatePatient() сам синкает PatientAuthContext → все остальные экраны
+  // получат новый preferred_messenger через usePatientAuth().
+  const handleMessengerChange = useCallback(async (key) => {
+    if (!profile) return;
+    if (key === profile.preferred_messenger) return; // no-op
+    if (!MESSENGER_KEYS.includes(key)) return;
+
+    const prev = profile.preferred_messenger;
+    setProfile((p) => ({ ...p, preferred_messenger: key }));
+    setMessengerSaving(true);
+    try {
+      if (updatePatient) {
+        await updatePatient({ preferred_messenger: key });
+      } else {
+        // Fallback если контекст ещё не расширен — прямой PUT + refresh
+        await patientAuth.updateMe({ preferred_messenger: key });
+        if (refresh) refresh();
+      }
+      toast.success('Канал связи изменён', `Теперь: ${MESSENGERS[key].name}`);
+    } catch (err) {
+      setProfile((p) => ({ ...p, preferred_messenger: prev }));
+      toast.error('Ошибка', err?.response?.data?.message || 'Не удалось сохранить. Попробуйте ещё раз.');
+    } finally {
+      setMessengerSaving(false);
+    }
+  }, [profile, updatePatient, refresh, toast]);
+
   // usePatientAvatarBlob уже разруливает оба варианта (http vs локальный)
   const avatarSrc = avatarBlobUrl;
 
@@ -464,14 +503,65 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
             <div className="pd-profile-section">
               <div className="pd-profile-section-label">Связь</div>
 
-              {/* Основной канал — disabled до Checkpoint 3 */}
-              <div className="pd-profile-section-card pd-profile-section-card--disabled">
-                <SettingsRow
-                  label="Основной канал связи"
-                  value="Скоро · выбор Telegram / WhatsApp / MAX"
-                  Icon={MessageSquare}
-                  readonly
-                  last
+              {/* Основной канал связи — tap раскрывает picker с 3 мессенджерами.
+                  Optimistic update + rollback на ошибке (см. handleMessengerChange). */}
+              <div className="pd-profile-section-card">
+                {(() => {
+                  const currentKey = MESSENGER_KEYS.includes(profile?.preferred_messenger)
+                    ? profile.preferred_messenger
+                    : 'telegram';
+                  const CurrentIcon = MESSENGER_ICONS[currentKey];
+                  const currentMsg = MESSENGERS[currentKey];
+                  return (
+                    <>
+                      <SettingsRow
+                        label="Основной канал связи"
+                        value={currentMsg.name}
+                        Icon={CurrentIcon}
+                        iconColor={currentMsg.color}
+                        onClick={() => setShowMessengerPicker((v) => !v)}
+                        last
+                      />
+                      {showMessengerPicker && (
+                        <div className="pd-messenger-picker" role="radiogroup" aria-label="Выбор канала связи">
+                          {MESSENGER_KEYS.map((key) => {
+                            const m = MESSENGERS[key];
+                            const Icon = MESSENGER_ICONS[key];
+                            const active = currentKey === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                role="radio"
+                                aria-checked={active}
+                                className={`pd-messenger-card ${active ? 'pd-messenger-card--active' : ''}`}
+                                onClick={() => handleMessengerChange(key)}
+                                disabled={messengerSaving}
+                                style={active ? { background: m.color } : undefined}
+                              >
+                                <Icon size={22} color={active ? '#fff' : m.color} />
+                                <span className="pd-messenger-card-label">{m.name}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Демо-блок: «Связаться с куратором сейчас» — использует
+                  выбранный канал. Полезен в Profile, т.к. пациент часто
+                  открывает именно отсюда, чтобы обновить контакты. */}
+              <div className="pd-profile-cta-wrap">
+                <MessengerCTA
+                  primary={
+                    MESSENGER_KEYS.includes(profile?.preferred_messenger)
+                      ? profile.preferred_messenger
+                      : 'telegram'
+                  }
+                  label="Связаться с куратором"
                 />
               </div>
 
