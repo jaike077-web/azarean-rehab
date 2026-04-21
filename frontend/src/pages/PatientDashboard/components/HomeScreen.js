@@ -83,21 +83,14 @@ const HomeScreen = ({ dashboardData, goTo }) => {
   return (
     <div className="pd-home-screen" style={{ padding: '0 20px' }}>
 
-      {/* ── Top bar (ref: greeting + streak) ── */}
+      {/* ── Top bar (greeting + streak). Дубль аватарки убран — глобальная
+           AvatarBtn в шапке дашборда уже показывает фото. В Checkpoint 4
+           этот блок будет полностью перерисован под v12 (greeting слева
+           + per-screen AvatarBtn справа, hero-card ниже). ── */}
       <div className="fi fi1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 14,
-            background: 'linear-gradient(135deg, #0D9488, #115E59)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontFamily: "'Manrope'", fontWeight: 800, fontSize: '1rem',
-          }}>
-            {patientName.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--pd-n400, #94A3B8)', fontWeight: 500, lineHeight: 1 }}>{getGreeting()}</div>
-            <div style={{ fontFamily: "'Manrope'", fontSize: '1.15rem', fontWeight: 800, color: 'var(--pd-n900, #0F172A)', lineHeight: 1.3 }}>{patientName}</div>
-          </div>
+        <div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--pd-n400, #94A3B8)', fontWeight: 500, lineHeight: 1 }}>{getGreeting()}</div>
+          <div style={{ fontFamily: "'Manrope'", fontSize: '1.15rem', fontWeight: 800, color: 'var(--pd-n900, #0F172A)', lineHeight: 1.3 }}>{patientName}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {streak && streak.current > 0 && (
