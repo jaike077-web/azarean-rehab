@@ -370,12 +370,38 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
 
     const date = entry_date || new Date().toISOString().split('T')[0];
 
-    // Валидация
-    if (pain_level !== undefined && (pain_level < 0 || pain_level > 10)) {
-      return res.status(400).json({ error: 'Validation Error', message: 'Уровень боли должен быть от 0 до 10' });
+    // Диагностика — временный debug log (удалить после фикса)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[diary POST] body:', JSON.stringify(req.body));
     }
-    if (mood !== undefined && (mood < 1 || mood > 5)) {
-      return res.status(400).json({ error: 'Validation Error', message: 'Настроение должно быть от 1 до 5' });
+
+    // Валидация
+    if (pain_level !== undefined && pain_level !== null && (pain_level < 0 || pain_level > 10)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Уровень боли должен быть от 0 до 10', debug: { pain_level } });
+    }
+    if (mood !== undefined && mood !== null && (mood < 1 || mood > 5)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Настроение должно быть от 1 до 5', debug: { mood } });
+    }
+    // swelling CHECK constraint: 0..3. Если пришла строка или >3 — 400 понятнее чем 500 от БД.
+    if (swelling !== undefined && swelling !== null) {
+      const s = Number(swelling);
+      if (!Number.isFinite(s) || s < 0 || s > 3) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Swelling 0..3', debug: { swelling } });
+      }
+    }
+    // mobility CHECK: 0..10
+    if (mobility !== undefined && mobility !== null) {
+      const m = Number(mobility);
+      if (!Number.isFinite(m) || m < 0 || m > 10) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Mobility 0..10', debug: { mobility } });
+      }
+    }
+    // sleep_quality CHECK: 1..5
+    if (sleep_quality !== undefined && sleep_quality !== null) {
+      const sq = Number(sleep_quality);
+      if (!Number.isFinite(sq) || sq < 1 || sq > 5) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Sleep quality 1..5', debug: { sleep_quality } });
+      }
     }
 
     // Находим активную программу
@@ -413,8 +439,13 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
 
     res.status(201).json({ message: 'Запись сохранена', data: result.rows[0] });
   } catch (error) {
-    console.error('Ошибка сохранения дневника:', error.message);
-    res.status(500).json({ error: 'Server Error', message: 'Ошибка сохранения записи дневника' });
+    // Детальный лог + возврат code для диагностики. В prod можно урезать.
+    console.error('Ошибка сохранения дневника:', error.message, error.code, error.detail || '');
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка сохранения записи дневника',
+      debug: process.env.NODE_ENV !== 'production' ? { code: error.code, detail: error.detail, message: error.message } : undefined,
+    });
   }
 });
 
