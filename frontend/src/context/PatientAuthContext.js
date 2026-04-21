@@ -50,7 +50,18 @@ export function PatientAuthProvider({ children }) {
     setPatient(null);
   }, []);
 
-  const value = { patient, loading, login, logout, refresh };
+  // Обновление профиля через PUT /patient-auth/me.
+  // Используется messenger picker'ом и другими местами, где нужно
+  // синхронно обновить patient в контексте после мутации на сервере.
+  // Отдельно от login() чтобы не смешивать семантику (login — после логин-флоу).
+  const updatePatient = useCallback(async (partial) => {
+    const res = await patientAuth.updateMe(partial);
+    const data = res.data || null;
+    if (data) setPatient(data);
+    return data;
+  }, []);
+
+  const value = { patient, loading, login, logout, refresh, updatePatient };
 
   return (
     <PatientAuthContext.Provider value={value}>
