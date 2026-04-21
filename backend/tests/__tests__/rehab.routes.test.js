@@ -11,6 +11,37 @@ jest.mock('../../database/db', () => ({
   getClient: jest.fn(),
 }));
 
+// Mock multer + sharp цепочку. В unit-тестах у нас нет реальных файлов —
+// проверяем только ownership / лимит / 404 в POST photos endpoint'е.
+// Реальный sharp-процессинг покрыт в avatar-пути и протестирован вручную.
+// avatarUpload/processAvatar оставляем нетронутыми (они не импортируются
+// в rehab routes) — мокаем только diary branch.
+jest.mock('../../middleware/upload', () => ({
+  avatarUpload: { single: () => (req, res, next) => next() },
+  processAvatar: (req, res, next) => next(),
+  diaryPhotoUpload: {
+    single: () => (req, _res, next) => {
+      // Для тестов просто кладём fake file в req — processDiaryPhoto
+      // заполнит остальные поля.
+      if (req.headers['x-test-skip-file']) {
+        req.file = null;
+      } else {
+        req.file = { buffer: Buffer.from('x'), mimetype: 'image/jpeg', size: 1000 };
+      }
+      next();
+    },
+  },
+  processDiaryPhoto: (req, _res, next) => {
+    if (req.file) {
+      req.file.filename = 'test_diary_photo.jpg';
+      req.file.path = '/tmp/test_diary_photo.jpg';
+      req.file.size = 1000;
+      req.file.relativePath = '/uploads/diary_photos/test_diary_photo.jpg';
+    }
+    next();
+  },
+}));
+
 const request = require('supertest');
 const app = require('../../server');
 const { query } = require('../../database/db');
@@ -651,6 +682,72 @@ describe('Photo endpoints — ownership (DELETE branch)', () => {
       .set('Authorization', `Bearer ${validToken}`)
       .expect(404);
     expect(response.body).toHaveProperty('error', 'Not Found');
+  });
+
+  // ===== POST photo — через замоканный multer/sharp =====
+  // Upload endpoint покрывается отдельно: ownership + лимит 3 + happy path.
+  // Middleware upload.js мокается в jest.mock сверху файла, так что sharp
+  // не трогается и не ломает sibling-тесты.
+
+  it('POST — returns 400 for non-numeric entry_id', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary/abc/photos')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(400);
+    expect(response.body).toHaveProperty('error');
+  });
+
+  it('POST — returns 404 when entry does not belong to patient', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 999 }] }); // чужая запись
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary/42/photos')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(404);
+    expect(response.body).toHaveProperty('error', 'Not Found');
+  });
+
+  it('POST — returns 400 when file not attached', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 1 }] }); // ownership OK
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary/42/photos')
+      .set('Authorization', `Bearer ${validToken}`)
+      .set('x-test-skip-file', '1') // см. mock выше — пропускает req.file
+      .expect(400);
+    expect(response.body).toHaveProperty('error');
+  });
+
+  it('POST — returns 400 when 3 photos already exist (limit enforcement)', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 1 }] }); // ownership OK
+    query.mockResolvedValueOnce({ rows: [{ n: 3 }] }); // count уже 3
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary/42/photos')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(400);
+    expect(response.body.message).toMatch(/Максимум 3 фото/);
+  });
+
+  it('POST — 201 happy path with row inserted', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 1 }] }); // ownership OK
+    query.mockResolvedValueOnce({ rows: [{ n: 1 }] }); // под лимитом
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 77,
+        file_path: '/uploads/diary_photos/test_diary_photo.jpg',
+        file_size_bytes: 1000,
+        created_at: new Date().toISOString(),
+      }],
+    });
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary/42/photos')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(201);
+
+    expect(response.body.data).toHaveProperty('id', 77);
+    expect(response.body.data).toHaveProperty('file_size_bytes', 1000);
   });
 });
 
