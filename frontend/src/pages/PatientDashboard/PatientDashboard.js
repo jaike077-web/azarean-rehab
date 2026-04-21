@@ -53,6 +53,11 @@ export default function PatientDashboard() {
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   // Profile теперь не таб, а full-screen overlay поверх любого экрана.
   const [profileOpen, setProfileOpen] = useState(false);
+  // PGIC state (Patient Global Impression of Change) — lifted в родителя,
+  // чтобы Home мог проставить отметку, а Diary подставить как initial при
+  // открытии. В Checkpoint 6 добавим persist в `diary_entries.pgic_feel`.
+  // Значения: 'better' | 'same' | 'worse' | null.
+  const [pgicFeel, setPgicFeel] = useState(null);
   const scrollRef = useRef(null);
   const toast = useToast();
   const navigate = useNavigate();
@@ -138,6 +143,8 @@ export default function PatientDashboard() {
       handleLogout,
       onOpenProfile: () => setProfileOpen(true),
       patient,
+      pgicFeel,
+      setPgicFeel,
     };
 
     switch (screen) {
