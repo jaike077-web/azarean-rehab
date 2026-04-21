@@ -1,0 +1,520 @@
+/* =====================================================
+   DiaryScreen v12 — стили
+   Prefix: pd-diary-*. Цвета — var(--pd-*).
+   Референс: azarean-v12-final.jsx Diary (L1633-1925).
+   ===================================================== */
+
+.pd-diary {
+  padding: 14px 20px 20px;
+}
+
+/* ===== Header ===== */
+.pd-diary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 10px;
+}
+
+.pd-diary-header-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.pd-diary-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--pd-n900);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.pd-diary-subtitle {
+  font-size: 0.72rem;
+  color: var(--pd-n400);
+}
+
+.pd-diary-saved {
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--pd-color-ok-bg);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--pd-color-ok);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pd-diary-saved--pending {
+  background: var(--pd-n100);
+  color: var(--pd-n500);
+}
+
+/* ===== PGIC info-bar ===== */
+.pd-diary-pgic {
+  padding: 10px 14px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  background: var(--pd-color-primary-bg);
+  border: 1px solid color-mix(in srgb, var(--pd-color-primary) 30%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pd-diary-pgic-text {
+  font-size: 0.72rem;
+  color: var(--pd-color-primary-dark);
+  line-height: 1.4;
+  flex: 1;
+}
+
+/* ===== Section ===== */
+.pd-diary-section {
+  margin-bottom: 14px;
+}
+
+.pd-diary-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.pd-diary-section-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--pd-n700);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pd-diary-section-sub {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+  margin-left: auto;
+}
+
+.pd-diary-card {
+  background: var(--pd-color-white);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+}
+
+/* ===== Pain slider ===== */
+.pd-diary-pain-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pd-diary-pain-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(to right,
+    var(--pd-color-pain-0), var(--pd-color-pain-1), var(--pd-color-pain-2),
+    var(--pd-color-pain-3), var(--pd-color-pain-4), var(--pd-color-pain-5),
+    var(--pd-color-pain-6), var(--pd-color-pain-7), var(--pd-color-pain-8),
+    var(--pd-color-pain-9), var(--pd-color-pain-10));
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.pd-diary-pain-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #fff;
+  border: 2px solid var(--pd-n600);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.pd-diary-pain-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #fff;
+  border: 2px solid var(--pd-n600);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.pd-diary-pain-value {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  min-width: 32px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-diary-pain-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+}
+
+.pd-diary-when {
+  margin-top: 12px;
+}
+
+.pd-diary-when-label {
+  font-size: 0.65rem;
+  color: var(--pd-n400);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* ===== Pills ===== */
+.pd-diary-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pd-diary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-n200);
+  background: var(--pd-color-white);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--pd-n600);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.pd-diary-pill:hover {
+  border-color: var(--pd-n300);
+}
+
+.pd-diary-pill--active {
+  background: var(--pd-color-primary);
+  border-color: var(--pd-color-primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ===== ROM ===== */
+.pd-diary-rom-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.pd-diary-rom-num {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--pd-color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-diary-rom-deg {
+  font-size: 0.9rem;
+  color: var(--pd-n500);
+  font-weight: 600;
+}
+
+.pd-diary-rom-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pd-diary-rom-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1.5px solid var(--pd-n300);
+  background: transparent;
+  color: var(--pd-n600);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.pd-diary-rom-btn:hover {
+  background: var(--pd-n50);
+}
+
+.pd-diary-rom-track {
+  flex: 1;
+  position: relative;
+  height: 6px;
+  background: var(--pd-n200);
+  border-radius: 3px;
+}
+
+.pd-diary-rom-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--pd-color-primary), var(--pd-color-primary-mid));
+  border-radius: 3px;
+  transition: width 120ms ease;
+}
+
+.pd-diary-rom-knob {
+  position: absolute;
+  top: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: #fff;
+  border: 2.5px solid var(--pd-color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: left 120ms ease;
+}
+
+.pd-diary-rom-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+}
+
+.pd-diary-rom-goal {
+  color: var(--pd-color-primary);
+  font-weight: 600;
+}
+
+/* ===== Photos ===== */
+.pd-diary-photos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pd-diary-photo-tile {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  position: relative;
+  background: linear-gradient(135deg, var(--pd-n200), var(--pd-n100));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pd-n200);
+  overflow: hidden;
+}
+
+.pd-diary-photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pd-diary-photo-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  border: 2px solid var(--pd-color-white);
+  background: var(--pd-n700);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.pd-diary-photo-add {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  border: 2px dashed var(--pd-n300);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--pd-n500);
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.pd-diary-photo-add:hover {
+  border-color: var(--pd-color-primary);
+  color: var(--pd-color-primary);
+}
+
+.pd-diary-photo-file {
+  display: none;
+}
+
+/* ===== Notes ===== */
+.pd-diary-notes {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-n200);
+  background: var(--pd-color-white);
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--pd-n800);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.pd-diary-notes:focus {
+  border-color: var(--pd-color-primary);
+}
+
+/* ===== MessengerCTA spacing ===== */
+.pd-diary-cta {
+  margin-bottom: 20px;
+}
+
+/* ===== Sparkline trend ===== */
+.pd-diary-trend {
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  background: var(--pd-color-white);
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+}
+
+.pd-diary-trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pd-diary-trend-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pd-diary-trend-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+}
+
+.pd-diary-trend-sub {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+}
+
+.pd-diary-trend-delta {
+  font-size: 0.7rem;
+  color: var(--pd-color-ok);
+  font-weight: 700;
+}
+
+.pd-diary-trend-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 0.6rem;
+  color: var(--pd-n400);
+}
+
+/* ===== История ===== */
+.pd-diary-hist-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--pd-n400);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+
+.pd-diary-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--pd-color-white);
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 40%, transparent);
+  margin-bottom: 6px;
+}
+
+.pd-diary-hist-date {
+  min-width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pd-diary-hist-day {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--pd-n800);
+}
+
+.pd-diary-hist-month {
+  font-size: 0.55rem;
+  color: var(--pd-n400);
+}
+
+.pd-diary-hist-pain {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pd-diary-hist-meta {
+  font-size: 0.72rem;
+  color: var(--pd-n500);
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-diary-hist-note {
+  font-size: 0.65rem;
+  color: var(--pd-n400);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

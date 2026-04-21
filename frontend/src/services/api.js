@@ -458,6 +458,22 @@ export const rehab = {
   createDiaryEntry: (data) => patientApi.post('/rehab/my/diary', data),
   getDiaryEntry: (date) => patientApi.get(`/rehab/my/diary/${date}`),
 
+  // Тренд боли (sparkline) — Checkpoint 6
+  getDiaryTrend: (days = 14) =>
+    patientApi.get(`/rehab/my/diary/trend?days=${encodeURIComponent(days)}`),
+
+  // Фото дневника (Checkpoint 6)
+  uploadDiaryPhoto: (entryId, formData) =>
+    patientApi.post(`/rehab/my/diary/${entryId}/photos`, formData, {
+      headers: { 'Content-Type': undefined }, // axios сам поставит boundary
+    }),
+  deleteDiaryPhoto: (entryId, photoId) =>
+    patientApi.delete(`/rehab/my/diary/${entryId}/photos/${photoId}`),
+  fetchDiaryPhotoBlob: (entryId, photoId) =>
+    patientApi.get(`/rehab/my/diary/${entryId}/photos/${photoId}`, {
+      responseType: 'blob',
+    }),
+
   // Стрик
   getMyStreak: () => patientApi.get('/rehab/my/streak'),
 

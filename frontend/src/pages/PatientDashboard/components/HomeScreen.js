@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { AvatarBtn, IllKnee } from './ui';
 import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import { rehab } from '../../../services/api';
 import './HomeScreen.css';
 
 // Маппинг имени иконки фазы из БД (rehab_phases.icon) → lucide-компонент.
@@ -149,6 +150,12 @@ export default function HomeScreen({
     if (setPgicFeel) setPgicFeel(v);
     setFeelSaved(true);
     setTimeout(() => setFeelSaved(false), 1500);
+    // Фоновый persist в diary_entries.pgic_feel — чтобы инструктор видел
+    // отметку в дашборде админа и чтобы при открытии Diary значение pain
+    // было предустановлено из PGIC. Ошибку глушим — локальный state и так
+    // обновился, UX не должен страдать от временного 500.
+    const today = new Date().toISOString().split('T')[0];
+    rehab.createDiaryEntry({ entry_date: today, pgic_feel: v }).catch(() => {});
   };
 
   return (
