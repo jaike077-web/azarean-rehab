@@ -79,4 +79,68 @@ const processAvatar = async (req, res, next) => {
   }
 };
 
-module.exports = { avatarUpload, processAvatar };
+// =====================================================
+// Фото дневника (Checkpoint 6)
+// Отличие от аватаров: сохраняем не квадрат 400×400, а fit:inside 1200×1200
+// с JPEG quality 82. Имя файла включает ID записи дневника.
+// =====================================================
+
+const diaryPhotosDir = path.join(__dirname, '../uploads/diary_photos');
+if (!fs.existsSync(diaryPhotosDir)) {
+  fs.mkdirSync(diaryPhotosDir, { recursive: true });
+}
+
+const diaryPhotoStorage = multer.memoryStorage();
+
+const diaryPhotoUpload = multer({
+  storage: diaryPhotoStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 МБ до компрессии
+  },
+});
+
+/**
+ * Сжимает фото дневника и сохраняет на диск.
+ * Требует req.params.entry_id (для имени файла) и req.patient.id.
+ * Возвращает в req.file: filename, path, size, relativePath (для БД).
+ */
+const processDiaryPhoto = async (req, res, next) => {
+  if (!req.file) return next();
+
+  try {
+    const entryId = parseInt(req.params.entry_id, 10);
+    if (!Number.isFinite(entryId)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный ID записи дневника',
+      });
+    }
+    const timestamp = Date.now();
+    const random = crypto.randomBytes(4).toString('hex');
+    const filename = `diary_${entryId}_${timestamp}_${random}.jpg`;
+    const outputPath = path.join(diaryPhotosDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toFile(outputPath);
+
+    req.file.filename = filename;
+    req.file.path = outputPath;
+    req.file.size = fs.statSync(outputPath).size;
+    // Относительный путь для сохранения в БД (без /backend prefix).
+    // Чтение обратно — через GET endpoint с cookie-auth, не static.
+    req.file.relativePath = `/uploads/diary_photos/${filename}`;
+
+    next();
+  } catch (error) {
+    console.error('Diary photo processing error:', error.message);
+    return res.status(400).json({
+      error: 'Processing Error',
+      message: 'Не удалось обработать изображение. Попробуйте другой файл.',
+    });
+  }
+};
+
+module.exports = { avatarUpload, processAvatar, diaryPhotoUpload, processDiaryPhoto };

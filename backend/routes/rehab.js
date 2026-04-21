@@ -9,10 +9,13 @@
 // =====================================================
 
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 const { query } = require('../database/db');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { authenticateToken } = require('../middleware/auth');
+const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -335,26 +338,44 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
 
 /**
  * GET /api/rehab/my/diary?from=2026-01-01&to=2026-02-10
- * Получить записи дневника за период
+ * Получить записи дневника за период.
+ * Возвращает записи + массив `photos` (id + created_at) через json_agg
+ * subquery. entry_date::text — TZ safety (правило проекта).
  */
 router.get('/my/diary', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
     const { from, to, limit = 30 } = req.query;
 
-    let sql = `SELECT * FROM diary_entries WHERE patient_id = $1`;
+    let sql = `SELECT d.id, d.patient_id, d.program_id,
+                      d.entry_date::text AS entry_date,
+                      d.pain_level, d.swelling, d.mobility, d.mood,
+                      d.exercises_done, d.sleep_quality, d.notes,
+                      d.pgic_feel, d.rom_degrees, d.better_list, d.pain_when,
+                      d.created_at, d.updated_at,
+                      COALESCE(
+                        (SELECT json_agg(json_build_object(
+                           'id', dp.id,
+                           'created_at', dp.created_at,
+                           'file_size_bytes', dp.file_size_bytes
+                         ) ORDER BY dp.id)
+                         FROM diary_photos dp WHERE dp.diary_entry_id = d.id),
+                        '[]'::json
+                      ) AS photos
+               FROM diary_entries d
+               WHERE d.patient_id = $1`;
     const params = [patientId];
 
     if (from) {
       params.push(from);
-      sql += ` AND entry_date >= $${params.length}`;
+      sql += ` AND d.entry_date >= $${params.length}`;
     }
     if (to) {
       params.push(to);
-      sql += ` AND entry_date <= $${params.length}`;
+      sql += ` AND d.entry_date <= $${params.length}`;
     }
 
-    sql += ` ORDER BY entry_date DESC`;
+    sql += ` ORDER BY d.entry_date DESC`;
     params.push(parseInt(limit));
     sql += ` LIMIT $${params.length}`;
 
@@ -367,9 +388,44 @@ router.get('/my/diary', authenticatePatient, async (req, res) => {
 });
 
 /**
+ * GET /api/rehab/my/diary/trend?days=14
+ * Sparkline — уровень боли за последние N дней (default 14, max 90).
+ * Выдача: массив { date: "YYYY-MM-DD", pain: number }.
+ *
+ * ВАЖНО: этот роут должен идти ДО `/my/diary/:date`, иначе Express
+ * примет 'trend' как :date и вернёт 400/пустой результат.
+ */
+router.get('/my/diary/trend', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const daysRaw = parseInt(req.query.days, 10);
+    const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(daysRaw, 90) : 14;
+
+    const result = await query(
+      `SELECT entry_date::text AS date, pain_level AS pain
+         FROM diary_entries
+        WHERE patient_id = $1
+          AND entry_date > CURRENT_DATE - (INTERVAL '1 day' * $2)
+        ORDER BY entry_date ASC`,
+      [patientId, days]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Ошибка получения тренда дневника:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения тренда' });
+  }
+});
+
+/**
  * POST /api/rehab/my/diary
  * Создать/обновить запись дневника за день (UPSERT)
  */
+// Allowlist для better_list (что стало лучше) — фронт должен отправлять
+// только эти строки. Любые другие → 400.
+const BETTER_LIST_ALLOWED = ['ext', 'walk', 'sleep', 'mood', 'pain', 'custom'];
+const PGIC_ALLOWED = ['better', 'same', 'worse'];
+const PAIN_WHEN_ALLOWED = ['morning', 'day', 'evening', 'exercise', 'walking'];
+
 router.post('/my/diary', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
@@ -381,7 +437,12 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
       mood,
       exercises_done,
       sleep_quality,
-      notes
+      notes,
+      // Structured v12 поля (Checkpoint 6)
+      pgic_feel,
+      rom_degrees,
+      better_list,
+      pain_when,
     } = req.body;
 
     const date = entry_date || new Date().toISOString().split('T')[0];
@@ -414,6 +475,35 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
         return res.status(400).json({ error: 'Validation Error', message: 'Sleep quality 1..5', debug: { sleep_quality } });
       }
     }
+    // pgic_feel enum
+    if (pgic_feel !== undefined && pgic_feel !== null && !PGIC_ALLOWED.includes(pgic_feel)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'pgic_feel must be better/same/worse', debug: { pgic_feel } });
+    }
+    // rom_degrees: 0..180
+    if (rom_degrees !== undefined && rom_degrees !== null) {
+      const r = Number(rom_degrees);
+      if (!Number.isFinite(r) || r < 0 || r > 180) {
+        return res.status(400).json({ error: 'Validation Error', message: 'ROM 0..180°', debug: { rom_degrees } });
+      }
+    }
+    // better_list: массив строк из allowlist
+    if (better_list !== undefined && better_list !== null) {
+      if (!Array.isArray(better_list)) {
+        return res.status(400).json({ error: 'Validation Error', message: 'better_list must be array', debug: { better_list } });
+      }
+      const bad = better_list.find((x) => typeof x !== 'string' || !BETTER_LIST_ALLOWED.includes(x));
+      if (bad !== undefined) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: `better_list может содержать только: ${BETTER_LIST_ALLOWED.join(', ')}`,
+          debug: { invalid: bad },
+        });
+      }
+    }
+    // pain_when enum
+    if (pain_when !== undefined && pain_when !== null && !PAIN_WHEN_ALLOWED.includes(pain_when)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'pain_when must be morning/day/evening/exercise/walking', debug: { pain_when } });
+    }
 
     // Находим активную программу
     const programResult = await query(
@@ -424,11 +514,25 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
     );
     const programId = programResult.rows[0]?.id || null;
 
-    // UPSERT: одна запись в день
+    // better_list в JSONB ждёт JSON-строку или NULL, не ставим default в
+    // COALESCE — COALESCE с JSONB '[]' мешает update'ить массив в пустоту.
+    // Если not provided — пропускаем в UPDATE через EXCLUDED IS NULL guard.
+    const betterListJson = better_list !== undefined && better_list !== null
+      ? JSON.stringify(better_list)
+      : null;
+
+    // UPSERT: одна запись в день.
+    // COALESCE сохраняет старое значение если новое не прислано (null).
+    // Для JSONB better_list — отдельная логика, т.к. пустой массив '[]' не
+    // должен считаться "не прислано" — если фронт прислал [], обнуляем.
     const result = await query(
       `INSERT INTO diary_entries
-       (patient_id, program_id, entry_date, pain_level, swelling, mobility, mood, exercises_done, sleep_quality, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       (patient_id, program_id, entry_date,
+        pain_level, swelling, mobility, mood, exercises_done,
+        sleep_quality, notes,
+        pgic_feel, rom_degrees, better_list, pain_when)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+               $11, $12, COALESCE($13::jsonb, '[]'::jsonb), $14)
        ON CONFLICT (patient_id, entry_date)
        DO UPDATE SET
          pain_level = COALESCE(EXCLUDED.pain_level, diary_entries.pain_level),
@@ -438,9 +542,21 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
          exercises_done = COALESCE(EXCLUDED.exercises_done, diary_entries.exercises_done),
          sleep_quality = COALESCE(EXCLUDED.sleep_quality, diary_entries.sleep_quality),
          notes = COALESCE(EXCLUDED.notes, diary_entries.notes),
+         pgic_feel = COALESCE(EXCLUDED.pgic_feel, diary_entries.pgic_feel),
+         rom_degrees = COALESCE(EXCLUDED.rom_degrees, diary_entries.rom_degrees),
+         better_list = CASE
+           WHEN $13::jsonb IS NOT NULL THEN EXCLUDED.better_list
+           ELSE diary_entries.better_list
+         END,
+         pain_when = COALESCE(EXCLUDED.pain_when, diary_entries.pain_when),
          updated_at = NOW()
        RETURNING *`,
-      [patientId, programId, date, pain_level, swelling, mobility, mood, exercises_done, sleep_quality, notes]
+      [
+        patientId, programId, date,
+        pain_level ?? null, swelling ?? null, mobility ?? null, mood ?? null, exercises_done ?? null,
+        sleep_quality ?? null, notes ?? null,
+        pgic_feel ?? null, rom_degrees ?? null, betterListJson, pain_when ?? null,
+      ]
     );
 
     // Обновляем стрик если упражнения выполнены
@@ -470,7 +586,18 @@ router.get('/my/diary/:date', authenticatePatient, async (req, res) => {
     const { date } = req.params;
 
     const result = await query(
-      `SELECT * FROM diary_entries WHERE patient_id = $1 AND entry_date = $2`,
+      `SELECT d.*, d.entry_date::text AS entry_date,
+              COALESCE(
+                (SELECT json_agg(json_build_object(
+                   'id', dp.id,
+                   'created_at', dp.created_at,
+                   'file_size_bytes', dp.file_size_bytes
+                 ) ORDER BY dp.id)
+                 FROM diary_photos dp WHERE dp.diary_entry_id = d.id),
+                '[]'::json
+              ) AS photos
+         FROM diary_entries d
+        WHERE d.patient_id = $1 AND d.entry_date = $2`,
       [patientId, date]
     );
 
@@ -482,6 +609,161 @@ router.get('/my/diary/:date', authenticatePatient, async (req, res) => {
   } catch (error) {
     console.error('Ошибка получения записи дневника:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения записи' });
+  }
+});
+
+// =====================================================
+// ПАЦИЕНТ: Фото дневника (Checkpoint 6)
+// =====================================================
+
+const PHOTOS_PER_ENTRY = 3;
+
+/**
+ * Helper: проверяет, что entry_id принадлежит текущему пациенту.
+ * Возвращает либо { ownershipOk: true, entryId } либо отдаёт 400/404
+ * и возвращает null (вызывающая сторона должна вернуть сразу).
+ */
+async function verifyDiaryOwnership(req, res) {
+  const entryId = parseInt(req.params.entry_id, 10);
+  if (!Number.isFinite(entryId)) {
+    res.status(400).json({ error: 'Validation Error', message: 'Некорректный ID записи' });
+    return null;
+  }
+  const ownership = await query(
+    'SELECT patient_id FROM diary_entries WHERE id = $1',
+    [entryId]
+  );
+  if (ownership.rows.length === 0 || ownership.rows[0].patient_id !== req.patient.id) {
+    res.status(404).json({ error: 'Not Found', message: 'Запись не найдена' });
+    return null;
+  }
+  return entryId;
+}
+
+/**
+ * POST /api/rehab/my/diary/:entry_id/photos
+ * Загружает фото и привязывает к записи дневника. Max 3 на запись (enforce
+ * в application — БД отдельного constraint'а не имеет). 10 МБ до sharp,
+ * результат ~200-400 КБ (fit:inside 1200×1200, JPEG q82).
+ */
+router.post('/my/diary/:entry_id/photos',
+  authenticatePatient,
+  diaryPhotoUpload.single('photo'),
+  processDiaryPhoto,
+  async (req, res) => {
+    try {
+      const entryId = await verifyDiaryOwnership(req, res);
+      if (entryId === null) return;
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Файл не прислан' });
+      }
+
+      const countResult = await query(
+        'SELECT COUNT(*)::int AS n FROM diary_photos WHERE diary_entry_id = $1',
+        [entryId]
+      );
+      if (countResult.rows[0].n >= PHOTOS_PER_ENTRY) {
+        // Удалим только что загруженный файл — он уже на диске, в БД не записан
+        try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: `Максимум ${PHOTOS_PER_ENTRY} фото на запись`,
+        });
+      }
+
+      const insertResult = await query(
+        `INSERT INTO diary_photos (diary_entry_id, file_path, file_size_bytes)
+         VALUES ($1, $2, $3)
+         RETURNING id, file_path, file_size_bytes, created_at`,
+        [entryId, req.file.relativePath, req.file.size]
+      );
+
+      res.status(201).json({
+        data: {
+          id: insertResult.rows[0].id,
+          created_at: insertResult.rows[0].created_at,
+          file_size_bytes: insertResult.rows[0].file_size_bytes,
+        },
+      });
+    } catch (error) {
+      console.error('Ошибка загрузки фото дневника:', error.message);
+      // Если файл успели записать на диск — чистим
+      if (req.file?.path) {
+        try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+      }
+      res.status(500).json({ error: 'Server Error', message: 'Ошибка загрузки фото' });
+    }
+  }
+);
+
+/**
+ * GET /api/rehab/my/diary/:entry_id/photos/:photo_id
+ * Отдаёт файл-blob с cookie-auth (как аватары). Не static, потому что
+ * /uploads/diary_photos должен быть защищён от прямого чтения.
+ */
+router.get('/my/diary/:entry_id/photos/:photo_id', authenticatePatient, async (req, res) => {
+  try {
+    const entryId = await verifyDiaryOwnership(req, res);
+    if (entryId === null) return;
+
+    const photoId = parseInt(req.params.photo_id, 10);
+    if (!Number.isFinite(photoId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный ID фото' });
+    }
+
+    const result = await query(
+      'SELECT file_path FROM diary_photos WHERE id = $1 AND diary_entry_id = $2',
+      [photoId, entryId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Фото не найдено' });
+    }
+
+    const filePath = path.join(__dirname, '..', result.rows[0].file_path);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл отсутствует' });
+    }
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    fs.createReadStream(filePath).pipe(res);
+  } catch (error) {
+    console.error('Ошибка отдачи фото:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения фото' });
+  }
+});
+
+/**
+ * DELETE /api/rehab/my/diary/:entry_id/photos/:photo_id
+ * Удаляет файл с диска + запись в БД. Требует ownership.
+ */
+router.delete('/my/diary/:entry_id/photos/:photo_id', authenticatePatient, async (req, res) => {
+  try {
+    const entryId = await verifyDiaryOwnership(req, res);
+    if (entryId === null) return;
+
+    const photoId = parseInt(req.params.photo_id, 10);
+    if (!Number.isFinite(photoId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный ID фото' });
+    }
+
+    const result = await query(
+      'SELECT file_path FROM diary_photos WHERE id = $1 AND diary_entry_id = $2',
+      [photoId, entryId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Фото не найдено' });
+    }
+
+    const filePath = path.join(__dirname, '..', result.rows[0].file_path);
+    try { fs.unlinkSync(filePath); } catch (_) { /* файл уже удалён — ок */ }
+
+    await query('DELETE FROM diary_photos WHERE id = $1', [photoId]);
+
+    res.json({ message: 'Фото удалено' });
+  } catch (error) {
+    console.error('Ошибка удаления фото:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления фото' });
   }
 });
 
