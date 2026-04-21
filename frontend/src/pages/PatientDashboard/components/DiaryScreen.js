@@ -117,6 +117,11 @@ export default function DiaryScreen({
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [trend, setTrend] = useState([]);
+  // pgic_feel из today entry (БД) — показывается в info-bar даже после F5,
+  // когда state prop сбрасывается. prop pgicFeel имеет приоритет: свежий
+  // тап на Home перекрывает старое значение из БД.
+  const [pgicFromDb, setPgicFromDb] = useState(null);
+  const effectivePgic = pgicFeel || pgicFromDb;
   const [history, setHistory] = useState([]);
 
   const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
@@ -145,6 +150,7 @@ export default function DiaryScreen({
         if (Array.isArray(entry.better_list)) setBetter(entry.better_list);
         if (entry.notes) setNotes(entry.notes);
         if (Array.isArray(entry.photos)) setPhotos(entry.photos);
+        if (entry.pgic_feel) setPgicFromDb(entry.pgic_feel);
       }
       setTrend(Array.isArray(trendRes.data) ? trendRes.data : []);
       setHistory(Array.isArray(histRes.data) ? histRes.data.filter((h) => h.entry_date !== today) : []);
@@ -325,14 +331,16 @@ export default function DiaryScreen({
         />
       </div>
 
-      {/* 2. PGIC info-bar */}
-      {pgicFeel && (
+      {/* 2. PGIC info-bar — из prop (свежий тап на Home) или из БД
+            (today entry.pgic_feel). Показывает как пациент себя чувствует,
+            чтобы дневник соответствовал этой отметке. */}
+      {effectivePgic && (
         <div className="pd-diary-pgic">
           <Info size={14} color="var(--pd-color-primary)" aria-hidden="true" />
           <div className="pd-diary-pgic-text">
-            Данные подставлены из быстрой отметки «
-            {pgicFeel === 'better' ? 'Лучше' : pgicFeel === 'same' ? 'Так же' : 'Хуже'}
-            » на Главной
+            Вы отметили сегодня: «
+            {effectivePgic === 'better' ? 'Лучше' : effectivePgic === 'same' ? 'Так же' : 'Хуже'}
+            »
           </div>
         </div>
       )}

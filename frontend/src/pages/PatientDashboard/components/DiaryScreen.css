@@ -115,19 +115,33 @@
   gap: 12px;
 }
 
+/* Pain slider — native <input type=range> с кастомом под тонкую
+   DVPRS-шкалу. Без явных правил для ::-webkit-slider-runnable-track
+   Chromium/Yandex рендерит трек высотой ~16-32px, из-за чего слайдер
+   выглядит непропорционально широким. */
 .pd-diary-pain-slider {
   flex: 1;
   height: 6px;
   border-radius: 3px;
   outline: none;
   cursor: pointer;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* Chrome/Edge/Yandex track */
+.pd-diary-pain-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
   background: linear-gradient(to right,
     var(--pd-color-pain-0), var(--pd-color-pain-1), var(--pd-color-pain-2),
     var(--pd-color-pain-3), var(--pd-color-pain-4), var(--pd-color-pain-5),
     var(--pd-color-pain-6), var(--pd-color-pain-7), var(--pd-color-pain-8),
     var(--pd-color-pain-9), var(--pd-color-pain-10));
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 .pd-diary-pain-slider::-webkit-slider-thumb {
@@ -140,6 +154,18 @@
   border: 2px solid var(--pd-n600);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  margin-top: -6px; /* центрируем thumb относительно 6px трека */
+}
+
+/* Firefox track */
+.pd-diary-pain-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,
+    var(--pd-color-pain-0), var(--pd-color-pain-1), var(--pd-color-pain-2),
+    var(--pd-color-pain-3), var(--pd-color-pain-4), var(--pd-color-pain-5),
+    var(--pd-color-pain-6), var(--pd-color-pain-7), var(--pd-color-pain-8),
+    var(--pd-color-pain-9), var(--pd-color-pain-10));
 }
 
 .pd-diary-pain-slider::-moz-range-thumb {

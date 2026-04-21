@@ -88,23 +88,34 @@ describe('DiaryScreen v12', () => {
   });
 
   describe('PGIC info-bar', () => {
-    it('hides info-bar when pgicFeel is null', async () => {
+    it('hides info-bar when pgicFeel is null and today entry has no pgic', async () => {
       setup();
       await waitForLoaded();
-      expect(screen.queryByText(/Данные подставлены/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Вы отметили сегодня/)).not.toBeInTheDocument();
     });
 
-    it('shows «Лучше» variant', async () => {
+    it('shows «Лучше» variant (from prop)', async () => {
       setup({ pgicFeel: 'better' });
       await waitForLoaded();
-      expect(screen.getByText(/Данные подставлены/)).toBeInTheDocument();
+      expect(screen.getByText(/Вы отметили сегодня/)).toBeInTheDocument();
       expect(screen.getByText(/«Лучше»/)).toBeInTheDocument();
     });
 
-    it('shows «Хуже» variant', async () => {
+    it('shows «Хуже» variant (from prop)', async () => {
       setup({ pgicFeel: 'worse' });
       await waitForLoaded();
       expect(screen.getByText(/«Хуже»/)).toBeInTheDocument();
+    });
+
+    it('shows info-bar from today entry.pgic_feel (F5-persistence)', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({
+        data: { id: 1, pgic_feel: 'same', pain_level: 4, photos: [] },
+      });
+      setup(); // prop не передан
+      await waitForLoaded();
+      await waitFor(() => {
+        expect(screen.getByText(/«Так же»/)).toBeInTheDocument();
+      });
     });
 
     it('preselects initial pain: better=2, same=4, worse=6', async () => {
