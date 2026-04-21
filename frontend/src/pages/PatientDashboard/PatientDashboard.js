@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield } from 'lucide-react';
 import { rehab } from '../../services/api';
@@ -83,23 +83,28 @@ export default function PatientDashboard() {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        const response = await rehab.getDashboard();
-        setDashboardData(response.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard:', error);
-        toast.error('Ошибка загрузки', 'Не удалось загрузить данные панели');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
+    try {
+      if (!silent) setLoading(true);
+      const response = await rehab.getDashboard();
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard:', error);
+      if (!silent) toast.error('Ошибка загрузки', 'Не удалось загрузить данные панели');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [toast]);
 
+  useEffect(() => {
     fetchDashboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchDashboard]);
+
+  // Рефреш dashboard при возврате на Home — чтобы после ExerciseRunner
+  // (или сохранения дневника) hero-CTA переключился в ветку «Готово».
+  useEffect(() => {
+    if (screen === 0) fetchDashboard({ silent: true });
+  }, [screen, fetchDashboard]);
 
   useEffect(() => {
     if (scrollRef.current) {

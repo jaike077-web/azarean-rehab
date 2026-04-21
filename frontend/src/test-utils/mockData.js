@@ -43,6 +43,7 @@ export const mockDashboardData = {
     icon: '💪',
   },
   diaryFilledToday: false,
+  exercisesDoneToday: false,
 };
 
 export const mockDashboardDataNoProgram = {
@@ -56,6 +57,7 @@ export const mockDashboardDataNoProgram = {
     body: 'Свяжитесь с инструктором',
   },
   diaryFilledToday: false,
+  exercisesDoneToday: false,
 };
 
 export const mockPhases = [

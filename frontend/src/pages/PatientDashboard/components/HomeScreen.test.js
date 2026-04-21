@@ -87,30 +87,37 @@ describe('HomeScreen v12', () => {
 
   describe('Hero card — allDone=false branch', () => {
     it('shows «Сегодня» badge + «Начать» button', () => {
-      setup({ dashboardData: { ...mockDashboardData, diaryFilledToday: false } });
+      setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: false } });
       expect(screen.getByText('Сегодня')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Начать/ })).toBeInTheDocument();
     });
 
     it('clicking «Начать» → goTo(4) (Упражнения)', () => {
-      const { props } = setup({ dashboardData: { ...mockDashboardData, diaryFilledToday: false } });
+      const { props } = setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: false } });
       fireEvent.click(screen.getByRole('button', { name: /Начать/ }));
       expect(props.goTo).toHaveBeenCalledWith(4);
     });
   });
 
   describe('Hero card — allDone=true branch', () => {
-    it('shows «Готово» badge + «Заполнить дневник» button', () => {
-      setup({ dashboardData: { ...mockDashboardData, diaryFilledToday: true } });
+    it('shows «Готово» badge + «Заполнить дневник» button (exercisesDoneToday)', () => {
+      setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });
       expect(screen.getByText('Готово')).toBeInTheDocument();
       expect(screen.getByText('Комплекс завершён')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Заполнить дневник/ })).toBeInTheDocument();
     });
 
     it('clicking «Заполнить дневник» → goTo(2) (Дневник)', () => {
-      const { props } = setup({ dashboardData: { ...mockDashboardData, diaryFilledToday: true } });
+      const { props } = setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });
       fireEvent.click(screen.getByRole('button', { name: /Заполнить дневник/ }));
       expect(props.goTo).toHaveBeenCalledWith(2);
+    });
+
+    it('diaryFilledToday alone does NOT flip hero to «Готово»', () => {
+      // Семантика: hero-CTA смотрит на упражнения, а не на дневник.
+      setup({ dashboardData: { ...mockDashboardData, diaryFilledToday: true, exercisesDoneToday: false } });
+      expect(screen.getByRole('button', { name: /Начать/ })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Заполнить дневник/ })).not.toBeInTheDocument();
     });
   });
 

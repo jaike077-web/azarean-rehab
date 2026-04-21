@@ -294,7 +294,10 @@ describe('PatientDashboard Component', () => {
     });
 
     await waitFor(() => {
-      expect(rehab.getDashboard).toHaveBeenCalledTimes(1);
+      // Один — initial mount, второй — silent refetch при screen=0 (Home)
+      // для обновления exercisesDoneToday после ExerciseRunner / сохранения
+      // дневника. См. PatientDashboard useEffect по [screen].
+      expect(rehab.getDashboard).toHaveBeenCalled();
     });
   });
 

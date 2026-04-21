@@ -125,14 +125,15 @@ export default function HomeScreen({
 
   if (dashboardData === null || dashboardData === undefined) return <LoadingSkeleton />;
 
-  const { program, phase, streak, tip, diaryFilledToday, lastDiary, nextVisit } = dashboardData;
+  const { program, phase, streak, tip, diaryFilledToday, exercisesDoneToday, lastDiary, nextVisit } = dashboardData;
   if (!program) return <EmptyState goTo={goTo} />;
 
-  // Если сегодня заполнен дневник — считаем что «всё сделано на сегодня».
-  // Упражнения не отслеживаются отдельным флагом — дневник их implicitly-covers
-  // (чтобы заполнить, пациент должен был поработать). Корректнее вычислять
-  // отдельный флаг `exercises_done_today` — это задача Checkpoint 6/7.
-  const allDone = Boolean(diaryFilledToday);
+  // «Готово» на hero-CTA = упражнения сделаны сегодня. После комплекса hero
+  // переключается в ветку «Заполнить дневник»; после заполнения дневника —
+  // остаётся «Готово», но кнопка становится вторичной. Чтобы избежать двух
+  // состояний в одном prop'е, сейчас ведём по exercisesDoneToday и обнуляем
+  // dashboard после ExerciseRunner в PatientDashboard (refetch).
+  const allDone = Boolean(exercisesDoneToday);
 
   const firstName = (program.patient_name || patient?.full_name || 'Пациент').split(' ')[0];
   const currentPhase = program.current_phase || 1;
