@@ -17,7 +17,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   ChevronLeft, ChevronDown, Camera, X, Heart, User, Mail, Phone,
-  Calendar, Lock, LogOut, Info, HelpCircle, MessageSquare, Bot, Bell,
+  Calendar, Lock, LogOut, Info, HelpCircle, MessageSquare, Bot, Bell, Loader,
 } from 'lucide-react';
 import { patientAuth, rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
@@ -350,9 +350,19 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
           </div>
         ) : (
           <>
-            {/* ===== Identity ===== */}
+            {/* ===== Identity =====
+                Аватар = кнопка. Тап в любом месте круга открывает file-picker
+                (стандартный паттерн Telegram/Instagram/iOS). На desktop показывается
+                hover-overlay с иконкой камеры — на мобиле опираемся на конвенцию. */}
             <div className="pd-profile-identity">
-              <div className="pd-profile-identity-avatar-wrap">
+              <button
+                type="button"
+                className="pd-profile-identity-avatar-btn"
+                onClick={handleAvatarPick}
+                disabled={avatarUploading}
+                aria-label="Изменить фото"
+                title="Нажмите чтобы изменить фото"
+              >
                 {avatarSrc ? (
                   <img src={avatarSrc} alt="Аватар" className="pd-profile-identity-avatar" />
                 ) : (
@@ -360,24 +370,20 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                     {initial}
                   </div>
                 )}
-                <button
-                  type="button"
-                  className="pd-profile-identity-camera"
-                  onClick={handleAvatarPick}
-                  disabled={avatarUploading}
-                  aria-label="Изменить фото"
-                >
-                  <Camera size={12} />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleAvatarChange}
-                  className="pd-profile-identity-file"
-                  data-testid="avatar-file-input"
-                />
-              </div>
+                <span className="pd-profile-identity-avatar-overlay" aria-hidden="true">
+                  {avatarUploading
+                    ? <Loader size={20} className="pd-profile-identity-avatar-spinner" />
+                    : <Camera size={20} />}
+                </span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                className="pd-profile-identity-file"
+                data-testid="avatar-file-input"
+              />
               <div className="pd-profile-identity-text">
                 <div className="pd-profile-identity-name">{profile?.full_name || 'Пациент'}</div>
                 <div className="pd-profile-identity-email">{profile?.email}</div>

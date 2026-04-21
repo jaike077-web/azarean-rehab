@@ -17,17 +17,17 @@
 
 .toast {
   display: flex;
-  align-items: center;
-  gap: clamp(10px, 2vw, 14px);
-  padding: clamp(14px, 2vw, 18px) clamp(16px, 3vw, 22px);
-  border-radius: clamp(10px, 2vw, 14px);
-  background: white;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.85);
   min-width: min(300px, 100%);
   max-width: 100%;
   pointer-events: auto;
-  animation: toastSlideIn 0.3s ease-out;
-  border-left: 4px solid;
+  animation: toastSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
 }
@@ -62,55 +62,48 @@
    ТИПЫ TOAST
    ===================================================== */
 
-.toast-success {
-  border-left-color: #22c55e;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+/* Цветовая идентификация типа уносится в иконку (lucide CheckCircle и т.п.) +
+   тонкий цветной accent-bar слева через ::before. Без градиентов — flat дизайн
+   согласно остальному UI пациентского дашборда. */
+.toast::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
 }
 
-.toast-error {
-  border-left-color: #ef4444;
-  background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
-}
-
-.toast-warning {
-  border-left-color: #f59e0b;
-  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
-}
-
-.toast-info {
-  border-left-color: #3b82f6;
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-}
+.toast-success::before { background: #22c55e; }
+.toast-error::before   { background: #ef4444; }
+.toast-warning::before { background: #f59e0b; }
+.toast-info::before    { background: #3b82f6; }
 
 /* =====================================================
    ИКОНКА
    ===================================================== */
 
 .toast-icon {
-  font-size: clamp(20px, 4vw, 24px);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: clamp(28px, 5vw, 32px);
-  height: clamp(28px, 5vw, 32px);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  margin-top: 1px;
 }
 
-.toast-success .toast-icon {
-  color: #22c55e;
+.toast-icon svg {
+  width: 20px;
+  height: 20px;
 }
 
-.toast-error .toast-icon {
-  color: #ef4444;
-}
-
-.toast-warning .toast-icon {
-  color: #f59e0b;
-}
-
-.toast-info .toast-icon {
-  color: #3b82f6;
-}
+.toast-success .toast-icon { color: #16a34a; background: rgba(34, 197, 94, 0.10); }
+.toast-error   .toast-icon { color: #dc2626; background: rgba(239, 68, 68, 0.10); }
+.toast-warning .toast-icon { color: #d97706; background: rgba(245, 158, 11, 0.10); }
+.toast-info    .toast-icon { color: #2563eb; background: rgba(59, 130, 246, 0.10); }
 
 /* =====================================================
    КОНТЕНТ
@@ -125,19 +118,20 @@
 }
 
 .toast-title {
-  font-weight: 600;
-  font-size: clamp(14px, 2vw, 15px);
-  color: #1e293b;
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
 }
 
 .toast-message {
-  font-size: clamp(13px, 2vw, 14px);
-  color: #64748b;
-  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  margin: 2px 0 0;
   word-wrap: break-word;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 /* =====================================================
@@ -145,31 +139,36 @@
    ===================================================== */
 
 .toast-close {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: clamp(18px, 3vw, 20px);
   color: #94a3b8;
   cursor: pointer;
-  padding: clamp(6px, 1vw, 8px);
-  margin: -4px -4px -4px 0;
-  border-radius: 6px;
-  transition: all 0.2s;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  transition: background 150ms ease, color 150ms ease;
   flex-shrink: 0;
-  min-height: auto;
-  width: clamp(28px, 5vw, 32px);
-  height: clamp(28px, 5vw, 32px);
-  display: flex;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 1;
+}
+
+.toast-close svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .toast-close:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #64748b;
+  background: rgba(15, 23, 42, 0.06);
+  color: #475569;
 }
 
 .toast-close:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 /* =====================================================
@@ -180,8 +179,9 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 4px;
-  border-radius: 0 0 0 clamp(10px, 2vw, 14px);
+  height: 2px;
+  opacity: 0.55;
+  border-radius: 0;
   animation: toastProgress linear forwards;
 }
 

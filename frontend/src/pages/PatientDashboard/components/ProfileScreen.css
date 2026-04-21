@@ -84,9 +84,36 @@
   gap: 16px;
 }
 
-.pd-profile-identity-avatar-wrap {
+/* Аватар-кнопка: tap в любом месте круга → file picker.
+   На hover (desktop) показывается полупрозрачный overlay с иконкой камеры.
+   На touch — нет hover, но конвенция «тап на аватар → смена фото» (Telegram,
+   iOS, Instagram) известна пользователям. */
+.pd-profile-identity-avatar-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 36px;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
   position: relative;
   flex-shrink: 0;
+  overflow: hidden;
+  outline: none;
+  transition: transform 150ms ease;
+}
+
+.pd-profile-identity-avatar-btn:hover { transform: scale(1.02); }
+.pd-profile-identity-avatar-btn:active { transform: scale(0.98); }
+
+.pd-profile-identity-avatar-btn:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.pd-profile-identity-avatar-btn:focus-visible {
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 3px;
 }
 
 .pd-profile-identity-avatar {
@@ -105,34 +132,34 @@
   object-fit: cover;
 }
 
-.pd-profile-identity-camera {
+img.pd-profile-identity-avatar { display: block; }
+
+.pd-profile-identity-avatar-overlay {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
-  border: 2px solid var(--pd-color-white, #fff);
-  background: var(--pd-color-primary);
-  cursor: pointer;
+  inset: 0;
+  border-radius: 36px;
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  padding: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
 }
 
-.pd-profile-identity-camera svg {
-  /* Принудительный размер — на случай если глобальный svg-стиль перебьёт */
-  width: 12px !important;
-  height: 12px !important;
-  flex-shrink: 0;
+.pd-profile-identity-avatar-btn:hover .pd-profile-identity-avatar-overlay,
+.pd-profile-identity-avatar-btn:focus-visible .pd-profile-identity-avatar-overlay,
+.pd-profile-identity-avatar-btn:disabled .pd-profile-identity-avatar-overlay {
+  opacity: 1;
 }
 
-.pd-profile-identity-camera:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.pd-profile-identity-avatar-spinner {
+  animation: pd-profile-spin 700ms linear infinite;
+}
+
+@keyframes pd-profile-spin {
+  to { transform: rotate(360deg); }
 }
 
 .pd-profile-identity-file { display: none; }
