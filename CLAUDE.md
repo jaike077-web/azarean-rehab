@@ -66,6 +66,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_hash_t
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_access_token_nullable.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_drop_access_token.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_patient_preferred_messenger.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_progress_difficulty_rpe10.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_diary_structured_fields.sql
 ```
 
 ### 2. Переменные окружения
@@ -334,9 +336,26 @@ UNIQUE(program_type, phase_number)
 id SERIAL PK, patient_id INT NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
 program_id INT REFERENCES rehab_programs(id) ON DELETE SET NULL,
 entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
-pain_level INT, swelling INT, mobility INT, mood INT, sleep_quality INT,
+pain_level INT CHECK(0..10), swelling INT CHECK(0..3), mobility INT CHECK(0..10),
+mood INT CHECK(1..5), sleep_quality INT CHECK(1..5),
 exercises_done BOOLEAN DEFAULT false, notes TEXT,
+-- Structured v12 поля (миграция 20260421_diary_structured_fields):
+pgic_feel VARCHAR(10) CHECK('better'|'same'|'worse' OR NULL),
+rom_degrees INT CHECK(0..180 OR NULL),
+better_list JSONB NOT NULL DEFAULT '[]',  -- whitelist: ext,walk,sleep,mood,pain,custom
+pain_when VARCHAR(20) CHECK('morning'|'day'|'evening'|'exercise'|'walking' OR NULL),
 created_at TIMESTAMP, updated_at TIMESTAMP, UNIQUE(patient_id, entry_date)
+```
+
+### diary_photos (миграция 20260421_diary_structured_fields)
+```sql
+id SERIAL PK,
+diary_entry_id INT NOT NULL REFERENCES diary_entries(id) ON DELETE CASCADE,
+file_path VARCHAR(500) NOT NULL,  -- относительно backend/ (/uploads/diary_photos/...)
+file_size_bytes INT, created_at TIMESTAMP DEFAULT NOW()
+-- idx_diary_photos_entry на diary_entry_id
+-- Лимит 3 фото на запись — application-layer в POST /my/diary/:id/photos
+-- Sharp: fit:inside 1200×1200, JPEG q82
 ```
 
 ### streaks
@@ -463,9 +482,13 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/rehab/my/program | PatientJWT | Моя программа |
 | GET | /api/rehab/my/dashboard | PatientJWT | Мой дашборд |
 | GET | /api/rehab/my/exercises | PatientJWT | Мои упражнения |
-| POST | /api/rehab/my/diary | PatientJWT | Сохранить дневник |
-| GET | /api/rehab/my/diary | PatientJWT | Дневник (с историей) |
-| GET | /api/rehab/my/diary/:date | PatientJWT | Дневник за конкретную дату |
+| POST | /api/rehab/my/diary | PatientJWT | Сохранить дневник (+ pgic_feel, rom_degrees, better_list, pain_when) |
+| GET | /api/rehab/my/diary | PatientJWT | Дневник (с историей и photos[]) |
+| GET | /api/rehab/my/diary/:date | PatientJWT | Дневник за конкретную дату (+ photos[]) |
+| GET | /api/rehab/my/diary/trend | PatientJWT | Sparkline pain за N дней (?days=14, max 90) |
+| POST | /api/rehab/my/diary/:entry_id/photos | PatientJWT | Загрузить фото (multer+sharp, max 3, 10МБ) |
+| GET | /api/rehab/my/diary/:entry_id/photos/:photo_id | PatientJWT | Отдать фото как blob |
+| DELETE | /api/rehab/my/diary/:entry_id/photos/:photo_id | PatientJWT | Удалить фото |
 | GET | /api/rehab/my/streak | PatientJWT | Мой streak |
 | GET | /api/rehab/my/messages | PatientJWT | Мои сообщения |
 | POST | /api/rehab/my/messages | PatientJWT | Отправить сообщение |
@@ -576,7 +599,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | 3 | MEDIUM | **Dashboard stats = хардкод нулей** — endpoint существует, не вызывается |
 | 4 | MEDIUM | **templates.update не отправляет body** — `api.put('/templates/${id}')` без `data` |
 | 5 | MEDIUM | **EditComplex.handleAddExercise** — `toast.success('Ссылка скопирована!')` при дубле (copy-paste ошибка) |
-| 6 | MEDIUM | **DiaryScreen** — структурированные данные сериализуются в текст `notes` (хрупкий парсинг) |
+| ~~6~~ | ~~MEDIUM~~ | ~~**DiaryScreen** — структурированные данные сериализуются в текст `notes`~~ → **ЗАКРЫТО** (миграция 20260421_diary_structured_fields, v12 redesign) |
 | 7 | MEDIUM | **80+ дублей CSS-классов** — глобальные стили конфликтуют |
 | 8 | MEDIUM | **Нет аудит-логов для чтения** данных пациентов (GDPR compliance) |
 | 9 | LOW | **ErrorBoundary не ловит** async ошибки из useEffect |
