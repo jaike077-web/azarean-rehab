@@ -1,328 +1,291 @@
+// =====================================================
+// TESTS: DiaryScreen v12 (Checkpoint 6)
+// =====================================================
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import DiaryScreen from './DiaryScreen';
-import { mockDashboardData, mockDiaryEntries } from '../../../test-utils/mockData';
 
-// Mock API
-jest.mock('../../../services/api', () => ({
-  rehab: {
-    getDashboard: jest.fn(),
-    getPhases: jest.fn(),
-    getDiaryEntries: jest.fn(),
-    getDiaryEntry: jest.fn(),
-    createDiaryEntry: jest.fn(),
-    getMyExercises: jest.fn(),
-    sendMessage: jest.fn(),
-    getNotifications: jest.fn(),
-    updateNotifications: jest.fn(),
-  },
+jest.mock('../hooks/usePatientAvatarBlob', () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
-// Mock toast
+jest.mock('../../../services/api', () => ({
+  rehab: {
+    getDiaryEntry: jest.fn(() => Promise.resolve({ data: null })),
+    getDiaryEntries: jest.fn(() => Promise.resolve({ data: [] })),
+    getDiaryTrend: jest.fn(() => Promise.resolve({ data: [] })),
+    createDiaryEntry: jest.fn(() => Promise.resolve({ data: { id: 1 } })),
+    uploadDiaryPhoto: jest.fn(),
+    deleteDiaryPhoto: jest.fn(),
+    fetchDiaryPhotoBlob: jest.fn(() => Promise.resolve({ data: null })),
+  },
+  patientAuth: {},
+}));
+
 jest.mock('../../../context/ToastContext', () => ({
   useToast: () => ({
     success: jest.fn(),
     error: jest.fn(),
-    warning: jest.fn(),
     info: jest.fn(),
   }),
 }));
 
 const { rehab } = require('../../../services/api');
 
-describe('DiaryScreen', () => {
-  const mockOnDiarySaved = jest.fn();
+const mockPatient = {
+  id: 14,
+  full_name: 'Вадим',
+  email: 'avi707@mail.ru',
+  avatar_url: null,
+  preferred_messenger: 'telegram',
+};
 
+const setup = (overrides = {}) => {
+  const props = {
+    patient: mockPatient,
+    onOpenProfile: jest.fn(),
+    pgicFeel: null,
+    dashboardData: null,
+    ...overrides,
+  };
+  const utils = render(<DiaryScreen {...props} />);
+  return { ...utils, props };
+};
+
+// Ждём окончания параллельных Promise.all при mount — loading→false.
+const waitForLoaded = async () => {
+  await waitFor(() => {
+    expect(screen.getByRole('heading', { name: 'Дневник' })).toBeInTheDocument();
+  });
+};
+
+describe('DiaryScreen v12', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    rehab.getDiaryEntries.mockResolvedValue({ data: mockDiaryEntries });
-    rehab.getDiaryEntry.mockRejectedValue(new Error('Not found'));
+    rehab.getDiaryEntry.mockResolvedValue({ data: null });
+    rehab.getDiaryEntries.mockResolvedValue({ data: [] });
+    rehab.getDiaryTrend.mockResolvedValue({ data: [] });
+    rehab.createDiaryEntry.mockResolvedValue({ data: { id: 42 } });
+    rehab.fetchDiaryPhotoBlob.mockResolvedValue({ data: null });
   });
 
-  describe('loading state', () => {
-    it('renders skeleton while loading', () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      // Check for skeleton elements before API resolves
-      const skeletons = document.querySelectorAll('.pd-skeleton--card');
-      expect(skeletons.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('loaded state', () => {
-    it('renders "Дневник" title', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Дневник')).toBeInTheDocument();
-      });
+  describe('Header', () => {
+    it('renders «Дневник» title', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.getByText('Полный отчёт за день')).toBeInTheDocument();
     });
 
-    it('renders subtitle "Как вы сегодня?"', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Как вы сегодня?')).toBeInTheDocument();
-      });
-    });
-
-    it('renders PainScale with default value', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        // PainScale renders 11 buttons (0-10), button "3" should be selected (aria-pressed)
-        const btn3 = screen.getByLabelText('Уровень боли 3 из 10');
-        expect(btn3).toBeInTheDocument();
-        expect(btn3).toHaveAttribute('aria-pressed', 'true');
-      });
-    });
-
-    it('renders pain label for default level', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        // PainScale shows text label for selected level
-        expect(screen.getByText('Терпимо')).toBeInTheDocument();
-      });
-    });
-
-    it('updates pain when button clicked', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        const btn8 = screen.getByLabelText('Уровень боли 8 из 10');
-        fireEvent.click(btn8);
-        expect(btn8).toHaveAttribute('aria-pressed', 'true');
-      });
-    });
-
-    it('renders all pain time chips', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Утро/)).toBeInTheDocument();
-        expect(screen.getByText(/День/)).toBeInTheDocument();
-        expect(screen.getByText(/Вечер/)).toBeInTheDocument();
-        expect(screen.getByText(/При упражнениях/)).toBeInTheDocument();
-        expect(screen.getByText(/При ходьбе/)).toBeInTheDocument();
-      });
-    });
-
-    it('renders swelling options', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Нет')).toBeInTheDocument();
-        expect(screen.getByText('Меньше')).toBeInTheDocument();
-        expect(screen.getByText('Так же')).toBeInTheDocument();
-        expect(screen.getByText('Больше')).toBeInTheDocument();
-      });
-    });
-
-    it('renders exercise options', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('1 раз')).toBeInTheDocument();
-        expect(screen.getByText('2 раза')).toBeInTheDocument();
-        expect(screen.getByText('3+ раз')).toBeInTheDocument();
-        expect(screen.getByText('Не делал(а)')).toBeInTheDocument();
-      });
-    });
-
-    it('renders ROM section with extension options', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Объём движений')).toBeInTheDocument();
-        expect(screen.getByText('Разгибание')).toBeInTheDocument();
-        expect(screen.getByText('Полное')).toBeInTheDocument();
-        expect(screen.getByText('Почти')).toBeInTheDocument();
-        expect(screen.getByText('Ограничено')).toBeInTheDocument();
-      });
-    });
-
-    it('renders ROM section with flexion options', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сгибание')).toBeInTheDocument();
-        expect(screen.getByText('До 60°')).toBeInTheDocument();
-        expect(screen.getByText('До 90°')).toBeInTheDocument();
-        expect(screen.getByText('До 120°')).toBeInTheDocument();
-        expect(screen.getByText('Больше 120°')).toBeInTheDocument();
-      });
-    });
-
-    it('renders improvements section', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Что стало лучше?')).toBeInTheDocument();
-        // "Разгибание" appears in both ROM section and improvements, use getAllByText
-        expect(screen.getAllByText(/Разгибание/).length).toBeGreaterThanOrEqual(1);
-        expect(screen.getAllByText(/Ходьба/).length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText(/Меньше боли/)).toBeInTheDocument();
-        expect(screen.getByText(/Лучше сплю/)).toBeInTheDocument();
-        expect(screen.getByText(/Настроение/)).toBeInTheDocument();
-      });
-    });
-
-    it('renders notes textarea', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        const textarea = screen.getByPlaceholderText('Заметки (необязательно)');
-        expect(textarea).toBeInTheDocument();
-      });
-    });
-
-    it('renders save button with correct text', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
-      });
+    it('AvatarBtn opens Profile', async () => {
+      const { props } = setup();
+      await waitForLoaded();
+      fireEvent.click(screen.getByRole('button', { name: /Профиль/ }));
+      expect(props.onOpenProfile).toHaveBeenCalled();
     });
   });
 
-  describe('form submission', () => {
-    it('calls rehab.createDiaryEntry on save button click', async () => {
-      rehab.createDiaryEntry.mockResolvedValue({ data: { success: true } });
-
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByText('Сохранить отчёт');
-      fireEvent.click(saveButton);
-
-      await waitFor(() => {
-        expect(rehab.createDiaryEntry).toHaveBeenCalledTimes(1);
-        expect(rehab.createDiaryEntry).toHaveBeenCalledWith(
-          expect.objectContaining({
-            pain_level: 3,
-            entry_date: expect.any(String),
-          })
-        );
-      });
+  describe('PGIC info-bar', () => {
+    it('hides info-bar when pgicFeel is null', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.queryByText(/Данные подставлены/)).not.toBeInTheDocument();
     });
 
-    it('shows "Сохранение..." while saving', async () => {
-      let resolveCreateEntry;
-      const createEntryPromise = new Promise((resolve) => {
-        resolveCreateEntry = resolve;
-      });
-      rehab.createDiaryEntry.mockReturnValue(createEntryPromise);
-
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByText('Сохранить отчёт');
-      fireEvent.click(saveButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранение...')).toBeInTheDocument();
-      });
-
-      // Resolve the promise to clean up
-      resolveCreateEntry({ data: { success: true } });
+    it('shows «Лучше» variant', async () => {
+      setup({ pgicFeel: 'better' });
+      await waitForLoaded();
+      expect(screen.getByText(/Данные подставлены/)).toBeInTheDocument();
+      expect(screen.getByText(/«Лучше»/)).toBeInTheDocument();
     });
 
-    it('calls onDiarySaved callback after successful save', async () => {
-      rehab.createDiaryEntry.mockResolvedValue({ data: { success: true } });
-
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByText('Сохранить отчёт');
-      fireEvent.click(saveButton);
-
-      await waitFor(() => {
-        expect(mockOnDiarySaved).toHaveBeenCalledTimes(1);
-      });
+    it('shows «Хуже» variant', async () => {
+      setup({ pgicFeel: 'worse' });
+      await waitForLoaded();
+      expect(screen.getByText(/«Хуже»/)).toBeInTheDocument();
     });
 
-    it('shows success banner after save', async () => {
-      rehab.createDiaryEntry.mockResolvedValue({ data: { success: true } });
+    it('preselects initial pain: better=2, same=4, worse=6', async () => {
+      for (const [feel, expected] of [['better', '2'], ['same', '4'], ['worse', '6']]) {
+        const { unmount } = setup({ pgicFeel: feel });
+        await waitForLoaded();
+        const slider = screen.getByLabelText(/Уровень боли/);
+        expect(slider.value).toBe(expected);
+        unmount();
+      }
+    });
+  });
 
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
-      });
-
-      const saveButton = screen.getByText('Сохранить отчёт');
-      fireEvent.click(saveButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Отлично! Запись сохранена/)).toBeInTheDocument();
-      });
+  describe('Pain slider', () => {
+    it('renders slider 0..10', async () => {
+      setup();
+      await waitForLoaded();
+      const slider = screen.getByLabelText(/Уровень боли/);
+      expect(slider).toHaveAttribute('min', '0');
+      expect(slider).toHaveAttribute('max', '10');
     });
 
-    it('includes selected options in API call', async () => {
-      rehab.createDiaryEntry.mockResolvedValue({ data: { success: true } });
+    it('updates value on change', async () => {
+      setup();
+      await waitForLoaded();
+      const slider = screen.getByLabelText(/Уровень боли/);
+      fireEvent.change(slider, { target: { value: '7' } });
+      expect(slider.value).toBe('7');
+    });
+  });
 
-      render(
-        <DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />
-      );
+  describe('Pain when pills', () => {
+    it('renders 5 time-of-day pills', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.getByRole('button', { name: /Утро/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /День/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Вечер/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Упр\./ })).toBeInTheDocument();
+      // Ходьба встречается в pain_when и better_list (2 шт.)
+      expect(screen.getAllByRole('button', { name: /Ходьба/ })).toHaveLength(2);
+    });
 
-      // Wait for the save button to confirm form is rendered
-      await waitFor(() => {
-        expect(screen.getByText('Сохранить отчёт')).toBeInTheDocument();
+    it('toggles active state on tap', async () => {
+      setup();
+      await waitForLoaded();
+      const morning = screen.getByRole('button', { name: /Утро/ });
+      fireEvent.click(morning);
+      expect(morning.className).toMatch(/pd-diary-pill--active/);
+      fireEvent.click(morning);
+      expect(morning.className).not.toMatch(/pd-diary-pill--active/);
+    });
+  });
+
+  describe('ROM input', () => {
+    it('renders initial 135°', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.getByText('135')).toBeInTheDocument();
+    });
+
+    it('+1 increments', async () => {
+      setup();
+      await waitForLoaded();
+      fireEvent.click(screen.getByRole('button', { name: /Увеличить/ }));
+      expect(screen.getByText('136')).toBeInTheDocument();
+    });
+
+    it('−1 decrements', async () => {
+      setup();
+      await waitForLoaded();
+      fireEvent.click(screen.getByRole('button', { name: /Уменьшить/ }));
+      expect(screen.getByText('134')).toBeInTheDocument();
+    });
+
+    it('clamps to [60, 180]', async () => {
+      setup();
+      await waitForLoaded();
+      const dec = screen.getByRole('button', { name: /Уменьшить/ });
+      for (let i = 0; i < 100; i += 1) fireEvent.click(dec);
+      expect(screen.getByText('60')).toBeInTheDocument();
+      const inc = screen.getByRole('button', { name: /Увеличить/ });
+      for (let i = 0; i < 200; i += 1) fireEvent.click(inc);
+      expect(screen.getByText('180')).toBeInTheDocument();
+    });
+  });
+
+  describe('Better list', () => {
+    it('renders 4 pills', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.getByRole('button', { name: /Разгибание/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Сон/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Настроение/ })).toBeInTheDocument();
+    });
+
+    it('multi-select', async () => {
+      setup();
+      await waitForLoaded();
+      const ext = screen.getByRole('button', { name: /Разгибание/ });
+      const sleep = screen.getByRole('button', { name: /Сон/ });
+      fireEvent.click(ext);
+      fireEvent.click(sleep);
+      expect(ext.className).toMatch(/--active/);
+      expect(sleep.className).toMatch(/--active/);
+    });
+  });
+
+  describe('Pre-fill from today entry', () => {
+    it('prefills pain, rom, better_list, pain_when', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({
+        data: {
+          id: 100,
+          pain_level: 4,
+          pain_when: 'evening',
+          swelling: 2,
+          rom_degrees: 128,
+          better_list: ['walk', 'sleep'],
+          notes: 'free text',
+          photos: [],
+        },
       });
+      setup();
+      await waitForLoaded();
+      const slider = screen.getByLabelText(/Уровень боли/);
+      await waitFor(() => expect(slider.value).toBe('4'));
+      expect(screen.getByText('128')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Вечер/ }).className).toMatch(/--active/);
+      // Ходьба встречается в 2 секциях — проверяем что в better-секции pill активна
+      const walkPills = screen.getAllByRole('button', { name: /Ходьба/ });
+      const activeWalkPills = walkPills.filter((b) => b.className.includes('--active'));
+      expect(activeWalkPills.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByRole('button', { name: /Сон/ }).className).toMatch(/--active/);
+    });
+  });
 
-      // Use findByText for subsequent elements to handle any async re-renders
-      const morningChip = await screen.findByText(/Утро/);
-      fireEvent.click(morningChip);
+  describe('Sparkline trend', () => {
+    it('hides trend when no data', async () => {
+      setup();
+      await waitForLoaded();
+      expect(screen.queryByText('Тренд боли')).not.toBeInTheDocument();
+    });
 
-      const swellingBtn = await screen.findByText('Нет');
-      fireEvent.click(swellingBtn);
-
-      const exerciseBtn = await screen.findByText('2 раза');
-      fireEvent.click(exerciseBtn);
-
-      const saveBtn = await screen.findByText('Сохранить отчёт');
-      fireEvent.click(saveBtn);
-
+    it('renders trend when data present', async () => {
+      rehab.getDiaryTrend.mockResolvedValue({
+        data: Array.from({ length: 14 }, (_, i) => ({
+          date: `2026-04-${String(i + 1).padStart(2, '0')}`,
+          pain: 5 - Math.floor(i / 3),
+        })),
+      });
+      setup();
+      await waitForLoaded();
       await waitFor(() => {
-        expect(rehab.createDiaryEntry).toHaveBeenCalledWith(
-          expect.objectContaining({
-            pain_level: 3,
-            swelling: expect.any(Number),
-            exercises_done: true,
-          })
-        );
+        expect(screen.getByText('Тренд боли')).toBeInTheDocument();
       });
     });
   });
 
-  describe('diary history', () => {
-    it('renders history section when entries exist', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
+  describe('History list', () => {
+    it('excludes today, shows yesterday', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      rehab.getDiaryEntries.mockResolvedValue({
+        data: [
+          { id: 1, entry_date: '2026-04-10', pain_level: 3, swelling: 1, rom_degrees: 135, notes: 'вчерашний', photos: [] },
+          { id: 2, entry_date: today, pain_level: 2, swelling: 0, rom_degrees: 138, notes: '', photos: [] },
+        ],
+      });
+      setup();
+      await waitForLoaded();
       await waitFor(() => {
         expect(screen.getByText('История')).toBeInTheDocument();
       });
+      expect(screen.getByText('вчерашний')).toBeInTheDocument();
     });
+  });
 
-    it('displays past diary entries', async () => {
-      render(<DiaryScreen dashboardData={mockDashboardData} onDiarySaved={mockOnDiarySaved} />);
-
-      await waitFor(() => {
-        // Check for pain level display
-        expect(screen.getByText('3/10')).toBeInTheDocument();
-        expect(screen.getByText('5/10')).toBeInTheDocument();
-      });
+  describe('MessengerCTA', () => {
+    it('renders «Отправить отчёт» with preferred_messenger', async () => {
+      setup({ patient: { ...mockPatient, preferred_messenger: 'whatsapp' } });
+      await waitForLoaded();
+      expect(screen.getByRole('link', { name: /Отправить отчёт · WhatsApp/ })).toBeInTheDocument();
     });
   });
 });

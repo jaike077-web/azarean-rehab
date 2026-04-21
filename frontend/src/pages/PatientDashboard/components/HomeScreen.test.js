@@ -14,13 +14,21 @@ jest.mock('../hooks/usePatientAvatarBlob', () => ({
   default: () => null,
 }));
 
-// api больше не используется напрямую в HomeScreen (getMyExercises ушёл,
-// компонент полагается только на dashboardData). Но мокаем на всякий случай —
-// если появится lazy-импорт, тест не упадёт.
+// api: HomeScreen делает фоновый rehab.createDiaryEntry на pickFeel (PGIC
+// auto-persist). Возвращаемый Promise должен иметь .catch — иначе тест
+// ломается в pickFeel на undefined.catch().
 jest.mock('../../../services/api', () => ({
-  rehab: {},
+  rehab: {
+    createDiaryEntry: jest.fn(),
+  },
   patientAuth: {},
 }));
+
+const { rehab: apiRehab } = require('../../../services/api');
+
+beforeEach(() => {
+  apiRehab.createDiaryEntry.mockResolvedValue({ data: null });
+});
 
 const mockPatient = {
   id: 14,
