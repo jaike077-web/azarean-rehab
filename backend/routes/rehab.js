@@ -297,6 +297,21 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     );
     const diaryFilledToday = todayDiaryResult.rows.length > 0;
 
+    // 7. Сделаны ли упражнения сегодня? Смотрим на progress_logs.completed_at
+    // за сегодня по комплексам этого пациента. Важнее чем diaryFilledToday
+    // для hero-CTA на Home: сразу после комплекса Home должен переключиться
+    // в ветку «Готово · Заполнить дневник».
+    const todayProgressResult = await query(
+      `SELECT 1 FROM progress_logs pl
+         JOIN complexes c ON c.id = pl.complex_id
+        WHERE c.patient_id = $1
+          AND pl.completed = true
+          AND pl.completed_at::date = $2
+        LIMIT 1`,
+      [patientId, today]
+    );
+    const exercisesDoneToday = todayProgressResult.rows.length > 0;
+
     res.json({
       data: {
         program,
@@ -305,6 +320,7 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
         lastDiary,
         tip,
         diaryFilledToday,
+        exercisesDoneToday,
       }
     });
   } catch (error) {
@@ -369,11 +385,6 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
     } = req.body;
 
     const date = entry_date || new Date().toISOString().split('T')[0];
-
-    // Диагностика — временный debug log (удалить после фикса)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[diary POST] body:', JSON.stringify(req.body));
-    }
 
     // Валидация
     if (pain_level !== undefined && pain_level !== null && (pain_level < 0 || pain_level > 10)) {

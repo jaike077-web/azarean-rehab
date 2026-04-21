@@ -262,6 +262,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [fixtures.mockDiaryEntryRow] }); // last diary
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
     query.mockResolvedValueOnce({ rows: [] }); // today diary check
+    query.mockResolvedValueOnce({ rows: [] }); // today progress check (exercisesDoneToday)
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
@@ -292,15 +293,17 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data).toHaveProperty('lastDiary');
     expect(response.body.data).toHaveProperty('tip');
     expect(response.body.data).toHaveProperty('diaryFilledToday', false);
+    expect(response.body.data).toHaveProperty('exercisesDoneToday', false);
   });
 
   it('should return null program when no program exists', async () => {
-    // Mock 5 queries when no program (phase query is skipped)
+    // Mock queries when no program (phase query is skipped)
     query.mockResolvedValueOnce({ rows: [] }); // program - empty
     query.mockResolvedValueOnce({ rows: [] }); // streak
     query.mockResolvedValueOnce({ rows: [] }); // diary
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
     query.mockResolvedValueOnce({ rows: [] }); // today diary
+    query.mockResolvedValueOnce({ rows: [] }); // today progress (exercisesDoneToday)
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
