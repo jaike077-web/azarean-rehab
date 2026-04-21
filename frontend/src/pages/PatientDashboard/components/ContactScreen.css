@@ -1,0 +1,466 @@
+/* =====================================================
+   ContactScreen v12 — стили
+   Prefix: pd-contact-*. Все цвета через var(--pd-*).
+   Референс: azarean-v12-final.jsx функция Contact (L1931-2073).
+   ===================================================== */
+
+.pd-contact {
+  padding: 14px 20px 20px;
+}
+
+/* ===== 1. Header ===== */
+.pd-contact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.pd-contact-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--pd-n900);
+  margin: 0;
+}
+
+/* ===== 2. Specialist feedback card ===== */
+.pd-contact-feedback {
+  padding: 14px 16px;
+  border-radius: 16px;
+  margin-bottom: 14px;
+  background: var(--pd-color-white);
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.pd-contact-feedback-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.pd-contact-feedback-ava {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--pd-color-warm), var(--pd-color-warm-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  position: relative;
+}
+
+.pd-contact-feedback-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--pd-color-ok);
+  border: 2px solid var(--pd-color-white);
+}
+
+.pd-contact-feedback-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-contact-feedback-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.pd-contact-feedback-name {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--pd-n900);
+}
+
+.pd-contact-feedback-time {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+}
+
+.pd-contact-feedback-role {
+  font-size: 0.64rem;
+  color: var(--pd-n400);
+  margin-bottom: 8px;
+}
+
+.pd-contact-feedback-text {
+  font-size: 0.76rem;
+  color: var(--pd-n700);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  word-wrap: break-word;
+}
+
+.pd-contact-feedback-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--pd-n100);
+  font-size: 0.62rem;
+  color: var(--pd-n500);
+  font-weight: 500;
+}
+
+.pd-contact-feedback-unread {
+  flex-shrink: 0;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--pd-color-accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+.pd-contact-feedback-cta {
+  margin-top: 14px;
+}
+
+.pd-contact-feedback-empty {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.pd-contact-feedback-empty-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+}
+
+.pd-contact-feedback-empty-sub {
+  font-size: 0.7rem;
+  color: var(--pd-n500);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* ===== 3. Studio location ===== */
+.pd-contact-studio {
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+  background: var(--pd-color-white);
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 150ms ease;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.pd-contact-studio:hover {
+  background: color-mix(in srgb, var(--pd-n50) 60%, var(--pd-color-white));
+}
+
+.pd-contact-studio:focus-visible {
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 2px;
+}
+
+.pd-contact-studio-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--pd-color-primary) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-contact-studio-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-contact-studio-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.pd-contact-studio-addr {
+  font-size: 0.68rem;
+  color: var(--pd-n500);
+  margin-top: 1px;
+}
+
+/* ===== 4. Emergency ===== */
+.pd-contact-emergency {
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--pd-color-err-bg), #FFF1F2);
+  border: 1px solid color-mix(in srgb, var(--pd-color-err) 12%, transparent);
+  margin-bottom: 14px;
+}
+
+.pd-contact-emergency-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pd-contact-emergency-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--pd-color-err) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pd-contact-emergency-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #991B1B;
+  margin: 0;
+}
+
+.pd-contact-emergency-text {
+  font-size: 0.72rem;
+  color: #7F1D1D;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.pd-contact-emergency-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pd-contact-emergency-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.pd-contact-emergency-btn--primary {
+  background: var(--pd-color-err);
+  color: #fff;
+}
+
+.pd-contact-emergency-btn--outline {
+  border: 1.5px solid var(--pd-color-err);
+  background: rgba(255, 255, 255, 0.6);
+  color: #991B1B;
+  font-size: 0.78rem;
+}
+
+/* ===== 5. Quick actions list ===== */
+.pd-contact-quick {
+  background: var(--pd-color-white);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+  padding: 4px 16px;
+  margin-bottom: 14px;
+}
+
+.pd-contact-quick-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--pd-n100);
+  cursor: pointer;
+  width: 100%;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+}
+
+.pd-contact-quick-row--last {
+  border-bottom: none;
+}
+
+.pd-contact-quick-row:hover {
+  background: color-mix(in srgb, var(--pd-n50) 40%, transparent);
+}
+
+.pd-contact-quick-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-contact-quick-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pd-contact-quick-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pd-n800);
+}
+
+.pd-contact-quick-sub {
+  font-size: 0.65rem;
+  color: var(--pd-n400);
+}
+
+/* ===== 6. Zari widget ===== */
+.pd-contact-zari {
+  background: var(--pd-color-white);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+  padding: 16px;
+}
+
+.pd-contact-zari-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.pd-contact-zari-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+  flex: 1;
+}
+
+.pd-contact-zari-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.pd-contact-zari-badge--on {
+  background: var(--pd-color-ok-bg);
+  color: #166534;
+}
+
+.pd-contact-zari-badge--off {
+  background: var(--pd-n100);
+  color: var(--pd-n500);
+}
+
+.pd-contact-zari-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.pd-contact-zari-hint {
+  font-size: 0.65rem;
+  color: var(--pd-n400);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.pd-contact-zari-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--pd-color-primary);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pd-contact-zari-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--pd-n100);
+}
+
+.pd-contact-zari-row--last {
+  border-bottom: none;
+}
+
+.pd-contact-zari-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pd-n800);
+}
+
+.pd-contact-zari-time {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+  margin-top: 1px;
+}
+
+.pd-contact-zari-toarrow {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.pd-contact-zari-toarrow:hover {
+  background: var(--pd-n100);
+}
+
+/* ===== Responsive ===== */
+@media (min-width: 769px) {
+  .pd-contact {
+    padding: 14px 32px 24px;
+  }
+}

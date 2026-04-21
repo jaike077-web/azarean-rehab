@@ -1,451 +1,329 @@
 // =====================================================
-// CONTACT SCREEN - Patient Dashboard
-// Communication, emergency contacts, notifications
-// Sprint 3 — Telegram-бот интеграция
+// ContactScreen v12 — порт из azarean-v12-final.jsx (L1931-2073)
+// =====================================================
+// Blocks:
+//   1. Header (заголовок + AvatarBtn)
+//   2. Specialist feedback card — Татьяна, последнее сообщение
+//        + chip «К записи N месяца» если linked_diary_id
+//        + unread badge
+//        + <MessengerCTA primary={preferred_messenger} label="Ответить"/>
+//   3. Studio location — Azarean Network, Белинского 108, ст. 26
+//   4. Emergency block — красная карточка + 103 + +79089049130
+//   5. Quick actions — 4 кнопки, onClick заглушки (TODO)
+//   6. Zari bot widget — read-only, отсылает управление в Профиль
+//
+// Messenger picker из старого Contact убран — он только в Profile.
 // =====================================================
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
-  AlertTriangle, Phone, ClipboardList, MessageSquare, HelpCircle,
-  Frown, Calendar, Paperclip, Hourglass, Bot, Check, Bell, Send
+  Phone, MapPin, ChevronRight, MessageSquare, HelpCircle,
+  AlertCircle, Calendar, Camera, Bot, Activity,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
-import { useToast } from '../../../context/ToastContext';
-import { Card } from './ui';
+import { AvatarBtn, MessengerCTA } from './ui';
+import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import './ContactScreen.css';
 
-const QUICK_MSGS = [
-  {
-    Icon: HelpCircle,
-    label: 'Задать вопрос',
-    desc: 'Свободная форма',
-    body: 'Здравствуйте, хочу задать вопрос.',
-  },
-  {
-    Icon: Frown,
-    label: 'Боль усилилась',
-    desc: 'Срочное сообщение',
-    body: 'Боль усилилась, нужна консультация.',
-  },
-  {
-    Icon: Calendar,
-    label: 'Записаться на приём',
-    desc: 'Выбрать время',
-    body: 'Хочу записаться на приём.',
-  },
-  {
-    Icon: Paperclip,
-    label: 'Отправить фото/МРТ',
-    desc: 'Прикрепить файл',
-    body: 'Хочу отправить фото/результаты обследования.',
-  },
-];
-
-// Telegram brand logo (circular blue)
-const TelegramIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.25-5.53 3.67-.52.36-.99.53-1.42.52-.47-.01-1.37-.26-2.03-.48-.82-.27-1.47-.42-1.42-.88.03-.24.37-.48 1.02-.73 3.99-1.73 6.66-2.87 8-3.42 3.81-1.58 4.6-1.85 5.12-1.86.11 0 .37.03.54.16.14.11.18.26.2.37.02.09.04.32.02.49z" />
-  </svg>
-);
-
-const ContactScreen = ({ dashboardData }) => {
-  const toast = useToast();
-
-  // Telegram state
-  const [telegramLoading, setTelegramLoading] = useState(true);
-  const [telegramConnected, setTelegramConnected] = useState(false);
-  const [linkCode, setLinkCode] = useState(null);
-  const [codeGenerating, setCodeGenerating] = useState(false);
-  const [unlinking, setUnlinking] = useState(false);
-  const pollingRef = useRef(null);
-  const expiryTimerRef = useRef(null);
-  const [codeTimeLeft, setCodeTimeLeft] = useState(0);
-
-  // Notification state
-  const [notifications, setNotifications] = useState({
-    exercise_reminders: true,
-    diary_reminders: true,
-    message_notifications: true,
-    reminder_time: '09:00',
-  });
-  const [notifLoading, setNotifLoading] = useState(true);
-  const [sendingMsg, setSendingMsg] = useState(null);
-
-  // Load telegram status + notification settings on mount
-  useEffect(() => {
-    const loadTelegramStatus = async () => {
-      try {
-        const response = await rehab.getTelegramStatus();
-        const data = response.data;
-        setTelegramConnected(data?.connected || false);
-      } catch (error) {
-        // Silently catch
-      } finally {
-        setTelegramLoading(false);
-      }
-    };
-
-    const loadNotifications = async () => {
-      try {
-        const response = await rehab.getNotifications();
-        const notifData = response.data;
-        if (notifData) {
-          setNotifications(notifData);
-        }
-      } catch (error) {
-        // Silently catch
-      } finally {
-        setNotifLoading(false);
-      }
-    };
-
-    loadTelegramStatus();
-    loadNotifications();
-
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-      if (expiryTimerRef.current) clearInterval(expiryTimerRef.current);
-    };
-  }, []);
-
-  const handleGenerateCode = async () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    if (expiryTimerRef.current) clearInterval(expiryTimerRef.current);
-
-    setCodeGenerating(true);
-    try {
-      const response = await rehab.generateTelegramCode();
-      const data = response.data;
-      setLinkCode(data.code);
-
-      const expiresAt = new Date(data.expires_at);
-      const updateTimer = () => {
-        const left = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-        setCodeTimeLeft(left);
-        if (left <= 0) {
-          clearInterval(expiryTimerRef.current);
-          clearInterval(pollingRef.current);
-          setLinkCode(null);
-        }
-      };
-      updateTimer();
-      expiryTimerRef.current = setInterval(updateTimer, 1000);
-
-      pollingRef.current = setInterval(async () => {
-        try {
-          const statusRes = await rehab.getTelegramStatus();
-          const statusData = statusRes.data;
-          if (statusData?.connected) {
-            setTelegramConnected(true);
-            setLinkCode(null);
-            clearInterval(pollingRef.current);
-            clearInterval(expiryTimerRef.current);
-            toast.success('Telegram подключён!');
-          }
-        } catch (e) { /* ignore */ }
-      }, 3000);
-    } catch (error) {
-      toast.error('Ошибка', 'Не удалось сгенерировать код');
-    } finally {
-      setCodeGenerating(false);
+// Форматирование времени сообщения: сегодня → «HH:mm»,
+// вчера → «Вчера», раньше → «DD month» на русском.
+const formatMsgTime = (iso) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    if (isToday) {
+      return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
     }
-  };
-
-  const handleUnlink = async () => {
-    setUnlinking(true);
-    try {
-      await rehab.unlinkTelegram();
-      setTelegramConnected(false);
-      toast.info('Telegram отключён');
-    } catch (error) {
-      toast.error('Ошибка', 'Не удалось отключить Telegram');
-    } finally {
-      setUnlinking(false);
-    }
-  };
-
-  const handleQuickMessage = async (messageData, index) => {
-    if (!dashboardData?.program?.id) {
-      toast.error('Ошибка', 'Программа реабилитации не найдена');
-      return;
-    }
-
-    setSendingMsg(index);
-
-    try {
-      await rehab.sendMessage({
-        program_id: dashboardData.program.id,
-        body: messageData.body,
-      });
-      toast.success('Отправлено', 'Ваше сообщение отправлено инструктору');
-    } catch (error) {
-      toast.error('Ошибка', 'Не удалось отправить сообщение');
-    } finally {
-      setSendingMsg(null);
-    }
-  };
-
-  const handleNotificationToggle = async (key) => {
-    const updatedNotifications = {
-      ...notifications,
-      [key]: !notifications[key],
-    };
-
-    setNotifications(updatedNotifications);
-
-    try {
-      await rehab.updateNotifications(updatedNotifications);
-    } catch (error) {
-      setNotifications(notifications);
-      toast.error('Ошибка', 'Не удалось обновить настройки');
-    }
-  };
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const botUsername = 'azarean_rehab_bot';
-
-  return (
-    <div className="pd-contact-screen">
-      <h1 className="pd-screen-title">Связь</h1>
-
-      {/* Emergency Card */}
-      <Card variant="secondary" className="pd-emergency">
-        <h3 className="pd-emergency-title">
-          <AlertTriangle size={18} />
-          <span>Экстренная ситуация</span>
-        </h3>
-        <p className="pd-emergency-text">
-          Температура &gt;38°, резкий отёк голени, сильная боль в икре, выделения из раны,
-          онемение стопы
-        </p>
-
-        <div className="pd-emergency-actions">
-          <a href="tel:103" className="pd-emergency-btn pd-emergency-btn--primary">
-            <Phone size={16} />
-            <span>Скорая 103</span>
-          </a>
-          <button className="pd-emergency-btn pd-emergency-btn--outline">
-            <Phone size={16} />
-            <span>Связаться с Azarean</span>
-          </button>
-        </div>
-
-        {/* Algorithm Card */}
-        <div className="pd-algorithm">
-          <h4 className="pd-algorithm-title">
-            <ClipboardList size={15} />
-            <span>Алгоритм действий</span>
-          </h4>
-          <ol className="pd-algorithm-list">
-            <li>Оцените симптомы из списка выше</li>
-            <li>При острых симптомах — звоните 103</li>
-            <li>При сомнениях — свяжитесь с Azarean</li>
-            <li>Опишите симптомы и когда они начались</li>
-            <li>Следуйте инструкциям врача</li>
-          </ol>
-        </div>
-      </Card>
-
-      {/* Quick Messages Section */}
-      <Card variant="secondary" className="pd-section">
-        <div className="pd-section-header">
-          <MessageSquare size={18} className="pd-section-icon" />
-          <h2 className="pd-section-title">Быстрое сообщение</h2>
-        </div>
-
-        <div className="pd-quick-messages">
-          {QUICK_MSGS.map((msg, index) => {
-            const MsgIcon = msg.Icon;
-            const isSending = sendingMsg === index;
-            return (
-              <button
-                key={index}
-                className="pd-quick-msg"
-                onClick={() => handleQuickMessage(msg, index)}
-                disabled={sendingMsg !== null}
-              >
-                <span className="pd-quick-msg-icon">
-                  {isSending ? <Hourglass size={20} /> : <MsgIcon size={20} />}
-                </span>
-                <div className="pd-quick-msg-body">
-                  <div className="pd-quick-msg-text">{msg.label}</div>
-                  <div className="pd-quick-msg-desc">{msg.desc}</div>
-                </div>
-                <Send size={14} className="pd-quick-msg-send" />
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Telegram Bot Section */}
-      <Card variant="secondary" className="pd-section">
-        <div className="pd-section-header">
-          <Bot size={18} className="pd-section-icon" />
-          <h2 className="pd-section-title">Telegram-уведомления</h2>
-        </div>
-
-        {telegramLoading ? (
-          <div>
-            <div className="pd-skeleton pd-skeleton--text"></div>
-            <div className="pd-skeleton pd-skeleton--text"></div>
-          </div>
-        ) : telegramConnected ? (
-          <div>
-            <div className="pd-telegram-connected">
-              <div className="pd-telegram-connected-icon">
-                <Check size={16} strokeWidth={3} />
-              </div>
-              <div className="pd-telegram-connected-body">
-                <div className="pd-telegram-connected-title">Бот подключён</div>
-                <div className="pd-telegram-connected-sub">
-                  Вы будете получать уведомления в Telegram
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleUnlink}
-              disabled={unlinking}
-              className="pd-telegram-unlink-btn"
-            >
-              {unlinking ? 'Отключение...' : 'Отключить Telegram'}
-            </button>
-          </div>
-        ) : linkCode ? (
-          <div>
-            <p className="pd-telegram-hint">
-              Откройте бот в Telegram и отправьте команду:
-            </p>
-            <div className="pd-telegram-code-box">
-              <div className="pd-telegram-code-label">Ваш код привязки:</div>
-              <div className="pd-telegram-code" data-testid="telegram-link-code">
-                {linkCode}
-              </div>
-              <div className="pd-telegram-code-timer">
-                {codeTimeLeft > 0
-                  ? `Код действителен: ${formatTime(codeTimeLeft)}`
-                  : 'Код истёк'}
-              </div>
-            </div>
-            <a
-              href={`https://t.me/${botUsername}?start=${linkCode}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pd-telegram-cta"
-            >
-              <TelegramIcon size={18} />
-              Открыть @{botUsername}
-            </a>
-            <div className="pd-telegram-waiting">
-              <div className="pd-telegram-waiting-bar" />
-              <div className="pd-telegram-waiting-text">Ожидаем подключение...</div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <p className="pd-telegram-hint">
-              Подключите Telegram-бот для получения напоминаний о тренировках и дневнике прямо в
-              мессенджере.
-            </p>
-            <button
-              onClick={handleGenerateCode}
-              disabled={codeGenerating}
-              className="pd-telegram-cta"
-            >
-              <TelegramIcon size={18} />
-              {codeGenerating ? 'Генерация...' : 'Подключить @azarean_rehab_bot'}
-            </button>
-          </>
-        )}
-      </Card>
-
-      {/* Notification Settings Section */}
-      <Card variant="inline" className="pd-section">
-        <div className="pd-section-header">
-          <Bell size={18} className="pd-section-icon" />
-          <h2 className="pd-section-title">Настройки уведомлений</h2>
-        </div>
-
-        {notifLoading ? (
-          <div>
-            <div className="pd-skeleton pd-skeleton--text"></div>
-            <div className="pd-skeleton pd-skeleton--text"></div>
-            <div className="pd-skeleton pd-skeleton--text"></div>
-          </div>
-        ) : (
-          <div className="pd-notif-list">
-            <div className="pd-notif-toggle">
-              <div className="pd-notif-info">
-                <div className="pd-notif-title">Утреннее напоминание</div>
-                <div className="pd-notif-desc">09:00</div>
-              </div>
-              <div
-                className={`pd-toggle-switch ${notifications.exercise_reminders ? 'pd-toggle-switch--active' : ''}`}
-                onClick={() => handleNotificationToggle('exercise_reminders')}
-                role="switch"
-                aria-checked={!!notifications.exercise_reminders}
-                tabIndex={0}
-              >
-                <div className="pd-toggle-dot"></div>
-              </div>
-            </div>
-
-            <div className="pd-notif-toggle">
-              <div className="pd-notif-info">
-                <div className="pd-notif-title">Вечерний дневник</div>
-                <div className="pd-notif-desc">21:00</div>
-              </div>
-              <div
-                className={`pd-toggle-switch ${notifications.diary_reminders ? 'pd-toggle-switch--active' : ''}`}
-                onClick={() => handleNotificationToggle('diary_reminders')}
-                role="switch"
-                aria-checked={!!notifications.diary_reminders}
-                tabIndex={0}
-              >
-                <div className="pd-toggle-dot"></div>
-              </div>
-            </div>
-
-            <div className="pd-notif-toggle">
-              <div className="pd-notif-info">
-                <div className="pd-notif-title">Подсказка дня</div>
-                <div className="pd-notif-desc">12:00</div>
-              </div>
-              <div
-                className={`pd-toggle-switch ${notifications.message_notifications ? 'pd-toggle-switch--active' : ''}`}
-                onClick={() => handleNotificationToggle('message_notifications')}
-                role="switch"
-                aria-checked={!!notifications.message_notifications}
-                tabIndex={0}
-              >
-                <div className="pd-toggle-dot"></div>
-              </div>
-            </div>
-
-            <div className="pd-notif-toggle">
-              <div className="pd-notif-info">
-                <div className="pd-notif-title">Смена фазы</div>
-                <div className="pd-notif-desc">Когда готовы</div>
-              </div>
-              <div
-                className={`pd-toggle-switch ${notifications.phase_change ? 'pd-toggle-switch--active' : ''}`}
-                onClick={() => handleNotificationToggle('phase_change')}
-                role="switch"
-                aria-checked={!!notifications.phase_change}
-                tabIndex={0}
-              >
-                <div className="pd-toggle-dot"></div>
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  } catch {
+    return '';
+  }
 };
 
-export default ContactScreen;
+// Форматирование entry_date ("2026-04-11") → «11 апреля»
+const formatEntryDate = (dateText) => {
+  if (!dateText) return '';
+  try {
+    const d = new Date(dateText);
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  } catch {
+    return dateText;
+  }
+};
+
+// Быстрые действия — визуал из v12, логика-заглушка до будущих сессий.
+const QUICK_ACTIONS = [
+  { id: 'question', Icon: HelpCircle, title: 'Задать вопрос', sub: 'Свободная форма', color: 'var(--pd-n500)' },
+  { id: 'pain',     Icon: Activity,   title: 'Боль усилилась', sub: 'Срочное', color: 'var(--pd-color-err)' },
+  { id: 'appointment', Icon: Calendar, title: 'Записаться', sub: 'Выбрать время', color: 'var(--pd-color-primary)' },
+  { id: 'photo',    Icon: Camera,     title: 'Отправить фото', sub: 'Файл или МРТ', color: 'var(--pd-n500)' },
+];
+
+// Подписки Zari (read-only в Contact, управление — в Profile)
+const ZARI_SCHEDULE = [
+  { key: 'morning',  label: 'Утро',       time: '09:00' },
+  { key: 'evening',  label: 'Вечер',      time: '21:00' },
+  { key: 'tip',      label: 'Совет дня',  time: '12:00' },
+  { key: 'phase',    label: 'Смена фазы', time: '—' },
+];
+
+export default function ContactScreen({ patient, dashboardData, onOpenProfile }) {
+  const [lastFeedback, setLastFeedback] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
+  const [tgConnected, setTgConnected] = useState(false);
+  const [tgStatusLoading, setTgStatusLoading] = useState(true);
+
+  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
+  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+  const primaryMessenger = patient?.preferred_messenger || 'telegram';
+  const programId = dashboardData?.program?.id;
+
+  // Последнее сообщение от инструктора + общее число непрочитанных.
+  // Backend /my/messages требует program_id — иначе возвращает все по
+  // всем программам пациента. Передаём текущую программу из dashboardData.
+  useEffect(() => {
+    let alive = true;
+    const params = programId ? { program_id: programId, limit: 20 } : { limit: 20 };
+    rehab.getMyMessages(params)
+      .then((res) => {
+        if (!alive) return;
+        const msgs = Array.isArray(res.data) ? res.data : [];
+        const fromInstructor = msgs.filter((m) => m.sender_type === 'instructor');
+        setLastFeedback(fromInstructor[0] || null);
+        setUnreadCount(fromInstructor.filter((m) => !m.is_read).length);
+      })
+      .catch(() => { /* заглушка — рендерим «нет сообщений» */ })
+      .finally(() => { if (alive) setFeedbackLoading(false); });
+    return () => { alive = false; };
+  }, [programId]);
+
+  // Статус Telegram для Zari-виджета (read-only индикатор)
+  useEffect(() => {
+    let alive = true;
+    rehab.getTelegramStatus()
+      .then((res) => {
+        if (!alive) return;
+        setTgConnected(Boolean(res.data?.connected || res.data?.linked));
+      })
+      .catch(() => { /* не подключён — ок */ })
+      .finally(() => { if (alive) setTgStatusLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const openProfile = () => onOpenProfile?.();
+
+  return (
+    <div className="pd-contact pd-contact-screen">
+      {/* 1. Header */}
+      <div className="pd-contact-header">
+        <h1 className="pd-contact-title">Связь</h1>
+        <AvatarBtn
+          initial={initial}
+          avatarSrc={avatarSrc}
+          onClick={openProfile}
+          ariaLabel="Профиль"
+        />
+      </div>
+
+      {/* 2. Specialist feedback card */}
+      <div className="pd-contact-feedback">
+        {feedbackLoading ? (
+          <div className="pd-skeleton" style={{ height: 120, borderRadius: 12 }} />
+        ) : lastFeedback ? (
+          <>
+            <div className="pd-contact-feedback-top">
+              <div className="pd-contact-feedback-ava">
+                Т
+                <span className="pd-contact-feedback-dot" aria-hidden="true" />
+              </div>
+              <div className="pd-contact-feedback-body">
+                <div className="pd-contact-feedback-row">
+                  <span className="pd-contact-feedback-name">Татьяна</span>
+                  <span className="pd-contact-feedback-time">
+                    {formatMsgTime(lastFeedback.created_at)}
+                  </span>
+                </div>
+                <div className="pd-contact-feedback-role">куратор программы</div>
+                <div className="pd-contact-feedback-text">
+                  {lastFeedback.body || ''}
+                </div>
+                {lastFeedback.linked_diary_date && (
+                  <div className="pd-contact-feedback-chip">
+                    <MessageSquare size={10} color="var(--pd-n500)" aria-hidden="true" />
+                    К записи {formatEntryDate(lastFeedback.linked_diary_date)}
+                  </div>
+                )}
+              </div>
+              {unreadCount > 0 && (
+                <div className="pd-contact-feedback-unread" aria-label={`${unreadCount} непрочитанных`}>
+                  {unreadCount}
+                </div>
+              )}
+            </div>
+            <MessengerCTA
+              primary={primaryMessenger}
+              label="Ответить"
+              className="pd-contact-feedback-cta"
+            />
+          </>
+        ) : (
+          <div className="pd-contact-feedback-empty">
+            <MessageSquare size={22} color="var(--pd-n400)" aria-hidden="true" />
+            <div>
+              <div className="pd-contact-feedback-empty-title">Пока нет сообщений</div>
+              <div className="pd-contact-feedback-empty-sub">
+                Напишите куратору через один из мессенджеров ниже
+              </div>
+            </div>
+          </div>
+        )}
+        {!feedbackLoading && !lastFeedback && (
+          <MessengerCTA
+            primary={primaryMessenger}
+            label="Написать"
+            className="pd-contact-feedback-cta"
+          />
+        )}
+      </div>
+
+      {/* 3. Studio location */}
+      <div className="pd-contact-studio" role="button" tabIndex={0}
+           onClick={() => { /* TODO: открыть карту / детали студии */ }}
+           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { /* TODO */ } }}>
+        <div className="pd-contact-studio-icon">
+          <MapPin size={18} color="var(--pd-color-primary)" aria-hidden="true" />
+        </div>
+        <div className="pd-contact-studio-text">
+          <div className="pd-contact-studio-name">Azarean Network</div>
+          <div className="pd-contact-studio-addr">
+            Белинского 108, ст. 26 · Екатеринбург
+          </div>
+        </div>
+        <ChevronRight size={16} color="var(--pd-n400)" aria-hidden="true" />
+      </div>
+
+      {/* 4. Emergency block */}
+      <div className="pd-contact-emergency" role="region" aria-label="Экстренная связь">
+        <div className="pd-contact-emergency-head">
+          <div className="pd-contact-emergency-icon">
+            <AlertCircle size={16} color="var(--pd-color-err)" aria-hidden="true" />
+          </div>
+          <h3 className="pd-contact-emergency-title">Экстренная ситуация</h3>
+        </div>
+        <p className="pd-contact-emergency-text">
+          Температура &gt;38°, резкий отёк, сильная боль, онемение
+        </p>
+        <div className="pd-contact-emergency-actions">
+          <a href="tel:103" className="pd-contact-emergency-btn pd-contact-emergency-btn--primary">
+            <Phone size={14} aria-hidden="true" /> 103
+          </a>
+          <a
+            href="tel:+79089049130"
+            className="pd-contact-emergency-btn pd-contact-emergency-btn--outline"
+          >
+            <Phone size={14} aria-hidden="true" /> Azarean
+          </a>
+        </div>
+      </div>
+
+      {/* 5. Quick actions (visual only, logic = TODO) */}
+      <div className="pd-contact-quick">
+        {QUICK_ACTIONS.map((a, i) => {
+          const Icon = a.Icon;
+          const last = i === QUICK_ACTIONS.length - 1;
+          return (
+            <button
+              key={a.id}
+              type="button"
+              className={`pd-contact-quick-row ${last ? 'pd-contact-quick-row--last' : ''}`}
+              onClick={() => {
+                // TODO: реализовать по-разному
+                //   question → модалка свободного вопроса → send via preferred_messenger
+                //   pain → prefilled «Боль усилилась» + критерии severity
+                //   appointment → интеграция с календарём студии
+                //   photo → multer upload до 10 МБ, аналог diary photos
+              }}
+            >
+              <span
+                className="pd-contact-quick-icon"
+                style={{ background: `color-mix(in srgb, ${a.color} 12%, transparent)` }}
+              >
+                <Icon size={16} color={a.color} aria-hidden="true" />
+              </span>
+              <span className="pd-contact-quick-text">
+                <span className="pd-contact-quick-title">{a.title}</span>
+                <span className="pd-contact-quick-sub">{a.sub}</span>
+              </span>
+              <ChevronRight size={16} color="var(--pd-n300)" aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 6. Zari widget — read-only */}
+      <div className="pd-contact-zari">
+        <div className="pd-contact-zari-head">
+          <Bot size={18} color="var(--pd-color-primary)" aria-hidden="true" />
+          <span className="pd-contact-zari-title">Напоминания от Zari</span>
+          {!tgStatusLoading && (
+            <div className={`pd-contact-zari-badge ${tgConnected ? 'pd-contact-zari-badge--on' : 'pd-contact-zari-badge--off'}`}>
+              <span className="pd-contact-zari-dot" />
+              <span>{tgConnected ? 'Telegram' : 'Не подключён'}</span>
+            </div>
+          )}
+        </div>
+        <div className="pd-contact-zari-hint">
+          Умные напоминания приходят только в Telegram.{' '}
+          <button
+            type="button"
+            className="pd-contact-zari-link"
+            onClick={openProfile}
+          >
+            Управление — в Профиле
+          </button>
+        </div>
+        {ZARI_SCHEDULE.map((n, i) => {
+          const last = i === ZARI_SCHEDULE.length - 1;
+          return (
+            <div
+              key={n.key}
+              className={`pd-contact-zari-row ${last ? 'pd-contact-zari-row--last' : ''}`}
+            >
+              <div>
+                <div className="pd-contact-zari-label">{n.label}</div>
+                <div className="pd-contact-zari-time">{n.time}</div>
+              </div>
+              <button
+                type="button"
+                className="pd-contact-zari-toarrow"
+                onClick={openProfile}
+                aria-label={`Настроить «${n.label}» в Профиле`}
+              >
+                <ChevronRight size={14} color="var(--pd-n400)" aria-hidden="true" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+ContactScreen.propTypes = {
+  patient: PropTypes.object,
+  dashboardData: PropTypes.object,
+  onOpenProfile: PropTypes.func,
+};
+
+ContactScreen.defaultProps = {
+  patient: null,
+  dashboardData: null,
+  onOpenProfile: () => {},
+};
