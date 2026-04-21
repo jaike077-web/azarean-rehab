@@ -446,6 +446,212 @@ describe('POST /api/rehab/my/diary', () => {
 
     expect(response.body).toHaveProperty('error', 'Server Error');
   });
+
+  // ===== Checkpoint 6: новые структурные поля =====
+
+  it('should accept pgic_feel, rom_degrees, better_list, pain_when', async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // program
+    query.mockResolvedValueOnce({
+      rows: [{
+        ...fixtures.mockDiaryEntryRow,
+        pgic_feel: 'better', rom_degrees: 135, better_list: ['ext', 'walk'], pain_when: 'morning',
+      }],
+    });
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        pain_level: 2,
+        pgic_feel: 'better',
+        rom_degrees: 135,
+        better_list: ['ext', 'walk'],
+        pain_when: 'morning',
+      })
+      .expect(201);
+
+    expect(response.body.data).toHaveProperty('pgic_feel', 'better');
+    expect(response.body.data).toHaveProperty('rom_degrees', 135);
+  });
+
+  it('should return 400 for invalid pgic_feel', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pain_level: 3, pgic_feel: 'meh' })
+      .expect(400);
+    expect(response.body.error).toBe('Validation Error');
+    expect(response.body.message).toMatch(/better\/same\/worse/);
+  });
+
+  it('should return 400 for out-of-range rom_degrees', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pain_level: 3, rom_degrees: 250 })
+      .expect(400);
+    expect(response.body.message).toMatch(/ROM/);
+  });
+
+  it('should return 400 for invalid pain_when', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pain_level: 3, pain_when: 'noon' })
+      .expect(400);
+    expect(response.body.message).toMatch(/pain_when/);
+  });
+
+  it('should return 400 for non-array better_list', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pain_level: 3, better_list: 'ext' })
+      .expect(400);
+    expect(response.body.message).toMatch(/better_list must be array/);
+  });
+
+  it('should return 400 for better_list with disallowed value', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pain_level: 3, better_list: ['ext', 'random_junk'] })
+      .expect(400);
+    expect(response.body.message).toMatch(/ext, walk, sleep, mood/);
+  });
+
+  it('should accept PGIC-only auto-save (pgic_feel without pain_level)', async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // program
+    query.mockResolvedValueOnce({
+      rows: [{ ...fixtures.mockDiaryEntryRow, pgic_feel: 'same' }],
+    });
+
+    const response = await request(app)
+      .post('/api/rehab/my/diary')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ pgic_feel: 'same' })
+      .expect(201);
+
+    expect(response.body.data.pgic_feel).toBe('same');
+  });
+});
+
+// =====================================================
+// Checkpoint 6: GET /api/rehab/my/diary/trend
+// =====================================================
+
+describe('GET /api/rehab/my/diary/trend', () => {
+  it('should return 401 without token', async () => {
+    await request(app).get('/api/rehab/my/diary/trend').expect(401);
+  });
+
+  it('should return 14 days by default', async () => {
+    query.mockResolvedValueOnce({ rows: [
+      { date: '2026-04-10', pain: 4 },
+      { date: '2026-04-11', pain: 3 },
+    ]});
+
+    const response = await request(app)
+      .get('/api/rehab/my/diary/trend')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data[0]).toHaveProperty('date');
+    expect(response.body.data[0]).toHaveProperty('pain');
+    // 14 дней передаются в запрос
+    const sqlArgs = query.mock.calls[0][1];
+    expect(sqlArgs[1]).toBe(14);
+  });
+
+  it('should clamp days to max 90', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app)
+      .get('/api/rehab/my/diary/trend?days=500')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+    expect(query.mock.calls[0][1][1]).toBe(90);
+  });
+
+  it('should accept custom days param', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app)
+      .get('/api/rehab/my/diary/trend?days=7')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+    expect(query.mock.calls[0][1][1]).toBe(7);
+  });
+
+  it('should fallback to 14 for invalid days', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app)
+      .get('/api/rehab/my/diary/trend?days=abc')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+    expect(query.mock.calls[0][1][1]).toBe(14);
+  });
+});
+
+// =====================================================
+// Checkpoint 6: Photo endpoints ownership + limit
+// =====================================================
+
+describe('Photo endpoints — ownership (DELETE branch)', () => {
+  // Проверяем verifyDiaryOwnership через DELETE endpoint — он не требует
+  // multer/sharp pipeline, так что не оставляет mock'ов «в очереди» при
+  // падении middleware. POST endpoint использует ту же helper-функцию,
+  // так что логика ownership покрыта общим helper'ом.
+
+  it('POST — returns 401 without token', async () => {
+    await request(app)
+      .post('/api/rehab/my/diary/42/photos')
+      .expect(401);
+  });
+
+  it('DELETE — returns 401 without token', async () => {
+    await request(app)
+      .delete('/api/rehab/my/diary/42/photos/7')
+      .expect(401);
+  });
+
+  it('DELETE — returns 400 for non-numeric entry_id', async () => {
+    const response = await request(app)
+      .delete('/api/rehab/my/diary/abc/photos/7')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(400);
+    expect(response.body).toHaveProperty('error');
+  });
+
+  it('DELETE — returns 404 when entry does not belong to patient', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 999 }] }); // чужая запись
+
+    const response = await request(app)
+      .delete('/api/rehab/my/diary/42/photos/7')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(404);
+    expect(response.body).toHaveProperty('error', 'Not Found');
+  });
+
+  it('DELETE — returns 400 for non-numeric photo_id', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 1 }] }); // ownership OK
+
+    const response = await request(app)
+      .delete('/api/rehab/my/diary/42/photos/bad')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(400);
+    expect(response.body).toHaveProperty('error');
+  });
+
+  it('DELETE — returns 404 when photo not found', async () => {
+    query.mockResolvedValueOnce({ rows: [{ patient_id: 1 }] }); // ownership OK
+    query.mockResolvedValueOnce({ rows: [] }); // photo query пустой
+
+    const response = await request(app)
+      .delete('/api/rehab/my/diary/42/photos/999')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(404);
+    expect(response.body).toHaveProperty('error', 'Not Found');
+  });
 });
 
 // =====================================================
