@@ -86,7 +86,7 @@ function EditSheet({ open, field, initialValue, onSave, onClose }) {
             onClick={onClose}
             aria-label="Закрыть"
           >
-            <X size={14} />
+            <X size={18} strokeWidth={2.4} />
           </button>
         </div>
         <input

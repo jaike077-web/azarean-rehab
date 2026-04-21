@@ -226,11 +226,17 @@ export default function PatientDashboard() {
       <TabBar
         items={NAV}
         activeId={screen}
-        onChange={(id) => { setScreen(id); setScreenParams(null); }}
+        onChange={(id) => {
+          setScreen(id);
+          setScreenParams(null);
+          // Тап по табу из открытого Profile overlay должен и закрывать
+          // overlay, и переключать таб — иначе кнопки выглядят «не работают».
+          setProfileOpen(false);
+        }}
       />
 
       {/* Profile overlay — full-screen, поверх дашборда. Закрывается стрелкой
-          назад в шапке Profile (передаётся через onClose). */}
+          назад в шапке Profile (передаётся через onClose) или тапом по табу. */}
       {profileOpen && (
         <ProfileScreen
           onClose={() => setProfileOpen(false)}

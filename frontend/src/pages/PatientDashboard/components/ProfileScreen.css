@@ -7,7 +7,9 @@
   inset: 0;
   width: 100%;
   background: var(--pd-color-bg, #F8FAF7);
-  z-index: 200;
+  /* Должен быть выше TabBar (z-index: 1000) — иначе нижняя нав-панель
+     выдаёт клики «насквозь», а edit-modal частично прячется под табы. */
+  z-index: 1100;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -105,11 +107,11 @@
 
 .pd-profile-identity-camera {
   position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 26px;
-  height: 26px;
-  border-radius: 13px;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
   border: 2px solid var(--pd-color-white, #fff);
   background: var(--pd-color-primary);
   cursor: pointer;
@@ -117,7 +119,15 @@
   align-items: center;
   justify-content: center;
   color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.pd-profile-identity-camera svg {
+  /* Принудительный размер — на случай если глобальный svg-стиль перебьёт */
+  width: 12px !important;
+  height: 12px !important;
+  flex-shrink: 0;
 }
 
 .pd-profile-identity-camera:disabled {
@@ -417,7 +427,9 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 300;
+  /* Выше Profile overlay (1100) — sheet должен накрыть всё, включая
+     back-кнопку и шапку Profile. */
+  z-index: 1200;
   display: flex;
   align-items: flex-end;
   animation: pd-edit-sheet-fade 200ms ease;
@@ -474,7 +486,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--pd-n600);
+  color: var(--pd-n700);
+  padding: 0;
+}
+
+.pd-edit-sheet-close svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.pd-edit-sheet-close:hover {
+  background: var(--pd-n200);
 }
 
 .pd-edit-sheet-input {
