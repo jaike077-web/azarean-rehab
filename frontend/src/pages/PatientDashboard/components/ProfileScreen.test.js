@@ -35,6 +35,7 @@ jest.mock('../../../context/ToastContext', () => ({
 
 // Mock PatientAuthContext — overlay читает patient оттуда
 const mockRefresh = jest.fn();
+const mockUpdatePatient = jest.fn();
 const mockPatient = {
   id: 14,
   email: 'avi707@mail.ru',
@@ -45,6 +46,7 @@ const mockPatient = {
   avatar_url: null,
   email_verified: false,
   auth_provider: 'local',
+  preferred_messenger: 'telegram',
   last_login_at: '2026-02-11T10:00:00.000Z',
   created_at: '2026-02-10T08:00:00.000Z',
 };
@@ -56,6 +58,7 @@ jest.mock('../../../context/PatientAuthContext', () => ({
     login: jest.fn(),
     logout: jest.fn(),
     refresh: mockRefresh,
+    updatePatient: mockUpdatePatient,
   }),
 }));
 
@@ -247,12 +250,12 @@ describe('ProfileScreen overlay (v12)', () => {
       expect(screen.getByText('Реабилитация')).toBeInTheDocument();
     });
 
-    it('renders «Связь» section with disabled messenger picker placeholder', () => {
+    it('renders «Связь» section with active messenger picker', () => {
       setup();
       expect(screen.getByText('Связь')).toBeInTheDocument();
       expect(screen.getByText('Основной канал связи')).toBeInTheDocument();
-      // Hint про «Скоро»
-      expect(screen.getByText(/Скоро/)).toBeInTheDocument();
+      // Placeholder «Скоро» больше не должен рендериться — picker активен (Checkpoint 3)
+      expect(screen.queryByText(/Скоро/)).not.toBeInTheDocument();
     });
 
     it('renders «Безопасность» section with «Сменить пароль»', () => {
@@ -322,6 +325,104 @@ describe('ProfileScreen overlay (v12)', () => {
       setup();
       const cameraBtn = screen.getByRole('button', { name: /Изменить фото/i });
       expect(cameraBtn).not.toBeDisabled();
+    });
+  });
+
+  // -----------------------------
+  // Messenger picker (Checkpoint 3)
+  // -----------------------------
+  describe('Messenger picker', () => {
+    it('renders current preferred_messenger (Telegram) as default row value', () => {
+      setup();
+      // SettingsRow «Основной канал связи» имеет value=«Telegram»
+      const row = screen.getByRole('button', { name: 'Основной канал связи' });
+      expect(row).toHaveTextContent('Telegram');
+    });
+
+    it('picker hidden by default (3 radio options not rendered)', () => {
+      setup();
+      expect(screen.queryByRole('radiogroup', { name: /Выбор канала связи/ })).not.toBeInTheDocument();
+    });
+
+    it('opens picker accordion on tap → 3 radio options', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
+      const group = screen.getByRole('radiogroup', { name: /Выбор канала связи/ });
+      expect(group).toBeInTheDocument();
+      const radios = within(group).getAllByRole('radio');
+      expect(radios).toHaveLength(3);
+    });
+
+    it('active radio corresponds to current preferred_messenger', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
+      const group = screen.getByRole('radiogroup');
+      const radios = within(group).getAllByRole('radio');
+      // telegram — первый в MESSENGER_KEYS
+      expect(radios[0]).toHaveAttribute('aria-checked', 'true');
+      expect(radios[1]).toHaveAttribute('aria-checked', 'false');
+      expect(radios[2]).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('tap on current messenger is no-op (no API call)', () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
+      const group = screen.getByRole('radiogroup');
+      const activeRadio = within(group).getAllByRole('radio')[0];
+      fireEvent.click(activeRadio);
+      expect(mockUpdatePatient).not.toHaveBeenCalled();
+    });
+
+    it('changes messenger optimistically + calls updatePatient API', async () => {
+      mockUpdatePatient.mockResolvedValue({ ...mockPatient, preferred_messenger: 'whatsapp' });
+
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
+      const group = screen.getByRole('radiogroup');
+      const waRadio = within(group).getAllByRole('radio')[1]; // WhatsApp
+      fireEvent.click(waRadio);
+
+      await waitFor(() => {
+        expect(mockUpdatePatient).toHaveBeenCalledWith({ preferred_messenger: 'whatsapp' });
+      });
+    });
+
+    it('rolls back UI state + no persistent change on API failure', async () => {
+      mockUpdatePatient.mockRejectedValue({
+        response: { data: { message: 'Server error' } },
+      });
+
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
+      const initialRadios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+      fireEvent.click(initialRadios[2]); // MAX
+
+      // API-вызов был сделан
+      await waitFor(() => {
+        expect(mockUpdatePatient).toHaveBeenCalledWith({ preferred_messenger: 'max' });
+      });
+
+      // Финальное состояние — rollback на telegram (0-й radio снова active).
+      // Промежуточное optimistic-состояние в jsdom/React18 batch не всегда
+      // фиксируется, поэтому проверяем только конечный rollback.
+      await waitFor(() => {
+        const radios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        expect(radios[0]).toHaveAttribute('aria-checked', 'true');
+        expect(radios[2]).toHaveAttribute('aria-checked', 'false');
+      });
+    });
+  });
+
+  // -----------------------------
+  // MessengerCTA демо-блок в Profile
+  // -----------------------------
+  describe('MessengerCTA in Profile', () => {
+    it('renders MessengerCTA with primary=preferred_messenger', () => {
+      setup();
+      // Telegram т.к. mockPatient.preferred_messenger='telegram'
+      const cta = screen.getByRole('link', { name: /Связаться с куратором · Telegram/ });
+      expect(cta).toBeInTheDocument();
+      expect(cta).toHaveAttribute('href', expect.stringContaining('t.me'));
     });
   });
 });
