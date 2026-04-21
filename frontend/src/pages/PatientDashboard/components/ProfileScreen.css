@@ -173,6 +173,26 @@ img.pd-profile-identity-avatar { display: block; }
 
 .pd-profile-identity-file { display: none; }
 
+/* Подсказка про правила загрузки аватара. Под identity-блоком, мелко,
+   без давления — но видно прежде чем юзер тапнет «не туда» с файлом. */
+.pd-profile-avatar-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 4px 0;
+  padding: 0 16px;
+  font-size: 0.66rem;
+  color: var(--pd-n400);
+  line-height: 1.4;
+}
+
+.pd-profile-avatar-hint svg {
+  width: 12px !important;
+  height: 12px !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
 .pd-profile-identity-text {
   flex: 1;
   min-width: 0;

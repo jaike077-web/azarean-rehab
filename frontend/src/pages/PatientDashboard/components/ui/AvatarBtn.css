@@ -1,8 +1,10 @@
-/* Аватар-кнопка для шапки экрана (см. AvatarBtn.js) */
+/* Аватар-кнопка для шапки экрана (см. AvatarBtn.js).
+   Размер 56/50 — крупнее чем v12 reference (40/34), читается на десктопе
+   и удобно тапать на мобиле (44px+ touch target). */
 .pd-avatarbtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
   border: none;
   cursor: pointer;
   background: transparent;
@@ -20,9 +22,9 @@
 }
 
 .pd-avatarbtn-inner {
-  width: 34px;
-  height: 34px;
-  border-radius: 17px;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
   background: linear-gradient(135deg, var(--pd-color-primary), var(--pd-color-primary-dark));
   display: flex;
   align-items: center;
@@ -30,9 +32,9 @@
   color: #fff;
   font-family: 'Manrope', system-ui, sans-serif;
   font-weight: 800;
-  font-size: 0.82rem;
-  border: 1.5px solid var(--pd-color-white);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-size: 1.15rem;
+  border: 2px solid var(--pd-color-white);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pd-avatarbtn-inner--dark {

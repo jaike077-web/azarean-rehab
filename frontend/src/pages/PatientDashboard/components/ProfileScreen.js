@@ -231,11 +231,11 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
     if (uploadingRef.current) return; // защита от двойного click
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      toast.error('Ошибка', 'Разрешены только JPEG, PNG, WEBP');
+      toast.error('Не подходит формат', 'Разрешены только JPEG, PNG или WEBP (без GIF)');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Ошибка', 'Максимальный размер — 10MB');
+      toast.error('Файл слишком большой', 'Максимальный размер — 10 МБ');
       return;
     }
 
@@ -390,6 +390,10 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                   </div>
                 )}
               </div>
+            </div>
+            <div className="pd-profile-avatar-hint">
+              <Camera size={12} aria-hidden="true" />
+              <span>Тап по фото · JPEG, PNG или WEBP, до 10&nbsp;МБ</span>
             </div>
 
             {/* ===== Личное ===== */}
