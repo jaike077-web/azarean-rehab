@@ -50,6 +50,15 @@
   justify-content: center;
   color: var(--pd-n700);
   flex-shrink: 0;
+  padding: 0;
+}
+
+.pd-profile-overlay-back svg {
+  width: 20px !important;
+  height: 20px !important;
+  stroke: currentColor;
+  display: block;
+  flex-shrink: 0;
 }
 
 .pd-profile-overlay-back:hover {

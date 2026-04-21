@@ -336,7 +336,7 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
           onClick={onClose}
           aria-label="Назад"
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={20} strokeWidth={2.4} />
         </button>
         <h1 className="pd-profile-overlay-title">Профиль</h1>
       </header>
