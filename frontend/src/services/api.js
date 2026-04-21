@@ -406,10 +406,14 @@ patientAuth.resetPassword = (data) => patientApi.post('/patient-auth/reset-passw
 patientAuth.getMe = () => patientApi.get('/patient-auth/me');
 patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
 patientAuth.changePassword = (data) => patientApi.post('/patient-auth/change-password', data);
-// FormData → axios сам выставит Content-Type: multipart/form-data с правильным
-// boundary. Если задать Content-Type вручную без boundary — multer на бэке
-// не сможет распарсить файл (req.file будет undefined).
-patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData);
+// FormData uploads. patientApi имеет default Content-Type: application/json
+// на instance level, который перебивает auto-detection axios v1 для FormData.
+// Решение: явно стереть instance default через Content-Type: undefined →
+// браузер сам выставит multipart/form-data с правильным boundary,
+// multer на бэке корректно распарсит файл.
+patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData, {
+  headers: { 'Content-Type': undefined },
+});
 patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
 patientAuth.fetchAvatarBlob = () => patientApi.get('/patient-auth/avatar', { responseType: 'blob' });
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');

@@ -174,12 +174,13 @@ img.pd-profile-identity-avatar { display: block; }
 .pd-profile-identity-file { display: none; }
 
 /* Подсказка про правила загрузки аватара. Под identity-блоком, мелко,
-   без давления — но видно прежде чем юзер тапнет «не туда» с файлом. */
+   без давления — но видно прежде чем юзер кликнет «не туда» с файлом.
+   Достаточный отступ снизу чтобы не сливаться с заголовком следующей секции. */
 .pd-profile-avatar-hint {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 8px 4px 0;
+  margin: 4px 4px 18px;
   padding: 0 16px;
   font-size: 0.66rem;
   color: var(--pd-n400);

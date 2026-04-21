@@ -393,7 +393,7 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
             </div>
             <div className="pd-profile-avatar-hint">
               <Camera size={12} aria-hidden="true" />
-              <span>Тап по фото · JPEG, PNG или WEBP, до 10&nbsp;МБ</span>
+              <span>Нажмите на фото для смены аватара · JPEG, PNG или WEBP, до 10&nbsp;МБ</span>
             </div>
 
             {/* ===== Личное ===== */}
