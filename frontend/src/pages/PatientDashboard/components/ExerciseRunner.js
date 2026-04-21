@@ -107,7 +107,9 @@ const ExerciseRunner = ({
         exercise_id: exercise.id,
         completed,
         pain_level: painLevel,
-        difficulty_rating: difficulty,
+        // difficulty=0 означает «пациент не поставил оценку» — в БД CHECK
+        // на 1..10, 0 ронял запрос с 500. Шлём null в этом случае.
+        difficulty_rating: difficulty > 0 ? difficulty : null,
         session_id: sessionId,
         comment: comment.trim() || null,
       });

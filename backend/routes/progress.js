@@ -85,10 +85,11 @@ router.post('/', authenticatePatientOrInstructor, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Ошибка сохранения прогресса:', error.message);
+    console.error('Ошибка сохранения прогресса:', error.message, error.code, error.detail || '', error.stack?.split('\n').slice(0,3).join('\n'));
     res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при сохранении прогресса'
+      message: 'Ошибка при сохранении прогресса',
+      debug: process.env.NODE_ENV !== 'production' ? { code: error.code, detail: error.detail, message: error.message } : undefined,
     });
   }
 });
