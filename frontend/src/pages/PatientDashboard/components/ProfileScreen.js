@@ -215,9 +215,21 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
 
   // Avatar upload
   const handleAvatarPick = () => fileInputRef.current?.click();
+
+  // Re-entry guard через ref — setState не успеет обновиться синхронно если
+  // onChange сработает дважды (React 18 StrictMode + быстрый клик).
+  const uploadingRef = useRef(false);
+
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
+    // Сброс input СРАЗУ — чтобы переключение того же файла снова дёргало onChange.
+    // Делаем до await чтобы повторный вызов с пустыми files (если такой возможен)
+    // не уходил на бэк с empty form.
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
     if (!file) return;
+    if (uploadingRef.current) return; // защита от двойного click
+
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
       toast.error('Ошибка', 'Разрешены только JPEG, PNG, WEBP');
       return;
@@ -226,6 +238,8 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
       toast.error('Ошибка', 'Максимальный размер — 10MB');
       return;
     }
+
+    uploadingRef.current = true;
     setAvatarUploading(true);
     try {
       const fd = new FormData();
@@ -240,8 +254,8 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
     } catch (err) {
       toast.error('Ошибка', err?.response?.data?.message || 'Не удалось загрузить фото');
     } finally {
+      uploadingRef.current = false;
       setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
