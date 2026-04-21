@@ -406,9 +406,10 @@ patientAuth.resetPassword = (data) => patientApi.post('/patient-auth/reset-passw
 patientAuth.getMe = () => patientApi.get('/patient-auth/me');
 patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
 patientAuth.changePassword = (data) => patientApi.post('/patient-auth/change-password', data);
-patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' }
-});
+// FormData → axios сам выставит Content-Type: multipart/form-data с правильным
+// boundary. Если задать Content-Type вручную без boundary — multer на бэке
+// не сможет распарсить файл (req.file будет undefined).
+patientAuth.uploadAvatar = (formData) => patientApi.post('/patient-auth/upload-avatar', formData);
 patientAuth.deleteAvatar = () => patientApi.delete('/patient-auth/avatar');
 patientAuth.fetchAvatarBlob = () => patientApi.get('/patient-auth/avatar', { responseType: 'blob' });
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
