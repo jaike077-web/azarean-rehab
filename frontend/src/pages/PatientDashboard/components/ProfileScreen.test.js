@@ -21,6 +21,8 @@ jest.mock('../../../services/api', () => ({
     getTelegramStatus: jest.fn(() => Promise.resolve({ data: { linked: false } })),
     generateTelegramCode: jest.fn(),
     unlinkTelegram: jest.fn(),
+    getNotifications: jest.fn(() => Promise.resolve({ data: null })),
+    updateNotifications: jest.fn(() => Promise.resolve({ data: null })),
   },
 }));
 
@@ -79,6 +81,8 @@ describe('ProfileScreen overlay (v12)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     rehab.getTelegramStatus.mockResolvedValue({ data: { linked: false } });
+    rehab.getNotifications.mockResolvedValue({ data: null });
+    rehab.updateNotifications.mockResolvedValue({ data: null });
     if (!global.URL.createObjectURL) {
       global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
       global.URL.revokeObjectURL = jest.fn();

@@ -25,6 +25,7 @@ import { usePatientAuth } from '../../../context/PatientAuthContext';
 import {
   SettingsRow,
   MessengerCTA,
+  Switch,
   MESSENGERS,
   MESSENGER_ICONS,
   MESSENGER_KEYS,
@@ -167,6 +168,17 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
   const [showMessengerPicker, setShowMessengerPicker] = useState(false);
   const [messengerSaving, setMessengerSaving] = useState(false);
 
+  // Zari notifications — 4 toggle'а внутри accordion'a.
+  // Перенесены сюда из ContactScreen v12 (Checkpoint 5) — в Contact
+  // остался только read-only индикатор.
+  const [notifications, setNotifications] = useState({
+    exercise_reminders: true,
+    diary_reminders: true,
+    message_notifications: true,
+    phase_change: false,
+  });
+  const [notifLoading, setNotifLoading] = useState(true);
+
   // Подгрузка профиля если в контексте пусто (например, прямой mount overlay)
   useEffect(() => {
     if (ctxPatient) {
@@ -190,6 +202,29 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
       .then((res) => setTgStatus(res.data || null))
       .catch(() => { /* нет привязки — ок, будет null */ });
   }, []);
+
+  // Настройки уведомлений Zari — загружаем при открытии Profile.
+  useEffect(() => {
+    rehab.getNotifications()
+      .then((res) => {
+        if (res.data) setNotifications((prev) => ({ ...prev, ...res.data }));
+      })
+      .catch(() => { /* defaults останутся */ })
+      .finally(() => setNotifLoading(false));
+  }, []);
+
+  // Toggle настройки уведомлений — optimistic update + rollback на ошибке.
+  const handleNotifToggle = useCallback(async (key) => {
+    const prev = notifications;
+    const next = { ...prev, [key]: !prev[key] };
+    setNotifications(next);
+    try {
+      await rehab.updateNotifications(next);
+    } catch (err) {
+      setNotifications(prev);
+      toast.error('Ошибка', err?.response?.data?.message || 'Не удалось сохранить');
+    }
+  }, [notifications, toast]);
 
   // Esc на overlay — закрыть
   useEffect(() => {
@@ -642,6 +677,42 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                         )}
                       </>
                     )}
+
+                    {/* Настройки уведомлений — 4 toggle'а.
+                        Перенесены сюда из ContactScreen v12 (там теперь
+                        только read-only индикатор). Состояние хранится в
+                        notification_settings таблице. Отправляются только
+                        через Telegram — если бот не подключён, toggle'ы
+                        показываем, но дополнительно disabled: от них
+                        сейчас нет эффекта без привязки. */}
+                    <div className="pd-profile-notif-list">
+                      {notifLoading ? (
+                        <div className="pd-skeleton" style={{ height: 52, borderRadius: 10 }} />
+                      ) : (
+                        [
+                          { key: 'exercise_reminders', label: 'Утро', time: '09:00' },
+                          { key: 'diary_reminders', label: 'Вечер', time: '21:00' },
+                          { key: 'message_notifications', label: 'Совет дня', time: '12:00' },
+                          { key: 'phase_change', label: 'Смена фазы', time: 'Когда готовы' },
+                        ].map((n, i, arr) => (
+                          <div
+                            key={n.key}
+                            className={`pd-profile-notif-row ${i === arr.length - 1 ? 'pd-profile-notif-row--last' : ''}`}
+                          >
+                            <div>
+                              <div className="pd-profile-notif-label">{n.label}</div>
+                              <div className="pd-profile-notif-time">{n.time}</div>
+                            </div>
+                            <Switch
+                              on={!!notifications[n.key]}
+                              onTap={() => handleNotifToggle(n.key)}
+                              disabled={!tgStatus?.linked}
+                              ariaLabel={`Напоминание «${n.label}»`}
+                            />
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

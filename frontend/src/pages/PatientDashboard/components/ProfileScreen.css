@@ -526,6 +526,37 @@ img.pd-profile-identity-avatar { display: block; }
   padding: 4px 0;
 }
 
+/* Настройки уведомлений (перенос из ContactScreen) */
+.pd-profile-notif-list {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--pd-n100);
+}
+
+.pd-profile-notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--pd-n100);
+}
+
+.pd-profile-notif-row--last {
+  border-bottom: none;
+}
+
+.pd-profile-notif-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pd-n800);
+}
+
+.pd-profile-notif-time {
+  font-size: 0.66rem;
+  color: var(--pd-n400);
+  margin-top: 1px;
+}
+
 /* ===== Loading skeleton ===== */
 .pd-profile-loading-skeleton {
   padding: 4px 0;
