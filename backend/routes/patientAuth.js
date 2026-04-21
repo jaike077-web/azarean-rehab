@@ -558,9 +558,14 @@ router.post('/reset-password', async (req, res) => {
 // =====================================================
 router.get('/me', authenticatePatient, async (req, res) => {
   try {
+    // Allowlist полей. НЕ возвращаем password_hash, failed_login_attempts,
+    // locked_until, provider_id — это закрытые уязвимости, см. CLAUDE.md.
+    // diagnosis / surgery_date НЕ в patients-таблице (read-only поля живут
+    // в rehab_programs); ProfileScreen берёт их из активной программы.
     const result = await query(
-      `SELECT id, email, full_name, phone, birth_date, avatar_url,
-              email_verified, auth_provider, last_login_at, created_at
+      `SELECT id, email, full_name, phone, birth_date, diagnosis, avatar_url,
+              telegram_chat_id, preferred_messenger,
+              email_verified, auth_provider, last_login_at, created_at, updated_at
        FROM patients WHERE id = $1 AND is_active = true`,
       [req.patient.id]
     );
@@ -594,7 +599,9 @@ router.put('/me', authenticatePatient, async (req, res) => {
     // (правит только инструктор/админ через свои роуты). avatar_url — через
     // отдельный POST /upload-avatar. Любые лишние поля в req.body тихо
     // игнорируются — это защита от подмены email и т.п.
-    const ALLOWED = ['full_name', 'phone'];
+    const ALLOWED = ['full_name', 'phone', 'preferred_messenger'];
+    const VALID_MESSENGERS = ['telegram', 'whatsapp', 'max'];
+
     const updates = {};
     for (const key of ALLOWED) {
       if (key in req.body) updates[key] = req.body[key];
@@ -604,6 +611,15 @@ router.put('/me', authenticatePatient, async (req, res) => {
       return res.status(400).json({
         error: 'NO_FIELDS',
         message: 'Нет полей для обновления'
+      });
+    }
+
+    // Валидация preferred_messenger — enum из CHECK constraint в БД
+    if ('preferred_messenger' in updates
+        && !VALID_MESSENGERS.includes(updates.preferred_messenger)) {
+      return res.status(400).json({
+        error: 'INVALID_MESSENGER',
+        message: 'Недопустимое значение канала связи'
       });
     }
 
@@ -630,9 +646,9 @@ router.put('/me', authenticatePatient, async (req, res) => {
       UPDATE patients
       SET ${setClauses.join(', ')}
       WHERE id = $${idx} AND is_active = true
-      RETURNING id, email, full_name, phone, birth_date, avatar_url,
-                email_verified, auth_provider, telegram_chat_id,
-                last_login_at, created_at, updated_at
+      RETURNING id, email, full_name, phone, birth_date, diagnosis, avatar_url,
+                telegram_chat_id, preferred_messenger,
+                email_verified, auth_provider, last_login_at, created_at, updated_at
     `;
     const result = await query(sql, params);
 
