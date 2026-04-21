@@ -1,7 +1,13 @@
-/* iOS-style toggle (см. Switch.js) */
+/* iOS-style toggle (см. Switch.js).
+   all: unset — защита от глобальных button-стилей (min-height/padding/etc).
+   Box-sizing border-box — чтобы 42×24 оставались 42×24 при любом padding. */
 .pd-switch {
+  all: unset;
+  box-sizing: border-box;
   width: 42px;
   height: 24px;
+  min-width: 42px;
+  min-height: 24px;
   border-radius: 12px;
   background: var(--pd-n300);
   padding: 2px;
@@ -11,6 +17,11 @@
   flex-shrink: 0;
   display: inline-block;
   position: relative;
+}
+
+.pd-switch:focus-visible {
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 2px;
 }
 
 .pd-switch--on {

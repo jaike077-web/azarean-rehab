@@ -680,12 +680,17 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
 
                     {/* Настройки уведомлений — 4 toggle'а.
                         Перенесены сюда из ContactScreen v12 (там теперь
-                        только read-only индикатор). Состояние хранится в
-                        notification_settings таблице. Отправляются только
-                        через Telegram — если бот не подключён, toggle'ы
-                        показываем, но дополнительно disabled: от них
-                        сейчас нет эффекта без привязки. */}
+                        только read-only индикатор). Состояние хранится
+                        в notification_settings; toggle'ы всегда активны —
+                        если Telegram не подключён, настройка сохраняется
+                        на будущее, но бот ничего не отправляет до привязки. */}
                     <div className="pd-profile-notif-list">
+                      {!tgStatus?.linked && !notifLoading && (
+                        <div className="pd-profile-notif-hint">
+                          Настройки сохранятся, но начнут работать после
+                          подключения Telegram ↑
+                        </div>
+                      )}
                       {notifLoading ? (
                         <div className="pd-skeleton" style={{ height: 52, borderRadius: 10 }} />
                       ) : (
@@ -706,7 +711,6 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                             <Switch
                               on={!!notifications[n.key]}
                               onTap={() => handleNotifToggle(n.key)}
-                              disabled={!tgStatus?.linked}
                               ariaLabel={`Напоминание «${n.label}»`}
                             />
                           </div>

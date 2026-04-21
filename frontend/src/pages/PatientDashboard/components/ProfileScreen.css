@@ -557,6 +557,16 @@ img.pd-profile-identity-avatar { display: block; }
   margin-top: 1px;
 }
 
+.pd-profile-notif-hint {
+  font-size: 0.68rem;
+  color: var(--pd-n500);
+  line-height: 1.4;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: color-mix(in srgb, var(--pd-color-warn) 8%, transparent);
+  border-radius: 8px;
+}
+
 /* ===== Loading skeleton ===== */
 .pd-profile-loading-skeleton {
   padding: 4px 0;
