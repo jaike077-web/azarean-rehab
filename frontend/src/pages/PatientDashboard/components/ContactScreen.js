@@ -193,10 +193,16 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
         )}
       </div>
 
-      {/* 3. Studio location */}
-      <div className="pd-contact-studio" role="button" tabIndex={0}
-           onClick={() => { /* TODO: открыть карту / детали студии */ }}
-           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { /* TODO */ } }}>
+      {/* 3. Studio location — тап открывает Яндекс.Карты по адресу.
+            На десктопе — новая вкладка, на мобильном iOS/Android ОС
+            предложит выбрать приложение (Яндекс Карты / 2GIS / браузер). */}
+      <a
+        href="https://yandex.ru/maps/?text=Екатеринбург%2C%20Белинского%20108%2C%20строение%2026"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="pd-contact-studio"
+        aria-label="Открыть адрес студии в Яндекс.Картах"
+      >
         <div className="pd-contact-studio-icon">
           <MapPin size={18} color="var(--pd-color-primary)" aria-hidden="true" />
         </div>
@@ -207,7 +213,7 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
           </div>
         </div>
         <ChevronRight size={16} color="var(--pd-n400)" aria-hidden="true" />
-      </div>
+      </a>
 
       {/* 4. Emergency block */}
       <div className="pd-contact-emergency" role="region" aria-label="Экстренная связь">

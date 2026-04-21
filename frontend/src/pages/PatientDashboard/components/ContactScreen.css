@@ -171,6 +171,8 @@
   width: 100%;
   text-align: left;
   font-family: inherit;
+  text-decoration: none;
+  color: inherit;
 }
 
 .pd-contact-studio:hover {
