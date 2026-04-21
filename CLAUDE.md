@@ -65,6 +65,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_patien
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260408_hash_tokens.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_access_token_nullable.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_complexes_drop_access_token.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_patient_preferred_messenger.sql
 ```
 
 ### 2. Переменные окружения
@@ -232,6 +233,8 @@ password_hash VARCHAR(255), email_verified BOOLEAN DEFAULT false,
 auth_provider VARCHAR(20) DEFAULT 'local', provider_id VARCHAR(255),
 avatar_url VARCHAR(500), last_login_at TIMESTAMP,
 telegram_chat_id BIGINT UNIQUE,
+preferred_messenger VARCHAR(20) NOT NULL DEFAULT 'telegram'
+  CHECK (preferred_messenger IN ('telegram','whatsapp','max')),  -- миграция 20260421
 failed_login_attempts SMALLINT DEFAULT 0, locked_until TIMESTAMP,
 created_at TIMESTAMP, updated_at TIMESTAMP
 ```
@@ -347,7 +350,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Остальные таблицы
 - **tips** — советы по фазам реабилитации
 - **phase_videos** — видео для фаз (FK → rehab_phases)
-- **messages** — чат пациент↔инструктор (sender_id без FK!)
+- **messages** — чат пациент↔инструктор (sender_id без FK!). С миграции 20260421 добавлены `linked_diary_id INT REFERENCES diary_entries(id) ON DELETE SET NULL` (привязка ответа куратора к конкретной записи дневника) и `channel VARCHAR(20) CHECK ('telegram'|'whatsapp'|'max'|'in_app' OR NULL)`.
 - **notification_settings** — настройки уведомлений пациента (UNIQUE patient_id)
 - **telegram_link_codes** — одноразовые коды привязки Telegram
 - **patient_password_resets** — токены сброса пароля (SHA-256 hash, миграция 20260408)
