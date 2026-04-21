@@ -1,0 +1,562 @@
+/* =====================================================
+   HomeScreen v12 — стили
+   Prefix: pd-home-*. Все цвета через var(--pd-*).
+   Референс: azarean-v12-final.jsx функция Home (L740-944).
+   ===================================================== */
+
+.pd-home {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== 1. Greeting row ===== */
+.pd-home-greet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 20px;
+}
+
+.pd-home-greet-hello {
+  font-size: 0.7rem;
+  color: var(--pd-n400);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.pd-home-greet-name {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--pd-n900);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+/* ===== 2. Hero card ===== */
+.pd-home-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  padding: 14px 18px 18px;
+  background: var(--pd-color-hero-grad);
+  color: #fff;
+}
+
+.pd-home-hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pd-home-hero-blob--teal {
+  top: -40px;
+  right: -20px;
+  width: 140px;
+  height: 140px;
+  background: color-mix(in srgb, var(--pd-color-primary) 12%, transparent);
+}
+
+.pd-home-hero-blob--orange {
+  bottom: -50px;
+  left: -30px;
+  width: 120px;
+  height: 120px;
+  background: color-mix(in srgb, var(--pd-color-accent) 8%, transparent);
+}
+
+.pd-home-hero-chip {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+.pd-home-hero-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pd-home-hero-chip-ava {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--pd-color-warm), var(--pd-color-warm-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.pd-home-hero-chip-text {
+  font-size: 0.74rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.pd-home-hero-chip-role {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+}
+
+/* IllKnee иллюстрация — над body, центрируется */
+.pd-home-hero-ill {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  margin-top: -4px;
+}
+
+.pd-home-hero-body {
+  position: relative;
+  z-index: 1;
+  margin-top: -16px;
+}
+
+.pd-home-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pd-home-hero-badge--today {
+  background: var(--pd-color-accent);
+}
+
+.pd-home-hero-badge--done {
+  background: var(--pd-color-ok);
+}
+
+.pd-home-hero-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  margin: 0 0 4px;
+}
+
+.pd-home-hero-sub {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 0 14px;
+}
+
+.pd-home-hero-btn {
+  width: 100%;
+  padding: 14px 0;
+  border-radius: 14px;
+  border: none;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pd-home-hero-btn--primary {
+  background: #fff;
+  color: var(--pd-n900);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.pd-home-hero-btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-weight: 700;
+}
+
+.pd-home-hero-btn-iconwrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--pd-color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-home-hero-goal {
+  margin-top: 14px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font-family: inherit;
+}
+
+.pd-home-hero-goal-text {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.75);
+  flex: 1;
+}
+
+.pd-home-hero-goal-text strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ===== Общая карточка (PGIC, next-visit, progress) ===== */
+.pd-home-card {
+  background: var(--pd-color-white);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--pd-n200) 50%, transparent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  margin-bottom: 14px;
+}
+
+/* ===== 3. PGIC ===== */
+.pd-home-pgic {
+  padding: 14px 16px;
+}
+
+.pd-home-pgic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pd-home-pgic-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+}
+
+.pd-home-pgic-saved {
+  font-size: 0.65rem;
+  color: var(--pd-color-ok);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pd-home-pgic-more {
+  font-size: 0.65rem;
+  color: var(--pd-color-primary);
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  font-family: inherit;
+}
+
+.pd-home-pgic-opts {
+  display: flex;
+  gap: 8px;
+}
+
+.pd-home-pgic-opt {
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1.5px solid var(--pd-n200);
+  background: transparent;
+  color: var(--pd-n600);
+  cursor: pointer;
+  transition: all 150ms ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.78rem;
+}
+
+.pd-home-pgic-opt:hover {
+  border-color: var(--pd-n300);
+}
+
+.pd-home-pgic-opt--on {
+  font-weight: 700;
+}
+
+/* ===== 4. Next visit ===== */
+.pd-home-nextvisit {
+  padding: 12px 14px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--pd-color-warm) 10%, transparent),
+    color-mix(in srgb, var(--pd-color-warm) 5%, transparent));
+  border-color: color-mix(in srgb, var(--pd-color-warm) 30%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.pd-home-nextvisit:focus-visible {
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 2px;
+}
+
+.pd-home-nextvisit-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--pd-color-warm-dark) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-home-nextvisit-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-home-nextvisit-label {
+  font-size: 0.62rem;
+  color: var(--pd-color-warm-dark);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.pd-home-nextvisit-when {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.pd-home-nextvisit-where {
+  font-size: 0.68rem;
+  color: var(--pd-n500);
+  margin-top: 1px;
+}
+
+/* ===== 5. Phase progress ===== */
+.pd-home-progress {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+}
+
+.pd-home-progress-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.pd-home-progress-phase-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--pd-n800);
+  line-height: 1.2;
+}
+
+.pd-home-progress-phase-sub {
+  font-size: 0.68rem;
+  color: var(--pd-n400);
+  margin-top: 2px;
+}
+
+.pd-home-progress-divider {
+  height: 1px;
+  background: var(--pd-n200);
+  opacity: 0.7;
+}
+
+.pd-home-progress-stats {
+  display: flex;
+  gap: 12px;
+  position: relative;
+}
+
+.pd-home-progress-stat {
+  flex: 1;
+  text-align: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.pd-home-progress-stat-v {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.pd-home-progress-stat-l {
+  font-size: 0.55rem;
+  color: var(--pd-n400);
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.pd-home-progress-tooltip {
+  position: absolute;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--pd-n800);
+  color: #fff;
+  font-size: 0.65rem;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pd-home-progress-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--pd-n800);
+}
+
+.pd-home-progress-pct {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--pd-n800);
+  line-height: 1;
+}
+
+.pd-home-progress-sub {
+  font-size: 0.55rem;
+  color: var(--pd-n400);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ===== 6. Tip row ===== */
+.pd-home-tip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 4px 6px;
+  margin-bottom: 8px;
+}
+
+.pd-home-tip-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.pd-home-tip-text {
+  font-size: 0.72rem;
+  color: var(--pd-n500);
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* ===== Empty state ===== */
+.pd-home-empty {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.pd-home-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--pd-color-primary-bg);
+  color: var(--pd-color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.pd-home-empty-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--pd-n800);
+  margin: 0 0 8px;
+}
+
+.pd-home-empty-text {
+  font-size: 0.8rem;
+  color: var(--pd-n500);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.pd-home-empty-btn {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--pd-color-primary);
+  color: #fff;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* ===== Responsive — 375/393/430/768+ ===== */
+@media (min-width: 480px) {
+  .pd-home-hero {
+    padding: 18px 22px 22px;
+  }
+  .pd-home-hero-title {
+    font-size: 1.3rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .pd-home {
+    padding: 0 32px;
+  }
+  .pd-home-hero-ill {
+    margin-top: 0;
+  }
+}

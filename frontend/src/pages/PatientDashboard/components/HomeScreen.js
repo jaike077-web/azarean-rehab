@@ -1,23 +1,36 @@
-import React, { useMemo, useState, useEffect } from 'react';
+// =====================================================
+// HomeScreen v12 — порт из azarean-v12-final.jsx (L740-944)
+// =====================================================
+// Blocks:
+//  1. Greeting row (приветствие + имя + AvatarBtn справа)
+//  2. Hero card — gradient, specialist chip, IllKnee, CTA по allDone:
+//       !allDone: «Сегодня · ПКС Фаза N» + «Начать» → Упражнения
+//        allDone: «Готово · Комплекс завершён» + «Заполнить дневник» → Дневник
+//     + week goal row (tap → Roadmap)
+//  3. PGIC card («Как вы сейчас?» — 3 кнопки, state поднят в PatientDashboard)
+//  4. Next visit card (пока нет API — hide graceful)
+//  5. Phase progress ring + stats (Боль/Отёк/Дней)
+//  6. Daily tip row
+//
+// Маппинг tab id (наши ≠ v12):
+//   0 Home, 1 Roadmap, 2 Diary, 3 Contact, 4 Exercises.
+// =====================================================
+
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Shield, RefreshCw, Dumbbell, Activity, Zap, Trophy, Target,
-  Lightbulb, Moon, Video, ClipboardList, AlertTriangle, Map, FileText,
-  Play, ChevronRight, Camera
+  Check, ChevronRight, Play, Target, Calendar, Info, Lightbulb,
+  Smile, Meh, Frown, ClipboardList, Shield, RefreshCw, Dumbbell,
+  Activity, Zap, Trophy,
 } from 'lucide-react';
-import { rehab } from '../../../services/api';
-import { ProgressRing } from './ui';
+import { AvatarBtn, IllKnee } from './ui';
+import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import './HomeScreen.css';
 
-// Phase icon mapping — lucide components
+// Маппинг имени иконки фазы из БД (rehab_phases.icon) → lucide-компонент.
 const PHASE_ICONS = {
   shield: Shield, move: RefreshCw, dumbbell: Dumbbell,
   activity: Activity, trophy: Zap, star: Trophy,
-};
-
-const getWeeksSinceSurgery = (surgeryDate) => {
-  if (!surgeryDate) return 0;
-  const diff = Date.now() - new Date(surgeryDate).getTime();
-  return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
 };
 
 const getGreeting = () => {
@@ -27,302 +40,346 @@ const getGreeting = () => {
   return 'Добрый вечер';
 };
 
-// LoadingSkeleton
-const LoadingSkeleton = () => (
-  <div className="pd-loading">
-    <div className="pd-skeleton" style={{ height: 60, marginBottom: 16 }} />
-    <div className="pd-skeleton" style={{ height: 200, marginBottom: 16 }} />
-    <div className="pd-skeleton" style={{ height: 100, marginBottom: 16 }} />
-  </div>
-);
+const getWeeksSinceSurgery = (surgeryDate) => {
+  if (!surgeryDate) return 0;
+  const diff = Date.now() - new Date(surgeryDate).getTime();
+  return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
+};
 
-// EmptyState
-const EmptyState = ({ goTo }) => (
-  <div className="pd-empty-state">
-    <div className="pd-empty-state-icon"><ClipboardList size={36} /></div>
-    <h3 className="pd-empty-state-title">Программа не создана</h3>
-    <p className="pd-empty-state-text">
-      Ваш инструктор ещё не создал программу реабилитации.
-      Свяжитесь с ним для получения подробностей.
-    </p>
-    <button className="pd-empty-state-btn" onClick={() => goTo(3)}>Связаться</button>
-  </div>
-);
-
-EmptyState.propTypes = { goTo: PropTypes.func.isRequired };
-
-// Main HomeScreen — layout из v4-redesign reference
-const HomeScreen = ({ dashboardData, goTo }) => {
-  const program = dashboardData?.program;
-  const phase = dashboardData?.phase;
-  const streak = dashboardData?.streak;
-  const tip = dashboardData?.tip;
-  const diaryFilledToday = dashboardData?.diaryFilledToday;
-
-  const [todayComplex, setTodayComplex] = useState(null);
-  useEffect(() => {
-    rehab.getMyExercises()
-      .then((res) => setTodayComplex(res.data || null))
-      .catch(() => {});
-  }, []);
-
-  const currentWeek = useMemo(() =>
-    getWeeksSinceSurgery(program?.surgery_date),
-    [program?.surgery_date]
-  );
-
-  if (dashboardData === null) return <LoadingSkeleton />;
-  if (!program) return <EmptyState goTo={goTo} />;
-
-  const patientName = program.patient_name || 'Пациент';
-  const totalWeeks = phase?.duration_weeks || 12;
-  const phasePct = totalWeeks > 0 ? Math.min(100, Math.round((currentWeek / totalWeeks) * 100)) : 0;
-  const PhaseIcon = PHASE_ICONS[phase?.icon] || Shield;
-  const phaseColor = phase?.color || '#0D9488';
-
+// Кольцо прогресса фазы. Inline SVG с children-контентом — в отличие от
+// общего ProgressRing, здесь нужно 2 строки по центру (процент + «Фаза N»),
+// плюс совместимость с v12 layout (ring+stats в одной карточке).
+function PhaseRing({ pct, size = 88, sw = 6, children }) {
+  const c = size / 2;
+  const r = c - sw / 2;
+  const circ = 2 * Math.PI * r;
+  const off = circ - (Math.min(100, Math.max(0, pct)) / 100) * circ;
   return (
-    <div className="pd-home-screen" style={{ padding: '0 20px' }}>
-
-      {/* ── Top bar (greeting + streak). Дубль аватарки убран — глобальная
-           AvatarBtn в шапке дашборда уже показывает фото. В Checkpoint 4
-           этот блок будет полностью перерисован под v12 (greeting слева
-           + per-screen AvatarBtn справа, hero-card ниже). ── */}
-      <div className="fi fi1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 20px' }}>
-        <div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--pd-n400, #94A3B8)', fontWeight: 500, lineHeight: 1 }}>{getGreeting()}</div>
-          <div style={{ fontFamily: "'Manrope'", fontSize: '1.15rem', fontWeight: 800, color: 'var(--pd-n900, #0F172A)', lineHeight: 1.3 }}>{patientName}</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {streak && streak.current > 0 && (
-            <div style={{
-              padding: '5px 12px', borderRadius: 20,
-              background: 'var(--pd-accent-warm-50, #FFF7ED)',
-              border: '1px solid rgba(249,115,22,0.12)',
-              fontSize: '0.68rem', fontWeight: 700, color: 'var(--pd-accent-warm, #F97316)',
-              display: 'flex', alignItems: 'center', gap: 4,
-            }}>
-              🔥 {streak.current} {streak.current === 1 ? 'день' : streak.current < 5 ? 'дня' : 'дней'}
-            </div>
-          )}
-          <div style={{ width: 10, height: 10, borderRadius: 5, background: 'var(--pd-success, #22C55E)', boxShadow: '0 0 6px rgba(34,197,94,0.5)' }} />
-        </div>
-      </div>
-
-      {/* ── TODAY WORKOUT — dark CTA card (ref) ── */}
-      {todayComplex && (
-        <div className="fi fi2" style={{
-          borderRadius: 20, overflow: 'hidden', position: 'relative',
-          background: 'var(--pd-gradient-dark, linear-gradient(145deg, #0F172A 0%, #1E293B 60%, #115E59 100%))',
-          padding: '22px 20px 20px', marginBottom: 16,
-        }}>
-          {/* Декор */}
-          <div style={{ position: 'absolute', top: -40, right: -20, width: 140, height: 140, borderRadius: 70, background: 'rgba(13,148,136,0.12)' }} />
-          <div style={{ position: 'absolute', bottom: -50, left: -30, width: 120, height: 120, borderRadius: 60, background: 'rgba(249,115,22,0.08)' }} />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{
-              display: 'inline-flex', padding: '3px 10px', borderRadius: 6,
-              background: 'var(--pd-accent-warm, #F97316)', marginBottom: 10,
-            }}>
-              <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#fff', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Сегодня</span>
-            </div>
-            <h2 style={{ fontFamily: "'Manrope'", fontSize: '1.2rem', fontWeight: 800, color: '#fff', lineHeight: 1.25, marginBottom: 4 }}>
-              {todayComplex.complex_title || 'Комплекс упражнений'}
-            </h2>
-            <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.55)', marginBottom: 16 }}>
-              {todayComplex.exercise_count ? `${todayComplex.exercise_count} упражнений` : 'Упражнения'} · ~15 мин
-            </p>
-            <button
-              onClick={() => goTo(4, { autoStart: true, complexId: todayComplex.complex_id })}
-              style={{
-                width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
-                background: '#fff', color: 'var(--pd-n900, #0F172A)',
-                fontFamily: "'Manrope'", fontWeight: 800, fontSize: '0.9rem',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-              }}
-            >
-              <div style={{
-                width: 28, height: 28, borderRadius: 14, background: '#0D9488',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Play size={12} color="#fff" />
-              </div>
-              Начать
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── PROGRESS — horizontal card with ring + stats (ref) ── */}
-      <div className="fi fi3" style={{
-        display: 'flex', gap: 16, marginBottom: 16, padding: 16,
-        background: '#fff', borderRadius: 16,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)', border: '1px solid rgba(226,232,240,0.5)',
+    <div style={{ width: size, height: size, position: 'relative', flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={c} cy={c} r={r} fill="none" stroke="var(--pd-n200)" strokeWidth={sw} />
+        <circle
+          cx={c} cy={c} r={r} fill="none"
+          stroke="var(--pd-color-primary)" strokeWidth={sw}
+          strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={off}
+          transform={`rotate(-90 ${c} ${c})`}
+          style={{ transition: 'stroke-dashoffset 800ms ease' }}
+        />
+      </svg>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex',
+        flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
       }}>
-        <ProgressRing value={phasePct} size={88} strokeWidth={6} sublabel={`Фаза ${program.current_phase || 1}`} />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--pd-n500, #64748B)' }}>Неделя</span>
-            <span style={{ fontFamily: "'Manrope'", fontSize: '0.85rem', fontWeight: 800, color: 'var(--pd-primary, #0D9488)' }}>
-              {currentWeek}<span style={{ fontWeight: 400, color: 'var(--pd-n400, #94A3B8)' }}>/{totalWeeks}</span>
-            </span>
-          </div>
-          <div style={{ height: 4, borderRadius: 2, background: 'var(--pd-n200, #E2E8F0)' }}>
-            <div style={{
-              height: 4, borderRadius: 2, width: `${phasePct}%`,
-              background: 'linear-gradient(90deg, #0D9488, #06B6D4)',
-              transition: 'width 800ms ease',
-            }} />
-          </div>
-          <div style={{ display: 'flex', gap: 12, marginTop: 2 }}>
-            {[
-              { l: 'Боль', v: dashboardData?.lastPain ?? '—', c: 'var(--pd-success, #22C55E)' },
-              { l: 'Отёк', v: '—', c: 'var(--pd-success, #22C55E)' },
-              { l: 'Серия', v: streak?.current ? `${streak.current}д` : '—', c: 'var(--pd-accent-warm, #F97316)' },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: "'Manrope'", fontSize: '0.9rem', fontWeight: 800, color: s.c }}>{s.v}</div>
-                <div style={{ fontSize: '0.55rem', color: 'var(--pd-n400, #94A3B8)' }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── CURRENT PHASE — compact row (ref) ── */}
-      {phase && (
-        <div className="fi fi4" onClick={() => goTo(1)} style={{
-          padding: '14px 16px', borderRadius: 14, marginBottom: 14,
-          background: '#fff', border: '1px solid rgba(226,232,240,0.5)',
-          display: 'flex', gap: 14, alignItems: 'center',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.03)', cursor: 'pointer',
-        }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: `${phaseColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <PhaseIcon size={20} color={phaseColor} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Manrope'", fontSize: '0.82rem', fontWeight: 700, color: 'var(--pd-n800, #1E293B)', marginBottom: 2 }}>
-              {phase.name || 'Защита и контроль'}
-            </div>
-            <div style={{ fontSize: '0.68rem', color: 'var(--pd-n400, #94A3B8)' }}>
-              Нед. {currentWeek} из {totalWeeks} · Фаза {program.current_phase || 1} из 6
-            </div>
-          </div>
-          <ChevronRight size={18} color="var(--pd-n300, #CBD5E1)" />
-        </div>
-      )}
-
-      {/* ── TIP — ambient gradient (ref) ── */}
-      {tip && (
-        <div className="fi fi5" style={{
-          padding: '16px 18px', borderRadius: 16, marginBottom: 14,
-          background: 'var(--pd-gradient-ambient, linear-gradient(135deg, #F0FDFA, #FFF7ED))',
-          display: 'flex', gap: 14, alignItems: 'center',
-        }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-            background: 'rgba(13,148,136,0.06)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Moon size={22} color="var(--pd-primary, #0D9488)" />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--pd-primary, #0D9488)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Совет</div>
-            <div style={{ fontFamily: "'Manrope'", fontSize: '0.85rem', fontWeight: 700, color: 'var(--pd-n800, #1E293B)', marginBottom: 2 }}>{tip.title}</div>
-            {tip.body && <div style={{ fontSize: '0.72rem', color: 'var(--pd-n500, #64748B)', lineHeight: 1.45 }}>{tip.body}</div>}
-          </div>
-        </div>
-      )}
-
-      {/* ── QUICK NAV — horizontal pills (ref) ── */}
-      <div className="fi fi6" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, marginBottom: 14 }}>
-        {[
-          { Icon: FileText, label: 'Дневник', id: 2 },
-          { Icon: Map, label: 'Путь', id: 1 },
-          { Icon: AlertTriangle, label: 'Связь', id: 3 },
-          { Icon: Camera, label: 'Фото', id: null },
-        ].map((a, i) => (
-          <button
-            key={i}
-            onClick={() => a.id !== null && goTo(a.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 16px', borderRadius: 14,
-              background: '#fff', border: '1px solid var(--pd-n200, #E2E8F0)',
-              flexShrink: 0, cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            <a.Icon size={16} color="var(--pd-n500, #64748B)" />
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--pd-n700, #334155)' }}>{a.label}</span>
-            {a.id === 2 && diaryFilledToday && (
-              <span style={{ fontSize: '0.65rem', color: 'var(--pd-success, #22C55E)', fontWeight: 700 }}>✓</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Videos ── */}
-      {phase?.videos && phase.videos.length > 0 && (
-        <div className="fi fi7" style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--pd-n400, #94A3B8)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>Видео для вас</div>
-          <div className="pd-video-grid">
-            {phase.videos.map((video, index) => (
-              <div
-                key={video.id || index}
-                className="pd-video-card"
-                onClick={() => video.url && window.open(video.url, '_blank', 'noopener,noreferrer')}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="pd-video-card-thumbnail">
-                  {video.thumbnail ? (
-                    <img src={video.thumbnail} alt={video.title} />
-                  ) : (
-                    <div className="pd-video-card-placeholder" style={{ background: `linear-gradient(135deg, ${phaseColor}40, ${phaseColor}20)` }}>
-                      <Video size={24} />
-                    </div>
-                  )}
-                  <div className="pd-video-card-play"><Play size={16} /></div>
-                </div>
-                <div className="pd-video-card-info">
-                  <div className="pd-video-card-title">{video.title}</div>
-                  {video.duration && <div className="pd-video-card-duration">{video.duration}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── EMERGENCY — minimal strip (ref) ── */}
-      <div className="fi fi7" onClick={() => goTo(3)} style={{
-        padding: '11px 16px', borderRadius: 12, marginBottom: 20,
-        background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.08)',
-        display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-      }}>
-        <div style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--pd-error, #EF4444)' }} />
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#B91C1C' }}>Экстренная связь</span>
-        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'rgba(239,68,68,0.4)' }}>→</span>
+        {children}
       </div>
     </div>
   );
+}
+
+PhaseRing.propTypes = {
+  pct: PropTypes.number.isRequired,
+  size: PropTypes.number,
+  sw: PropTypes.number,
+  children: PropTypes.node,
 };
+
+// Пустой state — нет программы реабилитации.
+const EmptyState = ({ goTo }) => (
+  <div className="pd-home-empty">
+    <div className="pd-home-empty-icon"><ClipboardList size={36} /></div>
+    <h3 className="pd-home-empty-title">Программа не создана</h3>
+    <p className="pd-home-empty-text">
+      Ваш инструктор ещё не создал программу реабилитации.
+      Свяжитесь с ним для получения подробностей.
+    </p>
+    <button className="pd-home-empty-btn" onClick={() => goTo(3)}>Связаться</button>
+  </div>
+);
+EmptyState.propTypes = { goTo: PropTypes.func.isRequired };
+
+// Loading skeleton
+const LoadingSkeleton = () => (
+  <div className="pd-loading">
+    <div className="pd-skeleton" style={{ height: 60, marginBottom: 16 }} />
+    <div className="pd-skeleton" style={{ height: 220, marginBottom: 16 }} />
+    <div className="pd-skeleton" style={{ height: 110, marginBottom: 16 }} />
+    <div className="pd-skeleton" style={{ height: 120 }} />
+  </div>
+);
+
+const PGIC_OPTIONS = [
+  { v: 'better', label: 'Лучше', Icon: Smile, color: 'var(--pd-color-ok)', bg: 'var(--pd-color-ok-bg)', tx: '#166534' },
+  { v: 'same',   label: 'Так же', Icon: Meh,   color: 'var(--pd-n400)',     bg: 'var(--pd-n100)',       tx: 'var(--pd-n700)' },
+  { v: 'worse',  label: 'Хуже',  Icon: Frown, color: 'var(--pd-color-warn)', bg: 'var(--pd-color-warn-bg)', tx: '#92400E' },
+];
+
+export default function HomeScreen({
+  dashboardData, goTo, onOpenProfile, patient, pgicFeel, setPgicFeel,
+}) {
+  const [feelSaved, setFeelSaved] = useState(false);
+  const [showStatTip, setShowStatTip] = useState(false);
+
+  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
+  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+
+  if (dashboardData === null || dashboardData === undefined) return <LoadingSkeleton />;
+
+  const { program, phase, streak, tip, diaryFilledToday, lastDiary, nextVisit } = dashboardData;
+  if (!program) return <EmptyState goTo={goTo} />;
+
+  // Если сегодня заполнен дневник — считаем что «всё сделано на сегодня».
+  // Упражнения не отслеживаются отдельным флагом — дневник их implicitly-covers
+  // (чтобы заполнить, пациент должен был поработать). Корректнее вычислять
+  // отдельный флаг `exercises_done_today` — это задача Checkpoint 6/7.
+  const allDone = Boolean(diaryFilledToday);
+
+  const firstName = (program.patient_name || patient?.full_name || 'Пациент').split(' ')[0];
+  const currentPhase = program.current_phase || 1;
+  const totalWeeks = phase?.duration_weeks || 12;
+  const currentWeek = getWeeksSinceSurgery(program.surgery_date);
+  const phasePct = totalWeeks > 0 ? Math.min(100, Math.round((currentWeek / totalWeeks) * 100)) : 0;
+  const PhaseIcon = PHASE_ICONS[phase?.icon] || Shield;
+
+  // Последний pain_level — для строки статистики. Отсутствие данных = «—».
+  const lastPain = (lastDiary && typeof lastDiary.pain_level === 'number') ? String(lastDiary.pain_level) : '—';
+
+  const pickFeel = (v) => {
+    if (setPgicFeel) setPgicFeel(v);
+    setFeelSaved(true);
+    setTimeout(() => setFeelSaved(false), 1500);
+  };
+
+  return (
+    <div className="pd-home pd-home-screen">
+      {/* 1. Greeting + AvatarBtn справа */}
+      <div className="pd-home-greet">
+        <div>
+          <div className="pd-home-greet-hello">{getGreeting()}</div>
+          <div className="pd-home-greet-name">{firstName}</div>
+        </div>
+        <AvatarBtn
+          initial={initial}
+          avatarSrc={avatarSrc}
+          onClick={onOpenProfile}
+          ariaLabel="Профиль"
+        />
+      </div>
+
+      {/* 2. Hero card — gradient + specialist chip + IllKnee + CTA */}
+      <div className="pd-home-hero">
+        <div className="pd-home-hero-blob pd-home-hero-blob--teal" aria-hidden="true" />
+        <div className="pd-home-hero-blob pd-home-hero-blob--orange" aria-hidden="true" />
+
+        <button
+          type="button"
+          className="pd-home-hero-chip"
+          onClick={() => goTo(3)}
+          aria-label="Перейти к куратору"
+        >
+          <span className="pd-home-hero-chip-ava">Т</span>
+          <span className="pd-home-hero-chip-text">
+            Татьяна <span className="pd-home-hero-chip-role">· куратор</span>
+          </span>
+          <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
+        </button>
+
+        <div className="pd-home-hero-ill"><IllKnee /></div>
+
+        <div className="pd-home-hero-body">
+          {!allDone ? (
+            <>
+              <span className="pd-home-hero-badge pd-home-hero-badge--today">Сегодня</span>
+              <h2 className="pd-home-hero-title">
+                {program.diagnosis ? `${program.diagnosis} — Фаза ${currentPhase}` : `Фаза ${currentPhase}`}
+              </h2>
+              <p className="pd-home-hero-sub">
+                {phase?.name || 'Продолжайте по плану'} · ~15 мин
+              </p>
+              <button
+                type="button"
+                className="pd-home-hero-btn pd-home-hero-btn--primary"
+                onClick={() => goTo(4)}
+              >
+                <span className="pd-home-hero-btn-iconwrap">
+                  <Play size={12} color="#fff" aria-hidden="true" />
+                </span>
+                Начать
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="pd-home-hero-badge pd-home-hero-badge--done">
+                <Check size={10} color="#fff" strokeWidth={3} aria-hidden="true" />
+                Готово
+              </span>
+              <h2 className="pd-home-hero-title">Комплекс завершён</h2>
+              <p className="pd-home-hero-sub">Отличная работа! Не забудьте записать ощущения</p>
+              <button
+                type="button"
+                className="pd-home-hero-btn pd-home-hero-btn--ghost"
+                onClick={() => goTo(2)}
+              >
+                Заполнить дневник
+                <ChevronRight size={14} color="#fff" aria-hidden="true" />
+              </button>
+            </>
+          )}
+
+          <button
+            type="button"
+            className="pd-home-hero-goal"
+            onClick={() => goTo(1)}
+          >
+            <Target size={14} color="var(--pd-color-accent)" aria-hidden="true" />
+            <span className="pd-home-hero-goal-text">
+              Цель недели: <strong>{phase?.name || 'следовать плану'}</strong>
+            </span>
+            <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+
+      {/* 3. PGIC card — «Как вы сейчас?» */}
+      <div className="pd-home-card pd-home-pgic">
+        <div className="pd-home-pgic-head">
+          <span className="pd-home-pgic-title">Как вы сейчас?</span>
+          {feelSaved && (
+            <span className="pd-home-pgic-saved">
+              <Check size={12} color="var(--pd-color-ok)" strokeWidth={2.5} aria-hidden="true" />
+              Записано
+            </span>
+          )}
+          {pgicFeel && !feelSaved && (
+            <button
+              type="button"
+              className="pd-home-pgic-more"
+              onClick={() => goTo(2)}
+            >
+              Подробнее
+              <ChevronRight size={11} color="var(--pd-color-primary)" strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        <div className="pd-home-pgic-opts" role="radiogroup" aria-label="Как вы сейчас">
+          {PGIC_OPTIONS.map((o) => {
+            const on = pgicFeel === o.v;
+            return (
+              <button
+                key={o.v}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                className={`pd-home-pgic-opt ${on ? 'pd-home-pgic-opt--on' : ''}`}
+                onClick={() => pickFeel(o.v)}
+                style={on ? { borderColor: o.color, background: o.bg, color: o.tx } : undefined}
+              >
+                <o.Icon size={22} color={on ? o.color : 'var(--pd-n500)'} aria-hidden="true" />
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 4. Next visit — graceful hide если бэк не прислал */}
+      {nextVisit && (
+        <div className="pd-home-card pd-home-nextvisit" role="button" tabIndex={0}
+             onClick={() => goTo(3)}
+             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') goTo(3); }}>
+          <div className="pd-home-nextvisit-icon">
+            <Calendar size={18} color="var(--pd-color-warm-dark)" aria-hidden="true" />
+          </div>
+          <div className="pd-home-nextvisit-text">
+            <div className="pd-home-nextvisit-label">Следующий визит</div>
+            <div className="pd-home-nextvisit-when">{nextVisit.when}</div>
+            {nextVisit.where && <div className="pd-home-nextvisit-where">{nextVisit.where}</div>}
+          </div>
+          <ChevronRight size={16} color="var(--pd-n400)" aria-hidden="true" />
+        </div>
+      )}
+
+      {/* 5. Phase progress ring + stats */}
+      <div className="pd-home-card pd-home-progress">
+        <PhaseRing pct={phasePct}>
+          <span className="pd-home-progress-pct">{phasePct}%</span>
+          <span className="pd-home-progress-sub">Фаза {currentPhase}</span>
+        </PhaseRing>
+        <div className="pd-home-progress-body">
+          <div>
+            <div className="pd-home-progress-phase-title">{phase?.name || `Фаза ${currentPhase}`}</div>
+            <div className="pd-home-progress-phase-sub">
+              Неделя {currentWeek} из {totalWeeks}
+              {PhaseIcon && <PhaseIcon size={11} color="var(--pd-color-primary)" aria-hidden="true" style={{ marginLeft: 6, verticalAlign: 'middle' }} />}
+            </div>
+          </div>
+          <div className="pd-home-progress-divider" />
+          <div className="pd-home-progress-stats">
+            {[
+              { l: 'Боль', v: lastPain, c: 'var(--pd-color-ok)', hint: 'Средний уровень боли за неделю' },
+              { l: 'Отёк', v: '—', c: 'var(--pd-color-ok)', hint: 'Нет данных об отёке' },
+              { l: 'Дней', v: streak?.current ? `${streak.current}/7` : '—/7', c: 'var(--pd-color-primary)', hint: 'Дней занятий за текущую неделю' },
+            ].map((s, i) => (
+              <button
+                key={i}
+                type="button"
+                className="pd-home-progress-stat"
+                onClick={() => setShowStatTip(showStatTip === i ? false : i)}
+              >
+                <div className="pd-home-progress-stat-v" style={{ color: s.c }}>{s.v}</div>
+                <div className="pd-home-progress-stat-l">
+                  {s.l}<Info size={9} color="var(--pd-n400)" aria-hidden="true" />
+                </div>
+              </button>
+            ))}
+            {showStatTip !== false && (
+              <div
+                className="pd-home-progress-tooltip"
+                style={{ left: `${(showStatTip * 33.33) + 16.66}%` }}
+              >
+                {['Средний уровень боли за неделю','Нет данных об отёке','Дней занятий за текущую неделю'][showStatTip]}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Daily tip row */}
+      {tip && (
+        <div className="pd-home-tip">
+          <Lightbulb size={16} color="var(--pd-color-accent)" aria-hidden="true" className="pd-home-tip-icon" />
+          <div className="pd-home-tip-text">
+            {tip.title || tip.body || 'Перед упражнениями прогрейте мышцы 3–5 минут лёгкой ходьбой'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 HomeScreen.propTypes = {
   dashboardData: PropTypes.shape({
     program: PropTypes.object,
     phase: PropTypes.object,
     streak: PropTypes.object,
-    lastDiary: PropTypes.string,
-    lastPain: PropTypes.number,
+    lastDiary: PropTypes.object,
     tip: PropTypes.object,
     diaryFilledToday: PropTypes.bool,
+    nextVisit: PropTypes.shape({
+      when: PropTypes.string,
+      where: PropTypes.string,
+    }),
   }),
   goTo: PropTypes.func.isRequired,
+  onOpenProfile: PropTypes.func,
+  patient: PropTypes.object,
+  pgicFeel: PropTypes.oneOf(['better', 'same', 'worse', null]),
+  setPgicFeel: PropTypes.func,
 };
 
-export default HomeScreen;
+HomeScreen.defaultProps = {
+  onOpenProfile: () => {},
+  patient: null,
+  pgicFeel: null,
+  setPgicFeel: null,
+};
