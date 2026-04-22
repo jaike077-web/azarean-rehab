@@ -224,7 +224,7 @@ function EditComplex() {
 
   const handleAddExercise = (exercise) => {
     if (selectedExercises.find(e => e.id === exercise.id)) {
-      toast.success('Ссылка скопирована!');
+      toast.warning('Это упражнение уже добавлено');
       return;
     }
 

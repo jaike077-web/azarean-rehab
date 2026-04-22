@@ -9,6 +9,7 @@ import ImportExercises from './ImportExercises';
 import ProgressDashboard from './ProgressDashboard';
 import './Dashboard.css';
 import Diagnoses from './Diagnoses';
+import { dashboard } from '../services/api';
 import {
   Activity,
   BarChart3,
@@ -40,6 +41,15 @@ function Dashboard() {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    dashboard.getStats()
+      .then((res) => { if (alive) setStats(res.data || null); })
+      .catch(() => { if (alive) setStats(null); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -134,7 +144,7 @@ function Dashboard() {
                   <Users size={24} />
                 </div>
                 <div className="stat-info">
-                  <div className="stat-value">0</div>
+                  <div className="stat-value">{stats?.patients_count ?? '—'}</div>
                   <div className="stat-label">Пациентов</div>
                 </div>
               </div>
@@ -144,7 +154,7 @@ function Dashboard() {
                   <ClipboardList size={24} />
                 </div>
                 <div className="stat-info">
-                  <div className="stat-value">0</div>
+                  <div className="stat-value">{stats?.complexes_count ?? '—'}</div>
                   <div className="stat-label">Комплексов</div>
                 </div>
               </div>
@@ -154,7 +164,9 @@ function Dashboard() {
                   <Activity size={24} />
                 </div>
                 <div className="stat-info">
-                  <div className="stat-value">0%</div>
+                  <div className="stat-value">
+                    {stats?.completion_percent != null ? `${stats.completion_percent}%` : '—'}
+                  </div>
                   <div className="stat-label">Выполнение</div>
                 </div>
               </div>
@@ -168,7 +180,7 @@ function Dashboard() {
                   <Dumbbell size={24} />
                 </div>
                 <div className="stat-info">
-                  <div className="stat-value">10</div>
+                  <div className="stat-value">{stats?.exercises_count ?? '—'}</div>
                   <div className="stat-label">Упражнений</div>
                 </div>
               </div>
