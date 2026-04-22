@@ -3,6 +3,7 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { patientValidator } = require('../middleware/validators');
+const { logAudit } = require('../utils/audit');
 
 // Получить всех своих пациентов
 router.get('/', authenticateToken, async (req, res) => {
@@ -27,11 +28,16 @@ router.get('/', authenticateToken, async (req, res) => {
       total: result.rows.length
     });
 
+    // GDPR: лог массового чтения ПДн пациентов
+    logAudit(req, 'READ', 'patients_list', null, {
+      details: { count: result.rows.length },
+    });
+
   } catch (error) {
     console.error('Ошибка получения пациентов:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при получении списка пациентов' 
+      message: 'Ошибка при получении списка пациентов'
     });
   }
 });
@@ -161,6 +167,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     res.json({
       data: { patient, complexes: complexesResult.rows }
+    });
+
+    // GDPR: лог чтения карточки конкретного пациента
+    logAudit(req, 'READ', 'patient', patient.id, {
+      patientId: patient.id,
+      details: { complexes_count: complexesResult.rows.length },
     });
 
   } catch (error) {

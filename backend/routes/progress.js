@@ -3,6 +3,7 @@ const router = express.Router();
 const { query } = require('../database/db');
 const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
 const { progressValidator } = require('../middleware/validators');
+const { logAudit } = require('../utils/audit');
 
 // Отметить выполнение упражнения (JWT инструктора или JWT пациента через cookie/Bearer)
 router.post('/', authenticatePatientOrInstructor, progressValidator, async (req, res) => {
@@ -303,6 +304,12 @@ router.get('/patient/:patientId', authenticateToken, async (req, res) => {
         })),
         overallStats
       }
+    });
+
+    // GDPR: лог чтения прогресса/стат пациента инструктором
+    logAudit(req, 'READ', 'progress', null, {
+      patientId: parseInt(patientId, 10),
+      details: { complexes: complexesResult.rows.length },
     });
   } catch (error) {
     console.error('Error fetching patient progress:', error);

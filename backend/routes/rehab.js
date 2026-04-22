@@ -16,6 +16,7 @@ const { query } = require('../database/db');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { authenticateToken } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
+const { logAudit } = require('../utils/audit');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -1262,6 +1263,12 @@ router.get('/programs/:id/diary', authenticateToken, async (req, res) => {
 
     const result = await query(sql, params);
     res.json({ data: result.rows, total: result.rows.length });
+
+    // GDPR: лог чтения дневника пациента инструктором
+    logAudit(req, 'READ', 'diary', parseInt(id, 10), {
+      patientId,
+      details: { entries: result.rows.length, from: from || null, to: to || null },
+    });
   } catch (error) {
     console.error('Ошибка получения дневника пациента:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения дневника' });
@@ -1281,14 +1288,15 @@ router.get('/programs/:id/messages', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
-    // Проверяем доступ
+    // Проверяем доступ + достаём patient_id для аудит-лога
     const checkResult = await query(
-      `SELECT id FROM rehab_programs WHERE id = $1 AND created_by = $2`,
+      `SELECT id, patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2`,
       [id, req.user.id]
     );
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
     }
+    const msgPatientId = checkResult.rows[0].patient_id;
 
     const result = await query(
       `SELECT m.*,
@@ -1313,6 +1321,12 @@ router.get('/programs/:id/messages', authenticateToken, async (req, res) => {
     );
 
     res.json({ data: result.rows, total: result.rows.length });
+
+    // GDPR: лог чтения переписки с пациентом
+    logAudit(req, 'READ', 'messages', parseInt(id, 10), {
+      patientId: msgPatientId,
+      details: { count: result.rows.length },
+    });
   } catch (error) {
     console.error('Ошибка получения сообщений:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения сообщений' });
