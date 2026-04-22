@@ -222,8 +222,14 @@ export default function DiaryScreen({
       return;
     }
 
-    // Сначала убеждаемся что запись существует — иначе photos не к чему
-    // привязать. Если entryId ещё нет, триггерим сохранение.
+    // Optimistic preview: делаем blob URL прямо из File, показываем
+    // миниатюру немедленно с временным id `tempId`. Заменим на серверный
+    // объект после upload; если upload упал — удалим tile.
+    const tempId = `tmp-${Date.now()}`;
+    const localUrl = URL.createObjectURL(file);
+    setPhotos((prev) => [...prev, { id: tempId, localUrl, uploading: true }]);
+
+    // Нужна запись дневника чтобы к ней привязать фото.
     let currentEntryId = entryId;
     if (!currentEntryId) {
       try {
@@ -236,6 +242,8 @@ export default function DiaryScreen({
         if (currentEntryId) setEntryId(currentEntryId);
       } catch {
         toast.error('Ошибка', 'Сначала сохраните дневник');
+        setPhotos((prev) => prev.filter((p) => p.id !== tempId));
+        URL.revokeObjectURL(localUrl);
         return;
       }
     }
@@ -244,9 +252,16 @@ export default function DiaryScreen({
       const fd = new FormData();
       fd.append('photo', file);
       const res = await rehab.uploadDiaryPhoto(currentEntryId, fd);
-      setPhotos((prev) => [...prev, res.data]);
+      // Заменяем placeholder реальным объектом от сервера, сохраняя localUrl
+      // для мгновенного preview (blob действителен пока компонент живёт).
+      setPhotos((prev) => prev.map((p) => (
+        p.id === tempId ? { ...res.data, localUrl } : p
+      )));
       toast.success('Фото добавлено');
     } catch (err) {
+      // Откатываем optimistic добавление
+      setPhotos((prev) => prev.filter((p) => p.id !== tempId));
+      URL.revokeObjectURL(localUrl);
       toast.error('Ошибка', err?.response?.data?.message || 'Не удалось загрузить');
     }
   };
@@ -264,8 +279,6 @@ export default function DiaryScreen({
   const toggleBetter = (v) => {
     setBetter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
   };
-
-  const romPct = Math.max(0, Math.min(100, ((rom - 60) / (180 - 60)) * 100));
 
   // Sparkline points
   const sparkline = useMemo(() => {
@@ -412,12 +425,15 @@ export default function DiaryScreen({
         </div>
       </section>
 
-      {/* 6. ROM */}
+      {/* 6. ROM — перетаскиваемый слайдер + ± для точной подстройки.
+            «Сгибание» = угол при сгибании колена (0..180°). Пациенты
+            без гониометра оценивают визуально — на ±5° приемлемо. Для
+            точной настройки есть ± кнопки (±1°). */}
       <section className="pd-diary-section">
         <div className="pd-diary-section-head">
           <Target size={14} color="var(--pd-color-primary)" aria-hidden="true" />
-          <span className="pd-diary-section-title">Объём движений</span>
-          <span className="pd-diary-section-sub">разгибание</span>
+          <span className="pd-diary-section-title">Сгибание колена</span>
+          <span className="pd-diary-section-sub">угол</span>
         </div>
         <div className="pd-diary-card pd-diary-rom">
           <div className="pd-diary-rom-value">
@@ -428,15 +444,21 @@ export default function DiaryScreen({
             <button
               type="button"
               className="pd-diary-rom-btn"
-              onClick={() => setRom((r) => Math.max(60, r - 1))}
+              onClick={() => setRom((r) => Math.max(0, r - 1))}
               aria-label="Уменьшить на 1 градус"
             >
               −
             </button>
-            <div className="pd-diary-rom-track">
-              <div className="pd-diary-rom-fill" style={{ width: `${romPct}%` }} />
-              <div className="pd-diary-rom-knob" style={{ left: `calc(${romPct}% - 7px)` }} />
-            </div>
+            <input
+              type="range"
+              min="0"
+              max="180"
+              step="1"
+              value={rom}
+              onChange={(e) => setRom(+e.target.value)}
+              className="pd-diary-rom-slider"
+              aria-label="Угол сгибания колена, 0-180°"
+            />
             <button
               type="button"
               className="pd-diary-rom-btn"
@@ -447,7 +469,7 @@ export default function DiaryScreen({
             </button>
           </div>
           <div className="pd-diary-rom-labels">
-            <span>60°</span>
+            <span>0°</span>
             <span className="pd-diary-rom-goal">Цель: 140°</span>
             <span>180°</span>
           </div>
@@ -467,6 +489,8 @@ export default function DiaryScreen({
               key={p.id}
               entryId={entryId}
               photoId={p.id}
+              localUrl={p.localUrl}
+              uploading={p.uploading}
               onDelete={() => handlePhotoDelete(p.id)}
             />
           ))}
@@ -654,22 +678,30 @@ PillBtn.propTypes = {
   children: PropTypes.node,
 };
 
-// ===== Плитка фото с авторизованной загрузкой blob =====
-function DiaryPhotoTile({ entryId, photoId, onDelete }) {
-  const [blobUrl, setBlobUrl] = useState(null);
+// ===== Плитка фото =====
+// Источники изображения в порядке приоритета:
+//   1. localUrl — blob URL свежезагруженного File (instant preview)
+//   2. fetchDiaryPhotoBlob — авторизованный blob с сервера (для уже
+//      существующих фото при F5 или повторном открытии Diary)
+// Uploading=true показывает полупрозрачный overlay поверх preview.
+function DiaryPhotoTile({ entryId, photoId, localUrl, uploading, onDelete }) {
+  const [serverBlobUrl, setServerBlobUrl] = useState(null);
+  const imgSrc = localUrl || serverBlobUrl;
+  // Numeric photoId — настоящий row в БД (не temp placeholder).
+  const isServerPhoto = typeof photoId === 'number';
 
   useEffect(() => {
-    if (!entryId || !photoId) return undefined;
+    // Если есть локальный preview — сервер не зовём (экономим запрос).
+    if (localUrl || !entryId || !isServerPhoto) return undefined;
     let alive = true;
     let createdUrl = null;
     rehab.fetchDiaryPhotoBlob(entryId, photoId)
       .then((res) => {
         if (!alive) return;
-        // interceptor разворачивает data: blob → response.data
         const blob = res.data;
         if (blob && blob.size > 0) {
           createdUrl = URL.createObjectURL(blob);
-          setBlobUrl(createdUrl);
+          setServerBlobUrl(createdUrl);
         }
       })
       .catch(() => { /* показываем placeholder */ });
@@ -677,20 +709,22 @@ function DiaryPhotoTile({ entryId, photoId, onDelete }) {
       alive = false;
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
-  }, [entryId, photoId]);
+  }, [entryId, photoId, localUrl, isServerPhoto]);
 
   return (
     <div className="pd-diary-photo-tile">
-      {blobUrl ? (
-        <img src={blobUrl} alt="Фото дневника" />
+      {imgSrc ? (
+        <img src={imgSrc} alt="Фото дневника" />
       ) : (
         <Camera size={24} color="var(--pd-n400)" aria-hidden="true" />
       )}
+      {uploading && <div className="pd-diary-photo-uploading" aria-label="Загрузка" />}
       <button
         type="button"
         className="pd-diary-photo-delete"
         onClick={onDelete}
         aria-label="Удалить фото"
+        disabled={uploading}
       >
         <X size={11} color="#fff" strokeWidth={2.5} aria-hidden="true" />
       </button>
@@ -699,7 +733,9 @@ function DiaryPhotoTile({ entryId, photoId, onDelete }) {
 }
 DiaryPhotoTile.propTypes = {
   entryId: PropTypes.number,
-  photoId: PropTypes.number.isRequired,
+  photoId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  localUrl: PropTypes.string,
+  uploading: PropTypes.bool,
   onDelete: PropTypes.func.isRequired,
 };
 

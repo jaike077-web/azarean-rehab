@@ -191,15 +191,23 @@ describe('DiaryScreen v12', () => {
       expect(screen.getByText('134')).toBeInTheDocument();
     });
 
-    it('clamps to [60, 180]', async () => {
+    it('clamps to [0, 180]', async () => {
       setup();
       await waitForLoaded();
       const dec = screen.getByRole('button', { name: /Уменьшить/ });
-      for (let i = 0; i < 100; i += 1) fireEvent.click(dec);
-      expect(screen.getByText('60')).toBeInTheDocument();
+      for (let i = 0; i < 200; i += 1) fireEvent.click(dec);
+      expect(screen.getByText('0')).toBeInTheDocument();
       const inc = screen.getByRole('button', { name: /Увеличить/ });
       for (let i = 0; i < 200; i += 1) fireEvent.click(inc);
       expect(screen.getByText('180')).toBeInTheDocument();
+    });
+
+    it('drag slider sets value directly', async () => {
+      setup();
+      await waitForLoaded();
+      const slider = screen.getByLabelText(/Угол сгибания/);
+      fireEvent.change(slider, { target: { value: '100' } });
+      expect(screen.getByText('100')).toBeInTheDocument();
     });
   });
 

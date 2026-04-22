@@ -283,40 +283,67 @@
   font-family: 'Manrope', system-ui, sans-serif;
   font-weight: 700;
   font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .pd-diary-rom-btn:hover {
   background: var(--pd-n50);
 }
 
-.pd-diary-rom-track {
+/* ROM native slider — аналогично pain slider: отдельные правила для
+   track + thumb, чтобы Chromium/Yandex нарисовал тонкий трек 6px
+   вместо 20px-дефолта. Градиент на ::webkit-slider-runnable-track. */
+.pd-diary-rom-slider {
   flex: 1;
-  position: relative;
   height: 6px;
-  background: var(--pd-n200);
-  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  vertical-align: middle;
 }
 
-.pd-diary-rom-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
+.pd-diary-rom-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
   background: linear-gradient(90deg, var(--pd-color-primary), var(--pd-color-primary-mid));
-  border-radius: 3px;
-  transition: width 120ms ease;
 }
 
-.pd-diary-rom-knob {
-  position: absolute;
-  top: -4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 7px;
+.pd-diary-rom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
   background: #fff;
   border: 2.5px solid var(--pd-color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: left 120ms ease;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  margin-top: -6px;
+}
+
+.pd-diary-rom-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.pd-diary-rom-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--pd-color-primary), var(--pd-color-primary-mid));
+}
+
+.pd-diary-rom-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: #fff;
+  border: 2.5px solid var(--pd-color-primary);
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .pd-diary-rom-labels {
@@ -357,6 +384,23 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* Overlay для optimistic upload — пульсирует пока файл уходит на сервер */
+.pd-diary-photo-uploading {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 148, 136, 0.25);
+  animation: pd-diary-upload-pulse 1200ms ease-in-out infinite;
+}
+
+@keyframes pd-diary-upload-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.15; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-diary-photo-uploading { animation: none; opacity: 0.3; }
 }
 
 .pd-diary-photo-delete {
