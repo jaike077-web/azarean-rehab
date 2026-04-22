@@ -753,7 +753,13 @@ PillBtn.propTypes = {
 //   2. fetchDiaryPhotoBlob — авторизованный blob с сервера (для уже
 //      существующих фото при F5 или повторном открытии Diary)
 // Uploading=true показывает полупрозрачный overlay поверх preview.
-function DiaryPhotoTile({ entryId, photoId, localUrl, uploading, onDelete }) {
+//
+// Обёрнут в React.memo — каждый setState в DiaryScreen (например
+// setEntryId после первого upload) триггерит re-render родителя, а
+// memo пропускает re-render плитки если её собственные props не
+// изменились. Это убирает «перезагрузку экрана» при добавлении фото —
+// другие плитки не моргают вместе с новой.
+const DiaryPhotoTileImpl = ({ entryId, photoId, localUrl, uploading, onDelete }) => {
   const [serverBlobUrl, setServerBlobUrl] = useState(null);
   const imgSrc = localUrl || serverBlobUrl;
   // Numeric photoId — настоящий row в БД (не temp placeholder).
@@ -800,13 +806,23 @@ function DiaryPhotoTile({ entryId, photoId, localUrl, uploading, onDelete }) {
     </div>
   );
 }
-DiaryPhotoTile.propTypes = {
+DiaryPhotoTileImpl.propTypes = {
   entryId: PropTypes.number,
   photoId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   localUrl: PropTypes.string,
   uploading: PropTypes.bool,
   onDelete: PropTypes.func.isRequired,
 };
+
+// Custom comparator — игнорируем onDelete (inline-функция в map() имеет
+// новую ссылку при каждом ре-рендере родителя, иначе memo бесполезна).
+// Идентичность плитки полностью определяется entryId/photoId/localUrl/uploading.
+const DiaryPhotoTile = React.memo(DiaryPhotoTileImpl, (prev, next) => (
+  prev.entryId === next.entryId
+  && prev.photoId === next.photoId
+  && prev.localUrl === next.localUrl
+  && prev.uploading === next.uploading
+));
 
 DiaryScreen.propTypes = {
   patient: PropTypes.object,
