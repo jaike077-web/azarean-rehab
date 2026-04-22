@@ -8,6 +8,49 @@
   padding: 14px 20px 20px;
 }
 
+/* =====================================================
+   RESET глобальных правил из index.css.
+   Глобально:
+     input/textarea/select { border: 2px solid #e2e8f0; min-height: 44px;
+       padding: clamp(...); }
+     input:focus { box-shadow: 0 0 0 3-4px rgba(102,126,234,0.2); }
+     button { padding: clamp(10..14, 2vw)... clamp(16..24); min-height: 44px;
+       border-radius: 8px; display: inline-flex; }
+     button:focus-visible { outline: 2px solid #667eea;
+       box-shadow: 0 0 0 4px ... }
+   Это перебивает специфические правила pain/rom slider, pill, rom-btn,
+   photo-add — рисует «рамки» и фиолетовое focus-кольцо. Сбрасываем
+   их в одном месте, потом индивидуальные классы задают свои значения.
+   ===================================================== */
+.pd-diary input[type="range"],
+.pd-diary input[type="range"]:focus,
+.pd-diary input[type="range"]:focus-visible {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  min-height: 0;
+  padding: 0;
+}
+
+.pd-diary button {
+  min-height: 0; /* индивидуальные классы зададут height где надо */
+}
+
+.pd-diary button:focus-visible {
+  /* Лёгкий teal focus вместо громкого фиолетового кольца. */
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.pd-diary textarea:focus,
+.pd-diary textarea:focus-visible {
+  /* Фиолетовый ring на textarea — не наша палитра. Заменяем на teal. */
+  box-shadow: none;
+  outline: none;
+  border-color: var(--pd-color-primary);
+}
+
 /* ===== Header ===== */
 .pd-diary-header {
   display: flex;
@@ -218,31 +261,30 @@
 .pd-diary-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 8px 13px;
+  gap: 6px;
+  padding: 9px 14px;
   border-radius: 10px;
-  border: none;
-  background: var(--pd-n100);
+  border: 1px solid var(--pd-n200);
+  background: var(--pd-color-white);
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 500;
   color: var(--pd-n700);
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
 }
 
 .pd-diary-pill:hover {
-  background: var(--pd-n200);
+  border-color: var(--pd-n300);
+  background: var(--pd-n50);
 }
 
-.pd-diary-pill--active {
+.pd-diary-pill--active,
+.pd-diary-pill--active:hover {
   background: var(--pd-color-primary);
+  border-color: var(--pd-color-primary);
   color: #fff;
   font-weight: 700;
-}
-
-.pd-diary-pill--active:hover {
-  background: var(--pd-color-primary-dark);
 }
 
 /* ===== ROM ===== */
@@ -278,8 +320,8 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  border: none;
-  background: var(--pd-n100);
+  border: 1px solid var(--pd-n200);
+  background: var(--pd-color-white);
   color: var(--pd-n700);
   cursor: pointer;
   display: flex;
@@ -287,17 +329,19 @@
   justify-content: center;
   font-family: 'Manrope', system-ui, sans-serif;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
-  transition: background 150ms ease;
+  padding: 0;
+  transition: border-color 150ms ease, background 150ms ease;
 }
 
 .pd-diary-rom-btn:hover {
-  background: var(--pd-n200);
+  border-color: var(--pd-color-primary);
+  background: var(--pd-n50);
 }
 
 .pd-diary-rom-btn:active {
-  background: var(--pd-n300);
+  background: var(--pd-n100);
 }
 
 /* ROM native slider — аналогично pain slider: отдельные правила для
@@ -374,6 +418,9 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  /* Резервируем высоту под одну плитку — layout не дёргается когда
+     появляется первая плитка/исчезает кнопка «Добавить». */
+  min-height: 80px;
 }
 
 .pd-diary-photo-tile {
@@ -396,21 +443,15 @@
   display: block;
 }
 
-/* Overlay для optimistic upload — пульсирует пока файл уходит на сервер */
+/* Overlay для optimistic upload — статический полупрозрачный teal без
+   анимации. Раньше пульсировал, но если upload быстрее 1.2 сек —
+   animation cycle не успевал завершиться, выглядело как «мерцание
+   экрана». Теперь tile сразу чистый, overlay тонкий и стабильный. */
 .pd-diary-photo-uploading {
   position: absolute;
   inset: 0;
-  background: rgba(13, 148, 136, 0.25);
-  animation: pd-diary-upload-pulse 1200ms ease-in-out infinite;
-}
-
-@keyframes pd-diary-upload-pulse {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 0.15; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pd-diary-photo-uploading { animation: none; opacity: 0.3; }
+  background: rgba(13, 148, 136, 0.18);
+  pointer-events: none;
 }
 
 .pd-diary-photo-delete {
