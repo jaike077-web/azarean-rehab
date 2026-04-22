@@ -217,37 +217,71 @@ describe('RoadmapScreen v12', () => {
     });
   });
 
-  describe('future phases (collapsed)', () => {
-    it('future phases show "Подробнее" button', async () => {
+  describe('future phases (collapsed by default, full content on expand)', () => {
+    it('future phases show "План этой фазы" button', async () => {
       renderScreen();
       await waitFor(() => {
-        const moreButtons = screen.getAllByText('Подробнее');
+        const moreButtons = screen.getAllByText('План этой фазы');
         // current_phase = 1 → 5 будущих фаз
         expect(moreButtons.length).toBe(5);
       });
     });
 
-    it('tapping "Подробнее" expands future phase teaser', async () => {
+    it('tapping shows full phase card with 4 tabs + description', async () => {
       renderScreen();
-      await waitFor(() => screen.getAllByText('Подробнее'));
-      const moreButtons = screen.getAllByText('Подробнее');
+      await waitFor(() => screen.getAllByText('План этой фазы'));
+      const moreButtons = screen.getAllByText('План этой фазы');
       fireEvent.click(moreButtons[0]); // фаза 2
       await waitFor(() => {
-        // После тапа появляется teaser
-        expect(screen.getAllByText(/Восстановление подвижности/).length).toBeGreaterThan(0);
+        expect(screen.getByTestId('pd-rm-future-card-2')).toBeInTheDocument();
       });
+      // описание фазы 2
+      expect(screen.getAllByText(/Восстановление ROM/).length).toBeGreaterThan(0);
+      // во future-card тоже 4 pill-таба (+ 4 в current = 8 всего)
+      expect(screen.getAllByText('Цели').length).toBe(2);
+      expect(screen.getAllByText('Нельзя').length).toBe(2);
     });
 
-    it('tapping "Скрыть" collapses back', async () => {
+    it('future-card has its own tab state (independent from current)', async () => {
       renderScreen();
-      await waitFor(() => screen.getAllByText('Подробнее'));
-      const moreButtons = screen.getAllByText('Подробнее');
-      fireEvent.click(moreButtons[0]);
-      await waitFor(() => screen.getByText('Скрыть'));
-      fireEvent.click(screen.getByText('Скрыть'));
+      await waitFor(() => screen.getAllByText('План этой фазы'));
+      fireEvent.click(screen.getAllByText('План этой фазы')[0]);
+      await waitFor(() => screen.getByTestId('pd-rm-future-card-2'));
+      const futureCard = screen.getByTestId('pd-rm-future-card-2');
+      // В future-card кликаем «Нельзя» — не должен переключиться таб current
+      const futureRestrictionsPill = Array.from(
+        futureCard.querySelectorAll('.pd-rm-pill')
+      ).find((b) => b.textContent === 'Нельзя');
+      fireEvent.click(futureRestrictionsPill);
+      // В future-card теперь видим «Бег» (restrictions фазы 2)
       await waitFor(() => {
-        expect(screen.queryByText('Скрыть')).not.toBeInTheDocument();
+        expect(futureCard.textContent).toMatch(/Бег/);
       });
+      // Current-card — activeTab всё ещё goals (видим «Контроль отёка»)
+      const currentCard = screen.getByTestId('pd-rm-current-card');
+      expect(currentCard.textContent).toMatch(/Контроль отёка/);
+    });
+
+    it('future-card shows exit-criteria list too', async () => {
+      renderScreen();
+      await waitFor(() => screen.getAllByText('План этой фазы'));
+      fireEvent.click(screen.getAllByText('План этой фазы')[0]);
+      await waitFor(() => screen.getByTestId('pd-rm-future-card-2'));
+      // Критерии перехода есть и у future (в шапке list)
+      expect(screen.getAllByText('Критерии перехода').length).toBe(2);
+      expect(screen.getByText('Полный ROM')).toBeInTheDocument();
+    });
+
+    it('tapping "Скрыть план" collapses back', async () => {
+      renderScreen();
+      await waitFor(() => screen.getAllByText('План этой фазы'));
+      fireEvent.click(screen.getAllByText('План этой фазы')[0]);
+      await waitFor(() => screen.getByText('Скрыть план'));
+      fireEvent.click(screen.getByText('Скрыть план'));
+      await waitFor(() => {
+        expect(screen.queryByText('Скрыть план')).not.toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('pd-rm-future-card-2')).not.toBeInTheDocument();
     });
   });
 

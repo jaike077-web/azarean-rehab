@@ -181,6 +181,10 @@
   border: 1px solid var(--pd-n200);
   border-left: 3px solid var(--pd-color-primary);
 }
+/* Будущая фаза — приглушённый фон, чтобы зрительно отличалась от current */
+.pd-rm-card--dim {
+  background: var(--pd-n50);
+}
 .pd-rm-card-desc {
   font-size: 0.78rem;
   color: var(--pd-n600);
@@ -321,20 +325,6 @@
 .pd-rm-more-btn:hover { color: var(--pd-n700); }
 .pd-rm-more-chev { transition: transform 200ms ease; }
 .pd-rm-more-chev--open { transform: rotate(180deg); }
-
-.pd-rm-future-card {
-  margin-top: 6px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--pd-n50);
-  border: 1px solid var(--pd-n200);
-}
-.pd-rm-future-card p {
-  font-size: 0.74rem;
-  color: var(--pd-n600);
-  line-height: 1.5;
-  margin: 0;
-}
 
 /* ===== 6. Empty + Info ===== */
 .pd-rm-empty {

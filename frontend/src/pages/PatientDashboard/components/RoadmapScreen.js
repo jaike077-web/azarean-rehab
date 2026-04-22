@@ -40,11 +40,14 @@ const PHASE_ICONS = {
   star: Trophy,
 };
 
-// Fallback цвета для 6 фаз в v12 палитре (indigo/sky/green/amber/orange/violet).
-// Используются если API не вернул phase.color.
-const FALLBACK_PHASE_COLORS = [
+// v12-палитра фаз (indigo/sky/green/amber/orange/violet) — всегда используется
+// вместо seed-колоров БД, т.к. последние — bold-семантика (#EF4444 и т.д.),
+// которая перегружает тон экрана. Цвета по индексу phase_number-1.
+const PHASE_COLORS = [
   '#818CF8', '#38BDF8', '#4ADE80', '#FBBF24', '#FB923C', '#A78BFA',
 ];
+const getPhaseColor = (phaseNumber) =>
+  PHASE_COLORS[(phaseNumber - 1) % PHASE_COLORS.length] || '#0D9488';
 
 // 4 таба в expanded card текущей фазы
 const TABS = [
@@ -120,6 +123,86 @@ TabBullets.propTypes = {
   color: PropTypes.string,
 };
 
+// --- PhaseExpandedCard: полный контент фазы (description + 4 таба + exit-criteria).
+// Используется как для current, так и для любой развёрнутой future-фазы.
+// Локальный activeTab state — у каждой фазы свой, не шарится.
+// dim=true для future — лёгкое приглушение чтобы визуально отличалось от current.
+const PhaseExpandedCard = ({ phase, color, dim = false, testId = 'pd-rm-card' }) => {
+  const [activeTab, setActiveTab] = useState('goals');
+  const activeTabDef = TABS.find((t) => t.id === activeTab) || TABS[0];
+  const items = toBullets(phase[activeTabDef.field]);
+  const iconColor =
+    activeTabDef.iconTone === 'err' ? 'var(--pd-color-err)' :
+    activeTabDef.iconTone === 'ok' ? 'var(--pd-color-ok)' :
+    activeTabDef.iconTone === 'warn' ? 'var(--pd-color-warn)' :
+    color;
+  const exitCriteria = toBullets(phase.criteria_next);
+
+  return (
+    <div
+      className={`pd-rm-card ${dim ? 'pd-rm-card--dim' : ''}`}
+      style={{ borderLeftColor: color }}
+      data-testid={testId}
+    >
+      {phase.description && (
+        <p className="pd-rm-card-desc">{phase.description}</p>
+      )}
+
+      <div className="pd-rm-tabs" role="tablist">
+        {TABS.map((t) => (
+          <PhasePill
+            key={t.id}
+            active={activeTab === t.id}
+            color={color}
+            onClick={() => setActiveTab(t.id)}
+          >
+            {t.label}
+          </PhasePill>
+        ))}
+      </div>
+
+      <div className="pd-rm-tab-content">
+        {activeTab === 'pain' ? (
+          <div className="pd-rm-pain-note">
+            <AlertTriangle size={14} color="var(--pd-color-warn)" aria-hidden="true" />
+            <div>
+              {items.length > 0
+                ? items.join(' · ')
+                : 'Контролируйте уровень боли. При 5+/10 свяжитесь со специалистом.'}
+            </div>
+          </div>
+        ) : (
+          <TabBullets items={items} Icon={activeTabDef.Icon} color={iconColor} />
+        )}
+      </div>
+
+      {exitCriteria.length > 0 && (
+        <div className="pd-rm-criteria" data-testid="pd-rm-criteria">
+          <div className="pd-rm-criteria-head">
+            <Target size={13} color="var(--pd-n600)" aria-hidden="true" />
+            <span>Критерии перехода</span>
+          </div>
+          <ul className="pd-rm-criteria-list">
+            {exitCriteria.map((c, idx) => (
+              <li key={idx} className="pd-rm-criteria-item">
+                <span className="pd-rm-criteria-dot" aria-hidden="true" />
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+PhaseExpandedCard.propTypes = {
+  phase: PropTypes.object.isRequired,
+  color: PropTypes.string.isRequired,
+  dim: PropTypes.bool,
+  testId: PropTypes.string,
+};
+
 // --- PhaseRow: одна строка timeline'а ---
 const PhaseRow = ({
   phase,
@@ -131,7 +214,6 @@ const PhaseRow = ({
   isLast,
   expanded,
   onToggleExpand,
-  renderExpandedContent,
 }) => {
   return (
     <div className="pd-rm-row">
@@ -183,7 +265,13 @@ const PhaseRow = ({
           {formatWeekRange(phase)}{isPast ? ' · завершена' : ''}
         </div>
 
-        {isCurrent && renderExpandedContent()}
+        {isCurrent && (
+          <PhaseExpandedCard
+            phase={phase}
+            color={color}
+            testId="pd-rm-current-card"
+          />
+        )}
 
         {isFuture && (
           <>
@@ -193,7 +281,7 @@ const PhaseRow = ({
               onClick={onToggleExpand}
               aria-expanded={expanded}
             >
-              {expanded ? 'Скрыть' : 'Подробнее'}
+              {expanded ? 'Скрыть план' : 'План этой фазы'}
               <ChevronDown
                 size={11}
                 strokeWidth={2}
@@ -202,9 +290,12 @@ const PhaseRow = ({
               />
             </button>
             {expanded && (
-              <div className="pd-rm-future-card">
-                <p>{phase.teaser || phase.description || 'Описание будет доступно ближе к этой фазе.'}</p>
-              </div>
+              <PhaseExpandedCard
+                phase={phase}
+                color={color}
+                dim
+                testId={`pd-rm-future-card-${phase.phase_number}`}
+              />
             )}
           </>
         )}
@@ -223,7 +314,6 @@ PhaseRow.propTypes = {
   isLast: PropTypes.bool,
   expanded: PropTypes.bool,
   onToggleExpand: PropTypes.func,
-  renderExpandedContent: PropTypes.func,
 };
 
 // Формат диапазона недель: "Нед. 1–12" или "Нед. 60+"
@@ -246,7 +336,6 @@ const formatWeekRange = (phase) => {
 export default function RoadmapScreen({ dashboardData, patient, onOpenProfile }) {
   const [phases, setPhases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('goals');
   const [expandedFutureId, setExpandedFutureId] = useState(null);
 
   const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
@@ -296,81 +385,6 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
     setExpandedFutureId((prev) => (prev === phaseId ? null : phaseId));
   }, []);
 
-  // --- Рендер expanded card для current phase ---
-  const renderCurrentExpanded = useCallback(() => {
-    if (!currentPhase) return null;
-    const color = currentPhase.color || FALLBACK_PHASE_COLORS[currentPhaseNumber - 1] || '#0D9488';
-    const activeTabDef = TABS.find((t) => t.id === activeTab) || TABS[0];
-    const items = toBullets(currentPhase[activeTabDef.field]);
-    const iconColor =
-      activeTabDef.iconTone === 'err' ? 'var(--pd-color-err)' :
-      activeTabDef.iconTone === 'ok' ? 'var(--pd-color-ok)' :
-      activeTabDef.iconTone === 'warn' ? 'var(--pd-color-warn)' :
-      color;
-
-    const exitCriteria = toBullets(currentPhase.criteria_next);
-
-    return (
-      <div
-        className="pd-rm-card"
-        style={{ borderLeftColor: color }}
-        data-testid="pd-rm-current-card"
-      >
-        {currentPhase.description && (
-          <p className="pd-rm-card-desc">{currentPhase.description}</p>
-        )}
-
-        {/* 4 pill-tab */}
-        <div className="pd-rm-tabs" role="tablist">
-          {TABS.map((t) => (
-            <PhasePill
-              key={t.id}
-              active={activeTab === t.id}
-              color={color}
-              onClick={() => setActiveTab(t.id)}
-            >
-              {t.label}
-            </PhasePill>
-          ))}
-        </div>
-
-        {/* Содержимое активного таба */}
-        <div className="pd-rm-tab-content">
-          {activeTab === 'pain' ? (
-            <div className="pd-rm-pain-note">
-              <AlertTriangle size={14} color="var(--pd-color-warn)" aria-hidden="true" />
-              <div>
-                {items.length > 0
-                  ? items.join(' · ')
-                  : 'Контролируйте уровень боли. При 5+/10 свяжитесь со специалистом.'}
-              </div>
-            </div>
-          ) : (
-            <TabBullets items={items} Icon={activeTabDef.Icon} color={iconColor} />
-          )}
-        </div>
-
-        {/* Exit-criteria (Вариант A — просто список) */}
-        {exitCriteria.length > 0 && (
-          <div className="pd-rm-criteria" data-testid="pd-rm-criteria">
-            <div className="pd-rm-criteria-head">
-              <Target size={13} color="var(--pd-n600)" aria-hidden="true" />
-              <span>Критерии перехода</span>
-            </div>
-            <ul className="pd-rm-criteria-list">
-              {exitCriteria.map((c, idx) => (
-                <li key={idx} className="pd-rm-criteria-item">
-                  <span className="pd-rm-criteria-dot" aria-hidden="true" />
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    );
-  }, [currentPhase, currentPhaseNumber, activeTab]);
-
   if (loading) {
     return (
       <div className="pd-rm">
@@ -408,8 +422,7 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
           const isFuture = phaseNumber > currentPhaseNumber;
           const isLast = idx === phases.length - 1;
           const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
-          const color =
-            phase.color || FALLBACK_PHASE_COLORS[phaseNumber - 1] || '#0D9488';
+          const color = getPhaseColor(phaseNumber);
 
           return (
             <PhaseRow
@@ -423,7 +436,6 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
               isLast={isLast}
               expanded={expandedFutureId === (phase.id ?? phaseNumber)}
               onToggleExpand={() => toggleFuture(phase.id ?? phaseNumber)}
-              renderExpandedContent={renderCurrentExpanded}
             />
           );
         })}
