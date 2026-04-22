@@ -1,470 +1,458 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+// =====================================================
+// RoadmapScreen v12 — Путь восстановления
+// Reference: azarean-v12-final.jsx функция Roadmap (L961-1182)
+// -----------------------------------------------------
+// Layout:
+//  1. Header (заголовок + subtitle с датой операции + AvatarBtn)
+//  2. Timeline — 6 фаз (вертикальный список). Past: checkmark, current:
+//     icon + pulse-dot animation, future: grayed icon.
+//  3. Current phase — expanded card с 4 pill-табами (Цели/Нельзя/Можно/Боль)
+//     и exit-criteria списком под ним (Вариант A: просто список строк из
+//     rehab_phases.criteria_next, без cur/met индикаторов).
+//  4. Future phases — collapsed, тап «Подробнее» → accordion с описанием.
+//  5. Info note внизу: «Сроки ориентировочные».
+//
+// Данные:
+//  - rehab.getPhases() → все 6 фаз ACL
+//  - dashboardData.program.current_phase (integer 1..6) — активная фаза
+//  - dashboardData.program.surgery_date → currentWeek для subtitle.
+// =====================================================
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Shield, RefreshCw, Dumbbell, Activity, Zap, Trophy,
-  Target, Ban, CheckCircle2, Snowflake, Home as HomeIcon,
-  AlertTriangle, BarChart3, MessageCircle, Check, Info, Plus, Minus, PartyPopper
+  Shield, Sprout, Dumbbell, Activity, Zap, Trophy,
+  Target, Ban, CheckCircle2, Snowflake, Check, ChevronDown,
+  Info, AlertTriangle,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
-import { ProgressRing } from './ui';
+import { AvatarBtn } from './ui';
+import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import './RoadmapScreen.css';
 
-// Phase icon mapping (lucide components)
+// Маппинг seed-иконок на lucide компоненты
 const PHASE_ICONS = {
   shield: Shield,
-  move: RefreshCw,
+  move: Sprout,
+  sprout: Sprout,
   dumbbell: Dumbbell,
   activity: Activity,
   trophy: Zap,
   star: Trophy,
 };
 
-// Calculate weeks since surgery
+// Fallback цвета для 6 фаз в v12 палитре (indigo/sky/green/amber/orange/violet).
+// Используются если API не вернул phase.color.
+const FALLBACK_PHASE_COLORS = [
+  '#818CF8', '#38BDF8', '#4ADE80', '#FBBF24', '#FB923C', '#A78BFA',
+];
+
+// 4 таба в expanded card текущей фазы
+const TABS = [
+  { id: 'goals', label: 'Цели', field: 'goals', Icon: Target, iconTone: 'phase' },
+  { id: 'restrictions', label: 'Нельзя', field: 'restrictions', Icon: Ban, iconTone: 'err' },
+  { id: 'allowed', label: 'Можно', field: 'allowed', Icon: CheckCircle2, iconTone: 'ok' },
+  { id: 'pain', label: 'Боль', field: 'pain', Icon: Snowflake, iconTone: 'warn' },
+];
+
+// Недель с момента операции (для subtitle)
 const getWeeksSinceSurgery = (surgeryDate) => {
-  if (!surgeryDate) return 0;
+  if (!surgeryDate) return null;
   const diff = Date.now() - new Date(surgeryDate).getTime();
+  if (Number.isNaN(diff)) return null;
   return Math.max(0, Math.floor(diff / (7 * 24 * 60 * 60 * 1000)));
 };
 
-// Tab configuration (icons = lucide components)
-const TABS = [
-  { id: 'goals', label: 'Цели', Icon: Target },
-  { id: 'restrictions', label: 'Нельзя', Icon: Ban },
-  { id: 'allowed', label: 'Можно', Icon: CheckCircle2 },
-  { id: 'pain', label: 'Боль', Icon: Snowflake },
-  { id: 'daily', label: 'Быт', Icon: HomeIcon },
-  { id: 'red_flags', label: 'Врач', Icon: AlertTriangle },
-  { id: 'criteria_next', label: 'Переход', Icon: BarChart3 },
-  { id: 'faq', label: 'FAQ', Icon: MessageCircle },
-];
-
-// ProgressArc wrapper — использует shared ProgressRing
-const ProgressArc = ({ currentWeek, totalWeeks, phase }) => {
-  const percentage = useMemo(() => {
-    if (!totalWeeks || totalWeeks === 0) return 0;
-    return Math.min(100, Math.round((currentWeek / totalWeeks) * 100));
-  }, [currentWeek, totalWeeks]);
-
-  return (
-    <div className="pd-progress-arc">
-      <ProgressRing
-        value={percentage}
-        size={140}
-        strokeWidth={12}
-        color={phase?.color || 'var(--pd-primary, #0D9488)'}
-        color2={phase?.color2 || '#06B6D4'}
-        sublabel={`${phase?.name || 'Фаза'} · Неделя ${currentWeek}`}
-      />
-    </div>
-  );
-};
-
-ProgressArc.propTypes = {
-  currentWeek: PropTypes.number.isRequired,
-  totalWeeks: PropTypes.number.isRequired,
-  phase: PropTypes.shape({
-    name: PropTypes.string,
-    color: PropTypes.string,
-    color2: PropTypes.string,
-  }),
-};
-
-// BulletList Component
-const BulletList = ({ items, color }) => {
-  if (!items || items.length === 0) {
-    return <p className="pd-bullet-empty">Информация отсутствует</p>;
+// Вытащить элементы в массив: принимает массив ИЛИ строку со \n / bullet'ами
+const toBullets = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string') {
+    return value
+      .split(/\r?\n/)
+      .map((s) => s.replace(/^[-*•]\s*/, '').trim())
+      .filter(Boolean);
   }
+  return [];
+};
 
+// --- Pill (inline, т.к. в общем Pill нет active+color пропсов) ---
+const PhasePill = ({ active, color, onClick, children }) => (
+  <button
+    type="button"
+    className={`pd-rm-pill ${active ? 'pd-rm-pill--active' : ''}`}
+    onClick={onClick}
+    style={active ? { backgroundColor: color, borderColor: color } : undefined}
+    aria-pressed={active}
+  >
+    {children}
+  </button>
+);
+
+PhasePill.propTypes = {
+  active: PropTypes.bool,
+  color: PropTypes.string,
+  onClick: PropTypes.func,
+  children: PropTypes.node,
+};
+
+// --- TabBullets: список с мелкой иконкой у каждого пункта ---
+const TabBullets = ({ items, Icon, color }) => {
+  if (!items || items.length === 0) {
+    return <p className="pd-rm-empty">Информация отсутствует</p>;
+  }
   return (
-    <ul className="pd-bullet-list">
-      {items.map((item, index) => (
-        <li key={index} className="pd-bullet-item">
-          <span
-            className="pd-bullet-dot"
-            style={{ backgroundColor: color || '#1A8A6A' }}
-          />
-          <span className="pd-bullet-text">{item}</span>
+    <ul className="pd-rm-bullets">
+      {items.map((it, idx) => (
+        <li key={idx} className="pd-rm-bullet">
+          <span className="pd-rm-bullet-icon" style={{ color }} aria-hidden="true">
+            <Icon size={13} strokeWidth={2.2} />
+          </span>
+          <span className="pd-rm-bullet-text">{it}</span>
         </li>
       ))}
     </ul>
   );
 };
 
-BulletList.propTypes = {
+TabBullets.propTypes = {
   items: PropTypes.arrayOf(PropTypes.string),
+  Icon: PropTypes.elementType.isRequired,
   color: PropTypes.string,
 };
 
-// Criteria Component with checkboxes
-const Criteria = ({ items, color }) => {
-  const [checkedItems, setCheckedItems] = useState({});
-
-  const handleToggle = useCallback((index) => {
-    setCheckedItems(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  }, []);
-
-  const progress = useMemo(() => {
-    if (!items || items.length === 0) return 0;
-    const checked = Object.values(checkedItems).filter(Boolean).length;
-    return Math.round((checked / items.length) * 100);
-  }, [checkedItems, items]);
-
-  const allChecked = items && items.length > 0 && progress === 100;
-
-  if (!items || items.length === 0) {
-    return <p className="pd-bullet-empty">Критерии не установлены</p>;
-  }
-
+// --- PhaseRow: одна строка timeline'а ---
+const PhaseRow = ({
+  phase,
+  color,
+  PhaseIcon,
+  isPast,
+  isCurrent,
+  isFuture,
+  isLast,
+  expanded,
+  onToggleExpand,
+  renderExpandedContent,
+}) => {
   return (
-    <div className="pd-criteria">
-      <div className="pd-criteria-progress">
-        <div className="pd-criteria-bar">
+    <div className="pd-rm-row">
+      {/* Левая колонка: icon circle + соединительная линия + pulse-dot */}
+      <div className="pd-rm-left">
+        {!isLast && (
           <div
-            className="pd-criteria-fill"
-            style={{
-              width: `${progress}%`,
-              backgroundColor: color || '#1A8A6A',
-              transition: 'width 0.3s ease'
-            }}
+            className={`pd-rm-line ${isPast ? 'pd-rm-line--past' : ''}`}
+            style={isPast ? { backgroundColor: color } : undefined}
           />
+        )}
+        <div
+          className={`pd-rm-circle ${isCurrent ? 'pd-rm-circle--current' : ''} ${isPast ? 'pd-rm-circle--past' : ''} ${isFuture ? 'pd-rm-circle--future' : ''}`}
+          style={{
+            backgroundColor: isPast
+              ? color
+              : isCurrent
+                ? `color-mix(in srgb, ${color} 14%, transparent)`
+                : undefined,
+            borderColor: isCurrent ? color : 'transparent',
+            color: isPast ? '#fff' : isCurrent ? color : undefined,
+          }}
+        >
+          {isPast ? (
+            <Check size={20} strokeWidth={3} aria-hidden="true" />
+          ) : (
+            <PhaseIcon size={20} aria-hidden="true" />
+          )}
         </div>
-        <span className="pd-criteria-percentage">{progress}%</span>
+        {isCurrent && (
+          <span className="pd-rm-pulse" aria-hidden="true" data-testid="pd-rm-pulse" />
+        )}
       </div>
 
-      <ul className="pd-criteria-list">
-        {items.map((item, index) => (
-          <li
-            key={index}
-            className="pd-criteria-item"
-            onClick={() => handleToggle(index)}
-            role="checkbox"
-            aria-checked={!!checkedItems[index]}
-            tabIndex={0}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleToggle(index);
-              }
-            }}
-          >
-            <span
-              className={`pd-criteria-check ${checkedItems[index] ? 'pd-criteria-check--checked' : ''}`}
-              style={{
-                borderColor: checkedItems[index] ? color || '#1A8A6A' : '#CBD5E0',
-                backgroundColor: checkedItems[index] ? color || '#1A8A6A' : 'transparent'
-              }}
-            >
-              {checkedItems[index] && <Check size={14} strokeWidth={3} color="#fff" />}
-            </span>
-            <span className="pd-criteria-text">{item}</span>
-          </li>
-        ))}
-      </ul>
-
-      {allChecked && (
-        <div className="pd-criteria-success">
-          <PartyPopper size={18} />
-          <span>Отлично! Вы готовы к следующей фазе. Обсудите переход со специалистом.</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-Criteria.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.string),
-  color: PropTypes.string,
-};
-
-// FAQ Component with accordion
-const FAQ = ({ items, color }) => {
-  const [openIndex, setOpenIndex] = useState(null);
-
-  const handleToggle = useCallback((index) => {
-    setOpenIndex(prev => prev === index ? null : index);
-  }, []);
-
-  if (!items || items.length === 0) {
-    return <p className="pd-bullet-empty">Вопросы и ответы не добавлены</p>;
-  }
-
-  return (
-    <div className="pd-faq">
-      {items.map((item, index) => {
-        const isOpen = openIndex === index;
-        return (
+      {/* Правая колонка: название + субтитл + expanded card / accordion */}
+      <div className="pd-rm-body">
+        <div className="pd-rm-title-row">
           <div
-            key={index}
-            className={`pd-faq-item ${isOpen ? 'pd-faq-item--open' : ''}`}
+            className={`pd-rm-name ${isCurrent ? 'pd-rm-name--current' : ''} ${isFuture ? 'pd-rm-name--future' : ''}`}
           >
+            {phase.name || phase.title}
+          </div>
+          {isCurrent && <span className="pd-rm-badge">Сейчас</span>}
+        </div>
+        <div
+          className="pd-rm-subtitle"
+          style={isCurrent ? { color } : undefined}
+        >
+          {formatWeekRange(phase)}{isPast ? ' · завершена' : ''}
+        </div>
+
+        {isCurrent && renderExpandedContent()}
+
+        {isFuture && (
+          <>
             <button
-              className="pd-faq-question"
-              onClick={() => handleToggle(index)}
-              aria-expanded={isOpen}
-              style={{
-                borderLeftColor: isOpen ? color || '#1A8A6A' : 'transparent'
-              }}
+              type="button"
+              className="pd-rm-more-btn"
+              onClick={onToggleExpand}
+              aria-expanded={expanded}
             >
-              <span className="pd-faq-question-text">{item.question}</span>
-              <span
-                className="pd-faq-toggle"
-                style={{ color: isOpen ? color || '#1A8A6A' : '#718096' }}
-              >
-                {isOpen ? <Minus size={18} /> : <Plus size={18} />}
-              </span>
-            </button>
-            {isOpen && (
-              <div className="pd-faq-answer">
-                {item.answer}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-FAQ.propTypes = {
-  items: PropTypes.arrayOf(PropTypes.shape({
-    question: PropTypes.string.isRequired,
-    answer: PropTypes.string.isRequired,
-  })),
-  color: PropTypes.string,
-};
-
-// PhaseStepper Component - Vertical timeline
-const PhaseStepper = ({ phases, currentPhaseNumber }) => {
-  return (
-    <div className="pd-stepper">
-      {phases.map((phase, index) => {
-        const phaseNumber = phase.phase_number;
-        const isPast = phaseNumber < currentPhaseNumber;
-        const isActive = phaseNumber === currentPhaseNumber;
-        const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
-
-        return (
-          <div key={phase.id ?? `phase-${index}`} className="pd-stepper-row">
-            {/* Connector line */}
-            {index > 0 && (
-              <div
-                className={`pd-stepper-line ${isPast ? 'pd-stepper-line--completed' : ''}`}
+              {expanded ? 'Скрыть' : 'Подробнее'}
+              <ChevronDown
+                size={11}
+                strokeWidth={2}
+                className={`pd-rm-more-chev ${expanded ? 'pd-rm-more-chev--open' : ''}`}
+                aria-hidden="true"
               />
-            )}
-
-            {/* Phase circle */}
-            <div
-              className={`pd-stepper-circle ${
-                isPast ? 'pd-stepper-circle--completed' :
-                isActive ? 'pd-stepper-circle--active' :
-                'pd-stepper-circle--future'
-              }`}
-              style={{
-                backgroundColor: isActive ? phase.color : isPast ? '#48BB78' : '#E2E8F0',
-                borderColor: isActive ? phase.color : 'transparent',
-                boxShadow: isActive ? `0 0 0 4px ${phase.color}20` : 'none',
-                color: isActive || isPast ? '#fff' : '#5A6275',
-              }}
-            >
-              {isPast ? <Check size={18} strokeWidth={3} /> : <PhaseIcon size={18} />}
-            </div>
-
-            {/* Phase info */}
-            <div className="pd-stepper-content">
-              <div className="pd-stepper-name">{phase.name}</div>
-              <div className="pd-stepper-subtitle">
-                Недели {phase.week_start}-{phase.week_end}
+            </button>
+            {expanded && (
+              <div className="pd-rm-future-card">
+                <p>{phase.teaser || phase.description || 'Описание будет доступно ближе к этой фазе.'}</p>
               </div>
-              {phase.teaser && (
-                <div className="pd-stepper-teaser">{phase.teaser}</div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
 
-PhaseStepper.propTypes = {
-  phases: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    phase_number: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    icon: PropTypes.string,
-    color: PropTypes.string,
-    week_start: PropTypes.number,
-    week_end: PropTypes.number,
-    teaser: PropTypes.string,
-  })).isRequired,
-  currentPhaseNumber: PropTypes.number.isRequired,
+PhaseRow.propTypes = {
+  phase: PropTypes.object.isRequired,
+  color: PropTypes.string.isRequired,
+  PhaseIcon: PropTypes.elementType.isRequired,
+  isPast: PropTypes.bool,
+  isCurrent: PropTypes.bool,
+  isFuture: PropTypes.bool,
+  isLast: PropTypes.bool,
+  expanded: PropTypes.bool,
+  onToggleExpand: PropTypes.func,
+  renderExpandedContent: PropTypes.func,
 };
 
-// Main RoadmapScreen Component
-const RoadmapScreen = ({ dashboardData }) => {
+// Формат диапазона недель: "Нед. 1–12" или "Нед. 60+"
+const formatWeekRange = (phase) => {
+  const start = phase.week_start ?? null;
+  const end = phase.week_end ?? null;
+  if (start == null && end == null) {
+    if (phase.duration_weeks) return `~${phase.duration_weeks} нед.`;
+    return '';
+  }
+  if (start != null && end == null) return `Нед. ${start}+`;
+  if (start != null && end != null) {
+    if (start === end) return `Нед. ${start}`;
+    return `Нед. ${start}–${end}`;
+  }
+  return '';
+};
+
+// --- Главный компонент ---
+export default function RoadmapScreen({ dashboardData, patient, onOpenProfile }) {
   const [phases, setPhases] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('goals');
+  const [activeTab, setActiveTab] = useState('goals');
+  const [expandedFutureId, setExpandedFutureId] = useState(null);
 
-  // Fetch phases on mount
+  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
+  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
+
+  // Загрузка фаз
   useEffect(() => {
-    const fetchPhases = async () => {
-      try {
-        setLoading(true);
-        const response = await rehab.getPhases();
-        setPhases(response.data || []);
-      } catch (error) {
-        console.error('Failed to fetch phases:', error);
-        setPhases([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPhases();
+    let alive = true;
+    setLoading(true);
+    rehab.getPhases()
+      .then((res) => {
+        if (!alive) return;
+        const list = Array.isArray(res?.data) ? res.data : [];
+        // Сортируем по phase_number — на всякий случай
+        list.sort((a, b) => (a.phase_number || 0) - (b.phase_number || 0));
+        setPhases(list);
+      })
+      .catch(() => { if (alive) setPhases([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, []);
 
-  // Calculate current week and find current phase
-  const currentWeek = useMemo(() =>
-    getWeeksSinceSurgery(dashboardData?.program?.surgery_date),
-    [dashboardData?.program?.surgery_date]
-  );
-
   const currentPhaseNumber = dashboardData?.program?.current_phase || 1;
-
-  const currentPhase = useMemo(() =>
-    phases.find(p => p.phase_number === currentPhaseNumber),
+  const currentPhase = useMemo(
+    () => phases.find((p) => p.phase_number === currentPhaseNumber) || null,
     [phases, currentPhaseNumber]
   );
 
-  const totalWeeks = currentPhase?.duration_weeks || 12;
+  const currentWeek = useMemo(
+    () => getWeeksSinceSurgery(dashboardData?.program?.surgery_date),
+    [dashboardData?.program?.surgery_date]
+  );
 
-  // Render tab content
-  const renderTabContent = () => {
-    if (!currentPhase) {
-      return <p className="pd-bullet-empty">{loading ? 'Загрузка данных фазы...' : 'Информация о фазе недоступна'}</p>;
+  // Subtitle под заголовком: "Диагноз · Сторона · Сейчас: N-я неделя"
+  const subtitle = useMemo(() => {
+    const parts = [];
+    const diag = dashboardData?.program?.diagnosis;
+    if (diag) parts.push(diag);
+    if (currentPhase?.title || currentPhase?.name) {
+      parts.push(currentPhase.title || currentPhase.name);
     }
+    if (currentWeek != null) parts.push(`Сейчас: ${currentWeek}-я неделя`);
+    return parts.join(' · ');
+  }, [dashboardData?.program?.diagnosis, currentPhase, currentWeek]);
 
-    const isFuturePhase = currentPhaseNumber < (dashboardData?.program?.current_phase || 1);
+  const toggleFuture = useCallback((phaseId) => {
+    setExpandedFutureId((prev) => (prev === phaseId ? null : phaseId));
+  }, []);
 
-    if (isFuturePhase) {
-      return (
-        <div className="pd-future-phase-notice">
-          <Target size={22} className="pd-future-phase-icon" />
-          <p>Детали этой фазы станут доступны, когда вы до неё дойдёте</p>
+  // --- Рендер expanded card для current phase ---
+  const renderCurrentExpanded = useCallback(() => {
+    if (!currentPhase) return null;
+    const color = currentPhase.color || FALLBACK_PHASE_COLORS[currentPhaseNumber - 1] || '#0D9488';
+    const activeTabDef = TABS.find((t) => t.id === activeTab) || TABS[0];
+    const items = toBullets(currentPhase[activeTabDef.field]);
+    const iconColor =
+      activeTabDef.iconTone === 'err' ? 'var(--pd-color-err)' :
+      activeTabDef.iconTone === 'ok' ? 'var(--pd-color-ok)' :
+      activeTabDef.iconTone === 'warn' ? 'var(--pd-color-warn)' :
+      color;
+
+    const exitCriteria = toBullets(currentPhase.criteria_next);
+
+    return (
+      <div
+        className="pd-rm-card"
+        style={{ borderLeftColor: color }}
+        data-testid="pd-rm-current-card"
+      >
+        {currentPhase.description && (
+          <p className="pd-rm-card-desc">{currentPhase.description}</p>
+        )}
+
+        {/* 4 pill-tab */}
+        <div className="pd-rm-tabs" role="tablist">
+          {TABS.map((t) => (
+            <PhasePill
+              key={t.id}
+              active={activeTab === t.id}
+              color={color}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </PhasePill>
+          ))}
         </div>
-      );
-    }
 
-    const color = currentPhase.color || '#1A8A6A';
+        {/* Содержимое активного таба */}
+        <div className="pd-rm-tab-content">
+          {activeTab === 'pain' ? (
+            <div className="pd-rm-pain-note">
+              <AlertTriangle size={14} color="var(--pd-color-warn)" aria-hidden="true" />
+              <div>
+                {items.length > 0
+                  ? items.join(' · ')
+                  : 'Контролируйте уровень боли. При 5+/10 свяжитесь со специалистом.'}
+              </div>
+            </div>
+          ) : (
+            <TabBullets items={items} Icon={activeTabDef.Icon} color={iconColor} />
+          )}
+        </div>
 
-    switch (tab) {
-      case 'goals':
-        return <BulletList items={currentPhase.goals} color={color} />;
-      case 'restrictions':
-        return <BulletList items={currentPhase.restrictions} color={color} />;
-      case 'allowed':
-        return <BulletList items={currentPhase.allowed} color={color} />;
-      case 'pain':
-        return <BulletList items={currentPhase.pain} color={color} />;
-      case 'daily':
-        return <BulletList items={currentPhase.daily} color={color} />;
-      case 'red_flags':
-        return <BulletList items={currentPhase.red_flags} color={color} />;
-      case 'criteria_next':
-        return <Criteria items={currentPhase.criteria_next} color={color} />;
-      case 'faq':
-        return <FAQ items={currentPhase.faq} color={color} />;
-      default:
-        return null;
-    }
-  };
+        {/* Exit-criteria (Вариант A — просто список) */}
+        {exitCriteria.length > 0 && (
+          <div className="pd-rm-criteria" data-testid="pd-rm-criteria">
+            <div className="pd-rm-criteria-head">
+              <Target size={13} color="var(--pd-n600)" aria-hidden="true" />
+              <span>Критерии перехода</span>
+            </div>
+            <ul className="pd-rm-criteria-list">
+              {exitCriteria.map((c, idx) => (
+                <li key={idx} className="pd-rm-criteria-item">
+                  <span className="pd-rm-criteria-dot" aria-hidden="true" />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }, [currentPhase, currentPhaseNumber, activeTab]);
 
   if (loading) {
     return (
-      <div className="pd-loading">
-        <div className="pd-skeleton" style={{ height: '200px', marginBottom: '16px' }} />
-        <div className="pd-skeleton" style={{ height: '300px', marginBottom: '16px' }} />
+      <div className="pd-rm">
+        <div className="pd-skeleton" style={{ height: 72, borderRadius: 12, marginBottom: 14 }} />
+        <div className="pd-skeleton" style={{ height: 320, borderRadius: 12 }} />
       </div>
     );
   }
 
   return (
-    <div className="pd-roadmap-screen">
-      {/* Title */}
-      <h1 className="pd-screen-title">Дорожная карта</h1>
-
-      {/* Progress Arc */}
-      {dashboardData?.phase && (
-        <ProgressArc
-          currentWeek={currentWeek}
-          totalWeeks={totalWeeks}
-          phase={dashboardData.phase}
-        />
-      )}
-
-      {/* Phase Stepper */}
-      <PhaseStepper
-        phases={phases}
-        currentPhaseNumber={currentPhaseNumber}
-      />
-
-      {/* Info Note */}
-      <div className="pd-info-note">
-        <Info size={18} className="pd-info-note-icon" />
-        <p className="pd-info-note-text">
-          Сроки фаз ориентировочные. Переход происходит по готовности и решению вашего специалиста.
-        </p>
-      </div>
-
-      {/* Content Tabs */}
-      <div className="pd-tabs-wrapper">
-        <div className="pd-tabs">
-          {TABS.map((t) => {
-            const TabIcon = t.Icon;
-            const isActive = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                className={`pd-tab ${isActive ? 'pd-tab--active' : ''}`}
-                onClick={() => setTab(t.id)}
-                style={{
-                  borderBottomColor: isActive ? currentPhase?.color || '#1A8A6A' : 'transparent',
-                  backgroundColor: isActive ? `${currentPhase?.color || '#1A8A6A'}10` : 'transparent',
-                  color: isActive ? currentPhase?.color || '#1A8A6A' : undefined,
-                }}
-              >
-                <TabIcon size={16} className="pd-tab-icon" />
-                <span className="pd-tab-label">{t.label}</span>
-              </button>
-            );
-          })}
+    <div className="pd-rm pd-roadmap-screen">
+      {/* Header — заголовок + subtitle + AvatarBtn */}
+      <header className="pd-rm-header">
+        <div className="pd-rm-header-text">
+          <h1 className="pd-rm-title">Путь восстановления</h1>
+          {subtitle && <div className="pd-rm-subtitle-top">{subtitle}</div>}
         </div>
+        <AvatarBtn
+          initial={initial}
+          avatarSrc={avatarSrc}
+          onClick={() => onOpenProfile?.()}
+          ariaLabel="Профиль"
+        />
+      </header>
+
+      {/* Timeline */}
+      <div className="pd-rm-timeline">
+        {phases.length === 0 && (
+          <p className="pd-rm-empty">Фазы реабилитации недоступны</p>
+        )}
+        {phases.map((phase, idx) => {
+          const phaseNumber = phase.phase_number;
+          const isPast = phaseNumber < currentPhaseNumber;
+          const isCurrent = phaseNumber === currentPhaseNumber;
+          const isFuture = phaseNumber > currentPhaseNumber;
+          const isLast = idx === phases.length - 1;
+          const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
+          const color =
+            phase.color || FALLBACK_PHASE_COLORS[phaseNumber - 1] || '#0D9488';
+
+          return (
+            <PhaseRow
+              key={phase.id ?? `phase-${phaseNumber}`}
+              phase={phase}
+              color={color}
+              PhaseIcon={PhaseIcon}
+              isPast={isPast}
+              isCurrent={isCurrent}
+              isFuture={isFuture}
+              isLast={isLast}
+              expanded={expandedFutureId === (phase.id ?? phaseNumber)}
+              onToggleExpand={() => toggleFuture(phase.id ?? phaseNumber)}
+              renderExpandedContent={renderCurrentExpanded}
+            />
+          );
+        })}
       </div>
 
-      {/* Tab Content */}
-      <div className="pd-tab-content pd-fade-in" key={tab}>
-        {renderTabContent()}
+      {/* Info note */}
+      <div className="pd-rm-info">
+        <Info size={14} color="var(--pd-n400)" aria-hidden="true" />
+        <p>Сроки ориентировочные. Переход по решению специалиста при достижении критериев.</p>
       </div>
     </div>
   );
-};
+}
 
 RoadmapScreen.propTypes = {
   dashboardData: PropTypes.shape({
     program: PropTypes.shape({
       surgery_date: PropTypes.string,
       current_phase: PropTypes.number,
-    }),
-    phase: PropTypes.shape({
-      name: PropTypes.string,
-      color: PropTypes.string,
-      color2: PropTypes.string,
-      duration_weeks: PropTypes.number,
+      diagnosis: PropTypes.string,
     }),
   }),
+  patient: PropTypes.shape({
+    full_name: PropTypes.string,
+    avatar_url: PropTypes.string,
+  }),
+  onOpenProfile: PropTypes.func,
 };
 
-export default RoadmapScreen;
+RoadmapScreen.defaultProps = {
+  onOpenProfile: () => {},
+};

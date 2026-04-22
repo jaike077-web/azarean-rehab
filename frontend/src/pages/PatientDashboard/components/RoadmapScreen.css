@@ -1,0 +1,374 @@
+/* =====================================================
+   RoadmapScreen v12 — стили
+   Prefix: pd-rm-*. Все цвета через var(--pd-*).
+   Референс: azarean-v12-final.jsx Roadmap (L961-1182).
+   ===================================================== */
+
+/* Сброс глобалей index.css, которые мешают flat-дизайну. */
+.pd-rm button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  box-shadow: none;
+  min-height: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.pd-rm button:focus-visible {
+  outline: 2px solid var(--pd-color-primary);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.pd-rm {
+  padding: 0 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== 1. Header ===== */
+.pd-rm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0 18px;
+}
+.pd-rm-header-text {
+  flex: 1;
+  min-width: 0;
+}
+.pd-rm-title {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--pd-n900);
+  line-height: 1.3;
+  margin: 0;
+}
+.pd-rm-subtitle-top {
+  font-size: 0.7rem;
+  color: var(--pd-n500);
+  font-weight: 500;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* ===== 2. Timeline ===== */
+.pd-rm-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pd-rm-row {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 14px;
+  position: relative;
+}
+
+.pd-rm-left {
+  position: relative;
+  width: 44px;
+}
+.pd-rm-line {
+  position: absolute;
+  left: 21px;
+  top: 44px;
+  width: 2px;
+  height: calc(100% - 28px);
+  background: color-mix(in srgb, var(--pd-n300) 70%, transparent);
+  border-radius: 1px;
+  z-index: 1;
+}
+.pd-rm-line--past {
+  background: var(--pd-color-primary);
+}
+
+.pd-rm-circle {
+  position: relative;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background: var(--pd-n100);
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pd-n400);
+  transition: box-shadow 200ms ease;
+}
+.pd-rm-circle--past {
+  color: #fff;
+}
+.pd-rm-circle--current {
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--pd-color-primary) 10%, transparent);
+}
+
+.pd-rm-pulse {
+  position: absolute;
+  left: -8px;
+  top: 52px;
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--pd-color-accent, #F97316);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--pd-color-accent) 18%, transparent);
+  animation: pd-rm-pulse-dot 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+@keyframes pd-rm-pulse-dot {
+  0%, 100% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--pd-color-accent) 18%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--pd-color-accent) 6%, transparent);
+  }
+}
+
+/* ===== 3. Body (правая колонка) ===== */
+.pd-rm-body {
+  min-width: 0;
+  padding-top: 2px;
+  padding-bottom: 14px;
+}
+.pd-rm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+.pd-rm-name {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--pd-n800);
+  line-height: 1.25;
+}
+.pd-rm-name--current { font-weight: 800; }
+.pd-rm-name--future { color: var(--pd-n400); }
+
+.pd-rm-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--pd-color-accent, #F97316);
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pd-rm-subtitle {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--pd-n400);
+  margin-top: 2px;
+}
+
+/* ===== 4. Current expanded card ===== */
+.pd-rm-card {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--pd-color-white);
+  border: 1px solid var(--pd-n200);
+  border-left: 3px solid var(--pd-color-primary);
+}
+.pd-rm-card-desc {
+  font-size: 0.78rem;
+  color: var(--pd-n600);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.pd-rm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.pd-rm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: transparent;
+  border: 1.5px solid var(--pd-n300);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--pd-n600);
+  transition: background 150ms, border-color 150ms, color 150ms;
+}
+.pd-rm-pill--active {
+  color: #fff;
+  border-color: transparent;
+}
+
+.pd-rm-tab-content {
+  padding-top: 4px;
+  margin-bottom: 14px;
+}
+
+/* Bullets list */
+.pd-rm-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pd-rm-bullet {
+  display: flex;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--pd-n700);
+  line-height: 1.45;
+}
+.pd-rm-bullet-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: inline-flex;
+}
+.pd-rm-bullet-text { flex: 1; min-width: 0; }
+
+/* Pain tab — warning-style note */
+.pd-rm-pain-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--pd-color-warn-bg);
+  border-left: 3px solid var(--pd-color-warn);
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #92400E;
+  line-height: 1.45;
+}
+.pd-rm-pain-note svg { flex-shrink: 0; margin-top: 1px; }
+
+/* Exit criteria (Вариант A — список без met/cur) */
+.pd-rm-criteria {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--pd-n200);
+}
+.pd-rm-criteria-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--pd-n700);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pd-rm-criteria-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pd-rm-criteria-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--pd-n50);
+  border: 1px solid var(--pd-n200);
+  font-size: 0.76rem;
+  color: var(--pd-n700);
+  line-height: 1.4;
+}
+.pd-rm-criteria-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--pd-n400);
+  margin-top: 7px;
+}
+
+/* ===== 5. Future phases — accordion ===== */
+.pd-rm-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--pd-n500);
+  cursor: pointer;
+}
+.pd-rm-more-btn:hover { color: var(--pd-n700); }
+.pd-rm-more-chev { transition: transform 200ms ease; }
+.pd-rm-more-chev--open { transform: rotate(180deg); }
+
+.pd-rm-future-card {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--pd-n50);
+  border: 1px solid var(--pd-n200);
+}
+.pd-rm-future-card p {
+  font-size: 0.74rem;
+  color: var(--pd-n600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== 6. Empty + Info ===== */
+.pd-rm-empty {
+  font-size: 0.78rem;
+  color: var(--pd-n500);
+  padding: 16px 0;
+  margin: 0;
+}
+
+.pd-rm-info {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding-left: 12px;
+  border-left: 3px solid var(--pd-n200);
+}
+.pd-rm-info svg { flex-shrink: 0; margin-top: 3px; }
+.pd-rm-info p {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--pd-n400);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 480px) {
+  .pd-rm { padding: 0 16px 20px; }
+  .pd-rm-title { font-size: 1.05rem; }
+  .pd-rm-row { gap: 10px; }
+  .pd-rm-card { padding: 12px; }
+}
+
+@media (min-width: 769px) {
+  .pd-rm { padding: 0 32px 32px; }
+}
