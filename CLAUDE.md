@@ -595,15 +595,15 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | # | Severity | Описание |
 |---|----------|----------|
 | 1 | HIGH | **Rate limiting выключен в dev** — если NODE_ENV ≠ production (by design) |
-| 2 | MEDIUM | **validators.js — dead code** — все правила определены, но ни один роут их не использует |
-| 3 | MEDIUM | **Dashboard stats = хардкод нулей** — endpoint существует, не вызывается |
-| 4 | MEDIUM | **templates.update не отправляет body** — `api.put('/templates/${id}')` без `data` |
-| 5 | MEDIUM | **EditComplex.handleAddExercise** — `toast.success('Ссылка скопирована!')` при дубле (copy-paste ошибка) |
+| ~~2~~ | ~~MEDIUM~~ | ~~validators.js dead code~~ → **ЗАКРЫТО** (2026-04-22, `4d49598`): подключено к auth, patient-auth, patients, diagnoses, progress. Exercise/complex валидаторы пропущены (video_url required и exercises min=1 ломают flows). |
+| ~~3~~ | ~~MEDIUM~~ | ~~Dashboard stats хардкод нулей~~ → **ЗАКРЫТО** (2026-04-22, `8747c7c`): Dashboard.js теперь вызывает `/api/dashboard/stats` на mount. |
+| ~~4~~ | ~~MEDIUM~~ | ~~templates.update не шлёт body~~ → **ЗАКРЫТО** (2026-04-22, `8747c7c`). |
+| ~~5~~ | ~~MEDIUM~~ | ~~EditComplex copy-paste «Ссылка скопирована!»~~ → **ЗАКРЫТО** (2026-04-22, `8747c7c`). |
 | ~~6~~ | ~~MEDIUM~~ | ~~**DiaryScreen** — структурированные данные сериализуются в текст `notes`~~ → **ЗАКРЫТО** (миграция 20260421_diary_structured_fields, v12 redesign) |
 | 7 | MEDIUM | **80+ дублей CSS-классов** — глобальные стили конфликтуют |
-| 8 | MEDIUM | **Нет аудит-логов для чтения** данных пациентов (GDPR compliance) |
+| ~~8~~ | ~~MEDIUM~~ | ~~GDPR аудит-логи на чтение данных пациентов~~ → **ЗАКРЫТО** (2026-04-22, `6b36bd2`): `backend/utils/audit.js` + logAudit на GET patients, GET patients/:id, GET progress/patient/:id, GET rehab/programs/:id/diary, GET rehab/programs/:id/messages. |
 | 9 | LOW | **ErrorBoundary не ловит** async ошибки из useEffect |
-| 10 | LOW | **messages.sender_id** — нет FK constraint |
+| 10 | LOW | **messages.sender_id** — нет FK constraint (требует полиморфного split patient.id vs users.id) |
 
 ## Завершённые исправления (защита от регрессий)
 
