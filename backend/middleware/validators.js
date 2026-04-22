@@ -137,7 +137,7 @@ const progressValidator = [
 
   body('session_id')
     .optional({ nullable: true })
-    .isUUID(4).withMessage('session_id должен быть UUID'),
+    .isInt({ min: 1 }).withMessage('session_id должен быть положительным числом'),
 
   body('session_comment')
     .optional({ nullable: true })
@@ -179,7 +179,10 @@ const exerciseValidator = [
 
   body('body_region')
     .optional({ nullable: true })
-    .isIn(['shoulder', 'knee', 'spine', 'hip', 'other']).withMessage('Недопустимая область тела'),
+    .isIn([
+      'shoulder', 'knee', 'hip', 'spine', 'ankle',
+      'elbow', 'wrist', 'full_body'
+    ]).withMessage('Недопустимая область тела'),
 
   body('difficulty_level')
     .optional({ nullable: true })

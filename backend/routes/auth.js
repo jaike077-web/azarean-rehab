@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { query } = require('../database/db');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { registerValidator, loginValidator } = require('../middleware/validators');
 const { hashToken } = require('../utils/tokens');
 const config = require('../config/config');
 
@@ -57,7 +58,7 @@ const generateRefreshToken = async (userId) => {
 // =====================================================
 
 // Регистрация нового пользователя (инструктора/админа) — только для админов
-router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/register', authenticateToken, requireAdmin, registerValidator, async (req, res) => {
   try {
     const { email, password, full_name, role = 'instructor' } = req.body;
 
@@ -144,7 +145,7 @@ router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // Вход в систему
-router.post('/login', async (req, res) => {
+router.post('/login', loginValidator, async (req, res) => {
   try {
     const { email, password } = req.body;
 

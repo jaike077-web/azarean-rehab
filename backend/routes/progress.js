@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
 const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
+const { progressValidator } = require('../middleware/validators');
 
 // Отметить выполнение упражнения (JWT инструктора или JWT пациента через cookie/Bearer)
-router.post('/', authenticatePatientOrInstructor, async (req, res) => {
+router.post('/', authenticatePatientOrInstructor, progressValidator, async (req, res) => {
   try {
     const {
       complex_id,

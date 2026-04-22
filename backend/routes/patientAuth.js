@@ -15,6 +15,7 @@ const { query } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
+const { registerValidator, loginValidator } = require('../middleware/validators');
 const { avatarUpload, processAvatar } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
@@ -100,7 +101,7 @@ const clearAccessCookie = (res) => {
 // =====================================================
 // POST /register — Регистрация пациента
 // =====================================================
-router.post('/register', async (req, res) => {
+router.post('/register', registerValidator, async (req, res) => {
   try {
     const { email, password, full_name, phone, birth_date } = req.body;
 
@@ -213,7 +214,7 @@ router.post('/register', async (req, res) => {
 // =====================================================
 // POST /login — Вход пациента
 // =====================================================
-router.post('/login', async (req, res) => {
+router.post('/login', loginValidator, async (req, res) => {
   try {
     const { email, password } = req.body;
 

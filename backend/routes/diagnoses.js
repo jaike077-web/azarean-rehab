@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+const { diagnosisValidator } = require('../middleware/validators');
 
 // =====================================================
 // GET /api/diagnoses - Получить все диагнозы
@@ -81,7 +82,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // =====================================================
 // POST /api/diagnoses - Создать новый диагноз
 // =====================================================
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, diagnosisValidator, async (req, res) => {
   const { name, description, recommendations, warnings } = req.body;
 
   // Валидация
@@ -139,7 +140,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // =====================================================
 // PUT /api/diagnoses/:id - Обновить диагноз
 // =====================================================
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, diagnosisValidator, async (req, res) => {
   const { id } = req.params;
   const { name, description, recommendations, warnings } = req.body;
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+const { patientValidator } = require('../middleware/validators');
 
 // Получить всех своих пациентов
 router.get('/', authenticateToken, async (req, res) => {
@@ -172,7 +173,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Создать нового пациента
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, patientValidator, async (req, res) => {
   try {
     // ИЗМЕНЕНО: добавлен diagnosis
     const { full_name, email, phone, birth_date, diagnosis, notes } = req.body;
@@ -218,7 +219,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Обновить данные пациента
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
   try {
     const { id } = req.params;
     // ИЗМЕНЕНО: добавлен diagnosis
