@@ -233,7 +233,13 @@ export default function PatientDashboard() {
       </header>
 
       <div className="pd-content" ref={scrollRef}>
-        <div className="pd-fade-in">
+        {/* key={screen} — обнуляет animation pd-fadeUp только при смене таба.
+            Без key React оставляет тот же DOM-узел при setState внутри
+            экрана → animation не воспроизводится повторно. С key animation
+            корректно играет на каждом переходе HomeScreen ↔ DiaryScreen,
+            но НЕ на setPhotos / setEntryId внутри уже открытого Diary
+            (что выглядело как «перезагрузка экрана»). */}
+        <div key={screen} className="pd-fade-in">
           {renderScreen()}
         </div>
       </div>

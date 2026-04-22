@@ -605,6 +605,7 @@ export default function DiaryScreen({
         <div className="pd-diary-section-head">
           <MessageSquare size={14} color="var(--pd-color-primary)" aria-hidden="true" />
           <span className="pd-diary-section-title">Заметка</span>
+          <span className="pd-diary-section-sub">сохраняется автоматически</span>
         </div>
         <textarea
           className="pd-diary-notes"
@@ -613,6 +614,10 @@ export default function DiaryScreen({
           placeholder="Что заметили? Ощущения, активности..."
           maxLength={2000}
         />
+        <div className="pd-diary-notes-hint">
+          Через секунду после паузы запись уйдёт в дневник — кнопка
+          «Сохранить» не нужна. В шапке моргнёт «Сохранено».
+        </div>
       </section>
 
       {/* 10. MessengerCTA — onSend копирует отчёт в буфер, потом <a href>

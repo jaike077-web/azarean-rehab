@@ -54,13 +54,12 @@
   color: var(--pd-n500);
 }
 
-/* ===== PGIC info-bar ===== */
+/* ===== PGIC info-bar — плоская плашка без рамки ===== */
 .pd-diary-pgic {
   padding: 10px 14px;
   border-radius: 12px;
   margin-bottom: 14px;
-  background: var(--pd-color-primary-bg);
-  border: 1px solid color-mix(in srgb, var(--pd-color-primary) 30%, transparent);
+  background: color-mix(in srgb, var(--pd-color-primary) 7%, var(--pd-color-white));
   display: flex;
   align-items: center;
   gap: 10px;
@@ -105,9 +104,10 @@
   background: var(--pd-color-white);
   border-radius: 14px;
   padding: 14px 14px 12px;
-  /* Без border — плоский flat-look, как в современных iOS/Android apps.
-     Тонкая тень выделяет card от серого фона экрана. */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  /* Полностью плоская card — без border/shadow. От фона отличается
+     background'ом (white vs var(--pd-color-bg) #F8FAF7). Раньше box-shadow
+     0 1px 3px воспринимался пользователем как «рамка» на некоторых
+     мониторах из-за субпиксельного рендеринга. */
 }
 
 /* ===== Pain slider ===== */
@@ -219,27 +219,30 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 12px;
+  padding: 8px 13px;
   border-radius: 10px;
-  border: 1px solid var(--pd-n200);
-  background: var(--pd-color-white);
+  border: none;
+  background: var(--pd-n100);
   font-family: inherit;
   font-size: 0.72rem;
   font-weight: 500;
-  color: var(--pd-n600);
+  color: var(--pd-n700);
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: background 150ms ease, color 150ms ease;
 }
 
 .pd-diary-pill:hover {
-  border-color: var(--pd-n300);
+  background: var(--pd-n200);
 }
 
 .pd-diary-pill--active {
   background: var(--pd-color-primary);
-  border-color: var(--pd-color-primary);
   color: #fff;
   font-weight: 700;
+}
+
+.pd-diary-pill--active:hover {
+  background: var(--pd-color-primary-dark);
 }
 
 /* ===== ROM ===== */
@@ -275,9 +278,9 @@
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  border: 1.5px solid var(--pd-n300);
-  background: transparent;
-  color: var(--pd-n600);
+  border: none;
+  background: var(--pd-n100);
+  color: var(--pd-n700);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -286,10 +289,15 @@
   font-weight: 700;
   font-size: 1rem;
   flex-shrink: 0;
+  transition: background 150ms ease;
 }
 
 .pd-diary-rom-btn:hover {
-  background: var(--pd-n50);
+  background: var(--pd-n200);
+}
+
+.pd-diary-rom-btn:active {
+  background: var(--pd-n300);
 }
 
 /* ROM native slider — аналогично pain slider: отдельные правила для
@@ -468,6 +476,14 @@
   border-color: var(--pd-color-primary);
 }
 
+.pd-diary-notes-hint {
+  font-size: 0.62rem;
+  color: var(--pd-n400);
+  margin-top: 6px;
+  padding: 0 4px;
+  line-height: 1.4;
+}
+
 /* ===== MessengerCTA spacing ===== */
 .pd-diary-cta {
   margin-bottom: 20px;
@@ -479,7 +495,6 @@
   border-radius: 14px;
   margin-bottom: 14px;
   background: var(--pd-color-white);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .pd-diary-trend-head {
@@ -540,7 +555,6 @@
   padding: 10px 14px;
   background: var(--pd-color-white);
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   margin-bottom: 6px;
 }
 
