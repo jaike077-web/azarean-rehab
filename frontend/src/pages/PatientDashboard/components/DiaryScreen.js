@@ -85,6 +85,24 @@ const formatHistDate = (isoOrText) => {
 // Маппинг swelling int → значок для истории
 const SWELLING_HIST_CHAR = { 0: '—', 1: '↓', 2: '=', 3: '↑' };
 
+// Лейбл ROM-секции зависит от сустава. Определяем по diagnosis-строке.
+// Временное решение — substring match; полноценно будет когда добавим
+// rehab_programs.target_joint (отдельная миграция в Session 2+).
+// Каждая запись: matcher (regex), label для заголовка, goal в градусах.
+const ROM_JOINT_PROFILES = [
+  { rx: /пкс|колен|acl|мениск/i, label: 'Сгибание колена', goal: 140 },
+  { rx: /плеч|shoulder/i, label: 'Подвижность плеча', goal: 180 },
+  { rx: /тбс|тазобедр|бедро|hip/i, label: 'Сгибание бедра', goal: 120 },
+  { rx: /локт|elbow/i, label: 'Сгибание локтя', goal: 145 },
+  { rx: /голеностоп|ankle/i, label: 'Подвижность голеностопа', goal: 50 },
+];
+
+const detectRomProfile = (diagnosis) => {
+  if (!diagnosis) return { label: 'Угол сгибания', goal: 140 };
+  const hit = ROM_JOINT_PROFILES.find((p) => p.rx.test(diagnosis));
+  return hit || { label: 'Угол сгибания', goal: 140 };
+};
+
 // ===== Главный компонент =====
 export default function DiaryScreen({
   patient, onOpenProfile, pgicFeel, dashboardData,
@@ -127,6 +145,10 @@ export default function DiaryScreen({
   const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
   const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
+  const romProfile = useMemo(
+    () => detectRomProfile(dashboardData?.program?.diagnosis || ''),
+    [dashboardData?.program?.diagnosis],
+  );
 
   // Загружаем сегодняшнюю запись + trend + history в параллель
   useEffect(() => {
@@ -225,9 +247,13 @@ export default function DiaryScreen({
     // Optimistic preview: делаем blob URL прямо из File, показываем
     // миниатюру немедленно с временным id `tempId`. Заменим на серверный
     // объект после upload; если upload упал — удалим tile.
+    // `_stableKey` остаётся неизменным при replace — React не unmount'ит
+    // DiaryPhotoTile, не перезапрашивает blob, нет мерцания «перезагрузки».
     const tempId = `tmp-${Date.now()}`;
     const localUrl = URL.createObjectURL(file);
-    setPhotos((prev) => [...prev, { id: tempId, localUrl, uploading: true }]);
+    setPhotos((prev) => [...prev, {
+      id: tempId, _stableKey: tempId, localUrl, uploading: true,
+    }]);
 
     // Нужна запись дневника чтобы к ней привязать фото.
     let currentEntryId = entryId;
@@ -254,8 +280,10 @@ export default function DiaryScreen({
       const res = await rehab.uploadDiaryPhoto(currentEntryId, fd);
       // Заменяем placeholder реальным объектом от сервера, сохраняя localUrl
       // для мгновенного preview (blob действителен пока компонент живёт).
+      // Сохраняем _stableKey = tempId → React не unmount'ит tile, нет
+      // повторного fetchDiaryPhotoBlob, нет мерцания.
       setPhotos((prev) => prev.map((p) => (
-        p.id === tempId ? { ...res.data, localUrl } : p
+        p.id === tempId ? { ...res.data, _stableKey: tempId, localUrl } : p
       )));
       toast.success('Фото добавлено');
     } catch (err) {
@@ -279,6 +307,40 @@ export default function DiaryScreen({
   const toggleBetter = (v) => {
     setBetter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
   };
+
+  // Отправка отчёта куратору. MessengerCTA сам открывает мессенджер,
+  // мы дополнительно формируем текстовый отчёт и кладём его в буфер —
+  // пациент вставит в чат одним Ctrl+V. Toast объясняет что сделано.
+  const handleReportCopy = useCallback(async () => {
+    const painWhenLabel = PAIN_WHEN.find((o) => o.v === painWhen)?.label || '';
+    const swellingLabel = SWELLING_OPTS.find((o) => o.v === swelling)?.label || '';
+    const betterLabels = better
+      .map((v) => BETTER_OPTS.find((o) => o.v === v)?.label)
+      .filter(Boolean)
+      .join(', ');
+    const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    const lines = [
+      `Дневник за ${dateStr}`,
+      `Боль: ${pain}/10 (${PAIN_LABELS[pain]})${painWhenLabel ? ` · ${painWhenLabel}` : ''}`,
+      swellingLabel && `Отёк: ${swellingLabel}`,
+      `Сгибание: ${rom}°`,
+      betterLabels && `Улучшилось: ${betterLabels}`,
+      notes.trim() && `Заметка: ${notes.trim()}`,
+    ].filter(Boolean);
+    const text = lines.join('\n');
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast.success('Отчёт скопирован', 'Вставьте в чат куратору (Ctrl+V)');
+      } else {
+        // Fallback для старых браузеров / http (не-secure context)
+        toast.info('Отчёт готов', 'Напишите куратору сами — clipboard API недоступен');
+      }
+    } catch {
+      toast.error('Не удалось скопировать', 'Напишите отчёт вручную');
+    }
+  }, [pain, painWhen, swelling, rom, better, notes, toast]);
 
   // Sparkline points
   const sparkline = useMemo(() => {
@@ -426,13 +488,13 @@ export default function DiaryScreen({
       </section>
 
       {/* 6. ROM — перетаскиваемый слайдер + ± для точной подстройки.
-            «Сгибание» = угол при сгибании колена (0..180°). Пациенты
-            без гониометра оценивают визуально — на ±5° приемлемо. Для
-            точной настройки есть ± кнопки (±1°). */}
+            Лейбл и цель берутся из romProfile (колено/плечо/ТБС/локоть/
+            голеностоп — определяется по program.diagnosis). Пациенты без
+            гониометра оценивают визуально, ±5° — приемлемо для тренда. */}
       <section className="pd-diary-section">
         <div className="pd-diary-section-head">
           <Target size={14} color="var(--pd-color-primary)" aria-hidden="true" />
-          <span className="pd-diary-section-title">Сгибание колена</span>
+          <span className="pd-diary-section-title">{romProfile.label}</span>
           <span className="pd-diary-section-sub">угол</span>
         </div>
         <div className="pd-diary-card pd-diary-rom">
@@ -470,7 +532,7 @@ export default function DiaryScreen({
           </div>
           <div className="pd-diary-rom-labels">
             <span>0°</span>
-            <span className="pd-diary-rom-goal">Цель: 140°</span>
+            <span className="pd-diary-rom-goal">Цель: {romProfile.goal}°</span>
             <span>180°</span>
           </div>
         </div>
@@ -486,7 +548,7 @@ export default function DiaryScreen({
         <div className="pd-diary-photos">
           {photos.map((p) => (
             <DiaryPhotoTile
-              key={p.id}
+              key={p._stableKey || p.id}
               entryId={entryId}
               photoId={p.id}
               localUrl={p.localUrl}
@@ -553,10 +615,12 @@ export default function DiaryScreen({
         />
       </section>
 
-      {/* 10. MessengerCTA */}
+      {/* 10. MessengerCTA — onSend копирует отчёт в буфер, потом <a href>
+            открывает мессенджер: пациент в 2 тапа отправляет полный отчёт. */}
       <MessengerCTA
         primary={primaryMessenger}
         label="Отправить отчёт"
+        onSend={handleReportCopy}
         className="pd-diary-cta"
       />
 
