@@ -194,6 +194,27 @@ echo "ℹ Процесс azarean-rehab стартует при первом ус
 echo "ℹ pm2-logrotate должен быть установлен (см. jarvis setup). Проверить: pm2 list"
 pm2 list | head -5 || true
 
+# ─── 7b. Logrotate для наших логов ───
+# PM2 логи ротируются через pm2-logrotate модуль (уже установлен).
+# Наши shell-скрипты пишут в /var/log/azarean-rehab-*.log — ротируем через
+# системный logrotate.
+LOGROTATE_CONF="/etc/logrotate.d/azarean-rehab"
+if [ ! -f "$LOGROTATE_CONF" ]; then
+  cat > "$LOGROTATE_CONF" <<'EOF'
+/var/log/azarean-rehab-*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+  chmod 644 "$LOGROTATE_CONF"
+  echo "✓ Logrotate настроен (/var/log/azarean-rehab-*.log, 8 недель)"
+fi
+
 # ─── 7. Cron для бэкапов ───
 echo ""
 echo "═══ 7. Cron ═══"
