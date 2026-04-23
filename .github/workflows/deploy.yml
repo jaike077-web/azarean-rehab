@@ -1,0 +1,229 @@
+name: Deploy to production VDS
+
+# =====================================================
+# Azarean Rehab — CI/CD deploy
+# -----------------------------------------------------
+# Триггеры:
+#   - push в main (автодеплой)
+#   - workflow_dispatch (ручной запуск с выбором ветки)
+#
+# Что делает:
+#   1. Checkout + setup Node 20
+#   2. Backend: npm ci + тесты
+#   3. Frontend: npm ci + тесты + build
+#   4. Tar-архив артефактов (без node_modules)
+#   5. SSH → VDS: upload, распаковка в /opt/azarean-rehab/releases/<timestamp>
+#   6. Атомарный swap симлинка /opt/azarean-rehab/backend и /opt/azarean-rehab/frontend
+#   7. npm ci --production для backend
+#   8. Прогон миграций
+#   9. pm2 reload azarean-rehab (zero-downtime)
+#   10. Smoke-тест HTTPS endpoint
+#
+# GitHub Secrets, которые должны быть настроены:
+#   SSH_PRIVATE_KEY  — приватный ключ ED25519
+#   SSH_HOST         — 185.93.109.234
+#   SSH_USER         — root
+#   # Секреты для .env на VDS ставятся ВРУЧНУЮ через SSH, не через Actions —
+#   # чтобы не хранить их в GitHub.
+# =====================================================
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Пропустить тесты (для hotfix)'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # не отменяем текущий deploy, дожидаемся
+
+env:
+  NODE_VERSION: '20'
+  APP_DIR: /opt/azarean-rehab
+  PM2_NAME: azarean-rehab
+  DOMAIN: my.azarean.ru
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.skip_tests != 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend deps
+        run: cd backend && npm ci
+
+      - name: Install frontend deps
+        run: cd frontend && npm ci --legacy-peer-deps
+
+      - name: Test backend
+        run: cd backend && npm test
+        env:
+          NODE_ENV: test
+
+      - name: Test frontend
+        run: cd frontend && CI=true npx react-scripts test --watchAll=false
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && (needs.test.result == 'success' || github.event.inputs.skip_tests == 'true')
+    outputs:
+      artifact_name: ${{ steps.pack.outputs.name }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci --legacy-peer-deps
+          CI=false npm run build
+        env:
+          # Single-origin setup: baseURL = '' → запросы идут на /api/* того же хоста
+          REACT_APP_API_URL: ''
+          GENERATE_SOURCEMAP: 'false'
+
+      - name: Install backend prod deps (для tar)
+        run: |
+          cd backend
+          npm ci --omit=dev
+
+      - name: Pack release tarball
+        id: pack
+        run: |
+          NAME="azarean-rehab-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA:0:7}"
+          mkdir -p release/backend release/frontend release/deploy
+          # Backend без dev-зависимостей
+          rsync -a --exclude='tests' --exclude='.env*' backend/ release/backend/
+          # Frontend — только build
+          rsync -a frontend/build/ release/frontend/build/
+          # Deploy-скрипты и ecosystem
+          rsync -a deploy/ release/deploy/
+          # Мета
+          echo "$GITHUB_SHA" > release/GIT_SHA
+          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/BUILD_TIME
+          # Архив
+          tar -czf "${NAME}.tar.gz" -C release .
+          ls -lh "${NAME}.tar.gz"
+          echo "name=${NAME}" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pack.outputs.name }}
+          path: ${{ steps.pack.outputs.name }}.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy to VDS
+    runs-on: ubuntu-latest
+    needs: build
+    environment: production  # GitHub environment — можно добавить manual approval
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        run: |
+          TARBALL="${{ needs.build.outputs.artifact_name }}.tar.gz"
+          scp "$TARBALL" ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/
+
+      - name: Extract and swap symlinks
+        run: |
+          RELEASE="${{ needs.build.outputs.artifact_name }}"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s <<EOF
+            set -euo pipefail
+            APP_DIR="${{ env.APP_DIR }}"
+            RELEASES="\$APP_DIR/releases"
+            mkdir -p "\$RELEASES/$RELEASE"
+            tar -xzf /tmp/${RELEASE}.tar.gz -C "\$RELEASES/$RELEASE"
+            rm /tmp/${RELEASE}.tar.gz
+
+            # Сохраняем текущий .env перед swap
+            if [ -f "\$APP_DIR/backend/.env" ]; then
+              cp "\$APP_DIR/backend/.env" "\$RELEASES/$RELEASE/backend/.env"
+            fi
+
+            # Атомарный swap: переименовываем директории
+            # (симлинки не используем — PM2 работает с cwd, переименование проще)
+            if [ -d "\$APP_DIR/backend" ] && [ ! -L "\$APP_DIR/backend" ]; then
+              mv "\$APP_DIR/backend" "\$APP_DIR/backend.old.\$(date +%s)"
+            fi
+            if [ -d "\$APP_DIR/frontend" ] && [ ! -L "\$APP_DIR/frontend" ]; then
+              mv "\$APP_DIR/frontend" "\$APP_DIR/frontend.old.\$(date +%s)"
+            fi
+
+            mv "\$RELEASES/$RELEASE/backend"  "\$APP_DIR/backend"
+            mv "\$RELEASES/$RELEASE/frontend" "\$APP_DIR/frontend"
+            cp -r "\$RELEASES/$RELEASE/deploy/"* "\$APP_DIR/deploy/"
+
+            # Ставим production deps
+            cd "\$APP_DIR/backend"
+            npm ci --omit=dev --no-audit --no-fund
+
+            # Миграции
+            bash "\$APP_DIR/deploy/migrate.sh"
+
+            # PM2 reload (zero-downtime) или первый старт
+            if pm2 describe ${{ env.PM2_NAME }} >/dev/null 2>&1; then
+              pm2 reload ${{ env.PM2_NAME }} --update-env
+            else
+              pm2 start "\$APP_DIR/deploy/ecosystem.config.js"
+            fi
+            # pm2 save — обязательно после каждого старта/reload'a чтобы после
+            # reboot VDS процесс поднялся через systemd pm2-root.service
+            # (регистрация systemd-unit сделана в setup.sh шаг 6a).
+            pm2 save
+
+            # Чистим старые релизы (оставляем 5 последних)
+            cd "\$RELEASES"
+            ls -1t | tail -n +6 | xargs -r rm -rf
+
+            # Чистим .old.* от предыдущего swap (оставляем 2 последних)
+            cd "\$APP_DIR"
+            ls -1dt backend.old.* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+            ls -1dt frontend.old.* 2>/dev/null | tail -n +3 | xargs -r rm -rf
+          EOF
+
+      - name: Smoke test
+        run: |
+          sleep 5
+          echo "Testing https://${{ env.DOMAIN }}/ ..."
+          curl -fsSL -o /dev/null -w "Frontend: HTTP %{http_code}\n" "https://${{ env.DOMAIN }}/"
+          curl -fsSL -o /dev/null -w "API: HTTP %{http_code}\n" "https://${{ env.DOMAIN }}/api/rehab/phases?type=acl"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::warning::Deploy failed — проверьте SSH логи и pm2 status"

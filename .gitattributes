@@ -1,0 +1,7 @@
+# Shell-скрипты и все файлы deploy/ — всегда LF (иначе bash на Linux не запустит).
+*.sh              text eol=lf
+deploy/*          text eol=lf
+deploy/**/*       text eol=lf
+*.conf            text eol=lf
+Dockerfile        text eol=lf
+.github/**/*.yml  text eol=lf
