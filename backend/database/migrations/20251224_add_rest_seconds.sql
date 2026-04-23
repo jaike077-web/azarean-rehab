@@ -25,4 +25,3 @@ DO $$
 BEGIN 
   RAISE NOTICE 'Migration completed: rest_seconds column added to template_exercises';
 END $$;
-```
