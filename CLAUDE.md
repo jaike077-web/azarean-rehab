@@ -648,7 +648,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 32. **ContactScreen дублирует polling intervals** → cleanup перед generate
 
 ### BUG (закрытые v12 redesign — 2026-04-20)
-33. **DiaryScreen crash `Cannot convert undefined or null to object`** → stale запись. Поиск по PatientDashboard tree не нашёл ни одного `Object.entries`/`Object.keys`/`Object.values` без guard'а; stack-trace указывал на `ContactScreen.js:552` вне границ файла (всего 451 строка) — артефакт старого бандла. Ручная проверка в dev-браузере на тапе «Дневник» — console чистая.
+33. **DiaryScreen crash `Cannot convert undefined or null to object`** → **не воспроизводится после v12 rewrite** (не «закрыт фиксом»). Оригинальный stack trace указывал на `ContactScreen.js:552` — файл был на 451 строку (артефакт старого бандла). После полного редизайна DiaryScreen и ContactScreen в Checkpoints 5–6 код 99% другой, старый сценарий неактуален. Grep по `Object.entries`/`keys`/`values` в новом коде — все под guard'ом. Ручная проверка в dev-браузере на тапе «Дневник» — console чистая. **Если баг повторится — retrace с новым stack trace, НЕ считать это пометки-resolve достаточной защитой.**
 34. **F5 flicker — мелькает Login на /patient-dashboard** → новый `<PatientSplash/>` (full-screen logo+spinner) показывается пока `PatientAuthProvider.loading=true`. `PatientRoute` и `PatientLogin` оба проверяют `authLoading` перед рендером.
 
 ## Структура тестов

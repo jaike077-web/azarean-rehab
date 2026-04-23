@@ -160,18 +160,21 @@ frontend/
 
 **Закрытые баги за Сессию 1:**
 - `#6` Diary структурированные данные сериализовались в notes → теперь отдельные колонки
-- `#11` DiaryScreen crash — stale, поиск по tree не нашёл ни одного `Object.entries` без guard
+- `#11` DiaryScreen crash — **не воспроизводится после v12 rewrite** (не равно «починено фиксом»). DiaryScreen и ContactScreen переписаны с нуля в Checkpoints 5–6 → исходный stack trace `ContactScreen.js:552` неактуален. Grep по `Object.entries/keys/values` в новом коде — все под guard. Статус «resolved if не повторится», при регрессии — retrace с новым stack.
 - `#12` F5 flicker — фикс через `PatientSplash` + отключённый dev-SW + bumped CACHE_NAME
+
+**Баг, появившийся В ПРОЦЕССЕ Session 1 (не из брифа):**
+- **bug_diary_photo_refresh** — визуальное мерцание при upload фото в DiaryScreen. Появился в Checkpoint 6 при имплементации photo upload. Применённые фиксы (stable key, optimistic preview через localUrl, React.memo с custom comparator, min-height grid) **не помогли**. Root cause теория архитектора про blob:// → /api URL swap **не подходит** — в коде `DiaryPhotoTileImpl` preservируется `localUrl` после upload (`{ ...res.data, _stableKey: tempId, localUrl }`), `img.src` не меняется. Реальная причина скорее всего в `setPhotos` → full re-render родителя DiaryScreen → DOM reflow через всю секцию. Нужна диагностика через DevTools Performance Profiler с записью upload-сценария, low priority.
 
 **Новые API за Сессию 1:**
 - `GET /api/rehab/my/diary/trend?days=N` — sparkline боли
 - `POST/GET/DELETE /api/rehab/my/diary/:entry_id/photos/:photo_id` — фото дневника
 - Расширения: `/me` (preferred_messenger, diagnosis, telegram_chat_id), `/my/messages` (linked_diary_date JOIN, channel), `/my/diary` (pgic_feel, rom_degrees, better_list, pain_when)
 
-**Новые DB-миграции за Сессию 1:**
-- `20260421_patient_preferred_messenger.sql`
-- `20260421_progress_difficulty_rpe10.sql`
-- `20260421_diary_structured_fields.sql`
+**Новые DB-миграции за Сессию 1** (три — все датой применения 2026-04-21, независимые таблицы, порядок не важен):
+- `20260421_patient_preferred_messenger.sql` — `patients.preferred_messenger` + `messages.linked_diary_id` + `messages.channel` (Checkpoint 2 по плану)
+- `20260421_diary_structured_fields.sql` — 4 колонки в `diary_entries` (pgic_feel/rom_degrees/better_list/pain_when) + таблица `diary_photos` (Checkpoint 6 по плану)
+- `20260421_progress_difficulty_rpe10.sql` — **bonus-fix, НЕ из плана**. Старый CHECK на `progress_logs.difficulty_rating` был `1..5` (Phase 1 Sprint), ронял 500 на difficulty ≥6. ExerciseRunner v3 (2026-04-13) использует Borg CR-10 RPE scale. Миграция релаксирует до `1..10` + `NULL` OK.
 
 ### 3.2 Сессия 2 — техдолг (5 MEDIUM-багов)
 
@@ -180,7 +183,7 @@ frontend/
 | `#3` Dashboard stats хардкод нулей | `8747c7c` | Dashboard.js теперь вызывает `/api/dashboard/stats` на mount, рендерит `patients_count`, `complexes_count`, `completion_percent`, `exercises_count`. Fallback `—` до загрузки/на ошибку. |
 | `#4` `templates.update` без body | `8747c7c` | `api.put('/templates/${id}', data)` — одна строка, шаблоны перестали молча не сохраняться. |
 | `#5` EditComplex toast copy-paste | `8747c7c` | При дубле упражнения `toast.success('Ссылка скопирована!')` → `toast.warning('Это упражнение уже добавлено')`. Остаток от старого публичного-ссылочного flow. |
-| `#2` validators.js dead code | `4d49598` | 324 строки правил express-validator не были подключены. Подключено к: `POST /auth/register`, `POST /auth/login`, `POST /patient-auth/register`, `POST /patient-auth/login`, `POST/PUT /patients`, `POST/PUT /diagnoses`, `POST /progress`. Exercise/complex валидаторы **не подключены** — конфликтуют с реальными flows (`video_url` required + `exercises` min=1). Параллельно поправил `session_id UUID → INT` (не совпадало со схемой `progress_logs.session_id BIGINT`) и расширил `body_region` enum под `exerciseConstants`. |
+| `#2` validators.js dead code | `4d49598` | 324 строки правил express-validator не были подключены. Подключено к: `POST /auth/register`, `POST /auth/login`, `POST /patient-auth/register`, `POST /patient-auth/login`, `POST/PUT /patients`, `POST/PUT /diagnoses`, `POST /progress`. Exercise/complex валидаторы **не подключены** — конфликтуют с реальными flows (`video_url` required + `exercises` min=1). Параллельно поправил `session_id: isUUID(4) → isInt({ min: 1 })` (схема `progress_logs.session_id` — BIGINT; `isInt` без `max` держит до Number.MAX_SAFE_INTEGER 2^53, что покрывает `Date.now()` session_ids на сотни лет вперёд; gap до реального BIGINT max 2^63 latent и пока не актуален). Расширил `body_region` enum под `exerciseConstants`. |
 | `#8` GDPR audit-logs на чтения ПДн | `6b36bd2` | Новый `backend/utils/audit.js` — shared `logAudit(req, action, entityType, entityId, {patientId, details})` helper. Fire-and-forget. Подключено к 5 READ-эндпоинтам: `GET /patients`, `GET /patients/:id`, `GET /progress/patient/:patientId`, `GET /rehab/programs/:id/diary`, `GET /rehab/programs/:id/messages`. +4 unit-теста. |
 
 ---
@@ -291,7 +294,22 @@ frontend/
 | **Dark theme** | Не начато, но tokens.css готовы к теме |
 | **@uiw/react-md-editor** используется в Diagnoses для ПКС-описаний | Держим пакет на случай случайного drop в bundle optimization |
 
-### 6.3 Деплой — точки блокировки
+### 6.3 Замечания архитектора по этому отчёту (review 2026-04-23)
+
+Архитектор сделал код-ревью v1 этого отчёта. Проверенные технические точки:
+
+| Точка | Статус по факту |
+|---|---|
+| `messages.sender_type` существует? | ✅ **Да.** Колонка с миграции `20260210_rehab_tables.sql`. Live DB: `sender_type VARCHAR(20) NOT NULL CHECK IN ('patient','instructor')`. Полиморфизм через `sender_type`+`sender_id` — не галлюцинация. |
+| `session_id` INT vs BIGINT | ⚠️ **Нюанс, не баг.** Валидатор `isInt({ min: 1 })` без max; safe boundary = Number.MAX_SAFE_INTEGER = 2^53 ≈ 9e15; схема BIGINT = 2^63. Real-world значения (Date.now = ~1.8e12) далеко ниже обеих границ. Latent risk есть только если перейдём на UUID-hash или hot-path BIGINT counter. |
+| Bug #11 формулировка | ⚠️ **Слабая.** «Stale, не нашёл Object.entries» ≠ «починено». Правильно: «не воспроизводится после v12 rewrite, retrace при регрессии» (обновлено в CLAUDE.md). |
+| photo_refresh root cause blob-swap theory | ❌ **Не подходит** — `DiaryPhotoTileImpl` preservирует `localUrl` после upload, `img.src` не меняется с blob на /api. Реальная причина — вероятно `setPhotos` → re-render родителя DiaryScreen → DOM reflow. Нужен DevTools Performance Profiler. |
+
+Также зафиксированы 2 scope-момента:
+- **Future-фазы в полный план (не teaser)** — явный запрос пользователя 2026-04-22 («я бы на месте пациента хотел знать весь план»), не scope creep
+- **Roadmap 25 тестов** — часть рендер-тестов можно свернуть в `test.each`, маленькое over-coverage. Рефакторинг low priority
+
+### 6.4 Деплой — точки блокировки
 
 **Статус:** НЕ задеплоен. Планировался на VDS `185.93.109.234` (тот же, что JARVIS).
 
