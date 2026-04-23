@@ -173,7 +173,24 @@ fi
 # ─── 6. PM2 prep ───
 echo ""
 echo "═══ 6. PM2 prep ═══"
-echo "ℹ PM2 стартует процесс только после первого деплоя (когда код будет в $APP_DIR/backend/)"
+
+# 6a. pm2 startup — регистрируем PM2 как systemd-сервис чтобы после reboot
+# процессы поднимались автоматически. Идемпотентно: повторный запуск не ломает.
+PM2_STARTUP_DONE=$(systemctl list-unit-files 2>/dev/null | grep -c "pm2-root.service" || echo "0")
+if [ "$PM2_STARTUP_DONE" = "0" ]; then
+  echo "Регистрируем PM2 в systemd..."
+  pm2 startup systemd -u root --hp /root
+  echo "✓ PM2 systemd-юнит создан"
+else
+  echo "ℹ PM2 systemd-юнит уже есть (skip)"
+fi
+
+# 6b. pm2 save — сохранит текущий list процессов (будет пустой или с JARVIS
+# etc). Важно: после первого успешного deploy.yml тоже вызовется pm2 save,
+# чтобы наш azarean-rehab попал в сохранённый список.
+pm2 save || true
+
+echo "ℹ Процесс azarean-rehab стартует при первом успешном GitHub Actions deploy."
 echo "ℹ pm2-logrotate должен быть установлен (см. jarvis setup). Проверить: pm2 list"
 pm2 list | head -5 || true
 

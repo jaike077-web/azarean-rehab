@@ -218,6 +218,42 @@ gunzip -c /opt/azarean-rehab/backups/azarean_rehab-20260423-221500.sql.gz | \
 
 ---
 
+## Security backlog (после первого успешного запуска)
+
+Это MEDIUM-приоритетные hardening-задачи, которые сознательно отложены, чтобы не блокировать первый деплой. Запланировать через 2-3 недели после боевого запуска.
+
+### 1. Non-root deploy user на VDS
+
+**Сейчас:** GitHub Actions ходит на VDS под `root`. Если GitHub-аккаунт или репо скомпрометируется (утёкший PAT коллаборатора, malicious action в merged PR, credential stuffing) — атакующий получает root на shared VDS → доступ к JARVIS БД + возможность установить miner / использовать IP для атак.
+
+**Правильно:**
+- Создать юзера `deploy` на VDS с UID != 0
+- Дать ему `chown -R deploy:deploy /opt/azarean-rehab/`
+- Узкий `sudoers.d/deploy` whitelist: только `nginx reload`, `systemctl restart pm2-root`, `pm2 restart azarean-rehab`
+- В `authorized_keys` для gh-actions-ключа прописать `command="..."` restriction или использовать `rrsync` для ограничения пути
+
+**Оценка работы:** 1-2 часа для Claude Code, отдельный PR.
+
+### 2. Healthcheck алерты в Telegram
+
+Сейчас `healthcheck.sh` при fail рестартует PM2 и пишет в лог. **Алерты куратору/мейнтейнеру не уходят.** Если процесс падает в 3 ночи — узнаем утром из логов.
+
+**Правильно:** отдельный TG-бот `@azarean_alerts_bot` (или webhook в Telegram) → отсылать сообщение при HTTP 5xx/timeout. 30 мин работы.
+
+### 3. Production admin-email ≠ test patient email
+
+`jaike707@gmail.com` сейчас используется и как admin-контакт (certbot, security-алерты), и как один из тестовых пациентов в проекте. Для prod compliance лучше разделить: `admin@azarean.ru` для сервиса, `jaike707@` только как личная почта.
+
+### 4. `/api/health` endpoint
+
+Healthcheck сейчас использует публичный `/api/rehab/phases?type=acl` как proxy для liveness. Это работает, но:
+- Семантически `/api/health` чище (и привычнее для мониторингов)
+- Можно добавить более глубокие проверки (DB ping, Kinescope reachability)
+
+Low priority, но в будущий PR.
+
+---
+
 ## Не делать
 
 - **Не открывать 5432 наружу** — БД только localhost

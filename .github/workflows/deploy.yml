@@ -200,8 +200,11 @@ jobs:
               pm2 reload ${{ env.PM2_NAME }} --update-env
             else
               pm2 start "\$APP_DIR/deploy/ecosystem.config.js"
-              pm2 save
             fi
+            # pm2 save — обязательно после каждого старта/reload'a чтобы после
+            # reboot VDS процесс поднялся через systemd pm2-root.service
+            # (регистрация systemd-unit сделана в setup.sh шаг 6a).
+            pm2 save
 
             # Чистим старые релизы (оставляем 5 последних)
             cd "\$RELEASES"
