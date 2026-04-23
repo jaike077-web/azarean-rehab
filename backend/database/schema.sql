@@ -95,6 +95,30 @@ CREATE TABLE complex_exercises (
     UNIQUE(complex_id, order_number) -- уникальный порядок в комплексе
 );
 
+-- Таблица шаблонов комплексов (переиспользуемые заготовки для инструктора)
+CREATE TABLE templates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    diagnosis_id INTEGER REFERENCES diagnoses(id) ON DELETE SET NULL,
+    created_by INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Упражнения в шаблоне (связь многие-ко-многим)
+-- rest_seconds добавляется миграцией 20251224_add_rest_seconds.sql
+CREATE TABLE template_exercises (
+    id SERIAL PRIMARY KEY,
+    template_id      INTEGER REFERENCES templates(id) ON DELETE CASCADE,
+    exercise_id      INTEGER REFERENCES exercises(id) ON DELETE CASCADE,
+    order_number     INTEGER NOT NULL,
+    sets             INTEGER DEFAULT 3,
+    reps             INTEGER DEFAULT 10,
+    duration_seconds INTEGER,
+    notes            TEXT
+);
+
 -- Таблица логов прогресса пациента
 CREATE TABLE progress_logs (
     id SERIAL PRIMARY KEY,
@@ -122,6 +146,9 @@ CREATE INDEX idx_complex_exercises_complex ON complex_exercises(complex_id);
 CREATE INDEX idx_progress_complex ON progress_logs(complex_id);
 CREATE INDEX idx_progress_exercise ON progress_logs(exercise_id);
 CREATE INDEX idx_progress_logs_session_id ON progress_logs(session_id);
+CREATE INDEX idx_templates_created_by ON templates(created_by);
+CREATE INDEX idx_templates_diagnosis  ON templates(diagnosis_id);
+CREATE INDEX idx_template_exercises_template ON template_exercises(template_id);
 
 -- Добавим базовые диагнозы
 INSERT INTO diagnoses (name, category, description, recommendations, warnings) VALUES
