@@ -1,0 +1,21 @@
+-- =====================================================
+-- Migration: добавить complexes.access_token (recovery)
+-- Дата: 2024-09-30 (до всех миграций которые её упоминают)
+-- -----------------------------------------------------
+-- Причина: access_token исторически был в complexes, но был убран
+-- из schema.sql когда публичный /patient/:token flow удалялся
+-- (миграция 20260409_complexes_drop_access_token.sql дропает колонку).
+-- Промежуточные миграции между schema.sql и drop-шагом ссылаются на
+-- access_token (например 20260205_database_audit_fixes.sql:310 делает
+-- COMMENT ON COLUMN complexes.access_token).
+--
+-- На fresh install (prod первый деплой 2026-04-23) колонки не было
+-- → промежуточная миграция падала. Эта миграция ADD COLUMN IF NOT
+-- EXISTS восстанавливает колонку до того как её ждут миграции 20260205
+-- и 20260409_nullable.
+--
+-- Drop-миграция 20260409_complexes_drop_access_token.sql позже её
+-- убирает — чистый lifecycle: ADD → COMMENT → NULLable → DROP.
+-- =====================================================
+
+ALTER TABLE complexes ADD COLUMN IF NOT EXISTS access_token VARCHAR(255);

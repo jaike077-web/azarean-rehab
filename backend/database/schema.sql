@@ -73,6 +73,12 @@ CREATE TABLE complexes (
     instructor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     diagnosis_id INTEGER REFERENCES diagnoses(id) ON DELETE SET NULL,
     diagnosis_note VARCHAR(500), -- дополнительная информация о диагнозе
+    -- access_token: исторически использовался для публичного /patient/:token flow.
+    -- Дропается миграцией 20260409_complexes_drop_access_token.sql.
+    -- Оставлен в schema.sql чтобы промежуточные миграции 20260205 и 20260409_nullable
+    -- не падали на fresh install (они ссылаются на колонку прежде чем drop-миграция
+    -- её убирает).
+    access_token VARCHAR(255),
     recommendations TEXT,
     warnings TEXT,
     is_active BOOLEAN DEFAULT true,
