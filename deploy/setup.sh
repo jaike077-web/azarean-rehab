@@ -75,22 +75,35 @@ echo "═══ 2. PostgreSQL ═══"
 DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" || echo "")
 USER_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" || echo "")
 
-if [ -z "$DB_EXISTS" ] && [ -z "$USER_EXISTS" ]; then
-  echo "БД и юзер не существуют."
-  echo ""
-  echo "❗ ВАЖНО: сейчас введи пароль для $DB_USER (32+ символов)."
-  echo "   Запомни его — он пойдёт в .env как DB_PASSWORD."
-  echo "   Рекомендация: сгенерить заранее через: openssl rand -base64 32"
-  echo ""
+# Юзер: создать если нет, либо сбросить пароль по запросу
+if [ -z "$USER_EXISTS" ]; then
+  echo "Юзер $DB_USER не существует. Вводи пароль (2 раза) — он пойдёт в .env как DB_PASSWORD."
+  echo "Рекомендация: сгенерить заранее через: openssl rand -base64 32"
   sudo -u postgres createuser --pwprompt --no-superuser --no-createdb --no-createrole "$DB_USER"
-  sudo -u postgres createdb --owner="$DB_USER" "$DB_NAME"
-  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
-  echo "✓ БД $DB_NAME + юзер $DB_USER созданы"
+  echo "✓ Юзер $DB_USER создан"
 else
-  echo "ℹ БД и/или юзер уже существуют (skip):"
-  [ -n "$DB_EXISTS" ] && echo "  - БД $DB_NAME"
-  [ -n "$USER_EXISTS" ] && echo "  - юзер $DB_USER"
+  echo "ℹ Юзер $DB_USER уже существует."
+  read -p "   Сбросить пароль? (y/n) " -n 1 -r; echo
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "   Введи новый пароль (скрыт):"
+    read -sp "   password: " NEW_PW; echo
+    sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$NEW_PW';" > /dev/null
+    unset NEW_PW
+    echo "✓ Пароль $DB_USER сброшен"
+  fi
 fi
+
+# БД: создать если нет
+if [ -z "$DB_EXISTS" ]; then
+  sudo -u postgres createdb --owner="$DB_USER" "$DB_NAME"
+  echo "✓ БД $DB_NAME создана (owner=$DB_USER)"
+else
+  echo "ℹ БД $DB_NAME уже существует"
+fi
+
+# Привилегии — всегда (идемпотентно)
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;" > /dev/null
+echo "✓ GRANT ALL на $DB_NAME → $DB_USER"
 
 # Проверить что JARVIS БД не пострадала
 JARVIS_DB=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='jarvis_director'" || echo "")
@@ -120,19 +133,24 @@ else
   echo "ℹ .env уже существует (skip — не перезаписываем чтобы не потерять секреты)"
 fi
 
-# ─── 4. nginx server block ───
+# ─── 4. nginx server block (HTTP-only bootstrap) ───
 echo ""
 echo "═══ 4. Nginx ═══"
-if [ ! -f "$NGINX_SITE" ]; then
-  if [ -f "$APP_DIR/deploy/nginx-my-azarean.conf" ]; then
-    cp "$APP_DIR/deploy/nginx-my-azarean.conf" "$NGINX_SITE"
-    echo "✓ Скопирован $NGINX_SITE"
-  else
-    echo "ERROR: $APP_DIR/deploy/nginx-my-azarean.conf не найден"
-    exit 1
-  fi
+# Всегда перезаписываем — config может отличаться от предыдущего setup'а,
+# а certbot при шаге 5 ждёт актуальную конфигу (HTTP-only без SSL директив).
+if [ ! -f "$APP_DIR/deploy/nginx-my-azarean.conf" ]; then
+  echo "ERROR: $APP_DIR/deploy/nginx-my-azarean.conf не найден"
+  exit 1
+fi
+
+# Важно: если конфиг уже есть и certbot его обогатил (добавил :443 + ssl),
+# НЕ перезаписываем — перезапись сломает HTTPS. Detect по наличию
+# 'listen 443 ssl' в существующем файле.
+if [ -f "$NGINX_SITE" ] && grep -q "listen 443 ssl" "$NGINX_SITE"; then
+  echo "ℹ $NGINX_SITE уже содержит HTTPS block (от предыдущего certbot) — skip"
 else
-  echo "ℹ $NGINX_SITE уже существует (skip)"
+  cp "$APP_DIR/deploy/nginx-my-azarean.conf" "$NGINX_SITE"
+  echo "✓ $NGINX_SITE установлен (HTTP-only bootstrap)"
 fi
 
 if [ ! -L "$NGINX_ENABLED" ]; then
@@ -140,13 +158,16 @@ if [ ! -L "$NGINX_ENABLED" ]; then
   echo "✓ Симлинк в sites-enabled"
 fi
 
-# Проверить конфиг до reload
-nginx -t
-if [ $? -eq 0 ]; then
+# Директория для ACME challenges (certbot --webroot fallback)
+mkdir -p /var/www/certbot
+chown www-data:www-data /var/www/certbot 2>/dev/null || true
+
+# nginx -t + reload
+if nginx -t 2>&1; then
   systemctl reload nginx
-  echo "✓ nginx reload OK"
+  echo "✓ nginx reload OK (bootstrap config)"
 else
-  echo "ERROR: nginx -t failed — не перезагружаем"
+  echo "ERROR: nginx -t failed"
   exit 1
 fi
 
@@ -161,8 +182,16 @@ if ! certbot certificates 2>&1 | grep -q "$DOMAIN"; then
   read -p "Продолжить получение сертификата? (y/n) " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email admin@azarean.ru --redirect
-    echo "✓ Сертификат получен"
+    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
+            --email jaike707@gmail.com --redirect
+    echo "✓ Сертификат получен + redirect 80→443 настроен"
+    # certbot добавил 443 блок; запустим финальный nginx -t на всякий случай
+    if nginx -t 2>&1; then
+      systemctl reload nginx
+      echo "✓ nginx reload после certbot OK"
+    else
+      echo "⚠ nginx -t упал после certbot — проверь $NGINX_SITE вручную"
+    fi
   else
     echo "⏸ Пропущено. Запусти вручную: certbot --nginx -d $DOMAIN"
   fi
