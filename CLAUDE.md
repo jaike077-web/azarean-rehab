@@ -566,6 +566,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **CSS prefix `pd-` для PatientDashboard** компонентов, `--az-*` переменные только внутри `.pd-runner`
 - **Roadmap секция ниже — справочная.** Реализовывать ТОЛЬКО по явному запросу пользователя
 - Не добавлять фичи сверх запрошенного. Bug fix ≠ рефакторинг соседнего кода
+- **СХЕМА БД МЕНЯЕТСЯ ТОЛЬКО МИГРАЦИЕЙ.** Никаких ручных ALTER/CREATE через psql на dev БД — это привело к schema drift 2026-04-23→24 (fresh install на prod сломал /api/exercises, /api/diagnoses, Kinescope-импорт). Все миграции должны быть **идемпотентны** (IF NOT EXISTS, DO-блоки с проверкой колонок) и прогоняться тест-циклом: `createdb test → schema.sql → все миграции дважды подряд → drop` ДО коммита. См. `production_deployment.md` → "Schema drift recovery".
 
 ### Backend
 - **CommonJS модули:** `const { query } = require('../database/db');`
