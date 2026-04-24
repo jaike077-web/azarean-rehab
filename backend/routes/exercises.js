@@ -67,7 +67,7 @@ router.get('/', authenticateToken, async (req, res) => {
       position,         // Фильтр по положению (может быть массив)
       rehab_phase,      // Фильтр по фазе реабилитации
       page = 1,         // Пагинация
-      limit = 50
+      limit = 1000      // Дефолт большой — фронт грузит всё, фильтрует на клиенте
     } = req.query;
 
     let queryText = `
