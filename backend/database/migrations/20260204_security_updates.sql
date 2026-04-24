@@ -14,7 +14,15 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 -- Индексы для refresh_tokens
-CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+-- Колонка token была дропнута миграцией 20260408_hash_tokens — на повторном
+-- запуске этого файла индекс создавать не нужно (и нельзя — нет колонки)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='refresh_tokens' AND column_name='token') THEN
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at);
 
 -- 2. Добавляем колонки для блокировки аккаунта

@@ -14,28 +14,39 @@
 
 -- ─── 1. patients.preferred_messenger ───────────────────────────────
 ALTER TABLE patients
-  ADD COLUMN preferred_messenger VARCHAR(20) NOT NULL DEFAULT 'telegram'
+  ADD COLUMN IF NOT EXISTS preferred_messenger VARCHAR(20) NOT NULL DEFAULT 'telegram';
+
+-- CHECK constraint отдельным шагом через DROP+ADD — идемпотентно
+ALTER TABLE patients
+  DROP CONSTRAINT IF EXISTS patients_preferred_messenger_check;
+ALTER TABLE patients
+  ADD CONSTRAINT patients_preferred_messenger_check
   CHECK (preferred_messenger IN ('telegram', 'whatsapp', 'max'));
 
 -- Индекс — на случай аналитики «сколько пациентов какой канал выбрали»
 -- + фильтрация рассылок по предпочтению. Partial — только активные.
-CREATE INDEX idx_patients_preferred_messenger
+CREATE INDEX IF NOT EXISTS idx_patients_preferred_messenger
   ON patients(preferred_messenger)
   WHERE is_active = true;
 
 -- ─── 2. messages.linked_diary_id + channel ─────────────────────────
 ALTER TABLE messages
-  ADD COLUMN linked_diary_id INTEGER
+  ADD COLUMN IF NOT EXISTS linked_diary_id INTEGER
     REFERENCES diary_entries(id) ON DELETE SET NULL;
 
 ALTER TABLE messages
-  ADD COLUMN channel VARCHAR(20) NULL
-    CHECK (channel IN ('telegram', 'whatsapp', 'max', 'in_app') OR channel IS NULL);
+  ADD COLUMN IF NOT EXISTS channel VARCHAR(20) NULL;
+
+ALTER TABLE messages
+  DROP CONSTRAINT IF EXISTS messages_channel_check;
+ALTER TABLE messages
+  ADD CONSTRAINT messages_channel_check
+  CHECK (channel IN ('telegram', 'whatsapp', 'max', 'in_app') OR channel IS NULL);
 
 -- Индекс на linked_diary_id — для запроса «все сообщения, привязанные к
 -- конкретной записи дневника» (feedback card в ContactScreen). Partial —
 -- большинство сообщений будут без привязки.
-CREATE INDEX idx_messages_linked_diary_id
+CREATE INDEX IF NOT EXISTS idx_messages_linked_diary_id
   ON messages(linked_diary_id)
   WHERE linked_diary_id IS NOT NULL;
 

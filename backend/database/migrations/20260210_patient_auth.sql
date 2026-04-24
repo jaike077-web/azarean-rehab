@@ -43,9 +43,20 @@ CREATE TABLE IF NOT EXISTS patient_oauth_states (
 
 -- 5. Индексы
 CREATE INDEX IF NOT EXISTS idx_patients_email ON patients(email);
-CREATE INDEX IF NOT EXISTS idx_patient_resets_token ON patient_password_resets(token);
+-- Колонка token в *_refresh_tokens / password_resets была дропнута миграцией
+-- 20260408_hash_tokens — на повторном запуске этих индексов создавать не нужно
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='patient_password_resets' AND column_name='token') THEN
+    CREATE INDEX IF NOT EXISTS idx_patient_resets_token ON patient_password_resets(token);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='patient_refresh_tokens' AND column_name='token') THEN
+    CREATE INDEX IF NOT EXISTS idx_patient_refresh_token ON patient_refresh_tokens(token);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_patient_resets_patient ON patient_password_resets(patient_id);
-CREATE INDEX IF NOT EXISTS idx_patient_refresh_token ON patient_refresh_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_patient_refresh_patient ON patient_refresh_tokens(patient_id);
 CREATE INDEX IF NOT EXISTS idx_patient_oauth_state ON patient_oauth_states(state);
 
