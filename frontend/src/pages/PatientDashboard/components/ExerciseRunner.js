@@ -88,33 +88,18 @@ const ExerciseRunner = ({
     return () => clearInterval(swRef.current);
   }, [swRunning]);
 
-  // TEMP debug — отслеживаем mount/unmount и смену index
-  useEffect(() => {
-    console.log('[Runner] MOUNT', { total, initialIdx, startExerciseId });
-    return () => console.log('[Runner] UNMOUNT');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
-    console.log('[Runner] index changed', { index, total });
-  }, [index, total]);
-
   // --- Навигация ---
   const handleCelebrationDone = useCallback(() => {
-    console.log('[Runner] celebration done → onComplete()');
     setShowCelebration(false);
     onComplete();
   }, [onComplete]);
 
   const advance = () => {
-    // TEMP debug — диагностика auto-back после «Выполнено»
-    console.log('[Runner] advance', { index, total, willCelebrate: !(index < total - 1) });
     if (index < total - 1) { setDir('f'); setIndex(index + 1); }
     else setShowCelebration(true);
   };
 
   const submit = async (completed) => {
-    // TEMP debug
-    console.log('[Runner] submit start', { index, total, completed, exerciseId: exercise.id, listLength: list.length });
     setSaving(true);
     try {
       await progressPatient.create({
@@ -128,12 +113,10 @@ const ExerciseRunner = ({
         session_id: sessionId,
         comment: comment.trim() || null,
       });
-      console.log('[Runner] submit success, about to advance', { index, total });
       setStatuses((s) => { const n = [...s]; n[index] = completed ? 'done' : 'skipped'; return n; });
       toast.success(completed ? 'Выполнено' : 'Пропущено', completed ? 'Прогресс сохранён' : 'Отмечено как пропущенное');
       advance();
     } catch (err) {
-      console.log('[Runner] submit error', err);
       toast.error('Ошибка', err.response?.data?.message || 'Не удалось сохранить');
     } finally { setSaving(false); }
   };

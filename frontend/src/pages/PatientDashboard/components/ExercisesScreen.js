@@ -93,18 +93,11 @@ const ExercisesScreen = ({ screenParams }) => {
   };
 
   const backToList = () => {
-    // TEMP debug — кто вызывает возврат на список?
-    console.log('[Exercises] backToList called', new Error().stack);
     setView('list');
     setSelectedComplexId(null);
     setSelectedExercise(null);
     setComplexExercises([]);
   };
-
-  // TEMP debug
-  useEffect(() => {
-    console.log('[Exercises] view=', view, 'complexId=', selectedComplexId, 'exercises=', complexExercises.length);
-  }, [view, selectedComplexId, complexExercises]);
 
   const openRunner = (complexExercise, allExercises) => {
     setSelectedExercise(complexExercise);

@@ -48,15 +48,6 @@ export { StreakBadge };
 export default function PatientDashboard() {
   const [screen, setScreen] = useState(0);
   const [screenParams, setScreenParams] = useState(null);
-
-  // TEMP debug
-  useEffect(() => {
-    console.log('[Dashboard] MOUNT');
-    return () => console.log('[Dashboard] UNMOUNT');
-  }, []);
-  useEffect(() => {
-    console.log('[Dashboard] screen changed to', screen);
-  }, [screen]);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(false);

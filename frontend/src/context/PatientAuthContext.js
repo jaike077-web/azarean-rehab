@@ -15,11 +15,6 @@ export function PatientAuthProvider({ children }) {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // TEMP debug
-  useEffect(() => {
-    console.log('[PatientAuth] state:', { hasPatient: !!patient, loading, patientId: patient?.id });
-  }, [patient, loading]);
-
   // Начальная проверка cookie через /me
   const refresh = useCallback(async () => {
     try {

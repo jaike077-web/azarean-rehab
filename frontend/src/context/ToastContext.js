@@ -5,7 +5,7 @@
 //               toast.error('Ошибка', 'Не удалось сохранить');
 // =====================================================
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Toast from '../components/Toast';
 
 const ToastContext = createContext(null);
@@ -45,21 +45,24 @@ export const ToastProvider = ({ children }) => {
     return id;
   }, []);
 
-  const toast = {
-    success: (titleOrMessage, message, duration) => 
+  // useMemo стабилизирует ссылку на toast — иначе КАЖДЫЙ addToast (через
+  // setToasts) рендерит ToastProvider, пересоздаёт объект и ломает useCallback
+  // deps у consumer'ов. Конкретный кейс: PatientDashboard.fetchDashboard имел
+  // [toast] в deps → toast.success() после submit в ExerciseRunner триггерил
+  // useEffect → fetchDashboard без silent → setLoading(true) → renderScreen
+  // возвращал skeleton → ExercisesScreen размонтировался и монтировался
+  // заново с initial state (view='list'). Пациента кидало на «Начать».
+  const toast = useMemo(() => ({
+    success: (titleOrMessage, message, duration) =>
       addToast('success', titleOrMessage, message, duration),
-    
-    error: (titleOrMessage, message, duration) => 
+    error: (titleOrMessage, message, duration) =>
       addToast('error', titleOrMessage, message, duration),
-    
-    warning: (titleOrMessage, message, duration) => 
+    warning: (titleOrMessage, message, duration) =>
       addToast('warning', titleOrMessage, message, duration),
-    
-    info: (titleOrMessage, message, duration) => 
+    info: (titleOrMessage, message, duration) =>
       addToast('info', titleOrMessage, message, duration),
-    
     remove: removeToast,
-  };
+  }), [addToast, removeToast]);
 
   return (
     <ToastContext.Provider value={toast}>
