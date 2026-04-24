@@ -103,6 +103,9 @@ router.post('/kinescope/execute', async (req, res) => {
     };
 
     for (const videoId of videoIds) {
+      // SAVEPOINT per video: failed INSERT откатывает только эту итерацию,
+      // не валит всю транзакцию "current transaction is aborted" каскадом
+      await client.query('SAVEPOINT video_import');
       try {
         // ИСПРАВЛЕНО: Проверяем ВСЕ записи (включая is_active = false)
         const checkQuery = 'SELECT id, is_active FROM exercises WHERE kinescope_id = $1';
@@ -125,6 +128,7 @@ router.post('/kinescope/execute', async (req, res) => {
             importResults.skipped += 1;
             console.log(`⏭️ Skipped (already exists): ${videoId}`);
           }
+          await client.query('RELEASE SAVEPOINT video_import');
           continue;
         }
 
@@ -170,7 +174,9 @@ router.post('/kinescope/execute', async (req, res) => {
 
         importResults.success += 1;
         console.log(`✅ Imported new exercise: ${exerciseData.title}`);
+        await client.query('RELEASE SAVEPOINT video_import');
       } catch (error) {
+        await client.query('ROLLBACK TO SAVEPOINT video_import');
         console.error(`❌ Error importing video ${videoId}:`, error.message);
         importResults.failed += 1;
         importResults.errors.push({
@@ -230,6 +236,8 @@ router.post('/csv', upload.single('file'), async (req, res) => {
     };
 
     for (const exercise of exercises) {
+      // SAVEPOINT per row: failed INSERT/UPDATE не валит всю транзакцию
+      await client.query('SAVEPOINT csv_row');
       try {
         let existingQuery;
         let existingParams;
@@ -312,7 +320,9 @@ router.post('/csv', upload.single('file'), async (req, res) => {
 
           importResults.created += 1;
         }
+        await client.query('RELEASE SAVEPOINT csv_row');
       } catch (error) {
+        await client.query('ROLLBACK TO SAVEPOINT csv_row');
         console.error('Error processing CSV row:', error);
         importResults.failed += 1;
         importResults.errors.push({
