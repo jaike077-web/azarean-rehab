@@ -23,6 +23,7 @@
 - **Telegram бот:** /start, /status, /diary (6-step wizard), /tip, cron-scheduler
 - **PatientDashboard v12 redesign:** все 6 экранов (Home, Diary, Exercises, Roadmap, Profile, Contact) в стиле meltano+Яндекс. ExerciseRunner LOCKED
 - **Session 2 tech debt (2026-04-22):** bugs #2, #3, #4, #5, #8 закрыты. validators частично подключены, GDPR audit logging на READ
+- **Prod smoke-test session (2026-04-24):** schema drift recovery (20260424_prod_schema_recovery + 20260424b), Kinescope SAVEPOINT-импорт, exercises limit 50→1000, double-avatar/курator chip убраны, PWA auto-update при возврате ≥60 сек, **ToastContext useMemo** (без него toast.xxx() размонтировывал consumer'ов — ExerciseRunner кидало на hero-экран после submit)
 
 ### Планируется (не начато)
 - Non-root deploy user на VDS + sudoers whitelist
@@ -662,6 +663,16 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 33. **DiaryScreen crash `Cannot convert undefined or null to object`** → **не воспроизводится после v12 rewrite** (не «закрыт фиксом»). Оригинальный stack trace указывал на `ContactScreen.js:552` — файл был на 451 строку (артефакт старого бандла). После полного редизайна DiaryScreen и ContactScreen в Checkpoints 5–6 код 99% другой, старый сценарий неактуален. Grep по `Object.entries`/`keys`/`values` в новом коде — все под guard'ом. Ручная проверка в dev-браузере на тапе «Дневник» — console чистая. **Если баг повторится — retrace с новым stack trace, НЕ считать это пометки-resolve достаточной защитой.**
 34. **F5 flicker — мелькает Login на /patient-dashboard** → новый `<PatientSplash/>` (full-screen logo+spinner) показывается пока `PatientAuthProvider.loading=true`. `PatientRoute` и `PatientLogin` оба проверяют `authLoading` перед рендером.
 
+### BUG (закрытые prod smoke-test — 2026-04-24)
+35. **ExerciseRunner кидает на «Начать тренировку» после «Выполнено»** → [ToastContext.js](frontend/src/context/ToastContext.js) объект `toast` пересоздавался каждый render ToastProvider, контекст value менял ссылку → `PatientDashboard.fetchDashboard = useCallback(..., [toast])` инвалидировался → `useEffect([fetchDashboard])` вызывал fetchDashboard без silent → `setLoading(true)` → `renderScreen()` возвращал skeleton → ExercisesScreen unmount → после `setLoading(false)` mount с initial state (view='list'). Fix: **useMemo для toast-объекта** с deps `[addToast, removeToast]`. **Общий урок:** любое object/array значение в Context.Provider value обязательно оборачивать в useMemo. Коммит `ec8ba2c`.
+36. **Schema drift между dev и prod** (/api/exercises 500, /api/diagnoses 500) → recovery миграция `20260424_prod_schema_recovery.sql` переименовала category→body_region, difficulty→difficulty_level (beginner=1/intermediate=3/advanced=5), добавила movement_pattern/chain_type/joint/is_unilateral + diagnoses.deleted_at/updated_at. Полностью идемпотентна. **Новое правило в CLAUDE.md:** никаких ручных ALTER через psql на dev БД — только миграции.
+37. **Миграции не идемпотентны на redeploy** → CREATE INDEX на дропнутый `token` падал при 2-м прогоне → DO-блоки с проверкой column_exists в 20260204_security_updates, 20260210_patient_auth, 20260408_hash_tokens, 20260421_patient_preferred_messenger.
+38. **Kinescope import 229→0** из-за description NOT NULL + cascade failure в транзакции → миграция `20260424b_exercises_description_nullable.sql` + SAVEPOINT video_import в `routes/import.js` (per-iteration rollback).
+39. **Exercises library показывает «50 из 50»** после импорта 239 видео → backend default limit 50→1000 в `routes/exercises.js`.
+40. **ImportExercises показывает «импортировано 0»** при успехе → frontend читал `response.data.results.success` вместо `response.data.success` (после unwrap interceptor уровень не тот).
+41. **Двойной аватар + хардкод «Татьяна · куратор»** на каждом экране PatientDashboard → убрали inline `<AvatarBtn>` из Home/Roadmap/Diary/Contact (остался только в pd-header). «Татьяна» chip удалён — нет реального куратора в dashboard data. Коммит `d57b116`.
+42. **Self-registration пациента с `created_by=NULL`** невидим инструкторам (фильтр GET /api/patients по `created_by=$1`) → **не закрыт**, временный workaround SQL UPDATE. Backlog: invite-code / claim flow.
+
 ## Структура тестов
 
 ```
@@ -756,10 +767,16 @@ frontend/src/ (12 suites, 156 тестов)
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Последние коммиты на main (pushed):**
+- **Последние коммиты на main (локально, некоторые не запушены):**
+  - `ec8ba2c` fix(toast): стабилизировать ссылку toast через useMemo (закрыл бага ExerciseRunner «кидает на hero после Выполнено»)
+  - `14e2ecb` debug(patient): temp logs в PatientDashboard + PatientAuthContext
+  - `8023e26` debug(patient): temp console.log в ExerciseRunner/ExercisesScreen
+  - `ac8f845` feat(pwa): авто-обновление при возврате в app после ≥60 сек отлучки
+  - `d57b116` fix(patient-dashboard): убрать дубль аватара + хардкод «Татьяна · куратор»
+  - `ec2324e` fix(exercises): поднять дефолтный limit 50→1000
+  - `5c3b1d5` fix(import): ImportExercises читал response.data.results.success (неверный уровень после unwrap)
+  - `c348d3f` fix(import): SAVEPOINT video_import + миграция description nullable
+  - `381a7ec` fix(db): recovery миграция 20260424_prod_schema_recovery
+  - `4f96d5e` fix(db): идемпотентность миграций 20260204/20260210/20260408/20260421
   - `bbd8070` fix(db): recovery миграция для complexes.access_token
-  - `a9eae77` fix(db): переименовать database_audit_fixes на 20260205 (dependency order)
-  - `bd0f001` fix(db): убрать trailing markdown-fence из rest_seconds миграции
-  - `9ba92f6` fix(db): добавить missing templates + template_exercises
-  - `7164b6a` Merge pull request #44 (deploy-setup: GitHub Actions + nginx + PM2)
 - **Незакоммичено:** CLAUDE.md (этот update), deploy report markdown-файлы, `.claude/plans/`
