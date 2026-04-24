@@ -23,8 +23,7 @@ import {
   Smile, Meh, Frown, ClipboardList, Shield, RefreshCw, Dumbbell,
   Activity, Zap, Trophy,
 } from 'lucide-react';
-import { AvatarBtn, IllKnee } from './ui';
-import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import { IllKnee } from './ui';
 import { rehab } from '../../../services/api';
 import './HomeScreen.css';
 
@@ -121,8 +120,6 @@ export default function HomeScreen({
   const [feelSaved, setFeelSaved] = useState(false);
   const [showStatTip, setShowStatTip] = useState(false);
 
-  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
-  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
 
   if (dashboardData === null || dashboardData === undefined) return <LoadingSkeleton />;
 
@@ -160,37 +157,21 @@ export default function HomeScreen({
 
   return (
     <div className="pd-home pd-home-screen">
-      {/* 1. Greeting + AvatarBtn справа */}
+      {/* 1. Greeting — аватар единый в pd-header сверху (PatientDashboard.js) */}
       <div className="pd-home-greet">
         <div>
           <div className="pd-home-greet-hello">{getGreeting()}</div>
           <div className="pd-home-greet-name">{firstName}</div>
         </div>
-        <AvatarBtn
-          initial={initial}
-          avatarSrc={avatarSrc}
-          onClick={onOpenProfile}
-          ariaLabel="Профиль"
-        />
       </div>
 
-      {/* 2. Hero card — gradient + specialist chip + IllKnee + CTA */}
+      {/* 2. Hero card — gradient + IllKnee + CTA. Curator-chip убран:
+          нет линка patient→instructor в данных дашборда, хардкод «Татьяна»
+          вводил в заблуждение. Вернуть, когда /api/rehab/my/dashboard
+          начнёт отдавать имя реального куратора. */}
       <div className="pd-home-hero">
         <div className="pd-home-hero-blob pd-home-hero-blob--teal" aria-hidden="true" />
         <div className="pd-home-hero-blob pd-home-hero-blob--orange" aria-hidden="true" />
-
-        <button
-          type="button"
-          className="pd-home-hero-chip"
-          onClick={() => goTo(3)}
-          aria-label="Перейти к куратору"
-        >
-          <span className="pd-home-hero-chip-ava">Т</span>
-          <span className="pd-home-hero-chip-text">
-            Татьяна <span className="pd-home-hero-chip-role">· куратор</span>
-          </span>
-          <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
-        </button>
 
         <div className="pd-home-hero-ill"><IllKnee /></div>
 

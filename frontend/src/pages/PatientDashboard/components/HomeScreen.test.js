@@ -84,13 +84,9 @@ describe('HomeScreen v12', () => {
       expect(screen.getByText(expected)).toBeInTheDocument();
     });
 
-    it('renders AvatarBtn in greeting row → calls onOpenProfile', () => {
-      const { props } = setup();
-      // AvatarBtn содержит initial «Т» на gradient
-      const avatarBtn = screen.getByRole('button', { name: /Профиль/ });
-      fireEvent.click(avatarBtn);
-      expect(props.onOpenProfile).toHaveBeenCalled();
-    });
+    // Inline Профиль-кнопка в greeting row удалена 2026-04-24 — единый
+    // AvatarBtn теперь только в pd-header (PatientDashboard.js), дубль
+    // на каждом экране убран. Тест perplexity-on-screen-avatar устарел.
   });
 
   describe('Hero card — allDone=false branch', () => {
@@ -129,13 +125,10 @@ describe('HomeScreen v12', () => {
     });
   });
 
-  describe('Specialist chip (куратор)', () => {
-    it('tap on specialist chip → goTo(3) (Связь)', () => {
-      const { props } = setup();
-      fireEvent.click(screen.getByRole('button', { name: /Перейти к куратору/ }));
-      expect(props.goTo).toHaveBeenCalledWith(3);
-    });
-  });
+  // Specialist chip «Татьяна · куратор» удалён 2026-04-24 — хардкод
+  // вводил пациентов в заблуждение (реального куратора в данных нет).
+  // Вернуть тест, когда /api/rehab/my/dashboard начнёт отдавать
+  // имя реального инструктора.
 
   describe('Week goal row', () => {
     it('tap on «Цель недели» → goTo(1) (Roadmap)', () => {

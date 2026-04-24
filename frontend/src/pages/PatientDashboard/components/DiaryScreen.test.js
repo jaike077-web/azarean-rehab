@@ -79,12 +79,7 @@ describe('DiaryScreen v12', () => {
       expect(screen.getByText('Полный отчёт за день')).toBeInTheDocument();
     });
 
-    it('AvatarBtn opens Profile', async () => {
-      const { props } = setup();
-      await waitForLoaded();
-      fireEvent.click(screen.getByRole('button', { name: /Профиль/ }));
-      expect(props.onOpenProfile).toHaveBeenCalled();
-    });
+    // Inline Профиль-кнопка удалена 2026-04-24 (дубль с pd-header).
   });
 
   describe('PGIC info-bar', () => {

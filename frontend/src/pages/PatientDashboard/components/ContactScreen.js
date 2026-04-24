@@ -22,8 +22,7 @@ import {
   AlertCircle, Calendar, Camera, Bot, Activity,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
-import { AvatarBtn, MessengerCTA } from './ui';
-import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import { MessengerCTA } from './ui';
 import './ContactScreen.css';
 
 // Форматирование времени сообщения: сегодня → «HH:mm»,
@@ -80,8 +79,6 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
   const [tgConnected, setTgConnected] = useState(false);
   const [tgStatusLoading, setTgStatusLoading] = useState(true);
 
-  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
-  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
   const programId = dashboardData?.program?.id;
 
@@ -121,15 +118,9 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
 
   return (
     <div className="pd-contact pd-contact-screen">
-      {/* 1. Header */}
+      {/* 1. Header — аватар единый в pd-header сверху */}
       <div className="pd-contact-header">
         <h1 className="pd-contact-title">Связь</h1>
-        <AvatarBtn
-          initial={initial}
-          avatarSrc={avatarSrc}
-          onClick={openProfile}
-          ariaLabel="Профиль"
-        />
       </div>
 
       {/* 2. Specialist feedback card */}

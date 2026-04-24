@@ -29,8 +29,7 @@ import {
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { AvatarBtn, MessengerCTA } from './ui';
-import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import { MessengerCTA } from './ui';
 import './DiaryScreen.css';
 
 // Описание интенсивности боли (для подписи под слайдером)
@@ -142,8 +141,6 @@ export default function DiaryScreen({
   const effectivePgic = pgicFeel || pgicFromDb;
   const [history, setHistory] = useState([]);
 
-  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
-  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
   const romProfile = useMemo(
     () => detectRomProfile(dashboardData?.program?.diagnosis || ''),
@@ -398,12 +395,6 @@ export default function DiaryScreen({
         {saving && !savedFlash && (
           <div className="pd-diary-saved pd-diary-saved--pending">Сохраняем…</div>
         )}
-        <AvatarBtn
-          initial={initial}
-          avatarSrc={avatarSrc}
-          onClick={onOpenProfile}
-          ariaLabel="Профиль"
-        />
       </div>
 
       {/* 2. PGIC info-bar — из prop (свежий тап на Home) или из БД

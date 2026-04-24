@@ -25,8 +25,6 @@ import {
   Info, AlertTriangle,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
-import { AvatarBtn } from './ui';
-import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
 import './RoadmapScreen.css';
 
 // Маппинг seed-иконок на lucide компоненты
@@ -338,8 +336,6 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
   const [loading, setLoading] = useState(true);
   const [expandedFutureId, setExpandedFutureId] = useState(null);
 
-  const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
-  const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
 
   // Загрузка фаз
   useEffect(() => {
@@ -396,18 +392,12 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
 
   return (
     <div className="pd-rm pd-roadmap-screen">
-      {/* Header — заголовок + subtitle + AvatarBtn */}
+      {/* Header — заголовок + subtitle. Аватар единый в pd-header сверху. */}
       <header className="pd-rm-header">
         <div className="pd-rm-header-text">
           <h1 className="pd-rm-title">Путь восстановления</h1>
           {subtitle && <div className="pd-rm-subtitle-top">{subtitle}</div>}
         </div>
-        <AvatarBtn
-          initial={initial}
-          avatarSrc={avatarSrc}
-          onClick={() => onOpenProfile?.()}
-          ariaLabel="Профиль"
-        />
       </header>
 
       {/* Timeline */}

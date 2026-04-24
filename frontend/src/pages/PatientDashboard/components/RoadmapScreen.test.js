@@ -64,22 +64,9 @@ describe('RoadmapScreen v12', () => {
       });
     });
 
-    it('avatar initial taken from patient.full_name', async () => {
-      renderScreen();
-      await waitFor(() => {
-        const avatar = screen.getByRole('button', { name: 'Профиль' });
-        expect(avatar).toBeInTheDocument();
-        expect(avatar.textContent).toBe('Т');
-      });
-    });
-
-    it('clicking avatar opens profile overlay', async () => {
-      const onOpenProfile = jest.fn();
-      renderScreen({ onOpenProfile });
-      await waitFor(() => screen.getByRole('button', { name: 'Профиль' }));
-      fireEvent.click(screen.getByRole('button', { name: 'Профиль' }));
-      expect(onOpenProfile).toHaveBeenCalledTimes(1);
-    });
+    // Inline Профиль-кнопка удалена 2026-04-24 (дубль с pd-header сверху).
+    // AvatarBtn теперь только в PatientDashboard.js → тесты per-screen аватара
+    // удалены, относительное поведение проверяется в PatientDashboard.test.js.
   });
 
   describe('timeline rendering', () => {

@@ -61,11 +61,7 @@ describe('ContactScreen v12', () => {
       expect(screen.getByRole('heading', { name: 'Связь' })).toBeInTheDocument();
     });
 
-    it('AvatarBtn opens Profile', async () => {
-      const { props } = setup();
-      fireEvent.click(screen.getByRole('button', { name: /Профиль/ }));
-      expect(props.onOpenProfile).toHaveBeenCalled();
-    });
+    // Inline Профиль-кнопка удалена 2026-04-24 (дубль с pd-header).
   });
 
   // -----------------------------
