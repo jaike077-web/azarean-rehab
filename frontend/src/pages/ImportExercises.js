@@ -29,8 +29,9 @@ function ImportExercises() {
     try {
       setLoading(true);
       const response = await importAPI.kinescopePreview();
-      setKinescopeVideos(response.data.videos || []);
-      toast.success(`Найдено ${response.data.total} видео (${response.data.newVideos} новых)`);
+      const videos = response.data.videos || [];
+      setKinescopeVideos(videos);
+      toast.success(`Найдено ${response.meta?.total ?? videos.length} видео (${response.data.newVideos} новых)`);
     } catch (error) {
       console.error('Error fetching videos:', error);
       toast.error('Не удалось загрузить видео из Kinescope');
@@ -67,8 +68,8 @@ function ImportExercises() {
     try {
       setImporting(true);
       const response = await importAPI.kinescopeExecute(Array.from(selectedVideos));
-      setImportResults(response.data.results);
-      toast.success(`Импортировано: ${response.data.results.success} упражнений`);
+      setImportResults(response.data);
+      toast.success(`Импортировано: ${response.data.success} упражнений`);
 
       await fetchKinescopeVideos();
       setSelectedVideos(new Set());
@@ -104,9 +105,9 @@ function ImportExercises() {
       formData.append('file', csvFile);
 
       const response = await importAPI.csvImport(formData);
-      setCsvResults(response.data.results);
+      setCsvResults(response.data);
       toast.success(
-        `Создано: ${response.data.results.created}, Обновлено: ${response.data.results.updated}`
+        `Создано: ${response.data.created}, Обновлено: ${response.data.updated}`
       );
       setCsvFile(null);
     } catch (error) {

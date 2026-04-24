@@ -5,6 +5,15 @@
 
 ## Текущее состояние (апрель 2026)
 
+### В production (задеплоено 2026-04-23)
+- **URL:** https://my.azarean.ru (VDS 185.93.109.234, shared с JARVIS)
+- **CI/CD:** GitHub Actions (`.github/workflows/deploy.yml`) — push на main → Test → Build → Deploy (SSH)
+- **Backend:** PM2 fork mode на :3001, nginx proxy, Let's Encrypt SSL
+- **Prod bot:** `@az_zari_bot` (отдельный от dev `@azarean_rehab_bot`)
+- **Админ:** `vadim@azarean.com` / `Test1234` (bcrypt хэш применён к prod БД)
+- **Runbook:** `deploy/README.md`, credentials locations — `memory/production_deployment.md`
+- **Smoke test 7.1–7.3:** HTTPS, API, SPA — green. **7.4+ (instructor login)** — не верифицировано в чате из-за image limit.
+
 ### Завершено
 - **Security audit:** все 3 CRITICAL + все HIGH закрыты (см. «Завершённые исправления» ниже)
 - **API response format** стандартизирован: `{ data, message? }` во всех 13 роут-файлах
@@ -12,15 +21,13 @@
 - **Patient auth:** httpOnly cookie (SameSite=Lax), CSRF через Origin-check middleware
 - **Public token flow** полностью удалён (complexes.access_token дропнут, /patient/:token — нет)
 - **Telegram бот:** /start, /status, /diary (6-step wizard), /tip, cron-scheduler
-
-### В работе (незакоммичено, 14 файлов)
-- **PatientDashboard redesign:** стиль meltano.com + Яндекс
-- 6 экранов: Home, Diary, Exercises, Roadmap, Profile, Contact
-- **ExerciseRunner НЕ входит в редизайн** (LOCKED)
-- CSS переменные `--pd-*` обновляются под новый стиль
+- **PatientDashboard v12 redesign:** все 6 экранов (Home, Diary, Exercises, Roadmap, Profile, Contact) в стиле meltano+Яндекс. ExerciseRunner LOCKED
+- **Session 2 tech debt (2026-04-22):** bugs #2, #3, #4, #5, #8 закрыты. validators частично подключены, GDPR audit logging на READ
 
 ### Планируется (не начато)
-- Деплой на VDS 185.93.109.234 (конфликт субдоменов с JARVIS)
+- Non-root deploy user на VDS + sudoers whitelist
+- Healthcheck Telegram alerts
+- `/api/health` endpoint
 - CSS Modules вместо глобальных стилей
 - zod вместо express-validator
 - 2FA через Telegram
@@ -68,7 +75,10 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260409_comple
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_patient_preferred_messenger.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_progress_difficulty_rpe10.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_diary_structured_fields.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260424_prod_schema_recovery.sql
 ```
+
+**20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
 
 ### 2. Переменные окружения
 
@@ -727,21 +737,28 @@ frontend/src/ (12 suites, 156 тестов)
 - Ежедневные pg_dump бэкапы
 - Healthcheck endpoint
 
-## Планируемый деплой
+## Production deploy (задеплоено 2026-04-23)
 
-**Статус:** НЕ задеплоен. Планируется на тот же VDS что JARVIS (185.93.109.234).
-
-**Подготовленные credentials:** см. memory/deployment_plan.md или спросить у мейнтейнера.
-
-**Планируемые субдомены:** app/rehab/api.azarean.ru → 185.93.109.234
-**КОНФЛИКТ:** `rehab.azarean.ru` и `api.azarean.ru` уже используются JARVIS. Нужна переконфигурация nginx или другие субдомены.
+- **URL:** https://my.azarean.ru (single subdomain — frontend + API через nginx proxy)
+- **VDS:** 185.93.109.234 (shared с JARVIS Director — Fastify на :3000 НЕ ТРОГАТЬ)
+- **Путь:** `/opt/azarean-rehab/` (backend/, frontend/build/, releases/TS, current → symlink)
+- **Backend:** PM2 fork mode на :3001, systemd startup
+- **Nginx:** `/etc/nginx/sites-available/my.azarean.ru` (HTTP→HTTPS, SPA + /api proxy)
+- **SSL:** Let's Encrypt, certbot --nginx --redirect (auto-renew)
+- **CI/CD:** `.github/workflows/deploy.yml` — push на main → Test → Build → Deploy (SSH)
+- **Runbook:** `deploy/README.md` (6-step smoke test, rollback, troubleshooting)
+- **Prod bot:** `@az_zari_bot` (token в `/opt/azarean-rehab/backend/.env` на VDS)
+- **Prod admin:** `vadim@azarean.com` / `Test1234`
+- **Credentials locations:** `memory/production_deployment.md`
 
 ## Git
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Незапушенные коммиты (с 907e1ea):**
-  - `b827bc4` docs: update CLAUDE.md — ExerciseRunner v2, SameSite=Lax, single PatientAuthProvider
-  - `907e1ea` feat: ExerciseRunner v2 — RPE zones, rest timer, pain gradient, prev session hints
-- **Незакоммиченные изменения:** PatientDashboard redesign (14 файлов)
-- **Последний запушенный:** `4a32f35` refactor: unify API response format (#13) (2026-04-10)
+- **Последние коммиты на main (pushed):**
+  - `bbd8070` fix(db): recovery миграция для complexes.access_token
+  - `a9eae77` fix(db): переименовать database_audit_fixes на 20260205 (dependency order)
+  - `bd0f001` fix(db): убрать trailing markdown-fence из rest_seconds миграции
+  - `9ba92f6` fix(db): добавить missing templates + template_exercises
+  - `7164b6a` Merge pull request #44 (deploy-setup: GitHub Actions + nginx + PM2)
+- **Незакоммичено:** CLAUDE.md (этот update), deploy report markdown-файлы, `.claude/plans/`
