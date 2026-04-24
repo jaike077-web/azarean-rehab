@@ -26,6 +26,35 @@ reportWebVitals();
 // установлен SW из старых билдов — активно unregister'им + чистим кеши.
 if ('serviceWorker' in navigator) {
   if (process.env.NODE_ENV === 'production') {
+    // Флаг «новая версия SW активна» + трекер «был ли user вне app».
+    // Логика авто-обновления: перезагружаем страницу только когда user
+    // вернулся в PWA после отлучки ≥ 60 сек. Так не сбрасываем работу
+    // при быстром tab-switch (например, на Telegram проверить нотификацию).
+    let newVersionActive = false;
+    let hiddenAt = null;
+    const AWAY_THRESHOLD_MS = 60 * 1000;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Новый SW взял под контроль клиента (после skipWaiting + clients.claim
+      // в sw.js). JS-бандл в памяти всё ещё старый — перезагрузка нужна,
+      // но НЕ сейчас (пациент может быть посреди дневника / тренировки).
+      newVersionActive = true;
+      console.log('[PWA] Новая версия активна, перезагрузка при возврате в приложение');
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now();
+      } else if (document.visibilityState === 'visible') {
+        const awayMs = hiddenAt ? Date.now() - hiddenAt : 0;
+        hiddenAt = null;
+        if (newVersionActive && awayMs >= AWAY_THRESHOLD_MS) {
+          console.log('[PWA] Применяем обновление после возврата (' + Math.round(awayMs / 1000) + ' сек вне app)');
+          window.location.reload();
+        }
+      }
+    });
+
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
