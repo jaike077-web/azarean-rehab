@@ -6,6 +6,7 @@ const { patientValidator } = require('../middleware/validators');
 const { logAudit } = require('../utils/audit');
 const { hashToken } = require('../utils/tokens');
 const { generateInviteCode } = require('../utils/inviteCode');
+const { normalizePhone } = require('../utils/phone');
 
 // Invite-код живёт 24 часа. Если инструктор не успел передать код пациенту —
 // генерирует новый, старый автоматически инвалидируется (см. POST /:id/invite-code).
@@ -206,12 +207,22 @@ router.post('/', authenticateToken, patientValidator, async (req, res) => {
 
     // Преобразуем пустые строки в null для необязательных полей
     const emailValue = email && email.trim() ? email.trim() : null;
-    const phoneValue = phone && phone.trim() ? phone.trim() : null;
     const birthDateValue = birth_date && birth_date.trim() ? birth_date.trim() : null;
-    const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null; // ДОБАВЛЕНО
+    const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null;
     const notesValue = notes && notes.trim() ? notes.trim() : null;
 
-    // ИЗМЕНЕНО: добавлен diagnosis в INSERT
+    // Phone нормализуем в E.164 (для phone-match при OAuth)
+    let phoneValue = null;
+    if (phone && phone.trim()) {
+      phoneValue = normalizePhone(phone);
+      if (!phoneValue) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Некорректный формат телефона',
+        });
+      }
+    }
+
     const result = await query(
       `INSERT INTO patients (full_name, email, phone, birth_date, diagnosis, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -246,10 +257,21 @@ router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
     // Преобразуем пустые строки в null
     const fullNameValue = full_name && full_name.trim() ? full_name.trim() : null;
     const emailValue = email && email.trim() ? email.trim() : null;
-    const phoneValue = phone && phone.trim() ? phone.trim() : null;
     const birthDateValue = birth_date && birth_date.trim() ? birth_date.trim() : null;
-    const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null; // ДОБАВЛЕНО
+    const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null;
     const notesValue = notes && notes.trim() ? notes.trim() : null;
+
+    // Phone нормализуем в E.164
+    let phoneValue = null;
+    if (phone && phone.trim()) {
+      phoneValue = normalizePhone(phone);
+      if (!phoneValue) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Некорректный формат телефона',
+        });
+      }
+    }
 
     // ИЗМЕНЕНО: добавлен diagnosis в UPDATE
     const result = await query(

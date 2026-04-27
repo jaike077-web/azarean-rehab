@@ -20,6 +20,7 @@ const { avatarUpload, processAvatar } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
+const { normalizePhone } = require('../utils/phone');
 const config = require('../config/config');
 
 // =====================================================
@@ -151,6 +152,18 @@ router.post('/register', registerValidator, async (req, res) => {
       });
     }
 
+    // Phone (если пациент сам ввёл при регистрации) нормализуем в E.164
+    let normalizedPhone = null;
+    if (phone && String(phone).trim()) {
+      normalizedPhone = normalizePhone(phone);
+      if (!normalizedPhone) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Некорректный формат телефона',
+        });
+      }
+    }
+
     await client.query('BEGIN');
 
     // 3) Ищем код. SELECT FOR UPDATE — защита от race-condition (два параллельных
@@ -251,7 +264,7 @@ router.post('/register', registerValidator, async (req, res) => {
               last_login_at = NOW()
         WHERE id = $6
        RETURNING id, email, full_name, phone, birth_date, avatar_url`,
-      [email, password_hash, full_name, phone || null, birth_date || null, existing.id]
+      [email, password_hash, full_name, normalizedPhone, birth_date || null, existing.id]
     );
     const patient = updateResult.rows[0];
 
@@ -704,6 +717,19 @@ router.put('/me', authenticatePatient, async (req, res) => {
         error: 'INVALID_MESSENGER',
         message: 'Недопустимое значение канала связи'
       });
+    }
+
+    // Phone нормализуем в E.164. Пустая строка / null → сохраняется как NULL
+    // в общем блоке ниже.
+    if ('phone' in updates && updates.phone && String(updates.phone).trim()) {
+      const normalized = normalizePhone(updates.phone);
+      if (!normalized) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Некорректный формат телефона',
+        });
+      }
+      updates.phone = normalized;
     }
 
     // Динамический UPDATE через параметризованный запрос — ключи берутся
