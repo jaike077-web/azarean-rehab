@@ -21,7 +21,7 @@ const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
 const { normalizePhone } = require('../utils/phone');
-const telegramOidc = require('../services/telegramOidc');
+const telegramLoginWidget = require('../services/telegramLoginWidget');
 const config = require('../config/config');
 
 // =====================================================
@@ -1151,17 +1151,16 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
 
 const SUPPORTED_PROVIDERS = ['yandex', 'google', 'telegram', 'vk'];
 
-// Сейчас реализован только Telegram (через @BotFather Login Widget OIDC).
-// Yandex/Google/VK — placeholder, при тыке возвращаем 501.
-const isTelegramOidcConfigured = () =>
-  !!(config.telegramOidc.clientId && config.telegramOidc.clientSecret && config.telegramOidc.redirectUri);
+// Telegram через legacy Login Widget HMAC (вместо OIDC) — VDS не достукается
+// до oauth.telegram.org для server-to-server flow. Виджет работает чисто
+// клиентский: popup → Telegram → callback с подписанными query-params.
+const isTelegramLoginConfigured = () => !!config.telegram.botToken;
 
 // Прокидываем фронту список того что реально работает.
-// Фронт показывает только enabled-кнопки, остальное серым с tooltip «скоро».
 router.get('/oauth/providers', (req, res) => {
   res.json({
     data: {
-      telegram: { enabled: isTelegramOidcConfigured() },
+      telegram: { enabled: isTelegramLoginConfigured() },
       yandex: { enabled: false },
       google: { enabled: false },
       vk: { enabled: false },
@@ -1170,30 +1169,25 @@ router.get('/oauth/providers', (req, res) => {
 });
 
 // =====================================================
-// GET /oauth/telegram — старт Telegram OIDC flow
+// GET /oauth/telegram — 302 на oauth.telegram.org (browser-side flow)
 // =====================================================
-router.get('/oauth/telegram', async (req, res) => {
-  if (!isTelegramOidcConfigured()) {
+router.get('/oauth/telegram', (req, res) => {
+  if (!isTelegramLoginConfigured()) {
     return res.status(501).json({
       error: 'Not Implemented',
-      message: 'Telegram OIDC не настроен на сервере',
+      message: 'Telegram Login не настроен на сервере',
     });
   }
 
   try {
-    const { authUrl, state, nonce, codeVerifier } = await telegramOidc.buildAuthorizeUrl();
-
-    // Сохраняем state/nonce/codeVerifier на 10 мин — обменяем при callback
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await query(
-      `INSERT INTO patient_oauth_states (state, provider, code_verifier, nonce, expires_at)
-       VALUES ($1, 'telegram', $2, $3, $4)`,
-      [state, codeVerifier, nonce, expiresAt]
-    );
-
+    // Сами строим URL — frontend = откуда юзер, return_to = наш callback.
+    // Origin Telegram'у нужен чтобы понять каким сайтам можно делать OAuth.
+    const frontendBase = config.frontendUrl.replace(/\/$/, '');
+    const returnTo = `${req.protocol}://${req.get('host')}/api/patient-auth/oauth/telegram/callback`;
+    const authUrl = telegramLoginWidget.buildAuthUrl(returnTo, frontendBase);
     return res.redirect(authUrl);
   } catch (err) {
-    console.error('Telegram OAuth start error:', err);
+    console.error('Telegram Login start error:', err);
     return res.status(500).json({
       error: 'Server Error',
       message: 'Не удалось запустить вход через Telegram',
@@ -1202,7 +1196,7 @@ router.get('/oauth/telegram', async (req, res) => {
 });
 
 // =====================================================
-// GET /oauth/telegram/callback — Telegram callback
+// GET /oauth/telegram/callback — приём query-params от Login Widget
 // =====================================================
 router.get('/oauth/telegram/callback', async (req, res) => {
   const frontendBase = config.frontendUrl.replace(/\/$/, '');
@@ -1212,75 +1206,31 @@ router.get('/oauth/telegram/callback', async (req, res) => {
     return res.redirect(url.toString());
   };
 
-  if (!isTelegramOidcConfigured()) {
-    return fail('Telegram OIDC не настроен');
+  if (!isTelegramLoginConfigured()) {
+    return fail('Telegram Login не настроен');
   }
 
-  const { state, error, error_description } = req.query;
-
-  // Юзер нажал «отмена» в Telegram-consent
-  if (error) {
-    return fail(error_description || error || 'Авторизация отменена');
+  // Telegram при отмене не редиректит вообще — юзер просто закроет popup.
+  // Но на всякий случай ловим стандартные OAuth error-параметры.
+  if (req.query.error) {
+    return fail(req.query.error_description || req.query.error);
   }
 
-  if (!state || typeof state !== 'string') {
-    return fail('Параметр state отсутствует');
+  const verification = telegramLoginWidget.verifyAuthData(req.query);
+  if (!verification.valid) {
+    console.warn('[telegram-login] verify failed:', verification.reason);
+    return fail(verification.reason || 'Не удалось проверить ответ Telegram');
   }
 
-  const client = await getClient();
+  const data = verification.data;
+  const providerId = data.id; // Telegram user id, он же chat_id
+  const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ') ||
+                   data.username || 'Пациент';
+  const avatarUrl = data.photo_url || null;
+
   try {
-    // Атомарно достаём и удаляем state (used-once)
-    await client.query('BEGIN');
-    const stateResult = await client.query(
-      `SELECT id, code_verifier, nonce, expires_at
-         FROM patient_oauth_states
-        WHERE state = $1 AND provider = 'telegram'
-        FOR UPDATE`,
-      [state]
-    );
-
-    if (stateResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return fail('State не найден — попробуйте ещё раз');
-    }
-
-    const stateRow = stateResult.rows[0];
-
-    if (new Date(stateRow.expires_at) < new Date()) {
-      await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
-      await client.query('COMMIT');
-      return fail('Сессия входа истекла, попробуйте ещё раз');
-    }
-
-    // Удаляем state до обмена кода — даже если callback дёрнут дважды,
-    // второй раз уже не пройдёт.
-    await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
-    await client.query('COMMIT');
-
-    // Полный URL текущего запроса (нужен openid-client'у для парсинга query)
-    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-
-    let claims;
-    try {
-      claims = await telegramOidc.handleCallback(fullUrl, {
-        state,
-        nonce: stateRow.nonce,
-        codeVerifier: stateRow.code_verifier,
-      });
-    } catch (oidcErr) {
-      console.error('Telegram OIDC validation failed:', oidcErr);
-      return fail('Не удалось проверить ответ Telegram');
-    }
-
-    // Извлекаем нужные клеймы. sub — Telegram user id (число как строка).
-    const providerId = String(claims.sub);
-    const phoneRaw = claims.phone_number || null;
-    const phoneNormalized = phoneRaw ? normalizePhone(phoneRaw) : null;
-    const fullName = claims.name || claims.preferred_username || 'Пациент';
-    const avatarUrl = claims.picture || null;
-
     // ========== Match flow ==========
-    // 1) Уже привязан раньше — логин
+    // Login Widget НЕ отдаёт phone — поэтому только provider_id → invite-code.
     let patient = null;
     let linkType = null;
 
@@ -1294,47 +1244,15 @@ router.get('/oauth/telegram/callback', async (req, res) => {
     if (byProvider.rows.length > 0) {
       patient = byProvider.rows[0];
       linkType = 'returning';
-    } else if (phoneNormalized) {
-      // 2) Phone-match silent autolink (только если ровно один пациент с
-      // этим номером и password_hash IS NULL — клейм ещё не делал)
-      const byPhone = await query(
-        `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
-           FROM patients
-          WHERE phone = $1 AND password_hash IS NULL`,
-        [phoneNormalized]
-      );
-
-      if (byPhone.rows.length === 1) {
-        const candidate = byPhone.rows[0];
-        // Silent link — сохраняем provider_id + telegram_chat_id
-        await query(
-          `UPDATE patients
-              SET auth_provider = 'telegram',
-                  provider_id = $1,
-                  telegram_chat_id = $1,
-                  avatar_url = COALESCE(avatar_url, $2),
-                  email_verified = true,
-                  last_login_at = NOW()
-            WHERE id = $3`,
-          [providerId, avatarUrl, candidate.id]
-        );
-        patient = { ...candidate, auth_provider: 'telegram' };
-        linkType = 'phone_autolink';
-      }
     }
 
     if (!patient) {
-      // 3) Нет совпадений — редирект на регистрацию с invite-code и pre-fill
+      // Нет совпадения — редирект на регистрацию с pre-fill.
+      // Phone не передаём — у нас его нет от Telegram.
       const url = new URL('/patient-register', frontendBase);
       url.searchParams.set('oauth_provider', 'telegram');
       url.searchParams.set('oauth_provider_id', providerId);
-      if (phoneNormalized) url.searchParams.set('phone', phoneNormalized);
       if (fullName) url.searchParams.set('full_name', fullName);
-      // TODO: pending OAuth-link table вместо передачи provider_id в query.
-      // Сейчас фронт просто покажет форму с pre-fill, при отправке /register
-      // мы НЕ привяжем provider_id (Phase 2b ограничение). Это значит
-      // пациент пройдёт инвайт-flow, потом отдельно может «Привязать Telegram»
-      // в Profile. Закроем в Phase 2c.
       return res.redirect(url.toString());
     }
 
@@ -1342,25 +1260,29 @@ router.get('/oauth/telegram/callback', async (req, res) => {
       return fail('Аккаунт деактивирован — обратитесь к специалисту');
     }
 
-    // Обновим last_login_at для returning users (для phone_autolink уже обновили)
-    if (linkType === 'returning') {
-      await query(`UPDATE patients SET last_login_at = NOW() WHERE id = $1`, [patient.id]);
-    }
+    // Обновим last_login_at + telegram_chat_id (если ещё не привязан).
+    // request_access=write дал боту право слать сообщения, поэтому id сейчас
+    // безопасно использовать как chat_id для авто-привязки.
+    await query(
+      `UPDATE patients
+          SET last_login_at = NOW(),
+              telegram_chat_id = COALESCE(telegram_chat_id, $1),
+              avatar_url = COALESCE(avatar_url, $2)
+        WHERE id = $3`,
+      [providerId, avatarUrl, patient.id]
+    );
 
-    // Audit-лог (user_id=NULL т.к. это сам пациент логинится).
-    // logAudit() утилита короткозамыкает на user.id отсутствующем — здесь
-    // прямой INSERT с NULL чтобы фиксировать OAUTH-события для compliance.
+    // Audit-лог (user_id=NULL — patient-side action)
     query(
       `INSERT INTO audit_logs
          (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
-       VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
+       VALUES (NULL, 'OAUTH_LOGIN', 'patient', $1, $2, $3, $4, $5)`,
       [
-        linkType === 'phone_autolink' ? 'OAUTH_AUTOLINK' : 'OAUTH_LOGIN',
         patient.id,
         patient.id,
         req.ip || null,
         req.headers['user-agent'] || null,
-        JSON.stringify({ provider: 'telegram', has_phone: !!phoneNormalized }),
+        JSON.stringify({ provider: 'telegram', method: 'login_widget' }),
       ]
     ).catch((err) => console.warn('[audit] OAuth log failed:', err.message));
 
@@ -1372,11 +1294,8 @@ router.get('/oauth/telegram/callback', async (req, res) => {
 
     return res.redirect(`${frontendBase}/patient-dashboard`);
   } catch (err) {
-    try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
-    console.error('Telegram OAuth callback error:', err);
+    console.error('Telegram Login callback error:', err);
     return fail('Ошибка обработки входа');
-  } finally {
-    client.release();
   }
 });
 
