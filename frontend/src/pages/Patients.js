@@ -5,6 +5,7 @@ import { formatDateNumeric } from '../utils/dateUtils';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ConfirmModal from '../components/ConfirmModal';
+import InviteCodeModal from '../components/InviteCodeModal';
 import useConfirm from '../hooks/useConfirm';
 import './Patients.css';
 import { useToast } from '../context/ToastContext';
@@ -23,6 +24,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   List as ListIcon,
+  KeyRound,
 } from 'lucide-react';
 
 function Patients() {
@@ -38,6 +40,7 @@ function Patients() {
   const [showComplexesModal, setShowComplexesModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientComplexes, setPatientComplexes] = useState([]);
+  const [inviteCodePatient, setInviteCodePatient] = useState(null);
 
   // UI состояния
   const [viewMode, setViewMode] = useState('grid'); // 'grid' или 'list'
@@ -564,6 +567,16 @@ function Patients() {
                         <Edit2 className="btn-icon" size={16} />
                         <span>Редактировать</span>
                       </button>
+                      {!patient.is_registered && (
+                        <button
+                          className="btn-secondary"
+                          onClick={() => setInviteCodePatient(patient)}
+                          title="Сгенерировать код для регистрации пациента"
+                        >
+                          <KeyRound className="btn-icon" size={16} />
+                          <span>Код приглашения</span>
+                        </button>
+                      )}
                       <button
                         className="btn-delete"
                         onClick={() =>
@@ -827,6 +840,14 @@ function Patients() {
 
       {/* Confirm Modal */}
       <ConfirmModal {...confirmState} onClose={closeConfirm} />
+
+      {/* Invite Code Modal */}
+      {inviteCodePatient && (
+        <InviteCodeModal
+          patient={inviteCodePatient}
+          onClose={() => setInviteCodePatient(null)}
+        />
+      )}
     </div>
   );
 }

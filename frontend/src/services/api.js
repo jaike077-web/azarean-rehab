@@ -202,6 +202,7 @@ export const patients = {
   restore: (id) => api.patch(`/patients/${id}/restore`),
   deletePermanent: (id) => api.delete(`/patients/${id}/permanent`),
   getWithProgress: () => api.get('/patients/with-progress'),
+  generateInviteCode: (id) => api.post(`/patients/${id}/invite-code`),
 };
 
 // Комплексы

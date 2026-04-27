@@ -4,6 +4,12 @@ const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { patientValidator } = require('../middleware/validators');
 const { logAudit } = require('../utils/audit');
+const { hashToken } = require('../utils/tokens');
+const { generateInviteCode } = require('../utils/inviteCode');
+
+// Invite-код живёт 24 часа. Если инструктор не успел передать код пациенту —
+// генерирует новый, старый автоматически инвалидируется (см. POST /:id/invite-code).
+const INVITE_CODE_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Получить всех своих пациентов
 router.get('/', authenticateToken, async (req, res) => {
@@ -392,6 +398,7 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
     // 4. Авторизация и уведомления
     await client.query('DELETE FROM patient_refresh_tokens WHERE patient_id = $1', [id]);
     await client.query('DELETE FROM patient_password_resets WHERE patient_id = $1', [id]);
+    await client.query('DELETE FROM patient_invite_codes WHERE patient_id = $1', [id]);
     await client.query('DELETE FROM notification_settings WHERE patient_id = $1', [id]);
     await client.query('DELETE FROM telegram_link_codes WHERE patient_id = $1', [id]);
 
@@ -414,6 +421,110 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
     });
   } finally {
     client.release();
+  }
+});
+
+// =====================================================
+// POST /:id/invite-code — генерация invite-кода для пациента
+// (инструктор отдаёт код пациенту любым способом — Telegram/SMS/устно)
+// =====================================================
+router.post('/:id/invite-code', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Ownership + статус регистрации
+    const patientResult = await query(
+      `SELECT id, full_name, password_hash, is_active
+         FROM patients
+        WHERE id = $1 AND created_by = $2`,
+      [id, req.user.id]
+    );
+
+    if (patientResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Пациент не найден',
+      });
+    }
+
+    const patient = patientResult.rows[0];
+
+    if (patient.is_active === false) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Невозможно создать код — пациент в корзине',
+      });
+    }
+
+    if (patient.password_hash) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Пациент уже зарегистрирован — код не нужен',
+      });
+    }
+
+    // Один активный код на пациента: помечаем все предыдущие неиспользованные
+    // как использованные (used_at = NOW()). Это сохраняет аудит-историю и
+    // одновременно делает их невалидными.
+    await query(
+      `UPDATE patient_invite_codes
+          SET used_at = NOW()
+        WHERE patient_id = $1 AND used_at IS NULL`,
+      [id]
+    );
+
+    // Генерим код, проверяем уникальность хэша (collision крайне маловероятен,
+    // но на UNIQUE constraint нарвёмся при INSERT — пере-генерим до 5 раз).
+    let plainCode = '';
+    let codeHash = '';
+    let inserted = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      plainCode = generateInviteCode();
+      codeHash = hashToken(plainCode);
+      const expiresAt = new Date(Date.now() + INVITE_CODE_TTL_MS);
+
+      try {
+        const insertResult = await query(
+          `INSERT INTO patient_invite_codes
+             (patient_id, code_hash, expires_at, created_by)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, expires_at`,
+          [id, codeHash, expiresAt, req.user.id]
+        );
+        inserted = insertResult.rows[0];
+        break;
+      } catch (err) {
+        // 23505 — unique_violation. Любая другая ошибка — пробрасываем.
+        if (err.code !== '23505') throw err;
+      }
+    }
+
+    if (!inserted) {
+      return res.status(500).json({
+        error: 'Server Error',
+        message: 'Не удалось сгенерировать уникальный код, повторите попытку',
+      });
+    }
+
+    // GDPR/Audit
+    logAudit(req, 'CREATE', 'patient_invite_code', inserted.id, {
+      patientId: parseInt(id, 10),
+    });
+
+    res.status(201).json({
+      data: {
+        code: plainCode,
+        expires_at: inserted.expires_at,
+      },
+      message: 'Код приглашения создан',
+    });
+
+  } catch (error) {
+    console.error('Ошибка генерации invite-кода:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при создании кода приглашения',
+    });
   }
 });
 

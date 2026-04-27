@@ -7,6 +7,14 @@
   font-weight: 500;
 }
 
+/* Hint под полем (например, под кодом приглашения) */
+.patient-auth-hint {
+  margin: 6px 4px 0;
+  font-size: 12px;
+  color: #718096;
+  line-height: 1.4;
+}
+
 /* Password strength indicator */
 .patient-auth-password-strength {
   height: 4px;

@@ -11,7 +11,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const { query } = require('../database/db');
+const { query, getClient } = require('../database/db');
 const path = require('path');
 const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
@@ -19,6 +19,7 @@ const { registerValidator, loginValidator } = require('../middleware/validators'
 const { avatarUpload, processAvatar } = require('../middleware/upload');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
+const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
 const config = require('../config/config');
 
 // =====================================================
@@ -99,94 +100,172 @@ const clearAccessCookie = (res) => {
 };
 
 // =====================================================
-// POST /register — Регистрация пациента
+// POST /register — Регистрация пациента по invite-коду
+//
+// Self-registration без кода запрещена (закрывает архитектурный gap
+// «пациент-невидимка с created_by=NULL» — bug #42 в CLAUDE.md).
+// Инструктор создаёт пациента → генерирует код через POST
+// /api/patients/:id/invite-code → передаёт пациенту → пациент вводит
+// здесь и активирует свой аккаунт.
 // =====================================================
 router.post('/register', registerValidator, async (req, res) => {
+  const client = await getClient();
   try {
-    const { email, password, full_name, phone, birth_date } = req.body;
+    const { email, password, full_name, phone, birth_date, invite_code } = req.body;
 
-    // Валидация
+    // 1) Валидация invite-кода (формат)
+    const normalizedCode = normalizeInviteCode(invite_code);
+    if (!normalizedCode) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Введите код приглашения от вашего специалиста',
+      });
+    }
+    if (!isValidCodeFormat(normalizedCode)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный формат кода приглашения',
+      });
+    }
+
+    // 2) Валидация остальных полей (registerValidator уже проверил email/password/full_name,
+    //    но оставляю короткий fallback — он нужен для тестов которые иногда обходят валидатор)
     if (!email || !password || !full_name) {
       return res.status(400).json({
         error: 'Validation Error',
-        message: 'Email, пароль и имя обязательны'
+        message: 'Email, пароль и имя обязательны',
       });
     }
 
     if (!isValidEmail(email)) {
       return res.status(400).json({
         error: 'Validation Error',
-        message: 'Некорректный формат email'
+        message: 'Некорректный формат email',
       });
     }
 
     if (password.length < 8) {
       return res.status(400).json({
         error: 'Validation Error',
-        message: 'Пароль должен содержать минимум 8 символов'
+        message: 'Пароль должен содержать минимум 8 символов',
       });
     }
 
-    // Проверяем: есть ли пациент с таким email?
-    const existingResult = await query(
-      `SELECT id, password_hash, is_active FROM patients WHERE email = $1`,
-      [email]
+    await client.query('BEGIN');
+
+    // 3) Ищем код. SELECT FOR UPDATE — защита от race-condition (два параллельных
+    // запроса с одним кодом не должны оба пройти).
+    const codeHash = hashToken(normalizedCode);
+    const codeResult = await client.query(
+      `SELECT id, patient_id, expires_at, used_at
+         FROM patient_invite_codes
+        WHERE code_hash = $1
+        FOR UPDATE`,
+      [codeHash]
     );
 
-    let patient;
-
-    if (existingResult.rows.length > 0) {
-      const existing = existingResult.rows[0];
-
-      // Если уже зарегистрирован (есть пароль) — ошибка
-      if (existing.password_hash) {
-        return res.status(409).json({
-          error: 'Conflict',
-          message: 'Пациент с таким email уже зарегистрирован'
-        });
-      }
-
-      // Если деактивирован — ошибка
-      if (existing.is_active === false) {
-        return res.status(409).json({
-          error: 'Conflict',
-          message: 'Аккаунт с этим email деактивирован. Обратитесь к специалисту.'
-        });
-      }
-
-      // Пациент есть (создан инструктором), но без пароля — привязываем
-      const password_hash = await bcrypt.hash(password, 10);
-      const updateResult = await query(
-        `UPDATE patients
-         SET password_hash = $1,
-             full_name = COALESCE(NULLIF($2, ''), full_name),
-             phone = COALESCE(NULLIF($3, ''), phone),
-             birth_date = COALESCE($4, birth_date),
-             auth_provider = 'local',
-             last_login_at = NOW()
-         WHERE id = $5
-         RETURNING id, email, full_name, phone, birth_date, avatar_url`,
-        [password_hash, full_name, phone || null, birth_date || null, existing.id]
-      );
-      patient = updateResult.rows[0];
-
-    } else {
-      // Новый пациент — создаём
-      const password_hash = await bcrypt.hash(password, 10);
-      const insertResult = await query(
-        `INSERT INTO patients (full_name, email, phone, birth_date, password_hash, auth_provider, last_login_at)
-         VALUES ($1, $2, $3, $4, $5, 'local', NOW())
-         RETURNING id, email, full_name, phone, birth_date, avatar_url`,
-        [full_name, email, phone || null, birth_date || null, password_hash]
-      );
-      patient = insertResult.rows[0];
+    if (codeResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Код приглашения не найден',
+      });
     }
 
-    // Генерируем токены
+    const inviteRow = codeResult.rows[0];
+
+    if (inviteRow.used_at) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Код уже использован — попросите инструктора сгенерировать новый',
+      });
+    }
+
+    if (new Date(inviteRow.expires_at) < new Date()) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Срок действия кода истёк — попросите инструктора сгенерировать новый',
+      });
+    }
+
+    // 4) Загружаем пациента, к которому привязан код
+    const patientResult = await client.query(
+      `SELECT id, email, password_hash, is_active
+         FROM patients
+        WHERE id = $1
+        FOR UPDATE`,
+      [inviteRow.patient_id]
+    );
+
+    if (patientResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Пациент не найден — обратитесь к инструктору',
+      });
+    }
+
+    const existing = patientResult.rows[0];
+
+    if (existing.is_active === false) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Аккаунт деактивирован. Обратитесь к специалисту.',
+      });
+    }
+
+    if (existing.password_hash) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Пациент уже зарегистрирован',
+      });
+    }
+
+    // 5) Email не должен быть занят другим пациентом
+    const emailConflict = await client.query(
+      `SELECT id FROM patients WHERE email = $1 AND id <> $2`,
+      [email, existing.id]
+    );
+    if (emailConflict.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'Conflict',
+        message: 'Email уже используется другим аккаунтом',
+      });
+    }
+
+    // 6) Привязываем регистрационные данные к существующему пациенту
+    const password_hash = await bcrypt.hash(password, 10);
+    const updateResult = await client.query(
+      `UPDATE patients
+          SET email = $1,
+              password_hash = $2,
+              full_name = COALESCE(NULLIF($3, ''), full_name),
+              phone = COALESCE(NULLIF($4, ''), phone),
+              birth_date = COALESCE($5, birth_date),
+              auth_provider = 'local',
+              last_login_at = NOW()
+        WHERE id = $6
+       RETURNING id, email, full_name, phone, birth_date, avatar_url`,
+      [email, password_hash, full_name, phone || null, birth_date || null, existing.id]
+    );
+    const patient = updateResult.rows[0];
+
+    // 7) Маркируем код использованным
+    await client.query(
+      `UPDATE patient_invite_codes SET used_at = NOW() WHERE id = $1`,
+      [inviteRow.id]
+    );
+
+    await client.query('COMMIT');
+
+    // 8) Cookies
     const accessToken = generateAccessToken(patient);
     const refreshToken = await generateRefreshToken(patient.id);
-
-    // Устанавливаем cookies (access + refresh)
     setAccessCookie(res, accessToken);
     setRefreshCookie(res, refreshToken);
 
@@ -197,17 +276,20 @@ router.post('/register', registerValidator, async (req, res) => {
         full_name: patient.full_name,
         phone: patient.phone,
         birth_date: patient.birth_date,
-        avatar_url: patient.avatar_url
+        avatar_url: patient.avatar_url,
       },
-      message: 'Регистрация выполнена успешно'
+      message: 'Регистрация выполнена успешно',
     });
 
   } catch (error) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* already rolled back */ }
     console.error('Patient register error:', error);
     res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при регистрации'
+      message: 'Ошибка при регистрации',
     });
+  } finally {
+    client.release();
   }
 });
 

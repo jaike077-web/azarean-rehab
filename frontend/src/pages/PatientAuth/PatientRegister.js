@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Mail, Phone, Lock, EyeOff, Eye, Check } from 'lucide-react';
+import { User, Mail, Phone, Lock, EyeOff, Eye, Check, KeyRound } from 'lucide-react';
 import { patientAuth } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
@@ -17,6 +17,7 @@ function PatientRegister() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -34,6 +35,10 @@ function PatientRegister() {
     e.preventDefault();
     setError('');
 
+    if (!inviteCode.trim()) {
+      setError('Введите код приглашения от вашего специалиста');
+      return;
+    }
     if (!full_name || !email || !password || !confirmPassword) {
       setError('Заполните все обязательные поля');
       return;
@@ -61,7 +66,8 @@ function PatientRegister() {
         full_name,
         email,
         phone: phone || undefined,
-        password
+        password,
+        invite_code: inviteCode.trim(),
       });
       // unwrap interceptor разворачивает { data: <patient>, message } → response.data = <patient>
       // Бэк отдаёт patient плоско в data (не data.patient), см. backend/routes/patientAuth.js:189
@@ -97,6 +103,31 @@ function PatientRegister() {
         )}
 
         <form onSubmit={handleSubmit} className="patient-auth-form">
+          <div className="patient-auth-field">
+            <label className="patient-auth-label">
+              Код приглашения <span className="patient-auth-required">*</span>
+            </label>
+            <div className="patient-auth-input-wrapper">
+              <KeyRound className="patient-auth-input-icon" size={20} />
+              <input
+                type="text"
+                className="patient-auth-input"
+                placeholder="Введите код от инструктора"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                disabled={loading}
+                autoCapitalize="characters"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={12}
+                required
+              />
+            </div>
+            <p className="patient-auth-hint">
+              Код вам должен передать ваш специалист
+            </p>
+          </div>
+
           <div className="patient-auth-field">
             <label className="patient-auth-label">
               Имя <span className="patient-auth-required">*</span>
