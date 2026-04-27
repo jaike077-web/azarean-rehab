@@ -263,13 +263,28 @@ function Patients() {
       });
       loadPatients();
     } catch (err) {
-      // Пытаемся извлечь конкретную ошибку от сервера
-      const serverError = err.response?.data?.message || err.response?.data?.error;
+      // express-validator кладёт массив details=[{field, message}] —
+      // показываем поле + сообщение, иначе fallback на общий message
+      const respData = err.response?.data;
+      const details = Array.isArray(respData?.details) ? respData.details : null;
 
-      if (serverError) {
-        setError(serverError);
+      if (details && details.length > 0) {
+        const FIELD_LABELS = {
+          full_name: 'ФИО',
+          email: 'Email',
+          phone: 'Телефон',
+          birth_date: 'Дата рождения',
+          diagnosis: 'Диагноз',
+          notes: 'Заметки',
+        };
+        const lines = details.map((d) => {
+          const label = FIELD_LABELS[d.field] || d.field;
+          return `${label}: ${d.message}`;
+        });
+        setError(lines.join('. '));
       } else {
-        setError('Ошибка при сохранении данных. Проверьте правильность заполнения всех полей.');
+        setError(respData?.message || respData?.error ||
+          'Ошибка при сохранении данных. Проверьте правильность заполнения всех полей.');
       }
 
       toast.error('Не удалось сохранить данные пациента');
