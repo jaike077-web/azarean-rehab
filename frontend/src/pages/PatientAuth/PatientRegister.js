@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { User, Mail, Phone, Lock, EyeOff, Eye, Check, KeyRound } from 'lucide-react';
 import { patientAuth } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -9,12 +9,21 @@ import './PatientRegister.css';
 
 function PatientRegister() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { login } = usePatientAuth();
 
-  const [full_name, setFullName] = useState('');
+  // Pre-fill из OAuth-callback'а: backend редиректит сюда с
+  // ?phone=...&full_name=...&oauth_provider=telegram если phone-match не нашёл
+  // существующего пациента. Юзер вводит invite-code, остальное pre-filled.
+  const queryParams = new URLSearchParams(location.search);
+  const oauthProvider = queryParams.get('oauth_provider');
+  const prefillPhone = queryParams.get('phone') || '';
+  const prefillFullName = queryParams.get('full_name') || '';
+
+  const [full_name, setFullName] = useState(prefillFullName);
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(prefillPhone);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -23,6 +32,14 @@ function PatientRegister() {
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // OAuth-callback пришёл сюда → информируем юзера почему он тут
+  useEffect(() => {
+    if (oauthProvider) {
+      // Не toast — он улетает быстро. Показываем как info-блок.
+      setError('');
+    }
+  }, [oauthProvider]);
 
   const getPasswordStrength = () => {
     if (password.length === 0) return null;
@@ -95,6 +112,14 @@ function PatientRegister() {
         </div>
 
         <h1 className="patient-auth-heading">Создание аккаунта</h1>
+
+        {oauthProvider && (
+          <div className="patient-auth-info">
+            Мы не нашли вашу карточку у инструктора. Попросите его сгенерировать
+            код приглашения и введите его ниже — после этого ваш Telegram
+            автоматически свяжется с профилем.
+          </div>
+        )}
 
         {error && (
           <div className="patient-auth-error">

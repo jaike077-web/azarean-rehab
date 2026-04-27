@@ -21,6 +21,7 @@ const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
 const { normalizePhone } = require('../utils/phone');
+const telegramOidc = require('../services/telegramOidc');
 const config = require('../config/config');
 
 // =====================================================
@@ -1145,44 +1146,270 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
 });
 
 // =====================================================
-// OAuth — ЗАГЛУШКИ (реализация в будущих спринтах)
+// OAuth — провайдеры
 // =====================================================
 
 const SUPPORTED_PROVIDERS = ['yandex', 'google', 'telegram', 'vk'];
 
-// GET /oauth/:provider — Редирект на провайдера
-router.get('/oauth/:provider', (req, res) => {
-  const { provider } = req.params;
+// Сейчас реализован только Telegram (через @BotFather Login Widget OIDC).
+// Yandex/Google/VK — placeholder, при тыке возвращаем 501.
+const isTelegramOidcConfigured = () =>
+  !!(config.telegramOidc.clientId && config.telegramOidc.clientSecret && config.telegramOidc.redirectUri);
 
-  if (!SUPPORTED_PROVIDERS.includes(provider)) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      message: `Неизвестный провайдер: ${provider}. Доступны: ${SUPPORTED_PROVIDERS.join(', ')}`
-    });
-  }
-
-  res.status(501).json({
-    error: 'Not Implemented',
-    message: `OAuth через ${provider} в разработке`,
-    provider
+// Прокидываем фронту список того что реально работает.
+// Фронт показывает только enabled-кнопки, остальное серым с tooltip «скоро».
+router.get('/oauth/providers', (req, res) => {
+  res.json({
+    data: {
+      telegram: { enabled: isTelegramOidcConfigured() },
+      yandex: { enabled: false },
+      google: { enabled: false },
+      vk: { enabled: false },
+    },
   });
 });
 
-// GET /oauth/:provider/callback — Callback от провайдера
-router.get('/oauth/:provider/callback', (req, res) => {
-  const { provider } = req.params;
-
-  if (!SUPPORTED_PROVIDERS.includes(provider)) {
-    return res.status(400).json({
-      error: 'Bad Request',
-      message: `Неизвестный провайдер: ${provider}`
+// =====================================================
+// GET /oauth/telegram — старт Telegram OIDC flow
+// =====================================================
+router.get('/oauth/telegram', async (req, res) => {
+  if (!isTelegramOidcConfigured()) {
+    return res.status(501).json({
+      error: 'Not Implemented',
+      message: 'Telegram OIDC не настроен на сервере',
     });
   }
 
+  try {
+    const { authUrl, state, nonce, codeVerifier } = await telegramOidc.buildAuthorizeUrl();
+
+    // Сохраняем state/nonce/codeVerifier на 10 мин — обменяем при callback
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await query(
+      `INSERT INTO patient_oauth_states (state, provider, code_verifier, nonce, expires_at)
+       VALUES ($1, 'telegram', $2, $3, $4)`,
+      [state, codeVerifier, nonce, expiresAt]
+    );
+
+    return res.redirect(authUrl);
+  } catch (err) {
+    console.error('Telegram OAuth start error:', err);
+    return res.status(500).json({
+      error: 'Server Error',
+      message: 'Не удалось запустить вход через Telegram',
+    });
+  }
+});
+
+// =====================================================
+// GET /oauth/telegram/callback — Telegram callback
+// =====================================================
+router.get('/oauth/telegram/callback', async (req, res) => {
+  const frontendBase = config.frontendUrl.replace(/\/$/, '');
+  const fail = (msg) => {
+    const url = new URL('/patient-login', frontendBase);
+    url.searchParams.set('oauth_error', msg);
+    return res.redirect(url.toString());
+  };
+
+  if (!isTelegramOidcConfigured()) {
+    return fail('Telegram OIDC не настроен');
+  }
+
+  const { state, error, error_description } = req.query;
+
+  // Юзер нажал «отмена» в Telegram-consent
+  if (error) {
+    return fail(error_description || error || 'Авторизация отменена');
+  }
+
+  if (!state || typeof state !== 'string') {
+    return fail('Параметр state отсутствует');
+  }
+
+  const client = await getClient();
+  try {
+    // Атомарно достаём и удаляем state (used-once)
+    await client.query('BEGIN');
+    const stateResult = await client.query(
+      `SELECT id, code_verifier, nonce, expires_at
+         FROM patient_oauth_states
+        WHERE state = $1 AND provider = 'telegram'
+        FOR UPDATE`,
+      [state]
+    );
+
+    if (stateResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return fail('State не найден — попробуйте ещё раз');
+    }
+
+    const stateRow = stateResult.rows[0];
+
+    if (new Date(stateRow.expires_at) < new Date()) {
+      await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
+      await client.query('COMMIT');
+      return fail('Сессия входа истекла, попробуйте ещё раз');
+    }
+
+    // Удаляем state до обмена кода — даже если callback дёрнут дважды,
+    // второй раз уже не пройдёт.
+    await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
+    await client.query('COMMIT');
+
+    // Полный URL текущего запроса (нужен openid-client'у для парсинга query)
+    const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+    let claims;
+    try {
+      claims = await telegramOidc.handleCallback(fullUrl, {
+        state,
+        nonce: stateRow.nonce,
+        codeVerifier: stateRow.code_verifier,
+      });
+    } catch (oidcErr) {
+      console.error('Telegram OIDC validation failed:', oidcErr);
+      return fail('Не удалось проверить ответ Telegram');
+    }
+
+    // Извлекаем нужные клеймы. sub — Telegram user id (число как строка).
+    const providerId = String(claims.sub);
+    const phoneRaw = claims.phone_number || null;
+    const phoneNormalized = phoneRaw ? normalizePhone(phoneRaw) : null;
+    const fullName = claims.name || claims.preferred_username || 'Пациент';
+    const avatarUrl = claims.picture || null;
+
+    // ========== Match flow ==========
+    // 1) Уже привязан раньше — логин
+    let patient = null;
+    let linkType = null;
+
+    const byProvider = await query(
+      `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
+         FROM patients
+        WHERE auth_provider = 'telegram' AND provider_id = $1`,
+      [providerId]
+    );
+
+    if (byProvider.rows.length > 0) {
+      patient = byProvider.rows[0];
+      linkType = 'returning';
+    } else if (phoneNormalized) {
+      // 2) Phone-match silent autolink (только если ровно один пациент с
+      // этим номером и password_hash IS NULL — клейм ещё не делал)
+      const byPhone = await query(
+        `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
+           FROM patients
+          WHERE phone = $1 AND password_hash IS NULL`,
+        [phoneNormalized]
+      );
+
+      if (byPhone.rows.length === 1) {
+        const candidate = byPhone.rows[0];
+        // Silent link — сохраняем provider_id + telegram_chat_id
+        await query(
+          `UPDATE patients
+              SET auth_provider = 'telegram',
+                  provider_id = $1,
+                  telegram_chat_id = $1,
+                  avatar_url = COALESCE(avatar_url, $2),
+                  email_verified = true,
+                  last_login_at = NOW()
+            WHERE id = $3`,
+          [providerId, avatarUrl, candidate.id]
+        );
+        patient = { ...candidate, auth_provider: 'telegram' };
+        linkType = 'phone_autolink';
+      }
+    }
+
+    if (!patient) {
+      // 3) Нет совпадений — редирект на регистрацию с invite-code и pre-fill
+      const url = new URL('/patient-register', frontendBase);
+      url.searchParams.set('oauth_provider', 'telegram');
+      url.searchParams.set('oauth_provider_id', providerId);
+      if (phoneNormalized) url.searchParams.set('phone', phoneNormalized);
+      if (fullName) url.searchParams.set('full_name', fullName);
+      // TODO: pending OAuth-link table вместо передачи provider_id в query.
+      // Сейчас фронт просто покажет форму с pre-fill, при отправке /register
+      // мы НЕ привяжем provider_id (Phase 2b ограничение). Это значит
+      // пациент пройдёт инвайт-flow, потом отдельно может «Привязать Telegram»
+      // в Profile. Закроем в Phase 2c.
+      return res.redirect(url.toString());
+    }
+
+    if (patient.is_active === false) {
+      return fail('Аккаунт деактивирован — обратитесь к специалисту');
+    }
+
+    // Обновим last_login_at для returning users (для phone_autolink уже обновили)
+    if (linkType === 'returning') {
+      await query(`UPDATE patients SET last_login_at = NOW() WHERE id = $1`, [patient.id]);
+    }
+
+    // Audit-лог (user_id=NULL т.к. это сам пациент логинится).
+    // logAudit() утилита короткозамыкает на user.id отсутствующем — здесь
+    // прямой INSERT с NULL чтобы фиксировать OAUTH-события для compliance.
+    query(
+      `INSERT INTO audit_logs
+         (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
+       VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
+      [
+        linkType === 'phone_autolink' ? 'OAUTH_AUTOLINK' : 'OAUTH_LOGIN',
+        patient.id,
+        patient.id,
+        req.ip || null,
+        req.headers['user-agent'] || null,
+        JSON.stringify({ provider: 'telegram', has_phone: !!phoneNormalized }),
+      ]
+    ).catch((err) => console.warn('[audit] OAuth log failed:', err.message));
+
+    // Cookies + редирект на дашборд
+    const accessToken = generateAccessToken(patient);
+    const refreshToken = await generateRefreshToken(patient.id);
+    setAccessCookie(res, accessToken);
+    setRefreshCookie(res, refreshToken);
+
+    return res.redirect(`${frontendBase}/patient-dashboard`);
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+    console.error('Telegram OAuth callback error:', err);
+    return fail('Ошибка обработки входа');
+  } finally {
+    client.release();
+  }
+});
+
+// =====================================================
+// Yandex / Google / VK — пока заглушки
+// =====================================================
+router.get('/oauth/:provider', (req, res) => {
+  const { provider } = req.params;
+  if (!SUPPORTED_PROVIDERS.includes(provider)) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: `Неизвестный провайдер: ${provider}. Доступны: ${SUPPORTED_PROVIDERS.join(', ')}`,
+    });
+  }
+  res.status(501).json({
+    error: 'Not Implemented',
+    message: `OAuth через ${provider} в разработке`,
+    provider,
+  });
+});
+
+router.get('/oauth/:provider/callback', (req, res) => {
+  const { provider } = req.params;
+  if (!SUPPORTED_PROVIDERS.includes(provider)) {
+    return res.status(400).json({
+      error: 'Bad Request',
+      message: `Неизвестный провайдер: ${provider}`,
+    });
+  }
   res.status(501).json({
     error: 'Not Implemented',
     message: `OAuth callback для ${provider} в разработке`,
-    provider
+    provider,
   });
 });
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -18,6 +18,31 @@ const PatientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [providers, setProviders] = useState({
+    telegram: { enabled: false },
+    yandex: { enabled: false },
+    google: { enabled: false },
+    vk: { enabled: false },
+  });
+
+  // Подгружаем список enabled-провайдеров (Telegram если в .env есть OIDC creds)
+  useEffect(() => {
+    patientAuth
+      .getOAuthProviders()
+      .then((res) => setProviders(res.data || {}))
+      .catch(() => { /* fallback: всё disabled — кнопки покажут «скоро» */ });
+  }, []);
+
+  // Если callback фейлнул — backend редиректит сюда с ?oauth_error=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const oauthError = params.get('oauth_error');
+    if (oauthError) {
+      setError(`Вход через соцсеть: ${oauthError}`);
+      // Чистим query чтоб при F5 не повторялось
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location, navigate]);
 
   // Пока контекст проверяет cookie через getMe() — показываем splash,
   // иначе при F5 на /patient-login авторизованного пользователя мелькает форма.
@@ -55,7 +80,13 @@ const PatientLogin = () => {
   };
 
   const handleOAuthClick = (provider) => {
-    alert('В разработке');
+    if (!providers[provider]?.enabled) {
+      toast.info('Этот способ входа пока в разработке');
+      return;
+    }
+    // Полный navigation на backend OAuth-start, который 302-нет на провайдера.
+    // CRA proxy в dev пробрасывает /api на :5000, в prod — nginx.
+    window.location.href = `/api/patient-auth/oauth/${provider}`;
   };
 
   return (

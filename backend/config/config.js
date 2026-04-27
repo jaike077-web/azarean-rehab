@@ -45,6 +45,15 @@ const config = {
     botUsername: process.env.TELEGRAM_BOT_USERNAME || 'azarean_rehab_bot',
   },
 
+  // Telegram OIDC (BotFather → Login Widget → Switch to OpenID Connect Login)
+  // Если не задан — кнопка «Войти через Telegram» отключена (UI это знает
+  // через GET /api/patient-auth/oauth/providers).
+  telegramOidc: {
+    clientId: process.env.TELEGRAM_OIDC_CLIENT_ID || '',
+    clientSecret: process.env.TELEGRAM_OIDC_CLIENT_SECRET || '',
+    redirectUri: process.env.TELEGRAM_OIDC_REDIRECT_URI || '',
+  },
+
   // Kinescope
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,

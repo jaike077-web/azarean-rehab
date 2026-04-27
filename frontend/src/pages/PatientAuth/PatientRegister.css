@@ -15,6 +15,18 @@
   line-height: 1.4;
 }
 
+/* Info-блок (показывается при редиректе с OAuth-callback) */
+.patient-auth-info {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 8px;
+  color: #2c5282;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 /* Password strength indicator */
 .patient-auth-password-strength {
   height: 4px;

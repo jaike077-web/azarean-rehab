@@ -428,6 +428,7 @@ patientAuth.fetchAvatarBlob = (cacheKey) => {
 };
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
 patientAuth.getMyComplex = (id) => patientApi.get(`/patient-auth/my-complexes/${id}`);
+patientAuth.getOAuthProviders = () => patientApi.get('/patient-auth/oauth/providers');
 
 // Прогресс пациента — отдельный объект, использует patientApi (cookie + JWT)
 export const progressPatient = {
