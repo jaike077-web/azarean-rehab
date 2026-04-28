@@ -209,6 +209,15 @@
   gap: 12px;
 }
 
+/* Подсказка под OAuth-кнопками (например, про Telegram redirect issue) */
+.patient-auth-oauth-hint {
+  margin: 12px 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #718096;
+  text-align: center;
+}
+
 .patient-auth-oauth-btn {
   padding: 12px;
   border: 1px solid #E2E8F0;

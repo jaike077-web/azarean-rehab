@@ -232,6 +232,14 @@ const PatientLogin = () => {
           </button>
         </div>
 
+        {providers.telegram?.enabled && (
+          <p className="patient-auth-oauth-hint">
+            Если после авторизации в Telegram страница не вернулась — нажмите
+            «Telegram» ещё раз. Иногда браузер не получает сигнал от Telegram
+            Desktop, и редирект приходится повторить вручную.
+          </p>
+        )}
+
         {/* Footer */}
         <div className="patient-auth-footer">
           Нет аккаунта?{' '}
