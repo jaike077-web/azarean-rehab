@@ -28,7 +28,12 @@
 const config = require('../config/config');
 
 const TELEGRAM_ISSUER = 'https://oauth.telegram.org';
-const SCOPES = 'openid profile phone telegram:bot_access';
+// telegram:bot_access НЕ запрашиваем по умолчанию — этот scope управляется
+// через toggle «Разрешить писать Вам» в Telegram-consent, по дефолту он
+// выключен. Если юзер не включил toggle, а мы scope требуем — Telegram
+// молча фейлит OAuth без редиректа (показывает «Не удалось войти» в чате).
+// Bot-binding делается через отдельный link-code flow в Profile.
+const SCOPES = 'openid profile phone';
 
 let openidClientCache = null;
 const getOpenidClient = () => {
