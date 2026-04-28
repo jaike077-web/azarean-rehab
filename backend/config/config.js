@@ -39,25 +39,30 @@ const config = {
   // Frontend URL для генерации ссылок пациентам
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
 
-  // Telegram Bot — этот же bot_token используется для:
-  // 1) Telegram-бот (long polling уведомлений + diary wizard) — ВСЕГДА работает
-  // 2) Telegram Login Widget (HMAC-проверка query-params от oauth.telegram.org)
-  //    — управляется фича-флагом TELEGRAM_LOGIN_ENABLED.
-  //
-  // Login отключён по дефолту, потому что:
-  // - VDS не достукается до oauth.telegram.org (selective subnet filtering
-  //   у российского хостера) → server-to-server OIDC flow невозможен
-  // - Bot @az_zari_bot переведён в OIDC mode в @BotFather, поэтому legacy
-  //   widget endpoint ?bot_id= возвращает "deprecated" — HMAC flow не работает
-  //
-  // Чтобы включить login: либо создать отдельного бота для legacy widget
-  // (классический режим в BotFather, без переключения в OIDC), либо поднять
-  // proxy для доступа к oauth.telegram.org. После решения — выставить
-  // TELEGRAM_LOGIN_ENABLED=true в .env.
+  // Telegram Bot (long polling уведомлений + diary wizard).
+  // OIDC-логин использует отдельный набор переменных ниже.
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     botUsername: process.env.TELEGRAM_BOT_USERNAME || 'azarean_rehab_bot',
     loginEnabled: process.env.TELEGRAM_LOGIN_ENABLED === 'true',
+  },
+
+  // Telegram OIDC (BotFather → Login Widget → Switch to OpenID Connect Login).
+  // Backend использует TG_PROXY_* (см. ниже) чтобы достукаться до Telegram —
+  // напрямую с rehab-VDS не получается (subnet filter у российского хостера).
+  telegramOidc: {
+    clientId: process.env.TELEGRAM_OIDC_CLIENT_ID || '',
+    clientSecret: process.env.TELEGRAM_OIDC_CLIENT_SECRET || '',
+    redirectUri: process.env.TELEGRAM_OIDC_REDIRECT_URI || '',
+  },
+
+  // Прокси на финский VDS (поднят JARVIS-Director'ом на 78.17.1.70).
+  // openid-client ходит через https://tg-proxy.azarean.ru с header
+  // X-Proxy-Secret. Прокси whitelist'ит /.well-known/* и /token, ip-allowlist
+  // только 185.93.109.234 (prod IP rehab-VDS). См. JARVIS_PROXY_REQUEST.md.
+  tgProxy: {
+    url: process.env.TG_PROXY_URL || '',
+    secret: process.env.TG_PROXY_SECRET || '',
   },
 
   // Kinescope
