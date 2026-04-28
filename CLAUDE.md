@@ -24,8 +24,13 @@
 - **PatientDashboard v12 redesign:** все 6 экранов (Home, Diary, Exercises, Roadmap, Profile, Contact) в стиле meltano+Яндекс. ExerciseRunner LOCKED
 - **Session 2 tech debt (2026-04-22):** bugs #2, #3, #4, #5, #8 закрыты. validators частично подключены, GDPR audit logging на READ
 - **Prod smoke-test session (2026-04-24):** schema drift recovery (20260424_prod_schema_recovery + 20260424b), Kinescope SAVEPOINT-импорт, exercises limit 50→1000, double-avatar/курator chip убраны, PWA auto-update при возврате ≥60 сек, **ToastContext useMemo** (без него toast.xxx() размонтировывал consumer'ов — ExerciseRunner кидало на hero-экран после submit)
+- **Phase 1 invite-code flow (2026-04-27):** инструктор генерирует 8-символьный код через `POST /api/patients/:id/invite-code`, пациент вводит на `/patient-register` (поле `invite_code` обязательно). Закрывает архитектурный gap «self-registered пациент с created_by=NULL невидим инструктору». [InviteCodeModal](frontend/src/components/InviteCodeModal.js) с copy-to-clipboard и t.me/share. Миграция `20260427_patient_invite_codes.sql`.
+- **Phase 2a phone normalizer (2026-04-27):** `backend/utils/phone.js` приводит к E.164 (+CCXXXX). routes/patients.js POST/PUT и patientAuth.js POST /register + PUT /me нормализуют перед записью. Миграция `20260427_normalize_patient_phones.sql` бэкфилла существующих записей. Фундамент для phone-match при OAuth.
+- **Phase 2b/c Telegram OIDC через прокси (2026-04-28):** `BotFather → Login Widget → Switch to OpenID Connect Login` для @az_zari_bot. Backend через `openid-client@6` с `customFetch` (X-Proxy-Secret header) ходит на **финский reverse-proxy** `https://tg-proxy.azarean.ru` (поднят JARVIS-Director'ом на 78.17.1.70, IP-allowlist только 185.93.109.234). Прокси whitelist'ит /.well-known/* и POST /token, переписывает endpoints в discovery JSON. Match-flow в callback'е: `provider_id` → silent autolink по phone → `/patient-register` с pre-fill. Миграции `20260427_oauth_pkce_nonce.sql`. Подробности — [memory/telegram_oidc_proxy.md](.claude/projects/.../memory/telegram_oidc_proxy.md).
 
 ### Планируется (не начато)
+- **Yandex OIDC** — через тот же `openid-client` без прокси (Yandex доступен с rehab-VDS напрямую). Следующий чат начинает с этого.
+- **Bot link-code login** как fallback к OAuth (когда oauth.telegram.org auto-redirect глючит — ~5-6 ч)
 - Non-root deploy user на VDS + sudoers whitelist
 - Healthcheck Telegram alerts
 - `/api/health` endpoint
@@ -77,9 +82,19 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_patien
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_progress_difficulty_rpe10.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260421_diary_structured_fields.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260424_prod_schema_recovery.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260424b_exercises_description_nullable.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_patient_invite_codes.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_normalize_patient_phones.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_oauth_pkce_nonce.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
+
+**20260427_patient_invite_codes:** новая таблица `patient_invite_codes` (id, patient_id FK, code_hash SHA-256, expires_at, used_at, created_by). UNIQUE на code_hash, индекс на patient_id, partial индекс на expires_at WHERE used_at IS NULL.
+
+**20260427_normalize_patient_phones:** бэкфилл существующих `patients.phone` в E.164. DO-блок применяет ту же логику что в `backend/utils/phone.js`. Идемпотентна (повторный прогон changed=0).
+
+**20260427_oauth_pkce_nonce:** ALTER TABLE patient_oauth_states ADD COLUMN code_verifier VARCHAR(128), nonce VARCHAR(64). Нужны для PKCE S256 + OIDC nonce check в Telegram OAuth-flow.
 
 ### 2. Переменные окружения
 
@@ -100,6 +115,20 @@ KINESCOPE_API_KEY=...
 KINESCOPE_PROJECT_ID=...
 CORS_ORIGIN=http://localhost:3000
 TELEGRAM_BOT_TOKEN=...
+
+# Telegram OIDC (Phase 2 — на проде)
+# BotFather → @az_zari_bot → Login Widget → Switch to OpenID Connect Login
+TELEGRAM_OIDC_CLIENT_ID=...
+TELEGRAM_OIDC_CLIENT_SECRET=...
+TELEGRAM_OIDC_REDIRECT_URI=https://my.azarean.ru/api/patient-auth/oauth/telegram/callback
+
+# Финский reverse-proxy для oauth.telegram.org (rehab-VDS не достукается напрямую)
+# Поднят JARVIS-Director'ом на 78.17.1.70, IP-allowlist 185.93.109.234
+TG_PROXY_URL=https://tg-proxy.azarean.ru
+TG_PROXY_SECRET=...
+
+# Feature flag — Telegram-кнопка на /patient-login
+TELEGRAM_LOGIN_ENABLED=true
 FRONTEND_URL=http://localhost:3000
 ```
 
@@ -169,11 +198,15 @@ Azarean_rehab/
 │   │   └── telegram.js          # Привязка Telegram к пациенту (86 строк)
 │   ├── services/
 │   │   ├── telegramBot.js       # Telegram бот: /start, /status, /diary (6-step wizard), /tip, /help (631 строк)
+│   │   ├── telegramOidc.js      # OIDC service для Telegram Login: openid-client v6 + customFetch через финский прокси (X-Proxy-Secret)
 │   │   ├── scheduler.js         # Cron: exercise reminders (per-user tz), diary (21:00), tips (12:00), token cleanup (03:00) (179 строк)
 │   │   ├── kinescopeService.js  # Kinescope API client (152 строки)
 │   │   └── csvImportService.js  # CSV парсер (56 строк)
 │   ├── utils/
 │   │   ├── tokens.js            # hashToken() — SHA-256 для безопасного хранения токенов
+│   │   ├── inviteCode.js        # 8-символьные коды приглашения (alphabet без 0/O/1/I/l), normalize, validate format
+│   │   ├── phone.js             # normalizePhone(raw) → E.164, phonesEqual(a,b). 17 unit-тестов
+│   │   ├── audit.js             # logAudit() для GDPR-аудита действий инструктора над данными пациентов
 │   │   └── email.js             # Email stub (console.log в dev, готов к Nodemailer/SendGrid)
 │   └── tests/                   # Jest + Supertest
 │       └── __tests__/           # 9 тест-файлов (2908 строк суммарно)
@@ -384,7 +417,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **notification_settings** — настройки уведомлений пациента (UNIQUE patient_id)
 - **telegram_link_codes** — одноразовые коды привязки Telegram
 - **patient_password_resets** — токены сброса пароля (SHA-256 hash, миграция 20260408)
-- **patient_oauth_states** — OAuth state для SSO
+- **patient_oauth_states** — OAuth state + PKCE code_verifier + nonce (миграция `20260427_oauth_pkce_nonce.sql` добавила code_verifier/nonce). State used-once, expires_at 10 мин.
+- **patient_invite_codes** — 8-символьные коды приглашения (миграция `20260427_patient_invite_codes.sql`). SHA-256 хэш как у refresh-токенов. TTL 24ч. Один активный код на пациента — при генерации нового старые помечаются used_at=NOW.
 
 ## Пользователи системы
 
@@ -408,7 +442,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **Один `PatientAuthProvider`** на все пациентские роуты (login, register, forgot-password, reset-password, dashboard) через layout Route + Outlet в App.js
 - Account lockout: 5 failed attempts → 15 min
 - Password reset через email stub
-- OAuth заготовка (Google)
+- **Регистрация только по invite-code** — пациент создаётся инструктором (POST /api/patients), потом инструктор генерирует 8-символьный код (POST /api/patients/:id/invite-code), пациент вводит на /patient-register. Self-registration без кода невозможна → закрывает gap «пациент-невидимка с created_by=NULL».
+- **OAuth Telegram (Phase 2):** OIDC через openid-client v6, Authorization Code Flow с PKCE/nonce. discovery + token-exchange ходит через **финский reverse-proxy** (https://tg-proxy.azarean.ru, X-Proxy-Secret header), потому что rehab-VDS не достукается до oauth.telegram.org напрямую. Match-flow в callback'е: provider_id → silent autolink по phone (нормализованный в E.164) → /patient-register с pre-fill. Подробности — [memory/telegram_oidc_proxy.md](.claude/projects/.../memory/).
+- OAuth Yandex/Google/VK — TODO (Yandex следующий)
 - **CSRF:** `requireSameOrigin` middleware на всех state-changing эндпоинтах (/patient-auth, /rehab/my, /telegram, /progress)
 - Bearer header fallback оставлен в middleware для тестов и API-клиентов
 
@@ -426,8 +462,11 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Auth (пациенты)
 | Метод | Путь | Auth | Описание |
 |-------|------|------|----------|
-| POST | /api/patient-auth/register | Нет | Регистрация → ставит access+refresh cookie |
+| POST | /api/patient-auth/register | Нет | Регистрация по invite-code → access+refresh cookie. Поле `invite_code` обязательно |
 | POST | /api/patient-auth/login | Нет | Логин → ставит access+refresh cookie |
+| GET | /api/patient-auth/oauth/providers | Нет | Какие OAuth провайдеры enabled (telegram/yandex/google/vk) |
+| GET | /api/patient-auth/oauth/telegram | Нет | Старт Telegram OIDC flow → 302 на oauth.telegram.org |
+| GET | /api/patient-auth/oauth/telegram/callback | Нет | Callback Telegram → match-flow + cookies + 302 |
 | POST | /api/patient-auth/refresh | Cookie | Обновить access token (ротация) |
 | POST | /api/patient-auth/logout | Cookie | Удалить cookies + refresh tokens |
 | GET | /api/patient-auth/me | Cookie | Текущий пациент |
@@ -447,6 +486,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/patients | JWT | Список (?search, ?is_active) |
 | GET | /api/patients/:id | JWT | Карточка пациента |
 | POST | /api/patients | JWT | Создать пациента |
+| POST | /api/patients/:id/invite-code | JWT | Сгенерировать 8-символьный код приглашения (24ч TTL, used-once) |
 | PUT | /api/patients/:id | JWT | Обновить пациента |
 | DELETE | /api/patients/:id | JWT | Soft delete (is_active=false) |
 | PATCH | /api/patients/:id/restore | JWT | Восстановить из корзины |
@@ -767,16 +807,15 @@ frontend/src/ (12 suites, 156 тестов)
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Последние коммиты на main (локально, некоторые не запушены):**
-  - `ec8ba2c` fix(toast): стабилизировать ссылку toast через useMemo (закрыл бага ExerciseRunner «кидает на hero после Выполнено»)
-  - `14e2ecb` debug(patient): temp logs в PatientDashboard + PatientAuthContext
-  - `8023e26` debug(patient): temp console.log в ExerciseRunner/ExercisesScreen
+- **Последние коммиты на main (Phase 1+2 — invite-code + Telegram OIDC через прокси):**
+  - `897a82b` feat(patient-login): hint про auto-redirect issue Telegram OIDC
+  - `b29a661` fix(oauth): pg type-deduction для phone-autolink UPDATE (один $1 на VARCHAR+BIGINT нельзя)
+  - `a89ae5f` fix(oauth): убрать telegram:bot_access из обязательных scopes (toggle off → silent fail)
+  - `7cb4742` feat(oauth): Telegram OIDC через прокси-VDS в Финляндии
+  - `30e031f` feat(phone): нормализация телефонов в E.164 (фундамент под OAuth phone-match)
+  - `e3970f6` feat(patient-auth): invite-code flow для регистрации пациентов
+  - `44cf3b8` docs(CLAUDE.md): итог smoke-test сессии 2026-04-24
+  - `ec8ba2c` fix(toast): стабилизировать ссылку toast через useMemo
   - `ac8f845` feat(pwa): авто-обновление при возврате в app после ≥60 сек отлучки
   - `d57b116` fix(patient-dashboard): убрать дубль аватара + хардкод «Татьяна · куратор»
-  - `ec2324e` fix(exercises): поднять дефолтный limit 50→1000
-  - `5c3b1d5` fix(import): ImportExercises читал response.data.results.success (неверный уровень после unwrap)
-  - `c348d3f` fix(import): SAVEPOINT video_import + миграция description nullable
-  - `381a7ec` fix(db): recovery миграция 20260424_prod_schema_recovery
-  - `4f96d5e` fix(db): идемпотентность миграций 20260204/20260210/20260408/20260421
-  - `bbd8070` fix(db): recovery миграция для complexes.access_token
-- **Незакоммичено:** CLAUDE.md (этот update), deploy report markdown-файлы, `.claude/plans/`
+- **Незакоммичено:** CLAUDE.md (этот update — Phase 1+2 doc), deploy report markdown-файлы, `.claude/plans/`
