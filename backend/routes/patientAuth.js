@@ -22,6 +22,7 @@ const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
 const { normalizePhone } = require('../utils/phone');
 const telegramOidc = require('../services/telegramOidc');
+const yandexOauth = require('../services/yandexOauth');
 const config = require('../config/config');
 
 // =====================================================
@@ -1158,11 +1159,16 @@ const SUPPORTED_PROVIDERS = ['yandex', 'google', 'telegram', 'vk'];
 const isTelegramLoginConfigured = () =>
   config.telegram.loginEnabled === true && telegramOidc.isConfigured();
 
+// Yandex включается флагом YANDEX_LOGIN_ENABLED + наличием creds.
+// Можем отключить флагом не убирая ключи из .env, если что-то ломается.
+const isYandexLoginConfigured = () =>
+  config.yandexOauth.loginEnabled === true && yandexOauth.isConfigured();
+
 router.get('/oauth/providers', (req, res) => {
   res.json({
     data: {
       telegram: { enabled: isTelegramLoginConfigured() },
-      yandex: { enabled: false },
+      yandex: { enabled: isYandexLoginConfigured() },
       google: { enabled: false },
       vk: { enabled: false },
     },
@@ -1375,7 +1381,205 @@ router.get('/oauth/telegram/callback', async (req, res) => {
 });
 
 // =====================================================
-// Yandex / Google / VK — пока заглушки
+// GET /oauth/yandex — старт OAuth 2.0 flow (без OIDC, без прокси)
+// =====================================================
+router.get('/oauth/yandex', async (req, res) => {
+  if (!isYandexLoginConfigured()) {
+    return res.status(501).json({
+      error: 'Not Implemented',
+      message: 'Yandex OAuth не настроен на сервере',
+    });
+  }
+
+  try {
+    const { authUrl, state, codeVerifier } = yandexOauth.buildAuthorizeUrl();
+
+    // 10 мин — столько же сколько у Telegram'а. Хватает на consent.
+    // nonce у Yandex нет (не OIDC), но колонку оставляем NULL — миграция
+    // 20260427_oauth_pkce_nonce сделала её nullable.
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    await query(
+      `INSERT INTO patient_oauth_states (state, provider, code_verifier, nonce, expires_at)
+       VALUES ($1, 'yandex', $2, NULL, $3)`,
+      [state, codeVerifier, expiresAt]
+    );
+
+    return res.redirect(authUrl);
+  } catch (err) {
+    console.error('Yandex OAuth start error:', err);
+    return res.status(500).json({
+      error: 'Server Error',
+      message: 'Не удалось запустить вход через Yandex',
+    });
+  }
+});
+
+// =====================================================
+// GET /oauth/yandex/callback — приём code, обмен напрямую
+// =====================================================
+router.get('/oauth/yandex/callback', async (req, res) => {
+  const frontendBase = config.frontendUrl.replace(/\/$/, '');
+  const fail = (msg) => {
+    const url = new URL('/patient-login', frontendBase);
+    url.searchParams.set('oauth_error', msg);
+    return res.redirect(url.toString());
+  };
+
+  if (!isYandexLoginConfigured()) {
+    return fail('Yandex OAuth не настроен');
+  }
+
+  const { state, code, error, error_description } = req.query;
+
+  if (error) {
+    return fail(error_description || error || 'Авторизация отменена');
+  }
+  if (!state || typeof state !== 'string') {
+    return fail('Параметр state отсутствует');
+  }
+  if (!code || typeof code !== 'string') {
+    return fail('Параметр code отсутствует');
+  }
+
+  const client = await getClient();
+  try {
+    // state used-once: SELECT FOR UPDATE + DELETE
+    await client.query('BEGIN');
+    const stateResult = await client.query(
+      `SELECT id, code_verifier, expires_at
+         FROM patient_oauth_states
+        WHERE state = $1 AND provider = 'yandex'
+        FOR UPDATE`,
+      [state]
+    );
+
+    if (stateResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return fail('State не найден — попробуйте ещё раз');
+    }
+
+    const stateRow = stateResult.rows[0];
+
+    if (new Date(stateRow.expires_at) < new Date()) {
+      await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
+      await client.query('COMMIT');
+      return fail('Сессия входа истекла, попробуйте ещё раз');
+    }
+
+    await client.query(`DELETE FROM patient_oauth_states WHERE id = $1`, [stateRow.id]);
+    await client.query('COMMIT');
+
+    let info;
+    try {
+      info = await yandexOauth.handleCallback(code, stateRow.code_verifier);
+    } catch (oauthErr) {
+      console.error('Yandex OAuth exchange failed:', oauthErr);
+      return fail('Не удалось получить данные от Yandex');
+    }
+
+    const claims = yandexOauth.extractClaims(info);
+    const providerId = claims.providerId;
+    const phoneNormalized = claims.phone ? normalizePhone(claims.phone) : null;
+
+    // ========== Match flow ==========
+    let patient = null;
+    let linkType = null;
+
+    // 1) Уже привязан раньше — returning login
+    const byProvider = await query(
+      `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
+         FROM patients
+        WHERE auth_provider = 'yandex' AND provider_id = $1`,
+      [providerId]
+    );
+
+    if (byProvider.rows.length > 0) {
+      patient = byProvider.rows[0];
+      linkType = 'returning';
+    } else if (phoneNormalized) {
+      // 2) Phone-match silent autolink (single match, password_hash IS NULL)
+      const byPhone = await query(
+        `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
+           FROM patients
+          WHERE phone = $1 AND password_hash IS NULL`,
+        [phoneNormalized]
+      );
+
+      if (byPhone.rows.length === 1) {
+        const candidate = byPhone.rows[0];
+        // Здесь оба колонки одного типа (provider_id VARCHAR), поэтому
+        // grабли с pg type-deduction как в Telegram-callback'е тут не действуют.
+        await query(
+          `UPDATE patients
+              SET auth_provider = 'yandex',
+                  provider_id = $1,
+                  avatar_url = COALESCE(avatar_url, $2),
+                  email_verified = true,
+                  last_login_at = NOW()
+            WHERE id = $3`,
+          [providerId, claims.avatarUrl, candidate.id]
+        );
+        patient = { ...candidate, auth_provider: 'yandex' };
+        linkType = 'phone_autolink';
+      }
+    }
+
+    if (!patient) {
+      // 3) Нет совпадений — редирект на регистрацию с pre-fill
+      const url = new URL('/patient-register', frontendBase);
+      url.searchParams.set('oauth_provider', 'yandex');
+      url.searchParams.set('oauth_provider_id', providerId);
+      if (phoneNormalized) url.searchParams.set('phone', phoneNormalized);
+      if (claims.fullName) url.searchParams.set('full_name', claims.fullName);
+      if (claims.email) url.searchParams.set('email', claims.email);
+      return res.redirect(url.toString());
+    }
+
+    if (patient.is_active === false) {
+      return fail('Аккаунт деактивирован — обратитесь к специалисту');
+    }
+
+    if (linkType === 'returning') {
+      await query(
+        `UPDATE patients
+            SET last_login_at = NOW()
+          WHERE id = $1`,
+        [patient.id]
+      );
+    }
+
+    // Audit (user_id NULL — patient-side action)
+    query(
+      `INSERT INTO audit_logs
+         (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
+       VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
+      [
+        linkType === 'phone_autolink' ? 'OAUTH_AUTOLINK' : 'OAUTH_LOGIN',
+        patient.id,
+        patient.id,
+        req.ip || null,
+        req.headers['user-agent'] || null,
+        JSON.stringify({ provider: 'yandex', method: 'oauth2', has_phone: !!phoneNormalized }),
+      ]
+    ).catch((err) => console.warn('[audit] OAuth log failed:', err.message));
+
+    const accessToken = generateAccessToken(patient);
+    const refreshToken = await generateRefreshToken(patient.id);
+    setAccessCookie(res, accessToken);
+    setRefreshCookie(res, refreshToken);
+
+    return res.redirect(`${frontendBase}/patient-dashboard`);
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+    console.error('Yandex OAuth callback error:', err);
+    return fail('Ошибка обработки входа');
+  } finally {
+    client.release();
+  }
+});
+
+// =====================================================
+// Google / VK — пока заглушки
 // =====================================================
 router.get('/oauth/:provider', (req, res) => {
   const { provider } = req.params;

@@ -14,15 +14,17 @@ function PatientRegister() {
   const { login } = usePatientAuth();
 
   // Pre-fill из OAuth-callback'а: backend редиректит сюда с
-  // ?phone=...&full_name=...&oauth_provider=telegram если phone-match не нашёл
-  // существующего пациента. Юзер вводит invite-code, остальное pre-filled.
+  // ?phone=...&full_name=...&email=...&oauth_provider=yandex|telegram
+  // если phone-match не нашёл существующего пациента. Юзер вводит invite-code,
+  // остальное pre-filled. Telegram email не отдаёт — будет пусто, Yandex отдаёт.
   const queryParams = new URLSearchParams(location.search);
   const oauthProvider = queryParams.get('oauth_provider');
   const prefillPhone = queryParams.get('phone') || '';
   const prefillFullName = queryParams.get('full_name') || '';
+  const prefillEmail = queryParams.get('email') || '';
 
   const [full_name, setFullName] = useState(prefillFullName);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail);
   const [phone, setPhone] = useState(prefillPhone);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

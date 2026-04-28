@@ -65,6 +65,23 @@ const config = {
     secret: process.env.TG_PROXY_SECRET || '',
   },
 
+  // Yandex OAuth 2.0 (regular, без OIDC discovery). Прокси НЕ нужен —
+  // oauth.yandex.ru и login.yandex.ru доступны с rehab-VDS напрямую.
+  // Scopes увидены в Cabinet (oauth.yandex.ru) при создании приложения:
+  //   login:info          — id, login, real_name, first_name, last_name, sex
+  //   login:email         — default_email, emails[]
+  //   login:avatar        — default_avatar_id (URL формирует backend)
+  //   login:default_phone — default_phone: { id, number } (E.164 +CC...)
+  // login:default_phone критичен для silent autolink — без него
+  // userinfo не вернёт телефон, и phone-match с patients.phone не сматчит.
+  yandexOauth: {
+    clientId: process.env.YANDEX_OAUTH_CLIENT_ID || '',
+    clientSecret: process.env.YANDEX_OAUTH_CLIENT_SECRET || '',
+    redirectUri: process.env.YANDEX_OAUTH_REDIRECT_URI || '',
+    scopes: process.env.YANDEX_OAUTH_SCOPES || 'login:info login:email login:avatar login:default_phone',
+    loginEnabled: process.env.YANDEX_LOGIN_ENABLED === 'true',
+  },
+
   // Kinescope
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
