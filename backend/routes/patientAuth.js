@@ -1151,10 +1151,15 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
 
 const SUPPORTED_PROVIDERS = ['yandex', 'google', 'telegram', 'vk'];
 
-// Telegram через legacy Login Widget HMAC (вместо OIDC) — VDS не достукается
-// до oauth.telegram.org для server-to-server flow. Виджет работает чисто
-// клиентский: popup → Telegram → callback с подписанными query-params.
-const isTelegramLoginConfigured = () => !!config.telegram.botToken;
+// Telegram через legacy Login Widget HMAC. Управляется TELEGRAM_LOGIN_ENABLED
+// в .env — по дефолту false, потому что:
+// 1) VDS не достукается до oauth.telegram.org (selective subnet filter)
+// 2) @az_zari_bot переключён в OIDC mode → legacy widget возвращает
+//    "deprecated" даже если попытаться открыть oauth.telegram.org/auth?bot_id=
+// Включается флагом только когда настроен либо classic-mode bot, либо
+// proxy до oauth.telegram.org.
+const isTelegramLoginConfigured = () =>
+  config.telegram.loginEnabled === true && !!config.telegram.botToken;
 
 // Прокидываем фронту список того что реально работает.
 router.get('/oauth/providers', (req, res) => {
