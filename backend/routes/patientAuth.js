@@ -1300,16 +1300,20 @@ router.get('/oauth/telegram/callback', async (req, res) => {
 
       if (byPhone.rows.length === 1) {
         const candidate = byPhone.rows[0];
+        // Один и тот же $param нельзя использовать для разнотипных колонок
+        // (provider_id VARCHAR vs telegram_chat_id BIGINT) — pg выдаст
+        // "inconsistent types deduced for parameter". Передаём providerId
+        // дважды как $1 и $2.
         await query(
           `UPDATE patients
               SET auth_provider = 'telegram',
                   provider_id = $1,
-                  telegram_chat_id = $1,
-                  avatar_url = COALESCE(avatar_url, $2),
+                  telegram_chat_id = $2,
+                  avatar_url = COALESCE(avatar_url, $3),
                   email_verified = true,
                   last_login_at = NOW()
-            WHERE id = $3`,
-          [providerId, avatarUrl, candidate.id]
+            WHERE id = $4`,
+          [providerId, providerId, avatarUrl, candidate.id]
         );
         patient = { ...candidate, auth_provider: 'telegram' };
         linkType = 'phone_autolink';
