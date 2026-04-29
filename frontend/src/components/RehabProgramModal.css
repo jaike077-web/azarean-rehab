@@ -1,0 +1,181 @@
+.rehab-program-modal {
+  max-width: 560px;
+}
+
+.rehab-program-modal-body {
+  padding: 0 24px 8px;
+}
+
+.rehab-program-patient {
+  margin: 0 0 16px;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.rehab-program-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: #718096;
+  font-size: 14px;
+}
+
+.rehab-program-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3182ce;
+  border-radius: 50%;
+  animation: rehab-program-spin 0.8s linear infinite;
+}
+
+@keyframes rehab-program-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rehab-program-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 0;
+  color: #4a5568;
+}
+
+.rehab-program-warn {
+  margin: 0 0 16px;
+  color: #b08400;
+  background: #fffaeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rehab-program-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rehab-program-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.rehab-program-field label {
+  color: #2d3748;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.rehab-program-field .required {
+  color: #e53e3e;
+  font-weight: 700;
+}
+
+.rehab-program-field input,
+.rehab-program-field select,
+.rehab-program-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #2d3748;
+  background: #fff;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.rehab-program-field input:focus,
+.rehab-program-field select:focus,
+.rehab-program-field textarea:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+}
+
+.rehab-program-field input:disabled,
+.rehab-program-field select:disabled,
+.rehab-program-field textarea:disabled {
+  background: #f7fafc;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.rehab-program-field textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.rehab-program-help {
+  margin: 4px 0 0;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.rehab-program-field-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rehab-program-field-row .rehab-program-field {
+  min-width: 200px;
+}
+
+.rehab-program-meta {
+  margin: 4px 0 0;
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.rehab-program-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+  margin-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.rehab-program-footer-right {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+@media (max-width: 480px) {
+  .rehab-program-field-row {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .rehab-program-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .rehab-program-footer-right {
+    margin-left: 0;
+    flex-direction: column-reverse;
+  }
+
+  .rehab-program-footer-right .btn-primary,
+  .rehab-program-footer-right .btn-secondary {
+    width: 100%;
+  }
+}

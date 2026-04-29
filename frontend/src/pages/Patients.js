@@ -6,6 +6,7 @@ import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ConfirmModal from '../components/ConfirmModal';
 import InviteCodeModal from '../components/InviteCodeModal';
+import RehabProgramModal from '../components/RehabProgramModal';
 import useConfirm from '../hooks/useConfirm';
 import './Patients.css';
 import { useToast } from '../context/ToastContext';
@@ -25,6 +26,7 @@ import {
   LayoutGrid,
   List as ListIcon,
   KeyRound,
+  Activity,
 } from 'lucide-react';
 
 function Patients() {
@@ -41,6 +43,7 @@ function Patients() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientComplexes, setPatientComplexes] = useState([]);
   const [inviteCodePatient, setInviteCodePatient] = useState(null);
+  const [programPatient, setProgramPatient] = useState(null);
 
   // UI состояния
   const [viewMode, setViewMode] = useState('grid'); // 'grid' или 'list'
@@ -577,6 +580,14 @@ function Patients() {
                       </button>
                       <button
                         className="btn-secondary"
+                        onClick={() => setProgramPatient(patient)}
+                        title="Программа реабилитации"
+                      >
+                        <Activity className="btn-icon" size={16} />
+                        <span>Программа</span>
+                      </button>
+                      <button
+                        className="btn-secondary"
                         onClick={() => handleOpenEditModal(patient)}
                       >
                         <Edit2 className="btn-icon" size={16} />
@@ -861,6 +872,18 @@ function Patients() {
         <InviteCodeModal
           patient={inviteCodePatient}
           onClose={() => setInviteCodePatient(null)}
+        />
+      )}
+
+      {/* Rehab Program Modal */}
+      {programPatient && (
+        <RehabProgramModal
+          patient={programPatient}
+          onClose={() => setProgramPatient(null)}
+          onSaved={() => {
+            setProgramPatient(null);
+            loadPatients();
+          }}
         />
       )}
     </div>

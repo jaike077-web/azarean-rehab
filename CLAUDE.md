@@ -711,7 +711,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 39. **Exercises library показывает «50 из 50»** после импорта 239 видео → backend default limit 50→1000 в `routes/exercises.js`.
 40. **ImportExercises показывает «импортировано 0»** при успехе → frontend читал `response.data.results.success` вместо `response.data.success` (после unwrap interceptor уровень не тот).
 41. **Двойной аватар + хардкод «Татьяна · куратор»** на каждом экране PatientDashboard → убрали inline `<AvatarBtn>` из Home/Roadmap/Diary/Contact (остался только в pd-header). «Татьяна» chip удалён — нет реального куратора в dashboard data. Коммит `d57b116`.
-42. **Self-registration пациента с `created_by=NULL`** невидим инструкторам (фильтр GET /api/patients по `created_by=$1`) → **не закрыт**, временный workaround SQL UPDATE. Backlog: invite-code / claim flow.
+42. **Self-registration пациента с `created_by=NULL`** невидим инструкторам (фильтр GET /api/patients по `created_by=$1`) → **ЗАКРЫТО** Phase 1 invite-code flow (коммит `e3970f6`, миграция `20260427_patient_invite_codes.sql`). Self-registration без кода невозможна — `created_by` ставится через invite-code, который генерирует инструктор.
+
+### BUG (закрытые 2026-04-28, Phase 3 RehabProgramModal)
+43. **Нет UI для создания RehabProgram** (gap из MEMORY.md backlog) → создан [frontend/src/components/RehabProgramModal.js](frontend/src/components/RehabProgramModal.js) + интеграция в [Patients.js](frontend/src/pages/Patients.js): кнопка «Программа» на карточке пациента, модалка create/edit/delete с выбором комплекса/диагноза/фазы. Backend без изменений (POST/PUT/DELETE /api/rehab/programs уже были готовы). 7 unit-тестов. Разблокирует Home-экран пациента (блок «Ваш комплекс на сегодня») — раньше требовался прямой INSERT SQL для создания rehab_programs записи.
 
 ## Структура тестов
 

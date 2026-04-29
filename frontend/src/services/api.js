@@ -304,6 +304,17 @@ export const templates = {
   delete: (id) => api.delete(`/templates/${id}`)
 };
 
+export const rehabPrograms = {
+  getByPatient: (patientId, status) => {
+    const params = new URLSearchParams({ patient_id: String(patientId) });
+    if (status) params.set('status', status);
+    return api.get(`/rehab/programs?${params.toString()}`);
+  },
+  create: (data) => api.post('/rehab/programs', data),
+  update: (id, data) => api.put(`/rehab/programs/${id}`, data),
+  delete: (id) => api.delete(`/rehab/programs/${id}`),
+};
+
 // =====================================================
 // АВТОРИЗАЦИЯ ПАЦИЕНТОВ (Спринт 0.1)
 // Методы определяются здесь как заглушки, переопределяются ниже
