@@ -17,7 +17,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   ChevronLeft, ChevronDown, Camera, X, Heart, User, Mail, Phone,
-  Calendar, Lock, LogOut, Info, HelpCircle, Bot, Bell, Loader,
+  Calendar, Lock, LogOut, Info, HelpCircle, Bot, Bell, Loader, Download,
 } from 'lucide-react';
 import { patientAuth, rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
@@ -327,6 +327,36 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
       toast.error('Ошибка', err?.response?.data?.message || 'Не удалось сменить пароль');
     } finally {
       setChangingPwd(false);
+    }
+  };
+
+  // GDPR / 152-ФЗ — скачать все данные пациента одним JSON.
+  // fetch() с credentials:'include' — патиентский cookie auth попадает в запрос
+  // (не используем axios+patientApi потому что unwrap interceptor попортит blob).
+  // Браузер дополнительно прочитает Content-Disposition: attachment header.
+  const handleDownloadMyData = async () => {
+    try {
+      const response = await fetch('/api/patient-auth/me/data-export', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        if (response.status === 401) throw new Error('Сессия истекла, войдите заново');
+        throw new Error(`Сервер вернул ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.download = `azarean-data-export-${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Файл скачан', 'Проверьте папку «Загрузки»');
+    } catch (err) {
+      toast.error('Не удалось скачать данные', err.message || 'Попробуйте позже');
     }
   };
 
@@ -780,6 +810,23 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* ===== Мои данные (152-ФЗ право доступа) ===== */}
+            <div className="pd-profile-section">
+              <div className="pd-profile-section-label">Мои данные</div>
+              <div className="pd-profile-section-card">
+                <SettingsRow
+                  label="Скачать мои данные"
+                  Icon={Download}
+                  onClick={handleDownloadMyData}
+                  last
+                />
+              </div>
+              <div className="pd-profile-section-hint">
+                Получите все ваши данные одним JSON-файлом: профиль, дневник, прогресс,
+                сообщения, программу реабилитации.
               </div>
             </div>
 

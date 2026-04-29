@@ -655,6 +655,240 @@ router.post('/reset-password', async (req, res) => {
 // =====================================================
 // GET /me — Данные текущего пациента
 // =====================================================
+// =====================================================
+// GET /me/data-export — выгрузка всех данных пациента (152-ФЗ право доступа)
+// =====================================================
+// Возвращает один JSON со всем что хранится про пациента:
+//   profile, rehab_programs, complexes (с упражнениями), progress_logs,
+//   diary_entries (+ photo метаданные), streaks, messages,
+//   notification_settings, audit_logs где он subject.
+// НЕ возвращает: password_hash, refresh tokens, password reset tokens,
+//   patient_oauth_states (transient), patient_invite_codes (это инструкторская сторона),
+//   failed_login_attempts/locked_until (security internals).
+//
+// Photo blobs не вшиты в JSON — только metadata (filename, size, дата).
+// Сами файлы доступны через GET /api/rehab/my/diary/:entry_id/photos/:photo_id
+// (cookie auth), пациент может скачать отдельно если нужно.
+//
+// Сам факт экспорта логируется в audit_logs как DATA_EXPORT — для
+// compliance-trail'а если кто-то проверит что мы выполняем 152-ФЗ право.
+// =====================================================
+router.get('/me/data-export', authenticatePatient, async (req, res) => {
+  const patientId = req.patient.id;
+
+  try {
+    // Параллельные запросы — независимые, выполняются одновременно
+    const [
+      profileRes,
+      programsRes,
+      complexesRes,
+      complexExercisesRes,
+      progressRes,
+      diaryRes,
+      diaryPhotosRes,
+      streakRes,
+      messagesRes,
+      notifRes,
+      auditRes,
+    ] = await Promise.all([
+      // 1. Профиль (allowlist полей — без password_hash, lockout, и т.п.)
+      query(
+        `SELECT id, email, full_name, phone, birth_date, diagnosis, notes,
+                avatar_url, telegram_chat_id, preferred_messenger,
+                email_verified, auth_provider, last_login_at, is_active,
+                created_at, updated_at
+           FROM patients
+          WHERE id = $1`,
+        [patientId]
+      ),
+      // 2. Реабилитационные программы пациента
+      query(
+        `SELECT id, complex_id, title, diagnosis, surgery_date,
+                current_phase, phase_started_at, status, notes,
+                is_active, created_at, updated_at
+           FROM rehab_programs
+          WHERE patient_id = $1`,
+        [patientId]
+      ),
+      // 3. Комплексы упражнений
+      query(
+        `SELECT id, instructor_id, diagnosis_id, diagnosis_note, title,
+                recommendations, warnings, is_active, created_at, updated_at
+           FROM complexes
+          WHERE patient_id = $1`,
+        [patientId]
+      ),
+      // 4. Упражнения комплексов (только id'шники упражнений — лишний JOIN не нужен)
+      query(
+        `SELECT ce.complex_id, ce.exercise_id, ce.order_number,
+                ce.sets, ce.reps, ce.duration_seconds, ce.rest_seconds,
+                ce.notes, e.title AS exercise_title, e.kinescope_id
+           FROM complex_exercises ce
+           JOIN complexes c ON c.id = ce.complex_id
+      LEFT JOIN exercises e ON e.id = ce.exercise_id
+          WHERE c.patient_id = $1
+          ORDER BY ce.complex_id, ce.order_number`,
+        [patientId]
+      ),
+      // 5. Прогресс — все записи о выполненных упражнениях
+      query(
+        `SELECT pl.id, pl.complex_id, pl.exercise_id, pl.session_id,
+                pl.session_comment, pl.completed, pl.pain_level,
+                pl.difficulty_rating, pl.notes, pl.completed_at, pl.created_at
+           FROM progress_logs pl
+           JOIN complexes c ON c.id = pl.complex_id
+          WHERE c.patient_id = $1
+          ORDER BY pl.completed_at DESC`,
+        [patientId]
+      ),
+      // 6. Дневник
+      query(
+        `SELECT id, program_id, entry_date, pain_level, swelling, mobility,
+                mood, sleep_quality, exercises_done, notes,
+                pgic_feel, rom_degrees, better_list, pain_when,
+                created_at, updated_at
+           FROM diary_entries
+          WHERE patient_id = $1
+          ORDER BY entry_date DESC`,
+        [patientId]
+      ),
+      // 7. Метаданные фото дневника (без blob — файлы отдельно через /photos endpoint)
+      query(
+        `SELECT dp.id, dp.diary_entry_id, dp.file_path, dp.file_size_bytes, dp.created_at
+           FROM diary_photos dp
+           JOIN diary_entries de ON de.id = dp.diary_entry_id
+          WHERE de.patient_id = $1
+          ORDER BY dp.created_at`,
+        [patientId]
+      ),
+      // 8. Streaks
+      query(
+        `SELECT id, program_id, current_streak, longest_streak,
+                total_days, last_activity_date, updated_at
+           FROM streaks
+          WHERE patient_id = $1`,
+        [patientId]
+      ),
+      // 9. Сообщения (где патиент — sender ИЛИ адресат через program_id)
+      query(
+        `SELECT m.id, m.program_id, m.sender_type, m.sender_id, m.body,
+                m.is_read, m.linked_diary_id, m.channel, m.created_at
+           FROM messages m
+      LEFT JOIN rehab_programs rp ON rp.id = m.program_id
+          WHERE rp.patient_id = $1 OR (m.sender_type = 'patient' AND m.sender_id = $1)
+          ORDER BY m.created_at DESC`,
+        [patientId]
+      ),
+      // 10. Настройки уведомлений
+      query(
+        `SELECT id, exercise_reminders, diary_reminders, message_notifications,
+                reminder_time, timezone
+           FROM notification_settings
+          WHERE patient_id = $1`,
+        [patientId]
+      ),
+      // 11. Audit logs — действия которые касались этого пациента
+      query(
+        `SELECT id, user_id, action, entity_type, entity_id,
+                ip_address, user_agent, details, created_at
+           FROM audit_logs
+          WHERE patient_id = $1
+          ORDER BY created_at DESC
+          LIMIT 1000`,
+        [patientId]
+      ),
+    ]);
+
+    if (profileRes.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Пациент не найден'
+      });
+    }
+
+    // Группируем complex_exercises по complex_id для удобства чтения
+    const exercisesByComplexId = {};
+    for (const ex of complexExercisesRes.rows) {
+      if (!exercisesByComplexId[ex.complex_id]) exercisesByComplexId[ex.complex_id] = [];
+      exercisesByComplexId[ex.complex_id].push(ex);
+    }
+    const complexes = complexesRes.rows.map((c) => ({
+      ...c,
+      exercises: exercisesByComplexId[c.id] || [],
+    }));
+
+    // Группируем фото по diary_entry_id
+    const photosByEntryId = {};
+    for (const ph of diaryPhotosRes.rows) {
+      if (!photosByEntryId[ph.diary_entry_id]) photosByEntryId[ph.diary_entry_id] = [];
+      photosByEntryId[ph.diary_entry_id].push({
+        id: ph.id,
+        file_size_bytes: ph.file_size_bytes,
+        created_at: ph.created_at,
+        // file_path не отдаём (внутренний путь /uploads/...) — даём URL endpoint'а
+        download_url: `/api/rehab/my/diary/${ph.diary_entry_id}/photos/${ph.id}`,
+      });
+    }
+    const diaryEntries = diaryRes.rows.map((d) => ({
+      ...d,
+      photos: photosByEntryId[d.id] || [],
+    }));
+
+    const exportData = {
+      _meta: {
+        exported_at: new Date().toISOString(),
+        exported_by: 'patient_self',
+        patient_id: patientId,
+        format_version: 1,
+        notice: 'Этот файл содержит ваши персональные данные из платформы Azarean Rehab. Храните его безопасно — он содержит email, телефон, диагнозы и записи дневника.',
+      },
+      profile: profileRes.rows[0],
+      rehab_programs: programsRes.rows,
+      complexes,
+      progress_logs: progressRes.rows,
+      diary_entries: diaryEntries,
+      streaks: streakRes.rows,
+      messages: messagesRes.rows,
+      notification_settings: notifRes.rows[0] || null,
+      audit_logs: auditRes.rows,
+    };
+
+    // Audit самого факта экспорта (fire-and-forget)
+    query(
+      `INSERT INTO audit_logs
+         (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
+       VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
+      [
+        'DATA_EXPORT',
+        patientId,
+        patientId,
+        req.ip || null,
+        req.headers['user-agent'] || null,
+        JSON.stringify({
+          rows_total:
+            programsRes.rows.length + complexes.length + progressRes.rows.length +
+            diaryEntries.length + messagesRes.rows.length + auditRes.rows.length,
+        }),
+      ]
+    ).catch((err) => console.warn('[audit] DATA_EXPORT log failed:', err.message));
+
+    // Скачивание как файл
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="azarean-data-export-${dateStr}.json"`
+    );
+    return res.status(200).send(JSON.stringify(exportData, null, 2));
+  } catch (error) {
+    console.error('[data-export] error:', error);
+    return res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при выгрузке данных',
+    });
+  }
+});
+
 router.get('/me', authenticatePatient, async (req, res) => {
   try {
     // Allowlist полей. НЕ возвращаем password_hash, failed_login_attempts,

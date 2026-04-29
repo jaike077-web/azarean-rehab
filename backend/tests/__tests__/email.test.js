@@ -16,7 +16,11 @@ const { Resend } = require('resend');
 // Helper для перезагрузки email.js со свежим env
 function loadEmailModule() {
   jest.resetModules();
-  // Re-mock после resetModules — ссылки выше остались валидными
+  // dotenv мокаем чтобы при re-require config.js НЕ перезаписывал
+  // process.env из живого backend/.env (там настоящие YANDEX_SMTP_* теперь).
+  // Без этого мока «delete process.env.YANDEX_SMTP_USER» сразу аннулируется
+  // следующим require('dotenv').config() внутри config.js.
+  jest.doMock('dotenv', () => ({ config: jest.fn() }));
   jest.doMock('nodemailer', () => ({ createTransport: nodemailer.createTransport }));
   jest.doMock('resend', () => ({ Resend }));
   return require('../../utils/email');
