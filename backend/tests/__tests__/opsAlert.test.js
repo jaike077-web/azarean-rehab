@@ -30,14 +30,24 @@ describe('sendOpsAlert', () => {
   });
 
   it('noop когда token и chatId не заданы — пишет в console.log', async () => {
-    // config закэширован при require, имитируем noop напрямую — наши env vars
-    // в setup.js уже пусты для OPS_BOT_TOKEN/OPS_CHAT_ID
-    await sendOpsAlert('test title', 'test body');
+    // С момента активации ops-bot 2026-04-29 в .env лежат реальные значения,
+    // поэтому для проверки noop-ветки нужно явно подменить config через
+    // jest.doMock — иначе тест читает живые prod-значения из dotenv.
+    jest.resetModules();
+    jest.doMock('../../config/config', () => ({
+      nodeEnv: 'test',
+      opsBot: { token: '', chatId: '' },
+    }));
+    const { sendOpsAlert: fresh } = require('../../utils/opsAlert');
+
+    await fresh('test title', 'test body');
     expect(global.fetch).not.toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalled();
     const out = consoleLogSpy.mock.calls[0].join(' ');
     expect(out).toContain('test title');
     expect(out).toContain('test body');
+
+    jest.dontMock('../../config/config');
   });
 
   it('не падает на пустом body', async () => {
