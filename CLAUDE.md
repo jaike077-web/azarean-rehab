@@ -47,7 +47,8 @@
 - **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары), sharp 0.34 (сжатие изображений)
 - **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly access+refresh cookies)
 - **Security:** helmet 8.1 (headers), express-rate-limit 8.2 (5 req/15 min auth, general in production)
-- **Тесты:** Jest 30.2 + Supertest 7.2 (152 backend + 156 frontend = 308 тестов)
+- **Тесты:** Jest 30.2 + Supertest 7.2 (269 backend + 209 frontend = 478 тестов)
+- **Observability:** Telegram ops-bot (utils/opsAlert.js, /api/log-error endpoint) → @vadim_azarenkov. Sentry SDK подключён в noop без DSN (sentry.io ingest заблокирован для русских IP)
 - **Runtime:** Node.js >= 20, nodemon 3.1 (dev)
 
 ## Запуск проекта
@@ -86,6 +87,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260424b_exerc
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_patient_invite_codes.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_normalize_patient_phones.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_oauth_pkce_nonce.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_create_migrations_table.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_telegram_chat_id_numeric.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -747,12 +750,21 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 46. **Email-stub блокировал password reset на проде** → [backend/utils/email.js](backend/utils/email.js) переписан с интеграцией Resend (3000 писем/мес free). HTML+plain text шаблоны для password reset и verification. **Fallback на console.log** если `RESEND_API_KEY` пуст (dev/test работают без API). `EMAIL_FROM` из env, default `Azarean <noreply@my.azarean.ru>`. **Чтобы активировать в проде:** создать аккаунт на resend.com → получить API key → добавить SPF/DKIM/DMARC в DNS Reg.ru для my.azarean.ru → вписать в GitHub Secrets → CI/CD деплоит. До domain verification Resend позволит слать только на same-domain test адреса. Тесты: jest.mock'и в `patientProfile.test.js` не зависят от внутренней реализации, 214/214 pass.
 
 ### Observability (2026-04-29, Phase A.1 Sentry)
-45. **Prod-баги невидимы пока пациент не пожалуется** → подключён Sentry на backend и frontend. [backend/instrument.js](backend/instrument.js) подключается первой строкой в [server.js](backend/server.js) (Sentry v10 на OpenTelemetry требует init до express require). `Sentry.setupExpressErrorHandler(app)` перед custom error handler. Frontend: init в [frontend/src/index.js](frontend/src/index.js), `<Sentry.ErrorBoundary>` оборачивает `<App />` (fallback с кнопкой «Попробовать снова»). Без `SENTRY_DSN` / `REACT_APP_SENTRY_DSN` — SDK работает в noop-режиме, dev/тесты не нагружаются. **PII scrubbing:** ручной `beforeSend` чистит `password/token/code/code_hash/code_verifier/invite_code/nonce` из request data, headers `cookie`+`authorization` удаляются. `tracesSampleRate: 0.1` в проде, 0 в dev. **Чтобы активировать в проде:** создать 2 проекта на sentry.io (Node + React), положить DSN в GitHub Secrets → автоматически попадает в `/opt/azarean-rehab/backend/.env` через CI/CD, `pm2 reload`.
+45. **Prod-баги невидимы пока пациент не пожалуется** → подключён Sentry на backend и frontend. [backend/instrument.js](backend/instrument.js) подключается первой строкой в [server.js](backend/server.js) (Sentry v10 на OpenTelemetry требует init до express require). `Sentry.setupExpressErrorHandler(app)` перед custom error handler. Frontend: init в [frontend/src/index.js](frontend/src/index.js), `<Sentry.ErrorBoundary>` оборачивает `<App />` (fallback с кнопкой «Попробовать снова»). Без `SENTRY_DSN` / `REACT_APP_SENTRY_DSN` — SDK работает в noop-режиме, dev/тесты не нагружаются. **PII scrubbing:** ручной `beforeSend` чистит `password/token/code/code_hash/code_verifier/invite_code/nonce` из request data, headers `cookie`+`authorization` удаляются. `tracesSampleRate: 0.1` в проде, 0 в dev. **Sentry.io ingest заблокирован для русских IP** — DSN не задан, SDK в noop. Параллельно работает Telegram ops-bot (см. #50).
+
+### Telegram ops-bot для error alerts (2026-04-29, активен в prod)
+50. **Sentry.io не работает с русских IP — нужна альтернатива observability** → собственный Telegram-бот `@vadim_azarenkov` (chat_id=183943760) принимает алерты. [backend/utils/opsAlert.js](backend/utils/opsAlert.js) — sender через нативный fetch на api.telegram.org/sendMessage, дедуп hash(title+первая строка body) TTL 10 мин, hourly cap 30. Wired в `process.on('uncaughtException')` (с 1сек flush перед exit), `unhandledRejection`, global error middleware (только 5xx) + catch-блоки Telegram/Yandex OAuth callback'ов (там 302 redirect, не 5xx — global middleware пропускает). [backend/routes/log-error.js](backend/routes/log-error.js) — POST endpoint для frontend (rate-limit 30/мин IP, sanitize фиксированными max-length). [frontend/src/components/ErrorBoundary.js](frontend/src/components/ErrorBoundary.js) componentDidCatch + window.error + unhandledrejection в [frontend/src/index.js](frontend/src/index.js) шлют через keepalive fetch. **Категоризация ошибок** [opsAlert.js](backend/utils/opsAlert.js): Frontend → ТЕСТ/СТАРЫЙ БАНДЛ/СВЯЗЬ/БАГ В UI; Backend → БД (PG codes 22xxx/23xxx/42xxx)/СЕРВИС НЕДОСТУПЕН/ТАЙМАУТ/AUTH. Алерт включает «что/где/что делать», `describePage(url)` переводит роуты в «личный кабинет пациента», `describeUA` парсит UA в «Chrome 144 / Windows». Если `OPS_BOT_TOKEN`/`OPS_CHAT_ID` пусты — noop через console.log.
+
+### iPhone OAuth BIGINT баг (2026-04-29, найден в проде через ops-bot pipeline)
+51. **Phone-autolink падал при логине с современных Telegram-аккаунтов** → Telegram OIDC начал возвращать `sub > 9.22e18` (BIGINT max) с 2024-2025 (видели `10399974012659476296`). UPDATE patients SET telegram_chat_id = $2 в phone-autolink ветке падал с pg `code: 22003 — out of range for type bigint`, catch-all возвращал юзера на /patient-login с oauth_error «Ошибка обработки входа». Десктоп (id=6, sub=7358444850707888434, помещался) работал — баг проявлялся только на новых OAuth-сессиях. **Закрыто миграцией [20260429_telegram_chat_id_numeric.sql](backend/database/migrations/20260429_telegram_chat_id_numeric.sql)** — ALTER COLUMN BIGINT → NUMERIC(20). pg-node возвращает int8/numeric одинаково (как строку из-за JS Number precision до 2^53), поэтому миграция type-only — JS-код не меняется. Идемпотентна (DO-блок проверяет current_type перед ALTER). **Урок:** не использовать BIGINT для Telegram-связанных IDs (chat_id, user_id, sub) в новых колонках — только NUMERIC(20) или TEXT.
+
+### OAuth boundary tests (2026-04-29, приоритет архитектора #1)
+52. **OAuth match-flow не покрывался unit-тестами** → 18 тестов в [backend/tests/__tests__/oauthCallback.routes.test.js](backend/tests/__tests__/oauthCallback.routes.test.js): Telegram callback (8 boundary scenarios — returning/phone-autolink-single/no-match/multi-match anti-misroute/claimed-account/state-expired/deactivated/phone-format-norm + 3 edge cases) + Yandex callback (6 — returning/autolink/no-match-with-email-prefill/no-code-fail/extractClaims-default-phone-parse/no-default-phone) + meta /oauth/providers. **Multi-match anti-misroute** (родитель↔ребёнок с одним телефоном) покрыт явно — главная зона риска по ФЗ-152. Mock-инфраструктура: services/telegramOidc + services/yandexOauth полностью замоканы (handleCallback возвращает claims), `extractClaims` Yandex остаётся реальным через jest.requireActual для покрытия парсинг-логики `default_phone: { id, number }`.
 
 ## Структура тестов
 
 ```
-backend/tests/__tests__/ (9 файлов, 152 теста)
+backend/tests/__tests__/ (16 файлов, 269 тестов)
 ├── admin.routes.test.js            # Admin API (488 строк)
 ├── patientAuth.middleware.test.js  # Patient JWT middleware (195 строк)
 ├── patientProfile.test.js          # Профиль пациента + my-complexes + avatar (377 строк)
