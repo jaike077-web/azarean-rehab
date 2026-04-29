@@ -108,6 +108,28 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Не считаем успешные входы
 });
 
+// Rate Limiting — OAuth start + callback. Покрывает /oauth/telegram,
+// /oauth/telegram/callback, /oauth/yandex, /oauth/yandex/callback.
+// Защита от:
+// - state-token brute force на callback'е (хоть и маловероятно — used-once
+//   в БД + 10 мин TTL),
+// - спама INSERT'ов в patient_oauth_states при abuse start endpoint'а.
+// Лимит 20/15min с IP — выше чем authLimiter (5), потому что OAuth flow
+// в норме создаёт несколько запросов (start + callback + retry при глюке
+// auto-redirect Telegram). Не skipSuccessfulRequests — каждое обращение
+// записывается / читается в БД, его стоимость не зависит от исхода.
+const oauthCallbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 20 : 1000,
+  message: {
+    error: 'Too Many OAuth Attempts',
+    message: 'Слишком много попыток входа через соцсеть. Попробуйте через 15 минут.',
+    retryAfter: '15 минут'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // =====================================================
 // MIDDLEWARE
 // =====================================================
@@ -215,6 +237,10 @@ app.use('/api/templates', require('./routes/templates'));
 // Авторизация пациентов (отдельная система!)
 app.use('/api/patient-auth/login', authLimiter);
 app.use('/api/patient-auth/register', authLimiter);
+// OAuth start + callback — отдельный лимит (см. определение oauthCallbackLimiter).
+// Path matches /oauth/telegram, /oauth/telegram/callback, /oauth/yandex, /oauth/yandex/callback.
+app.use('/api/patient-auth/oauth/telegram', oauthCallbackLimiter);
+app.use('/api/patient-auth/oauth/yandex', oauthCallbackLimiter);
 app.use('/api/patient-auth', requireSameOrigin, require('./routes/patientAuth'));
 
 // Реабилитационные программы (Спринт 1.1)

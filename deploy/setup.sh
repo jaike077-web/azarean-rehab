@@ -267,6 +267,17 @@ EOF
   echo "✓ Cron healthcheck установлен"
 fi
 
+CRON_TG_PROXY="/etc/cron.d/azarean-rehab-tg-proxy"
+if [ ! -f "$CRON_TG_PROXY" ]; then
+  cat > "$CRON_TG_PROXY" <<EOF
+# Azarean Rehab — мониторинг tg-proxy.azarean.ru каждые 5 минут.
+# Скрипт сам шлёт алерт в Telegram ops-bot после 2 фейлов подряд.
+*/5 * * * * root $APP_DIR/deploy/check-tg-proxy.sh
+EOF
+  chmod 644 "$CRON_TG_PROXY"
+  echo "✓ Cron tg-proxy monitoring установлен"
+fi
+
 # ─── Итог ───
 echo ""
 echo "═══ SETUP ЗАВЕРШЁН ═══"
