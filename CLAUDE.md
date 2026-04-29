@@ -27,9 +27,9 @@
 - **Phase 1 invite-code flow (2026-04-27):** инструктор генерирует 8-символьный код через `POST /api/patients/:id/invite-code`, пациент вводит на `/patient-register` (поле `invite_code` обязательно). Закрывает архитектурный gap «self-registered пациент с created_by=NULL невидим инструктору». [InviteCodeModal](frontend/src/components/InviteCodeModal.js) с copy-to-clipboard и t.me/share. Миграция `20260427_patient_invite_codes.sql`.
 - **Phase 2a phone normalizer (2026-04-27):** `backend/utils/phone.js` приводит к E.164 (+CCXXXX). routes/patients.js POST/PUT и patientAuth.js POST /register + PUT /me нормализуют перед записью. Миграция `20260427_normalize_patient_phones.sql` бэкфилла существующих записей. Фундамент для phone-match при OAuth.
 - **Phase 2b/c Telegram OIDC через прокси (2026-04-28):** `BotFather → Login Widget → Switch to OpenID Connect Login` для @az_zari_bot. Backend через `openid-client@6` с `customFetch` (X-Proxy-Secret header) ходит на **финский reverse-proxy** `https://tg-proxy.azarean.ru` (поднят JARVIS-Director'ом на 78.17.1.70, IP-allowlist только 185.93.109.234). Прокси whitelist'ит /.well-known/* и POST /token, переписывает endpoints в discovery JSON. Match-flow в callback'е: `provider_id` → silent autolink по phone → `/patient-register` с pre-fill. Миграции `20260427_oauth_pkce_nonce.sql`. Подробности — [memory/telegram_oidc_proxy.md](.claude/projects/.../memory/telegram_oidc_proxy.md).
+- **Phase 2d Yandex OAuth 2.0 (2026-04-29, в проде):** [backend/services/yandexOauth.js](backend/services/yandexOauth.js) — Authorization Code Flow + PKCE S256. **БЕЗ OIDC** (Yandex не публикует `/.well-known/openid-configuration` → 404), **БЕЗ прокси** (oauth.yandex.ru и login.yandex.ru доступны с rehab-VDS напрямую). Чистый fetch на `oauth.yandex.ru/token`, userinfo через `GET login.yandex.ru/info` с `Authorization: OAuth <token>`. Scopes из Yandex Cabinet: `login:info login:email login:avatar login:default_phone` (последний критичен для phone-autolink). Match-flow идентичен Telegram'у. Все 3 сценария (returning / phone-autolink / unknown→register) проверены в проде. Коммит `7b19e9d`. Подробности — [memory/yandex_oauth_v2.md](.claude/projects/.../memory/yandex_oauth_v2.md).
 
 ### Планируется (не начато)
-- **Yandex OIDC** — через тот же `openid-client` без прокси (Yandex доступен с rehab-VDS напрямую). Следующий чат начинает с этого.
 - **Bot link-code login** как fallback к OAuth (когда oauth.telegram.org auto-redirect глючит — ~5-6 ч)
 - Non-root deploy user на VDS + sudoers whitelist
 - Healthcheck Telegram alerts
@@ -129,6 +129,15 @@ TG_PROXY_SECRET=...
 
 # Feature flag — Telegram-кнопка на /patient-login
 TELEGRAM_LOGIN_ENABLED=true
+
+# Yandex OAuth 2.0 (Phase 2d — в проде с 2026-04-29). Прокси НЕ нужен.
+# Scopes увидены в кабинете oauth.yandex.ru при создании приложения,
+# дефолт в config.js — login:info login:email login:avatar login:default_phone.
+YANDEX_OAUTH_CLIENT_ID=...
+YANDEX_OAUTH_CLIENT_SECRET=...
+YANDEX_OAUTH_REDIRECT_URI=https://my.azarean.ru/api/patient-auth/oauth/yandex/callback
+YANDEX_LOGIN_ENABLED=true
+
 FRONTEND_URL=http://localhost:3000
 ```
 
@@ -199,6 +208,7 @@ Azarean_rehab/
 │   ├── services/
 │   │   ├── telegramBot.js       # Telegram бот: /start, /status, /diary (6-step wizard), /tip, /help (631 строк)
 │   │   ├── telegramOidc.js      # OIDC service для Telegram Login: openid-client v6 + customFetch через финский прокси (X-Proxy-Secret)
+│   │   ├── yandexOauth.js       # Plain OAuth 2.0 для Yandex Login: PKCE S256, без OIDC discovery, без прокси (oauth.yandex.ru доступен с rehab-VDS напрямую)
 │   │   ├── scheduler.js         # Cron: exercise reminders (per-user tz), diary (21:00), tips (12:00), token cleanup (03:00) (179 строк)
 │   │   ├── kinescopeService.js  # Kinescope API client (152 строки)
 │   │   └── csvImportService.js  # CSV парсер (56 строк)
@@ -444,7 +454,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - Password reset через email stub
 - **Регистрация только по invite-code** — пациент создаётся инструктором (POST /api/patients), потом инструктор генерирует 8-символьный код (POST /api/patients/:id/invite-code), пациент вводит на /patient-register. Self-registration без кода невозможна → закрывает gap «пациент-невидимка с created_by=NULL».
 - **OAuth Telegram (Phase 2):** OIDC через openid-client v6, Authorization Code Flow с PKCE/nonce. discovery + token-exchange ходит через **финский reverse-proxy** (https://tg-proxy.azarean.ru, X-Proxy-Secret header), потому что rehab-VDS не достукается до oauth.telegram.org напрямую. Match-flow в callback'е: provider_id → silent autolink по phone (нормализованный в E.164) → /patient-register с pre-fill. Подробности — [memory/telegram_oidc_proxy.md](.claude/projects/.../memory/).
-- OAuth Yandex/Google/VK — TODO (Yandex следующий)
+- **OAuth Yandex (Phase 2d):** Plain OAuth 2.0 + PKCE S256 (Yandex не публикует OIDC discovery). Прокси не нужен — oauth.yandex.ru/login.yandex.ru доступны с rehab-VDS напрямую. UserInfo через `GET login.yandex.ru/info` с `Authorization: OAuth <token>`. Phone scope = `login:default_phone` (точное имя видно только в Yandex Cabinet). Match-flow идентичен Telegram'у. Подробности — [memory/yandex_oauth_v2.md](.claude/projects/.../memory/).
+- OAuth Google/VK — TODO
 - **CSRF:** `requireSameOrigin` middleware на всех state-changing эндпоинтах (/patient-auth, /rehab/my, /telegram, /progress)
 - Bearer header fallback оставлен в middleware для тестов и API-клиентов
 
@@ -467,6 +478,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/patient-auth/oauth/providers | Нет | Какие OAuth провайдеры enabled (telegram/yandex/google/vk) |
 | GET | /api/patient-auth/oauth/telegram | Нет | Старт Telegram OIDC flow → 302 на oauth.telegram.org |
 | GET | /api/patient-auth/oauth/telegram/callback | Нет | Callback Telegram → match-flow + cookies + 302 |
+| GET | /api/patient-auth/oauth/yandex | Нет | Старт Yandex OAuth 2.0 + PKCE → 302 на oauth.yandex.ru/authorize |
+| GET | /api/patient-auth/oauth/yandex/callback | Нет | Callback Yandex → token exchange + userinfo + match-flow + cookies + 302 |
 | POST | /api/patient-auth/refresh | Cookie | Обновить access token (ротация) |
 | POST | /api/patient-auth/logout | Cookie | Удалить cookies + refresh tokens |
 | GET | /api/patient-auth/me | Cookie | Текущий пациент |
@@ -810,7 +823,9 @@ frontend/src/ (12 suites, 156 тестов)
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Последние коммиты на main (Phase 1+2 — invite-code + Telegram OIDC через прокси):**
+- **Последние коммиты на main (Phase 1+2 — invite-code + Telegram + Yandex OAuth + RehabProgram UI):**
+  - `e1fbaae` feat(rehab-programs): UI для создания RehabProgram из карточки пациента
+  - `7b19e9d` feat(oauth): Yandex OAuth 2.0 (без OIDC discovery, без прокси) — Phase 2d, в проде
   - `897a82b` feat(patient-login): hint про auto-redirect issue Telegram OIDC
   - `b29a661` fix(oauth): pg type-deduction для phone-autolink UPDATE (один $1 на VARCHAR+BIGINT нельзя)
   - `a89ae5f` fix(oauth): убрать telegram:bot_access из обязательных scopes (toggle off → silent fail)
