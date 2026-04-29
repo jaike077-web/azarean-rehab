@@ -96,6 +96,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_oauth_
 
 **20260427_oauth_pkce_nonce:** ALTER TABLE patient_oauth_states ADD COLUMN code_verifier VARCHAR(128), nonce VARCHAR(64). Нужны для PKCE S256 + OIDC nonce check в Telegram OAuth-flow.
 
+**20260429_telegram_chat_id_numeric:** ALTER COLUMN `patients.telegram_chat_id` BIGINT → NUMERIC(20). Telegram OIDC sub'ы превысили BIGINT max (9.22e18) с 2024-2025 (видели `10399974012659476296`), UPDATE в phone-autolink ветке падал с code 22003. pg-node возвращает int8/numeric как строку (JS Number precision), поэтому миграция type-only — JS-код не меняется. Идемпотентна (DO-блок проверяет тип).
+
 ### 2. Переменные окружения
 
 **Backend (.env)**
