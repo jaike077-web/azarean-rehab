@@ -158,7 +158,14 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check
+// /api/health — minimal probe для cron healthcheck.sh + uptime monitors.
+// Регистрируется ДО других /api/* роутов чтобы был exempt от authLimiter.
+// generalLimiter всё ещё применяется (1000/15min dev, 100/15min prod) —
+// для cron каждые 5 минут с одного IP это ~3 запроса в окно, ок.
+app.use('/api/health', require('./routes/health'));
+
+// Health check (legacy — без /api префикса; deprecated, удалить когда
+// healthcheck.sh и внешние мониторы перейдут на /api/health)
 app.get('/health', async (req, res) => {
   const dbConnected = await testConnection();
   res.json({
