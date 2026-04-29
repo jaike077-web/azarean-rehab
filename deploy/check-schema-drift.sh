@@ -81,10 +81,16 @@ if [ ! -f "$BASELINE" ]; then
 fi
 
 # --- Diff текущей схемы с baseline'ом ---
-# Игнорируем строки времени из COMMENT'ов и pg_dump-метаданные
+# Игнорируем нестабильные строки:
+#   - комментарии (начинаются с --)
+#   - SET/SELECT pg_catalog — настройки сессии
+#   - REVOKE/GRANT — могут отличаться между deploy'ями
+#   - \restrict/\unrestrict — PG18 pg_dump backup-safety wrappers со
+#     случайным токеном каждый запуск (false-positive drift)
+#   - \connect, \echo и прочие psql meta-commands (любая строка с \)
 DIFF_OUTPUT=$(diff -u \
-    <(grep -vE '^(--|SET|SELECT pg_catalog|REVOKE|GRANT)' "$BASELINE") \
-    <(grep -vE '^(--|SET|SELECT pg_catalog|REVOKE|GRANT)' "$CURRENT") 2>&1)
+    <(grep -vE '^(--|SET|SELECT pg_catalog|REVOKE|GRANT|\\)' "$BASELINE") \
+    <(grep -vE '^(--|SET|SELECT pg_catalog|REVOKE|GRANT|\\)' "$CURRENT") 2>&1)
 
 if [ -z "$DIFF_OUTPUT" ]; then
     # Schema не изменилась
