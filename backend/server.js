@@ -14,7 +14,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const { testConnection } = require('./database/db');
 const config = require('./config/config');
-const { sendOpsAlert } = require('./utils/opsAlert');
+const { sendOpsAlert, formatBackendAlertBody } = require('./utils/opsAlert');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -287,14 +287,8 @@ app.use((err, req, res, next) => {
   // Только 5xx (наши баги) уходят в ops-bot. 4xx — это валидация,
   // permission, not found — клиентские ошибки, не нужны как алерты.
   if (statusCode >= 500) {
-    const title = `[Backend] ${err.message || 'Internal Server Error'}`;
-    const body = [
-      `${req.method} ${req.path}`,
-      err.code && `code: ${err.code}`,
-      '',
-      err.stack || String(err),
-    ].filter(Boolean).join('\n');
-    sendOpsAlert(title, body).catch(() => {});
+    const title = err.message || 'Internal Server Error';
+    sendOpsAlert(title, formatBackendAlertBody(err, req)).catch(() => {});
   }
 
   // Не раскрываем детали в production
@@ -399,17 +393,19 @@ process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
   // Fire-and-forget alert + 1 сек на flush HTTP-запроса перед exit
   sendOpsAlert(
-    `[Backend] uncaughtException: ${err.message || String(err)}`,
-    err.stack || String(err)
+    `uncaughtException: ${err.message || String(err)}`,
+    formatBackendAlertBody(err, null)
   ).catch(() => {});
   setTimeout(() => process.exit(1), 1000);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
-  const msg = reason && reason.message ? reason.message : String(reason);
-  const stack = reason && reason.stack ? reason.stack : '';
-  sendOpsAlert(`[Backend] unhandledRejection: ${msg}`, stack || msg).catch(() => {});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled Rejection:', reason);
+  const reasonErr = (reason instanceof Error) ? reason : new Error(String(reason));
+  sendOpsAlert(
+    `unhandledRejection: ${reasonErr.message}`,
+    formatBackendAlertBody(reasonErr, null)
+  ).catch(() => {});
 });
 
 // Запуск (только при прямом вызове, не при импорте в тестах)

@@ -24,6 +24,7 @@ const { normalizePhone } = require('../utils/phone');
 const telegramOidc = require('../services/telegramOidc');
 const yandexOauth = require('../services/yandexOauth');
 const config = require('../config/config');
+const { sendOpsAlert, formatBackendAlertBody } = require('../utils/opsAlert');
 
 // =====================================================
 // УТИЛИТЫ
@@ -1374,6 +1375,12 @@ router.get('/oauth/telegram/callback', async (req, res) => {
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
     console.error('Telegram OAuth callback error:', err);
+    // Catch-all не возвращает 5xx (это 302 на /patient-login с error),
+    // поэтому global error middleware не подхватит. Пушим явно.
+    sendOpsAlert(
+      `Telegram OAuth callback failed: ${err.message || String(err)}`,
+      formatBackendAlertBody(err, req)
+    ).catch(() => {});
     return fail('Ошибка обработки входа');
   } finally {
     client.release();
@@ -1572,6 +1579,10 @@ router.get('/oauth/yandex/callback', async (req, res) => {
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
     console.error('Yandex OAuth callback error:', err);
+    sendOpsAlert(
+      `Yandex OAuth callback failed: ${err.message || String(err)}`,
+      formatBackendAlertBody(err, req)
+    ).catch(() => {});
     return fail('Ошибка обработки входа');
   } finally {
     client.release();

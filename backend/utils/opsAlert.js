@@ -129,6 +129,180 @@ async function sendOpsAlert(title, body = '') {
   await postToTelegram(token, chatId, text);
 }
 
+// =====================================================
+// FORMATTERS — превращают сырые ошибки в читаемые алерты
+// =====================================================
+// Логика: «что сломалось, где, что делать» в начале, технические
+// детали (stack, full URL, raw context) — внизу.
+
+// Какие страницы юзера считаем «значимыми» для контекста алерта.
+const PAGE_LABELS = [
+  [/\/patient-dashboard/, 'личный кабинет пациента'],
+  [/\/patient-login/, 'экран входа пациента'],
+  [/\/patient-register/, 'регистрация пациента'],
+  [/\/dashboard/, 'кабинет инструктора'],
+  [/\/patients/, 'список пациентов'],
+  [/\/exercises/, 'библиотека упражнений'],
+  [/\/admin/, 'админ-панель'],
+];
+
+function describePage(url) {
+  if (!url) return null;
+  for (const [re, label] of PAGE_LABELS) {
+    if (re.test(url)) return label;
+  }
+  return null;
+}
+
+// Парсит UA в короткое «Chrome 144 / Windows»
+function describeUA(ua) {
+  if (!ua) return null;
+  let browser = 'браузер';
+  const browserMatches = [
+    [/YaBrowser\/(\d+)/, (m) => `Yandex Browser ${m[1]}`],
+    [/Edg\/(\d+)/, (m) => `Edge ${m[1]}`],
+    [/Chrome\/(\d+)/, (m) => `Chrome ${m[1]}`],
+    [/Firefox\/(\d+)/, (m) => `Firefox ${m[1]}`],
+    [/Version\/(\d+)[^)]*Safari/, (m) => `Safari ${m[1]}`],
+  ];
+  for (const [re, fn] of browserMatches) {
+    const m = ua.match(re);
+    if (m) { browser = fn(m); break; }
+  }
+  let os = '';
+  if (/iPhone|iPad/.test(ua)) os = 'iOS';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Mac OS/.test(ua)) os = 'macOS';
+  else if (/Linux/.test(ua)) os = 'Linux';
+  return os ? `${browser} / ${os}` : browser;
+}
+
+// Категоризирует frontend-ошибку → возвращает {tag, advice}
+function categorizeFrontendError(message, context) {
+  const msg = String(message || '').toLowerCase();
+  const filename = (context && context.filename) || '';
+
+  // smoke / test → ручная проверка, игнор
+  if (/smoke|manual|test/.test(msg) || filename === '<anonymous>') {
+    return {
+      tag: 'ТЕСТ',
+      advice: 'Это ручной smoke-test из консоли — игнор, ничего делать не надо.',
+    };
+  }
+  if (/ChunkLoadError|loading chunk \d+ failed/i.test(message)) {
+    return {
+      tag: 'СТАРЫЙ БАНДЛ',
+      advice: 'У пользователя в браузере зависла старая версия. Если повторяется — нужен hard-refresh (ctrl+shift+R) или PWA-update должен сработать сам через 60 сек после возвращения в app.',
+    };
+  }
+  if (/failed to fetch|networkerror|network request failed/i.test(message)) {
+    return {
+      tag: 'СВЯЗЬ',
+      advice: 'Браузер не достучался до /api. Проверь — backend жив (pm2 status), nginx OK. Если только у одного юзера — у него интернет.',
+    };
+  }
+  if (/cannot read prop|undefined is not|null is not/i.test(message)) {
+    return {
+      tag: 'БАГ В UI',
+      advice: 'Компонент получил неожиданные данные. Смотри stack ниже — обычно где-то нет guard для пустого / null поля.',
+    };
+  }
+  return {
+    tag: 'ОШИБКА UI',
+    advice: 'Глянь stack ниже. Если это уникальная — может быть случайным сбоем. Если повторяется или у разных юзеров — баг.',
+  };
+}
+
+// Категоризирует backend-ошибку
+function categorizeBackendError(err) {
+  const code = err && err.code;
+  const msg = String((err && err.message) || '');
+
+  // PostgreSQL коды: 22xxx (data exception), 23xxx (constraint), 42xxx (syntax)
+  if (typeof code === 'string' && /^(22|23|42)\d{3}$/.test(code)) {
+    return {
+      tag: 'БД',
+      advice: `PostgreSQL ${code}. ${code.startsWith('22') ? 'Данные не помещаются / неверный формат — баг в схеме или валидации.' : code.startsWith('23') ? 'Нарушено constraint (UNIQUE, NOT NULL, FK) — баг в коде или race condition.' : 'Синтаксическая ошибка SQL — копать недавние правки routes/.'}`,
+    };
+  }
+  if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+    return {
+      tag: 'СЕРВИС НЕДОСТУПЕН',
+      advice: 'Backend не достучался до зависимости (PG / Telegram API / Kinescope / прокси). Проверь pm2 logs, что не упало.',
+    };
+  }
+  if (code === 'ETIMEDOUT' || /timeout/i.test(msg)) {
+    return {
+      tag: 'ТАЙМАУТ',
+      advice: 'Запрос к внешнему сервису не успел. Если повторяется — у сервиса проблемы. Если разово — игнор.',
+    };
+  }
+  if (/jwt|token|unauthorized/i.test(msg)) {
+    return {
+      tag: 'AUTH',
+      advice: 'Проблема с JWT/refresh-токеном. Чаще всего — кривой ENV (JWT_SECRET / PATIENT_JWT_SECRET) или истёкший токен.',
+    };
+  }
+  return {
+    tag: 'ОШИБКА БЭКЕНДА',
+    advice: 'Глянь stack и pm2 logs. Если 500 первый раз — может быть случайный сбой, ждать. Если повторяется — копать.',
+  };
+}
+
+// Склейка финального текста для frontend-ошибки.
+// payload: { message, stack, url, userAgent, context }
+function formatFrontendAlertBody(payload) {
+  const { message = '', stack = '', url = '', userAgent = '', context = {} } = payload || {};
+  const page = describePage(url);
+  const ua = describeUA(userAgent);
+  const { tag, advice } = categorizeFrontendError(message, context);
+
+  const lines = [];
+  lines.push(`Тип: Frontend · ${tag}`);
+  if (page) lines.push(`Где: ${page}`);
+  lines.push(`Что: ${message || '(без сообщения)'}`);
+  if (ua) lines.push(`Браузер: ${ua}`);
+  lines.push('');
+  lines.push(`Что делать:`);
+  lines.push(`  ${advice}`);
+  lines.push('');
+
+  // Источник для понимания: window.error (sync/async), unhandledrejection,
+  // ErrorBoundary (React).
+  const source = (context && context.source) || 'unknown';
+  lines.push(`— Детали —`);
+  lines.push(`Источник: ${source}`);
+  if (url) lines.push(`URL: ${url}`);
+  if (stack) {
+    // Первые 5 строк стека достаточно для диагноза
+    const trimmedStack = stack.split('\n').slice(0, 6).join('\n');
+    lines.push(`Stack:`);
+    lines.push(trimmedStack);
+  }
+  return lines.join('\n');
+}
+
+// Backend error — body для sendOpsAlert.
+function formatBackendAlertBody(err, req) {
+  const { tag, advice } = categorizeBackendError(err);
+  const lines = [];
+  lines.push(`Тип: Backend · ${tag}`);
+  if (req) lines.push(`Где: ${req.method} ${req.path || req.url || ''}`);
+  lines.push(`Что: ${(err && err.message) || String(err)}`);
+  if (err && err.code) lines.push(`Код: ${err.code}`);
+  lines.push('');
+  lines.push(`Что делать:`);
+  lines.push(`  ${advice}`);
+  lines.push('');
+  if (err && err.stack) {
+    const trimmedStack = String(err.stack).split('\n').slice(0, 6).join('\n');
+    lines.push(`— Stack —`);
+    lines.push(trimmedStack);
+  }
+  return lines.join('\n');
+}
+
 // для тестов
 function _resetState() {
   seenHashes.clear();
@@ -138,4 +312,14 @@ function _resetState() {
   lastSuppressedNoticeAt = 0;
 }
 
-module.exports = { sendOpsAlert, _resetState };
+module.exports = {
+  sendOpsAlert,
+  formatFrontendAlertBody,
+  formatBackendAlertBody,
+  // экспортированы для тестов категоризации
+  describePage,
+  describeUA,
+  categorizeFrontendError,
+  categorizeBackendError,
+  _resetState,
+};

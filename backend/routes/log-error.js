@@ -14,7 +14,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
-const { sendOpsAlert } = require('../utils/opsAlert');
+const { sendOpsAlert, formatFrontendAlertBody } = require('../utils/opsAlert');
 
 const errorReportLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -32,30 +32,21 @@ function clip(s, n) {
 router.post('/', errorReportLimiter, async (req, res) => {
   const { message, stack, url, userAgent, context } = req.body || {};
 
-  const cleanMsg = clip(message, 500) || 'unknown';
-  const cleanStack = clip(stack, 2500);
-  const cleanUrl = clip(url, 300);
-  const cleanUa = clip(userAgent, 250);
-  let cleanCtx = '';
-  if (context && typeof context === 'object') {
-    try {
-      cleanCtx = clip(JSON.stringify(context), 600);
-    } catch {
-      cleanCtx = '[unserializable context]';
-    }
-  }
+  // Sanitize: фиксированные max-length чтобы юзер не мог раздуть алерт
+  const sanitized = {
+    message: clip(message, 500) || 'unknown',
+    stack: clip(stack, 2500),
+    url: clip(url, 300),
+    userAgent: clip(userAgent, 250),
+    context: (context && typeof context === 'object') ? context : {},
+  };
 
-  const title = `[Frontend] ${cleanMsg}`;
-  const bodyLines = [
-    cleanUrl && `URL: ${cleanUrl}`,
-    cleanUa && `UA: ${cleanUa}`,
-    cleanCtx && `Ctx: ${cleanCtx}`,
-    cleanStack && '',
-    cleanStack && cleanStack,
-  ].filter(Boolean);
+  // Заголовок дедупит по «первой строке» — короткое сообщение даёт лучшую группировку
+  const title = sanitized.message;
+  const body = formatFrontendAlertBody(sanitized);
 
   // fire-and-forget — клиенту незачем ждать Telegram API
-  sendOpsAlert(title, bodyLines.join('\n')).catch(() => {});
+  sendOpsAlert(title, body).catch(() => {});
   res.status(204).end();
 });
 

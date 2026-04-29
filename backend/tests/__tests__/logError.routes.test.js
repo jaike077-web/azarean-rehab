@@ -5,11 +5,15 @@
 const request = require('supertest');
 const express = require('express');
 
-// Мокаем opsAlert чтобы не лезть в реальный Telegram API
-jest.mock('../../utils/opsAlert', () => ({
-  sendOpsAlert: jest.fn(async () => {}),
-  _resetState: jest.fn(),
-}));
+// Мокаем sendOpsAlert чтобы не лезть в реальный Telegram API,
+// но formatFrontendAlertBody оставляем реальным (через requireActual)
+jest.mock('../../utils/opsAlert', () => {
+  const actual = jest.requireActual('../../utils/opsAlert');
+  return {
+    ...actual,
+    sendOpsAlert: jest.fn(async () => {}),
+  };
+});
 
 const { sendOpsAlert } = require('../../utils/opsAlert');
 const logErrorRouter = require('../../routes/log-error');
@@ -24,23 +28,28 @@ describe('POST /api/log-error', () => {
     app.use('/api/log-error', logErrorRouter);
   });
 
-  it('returns 204 на валидный payload', async () => {
+  it('returns 204 на валидный payload + body содержит ключевые поля', async () => {
     const res = await request(app)
       .post('/api/log-error')
       .send({
         message: 'TypeError: Cannot read property X of undefined',
         stack: 'at Foo.bar (/app.js:10:5)\n  at Baz.qux (/main.js:20:3)',
         url: 'http://localhost:3000/patient-dashboard',
-        userAgent: 'Mozilla/5.0',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/144.0.0.0',
         context: { source: 'ErrorBoundary' },
       });
     expect(res.status).toBe(204);
     expect(sendOpsAlert).toHaveBeenCalledTimes(1);
     const [title, body] = sendOpsAlert.mock.calls[0];
-    expect(title).toContain('[Frontend]');
-    expect(title).toContain('TypeError');
-    expect(body).toContain('http://localhost:3000/patient-dashboard');
-    expect(body).toContain('Mozilla/5.0');
+    // Title теперь короткий — сообщение для дедупа
+    expect(title).toBe('TypeError: Cannot read property X of undefined');
+    // Body — структурированный текст
+    expect(body).toContain('Тип: Frontend');
+    expect(body).toContain('БАГ В UI'); // категоризация по «Cannot read prop»
+    expect(body).toContain('Где: личный кабинет пациента'); // page mapping
+    expect(body).toContain('Браузер: Chrome 144 / Windows');
+    expect(body).toContain('Что делать');
+    expect(body).toContain('Источник: ErrorBoundary');
     expect(body).toContain('at Foo.bar');
   });
 
@@ -54,9 +63,9 @@ describe('POST /api/log-error', () => {
 
     expect(sendOpsAlert).toHaveBeenCalled();
     const [title, body] = sendOpsAlert.mock.calls[0];
-    // Title содержит max 500 chars сообщения + префикс
-    expect(title.length).toBeLessThan(600);
-    // Stack обрезан до 2500
+    // Title — clipped до 500
+    expect(title.length).toBeLessThanOrEqual(500);
+    // Body suite — общая длина под лимитом Telegram (~4096)
     expect(body.length).toBeLessThan(4000);
   });
 
@@ -66,15 +75,17 @@ describe('POST /api/log-error', () => {
     expect(sendOpsAlert).toHaveBeenCalled();
   });
 
-  it('сериализует context-объект безопасно', async () => {
+  it('smoke-message получает тэг ТЕСТ', async () => {
     await request(app)
       .post('/api/log-error')
       .send({
-        message: 'oops',
-        context: { foo: 'bar', nested: { deep: 'value' } },
+        message: 'Manual frontend smoke 1234567890',
+        url: 'https://my.azarean.ru/patient-dashboard',
+        userAgent: 'Mozilla/5.0',
+        context: { source: 'window.error', filename: '<anonymous>' },
       });
     const [, body] = sendOpsAlert.mock.calls[0];
-    expect(body).toContain('Ctx:');
-    expect(body).toContain('foo');
+    expect(body).toContain('ТЕСТ');
+    expect(body).toContain('игнор'); // в advice
   });
 });
