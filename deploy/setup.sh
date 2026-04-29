@@ -278,6 +278,19 @@ EOF
   echo "✓ Cron tg-proxy monitoring установлен"
 fi
 
+CRON_SCHEMA_DRIFT="/etc/cron.d/azarean-rehab-schema-drift"
+if [ ! -f "$CRON_SCHEMA_DRIFT" ]; then
+  cat > "$CRON_SCHEMA_DRIFT" <<EOF
+# Azarean Rehab — обнаружение schema drift (изменения БД вне миграций).
+# Daily в 04:00 МСК. Сравнивает pg_dump --schema-only с baseline'ом
+# (обновляется автоматически при появлении новой миграции). Алерт в
+# Telegram ops-bot при detection. Анти-регрессия для Bug #36.
+0 4 * * * root $APP_DIR/deploy/check-schema-drift.sh
+EOF
+  chmod 644 "$CRON_SCHEMA_DRIFT"
+  echo "✓ Cron schema drift detection установлен"
+fi
+
 # ─── Итог ───
 echo ""
 echo "═══ SETUP ЗАВЕРШЁН ═══"

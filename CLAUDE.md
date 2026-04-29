@@ -742,6 +742,13 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Migration tracking (2026-04-29, Phase B.2)
 49. **Schema drift Bug #36 был возможен из-за отсутствия tracking** → новая таблица `_migrations(filename PK, applied_at, checksum)` через миграцию [20260429_create_migrations_table.sql](backend/database/migrations/20260429_create_migrations_table.sql). [deploy/migrate.sh](deploy/migrate.sh) переписан с **checksum-tracking + bootstrap логикой:** при первом прогоне (пустая `_migrations`) все существующие .sql файлы помечаются как legacy с NULL checksum → потом фиксируются их фактические SHA-256. Дальше: новые миграции применяются + INSERT, изменённые — exit 1 с алертом. **Политика:** миграции после apply immutable, исправления — только новой миграцией. Принимает `APP_DIR` env override для локального тестирования. Прогонял dev: bootstrap (27 миграций) → idempotent re-run → modified file → ERROR detection — всё работает.
 
+### Runtime schema drift detection (2026-04-29)
+53. **Bug #36 анти-регрессия — обнаружение ALTER TABLE мимо миграций** → daily cron в 04:00 МСК через [deploy/check-schema-drift.sh](deploy/check-schema-drift.sh). Сравнивает свежий `pg_dump --schema-only --no-owner --no-privileges --schema=public` с baseline'ом в `/var/lib/azarean-rehab/schema-baseline.sql`. Если diff:
+- Если в `backend/database/migrations/*.sql` появились новые файлы с момента baseline → legitimate (миграция прошла), baseline обновляется автоматически
+- Если новых миграций нет → DRIFT, алерт в ops-bot с тегом «СХЕМА БД» и первыми 30 строками diff'а
+
+Полный diff лог в `/var/log/azarean-rehab-schema-drift.log`. Cron entry устанавливается в [setup.sh](deploy/setup.sh) (идемпотентно). Bootstrap при первом запуске — снимок текущей prod-схемы как baseline + last-migr-count.
+
 ### Audit log retention plan (2026-04-29, Phase B.1)
 48. **audit_logs может расти бесконечно** → решение зафиксировано в [docs/audit_log_retention.md](docs/audit_log_retention.md). **Tiered подход:** Tier 0 (текущий, ≤100k записей) — ничего не делаем; Tier 1 (100k-1M) — cron DELETE > 2 лет; Tier 2 (1M+) — partitioning by month с DROP старых партиций. **Текущий объём dev:** 19 записей за 2 дня — Tier 0 актуален ещё ~333 дня после запуска пилота. ФЗ-152 не требует конкретного срока, 2 года покрывают типичный гражданский процесс. ФСТЭК-3 года применим только к государственным ИСПДн, не к нам. Заготовка скрипта Tier 1 в документе, активировать при триггере (50k записей).
 
