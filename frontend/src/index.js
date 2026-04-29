@@ -24,6 +24,54 @@ if (process.env.REACT_APP_SENTRY_DSN) {
   console.log(`[Sentry] initialized (env: ${process.env.NODE_ENV})`);
 }
 
+// =====================================================
+// Ops-bot fallback (когда Sentry DSN не задан / не доходит)
+// =====================================================
+// Sentry.io ingest заблокирован для русских IP. Пока DSN пустой — посылаем
+// global window-errors и unhandled promise rejections через свой backend
+// в Telegram ops-bot. В dev (без OPS_BOT_TOKEN на бэке) сообщения тихо
+// уходят в console.log — никаких сбоев в работе фронта.
+function reportToBackend(payload) {
+  try {
+    const apiUrl = process.env.REACT_APP_API_URL || '';
+    fetch(`${apiUrl}/api/log-error`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'omit',
+      body: JSON.stringify(payload),
+      keepalive: true, // позволяет уйти запросу даже при unload
+    }).catch(() => {});
+  } catch {
+    // swallow — error reporter не должен сам ронять страницу
+  }
+}
+
+window.addEventListener('error', (e) => {
+  reportToBackend({
+    message: (e && e.message) || 'window.error',
+    stack: (e && e.error && e.error.stack) || '',
+    url: window.location.href,
+    userAgent: navigator.userAgent,
+    context: {
+      source: 'window.error',
+      filename: e && e.filename,
+      lineno: e && e.lineno,
+      colno: e && e.colno,
+    },
+  });
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e && e.reason;
+  reportToBackend({
+    message: (r && r.message) || (r ? String(r) : 'unhandledrejection'),
+    stack: (r && r.stack) || '',
+    url: window.location.href,
+    userAgent: navigator.userAgent,
+    context: { source: 'unhandledrejection' },
+  });
+});
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>

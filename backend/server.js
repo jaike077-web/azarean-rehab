@@ -14,6 +14,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const { testConnection } = require('./database/db');
 const config = require('./config/config');
+const { sendOpsAlert } = require('./utils/opsAlert');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -164,6 +165,11 @@ app.get('/', (req, res) => {
 // для cron каждые 5 минут с одного IP это ~3 запроса в окно, ок.
 app.use('/api/health', require('./routes/health'));
 
+// /api/log-error — приём frontend ошибок для пересылки в ops-bot.
+// Без auth: ловить нужно даже у незалогиненного юзера. Свой rate-limit
+// внутри route. Регистрируется ДО общего authLimiter.
+app.use('/api/log-error', require('./routes/log-error'));
+
 // Health check (legacy — без /api префикса; deprecated, удалить когда
 // healthcheck.sh и внешние мониторы перейдут на /api/health)
 app.get('/health', async (req, res) => {
@@ -278,6 +284,19 @@ app.use((err, req, res, next) => {
   const statusCode = err.status || err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
 
+  // Только 5xx (наши баги) уходят в ops-bot. 4xx — это валидация,
+  // permission, not found — клиентские ошибки, не нужны как алерты.
+  if (statusCode >= 500) {
+    const title = `[Backend] ${err.message || 'Internal Server Error'}`;
+    const body = [
+      `${req.method} ${req.path}`,
+      err.code && `code: ${err.code}`,
+      '',
+      err.stack || String(err),
+    ].filter(Boolean).join('\n');
+    sendOpsAlert(title, body).catch(() => {});
+  }
+
   // Не раскрываем детали в production
   const isDev = config.nodeEnv === 'development';
 
@@ -378,11 +397,19 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught Exception:', err);
-  process.exit(1);
+  // Fire-and-forget alert + 1 сек на flush HTTP-запроса перед exit
+  sendOpsAlert(
+    `[Backend] uncaughtException: ${err.message || String(err)}`,
+    err.stack || String(err)
+  ).catch(() => {});
+  setTimeout(() => process.exit(1), 1000);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  const msg = reason && reason.message ? reason.message : String(reason);
+  const stack = reason && reason.stack ? reason.stack : '';
+  sendOpsAlert(`[Backend] unhandledRejection: ${msg}`, stack || msg).catch(() => {});
 });
 
 // Запуск (только при прямом вызове, не при импорте в тестах)

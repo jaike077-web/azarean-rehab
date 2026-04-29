@@ -20,7 +20,31 @@ class ErrorBoundary extends Component {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    // TODO: Send to error tracking service (Sentry, etc.)
+    // Отправка в ops-bot через backend. fire-and-forget, любая ошибка
+    // в самом репортинге не должна ронять fallback UI.
+    try {
+      const payload = {
+        message: (error && error.message) || 'render error',
+        stack: (error && error.stack) || '',
+        url: typeof window !== 'undefined' ? window.location.href : '',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+        context: {
+          source: 'ErrorBoundary',
+          componentStack: errorInfo && errorInfo.componentStack
+            ? String(errorInfo.componentStack).slice(0, 1000)
+            : '',
+        },
+      };
+      const apiUrl = process.env.REACT_APP_API_URL || '';
+      fetch(`${apiUrl}/api/log-error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify(payload),
+      }).catch(() => {});
+    } catch {
+      // never throw from error handler
+    }
   }
 
   handleReload = () => {

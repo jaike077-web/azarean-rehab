@@ -82,6 +82,17 @@ const config = {
     loginEnabled: process.env.YANDEX_LOGIN_ENABLED === 'true',
   },
 
+  // Ops alert bot — отдельный Telegram-бот для уведомлений об ошибках
+  // (@azarean_ops_bot). Параллельный канал к Sentry — нужен потому что
+  // sentry.io ingest блокируется для русских IP (rehab-VDS на AdminVPS, и
+  // браузеры пациентов в РФ без VPN). Telegram API доступен и тут, и там.
+  // Если token/chatId пусты — opsAlert работает в noop (dev/test), пишет
+  // в console.log вместо API-вызова.
+  opsBot: {
+    token: process.env.OPS_BOT_TOKEN || '',
+    chatId: process.env.OPS_CHAT_ID || '',
+  },
+
   // Kinescope
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
