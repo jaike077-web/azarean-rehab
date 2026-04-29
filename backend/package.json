@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@dnd-kit/modifiers": "^9.0.0",
+    "@sentry/node": "^10.50.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

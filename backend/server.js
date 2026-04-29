@@ -1,3 +1,7 @@
+// Sentry instrumentation должна загружаться первой — ДО require'ов модулей,
+// которые она инструментирует через OpenTelemetry (express, http, pg).
+const Sentry = require('./instrument');
+
 // =====================================================
 // AZAREAN NETWORK API SERVER v2.1
 // С улучшенной безопасностью
@@ -253,6 +257,11 @@ app.use((req, res) => {
     ]
   });
 });
+
+// Sentry error handler — должен быть ПЕРЕД custom error handler.
+// Регистрирует все next(err) в Sentry, потом передаёт ошибку дальше.
+// При отсутствии SENTRY_DSN setupExpressErrorHandler работает как noop.
+Sentry.setupExpressErrorHandler(app);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

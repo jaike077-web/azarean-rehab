@@ -729,6 +729,12 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### BUG (закрытые 2026-04-28, Phase 3 RehabProgramModal)
 43. **Нет UI для создания RehabProgram** (gap из MEMORY.md backlog) → создан [frontend/src/components/RehabProgramModal.js](frontend/src/components/RehabProgramModal.js) + интеграция в [Patients.js](frontend/src/pages/Patients.js): кнопка «Программа» на карточке пациента, модалка create/edit/delete с выбором комплекса/диагноза/фазы. Backend без изменений (POST/PUT/DELETE /api/rehab/programs уже были готовы). 7 unit-тестов. Разблокирует Home-экран пациента (блок «Ваш комплекс на сегодня») — раньше требовался прямой INSERT SQL для создания rehab_programs записи.
 
+### Compliance (2026-04-29)
+44. **Disclaimer лгал про at-rest шифрование** → [PatientDashboard.js:197](frontend/src/pages/PatientDashboard/PatientDashboard.js#L197) текст «Ваши медицинские данные хранятся в зашифрованном виде» был неправдой (TLS in transit + bcrypt пароли + SHA-256 токены, но сами поля diagnosis/diary/notes лежат plaintext в БД). Заменено на «Данные передаются по защищённому каналу… Доступ ограничен вами и вашим куратором». Также убрано «GDPR» — европейский регламент не применяется к российскому сервису. Backlog: реальное at-rest шифрование чувствительных полей через pgcrypto.
+
+### Observability (2026-04-29, Phase A.1 Sentry)
+45. **Prod-баги невидимы пока пациент не пожалуется** → подключён Sentry на backend и frontend. [backend/instrument.js](backend/instrument.js) подключается первой строкой в [server.js](backend/server.js) (Sentry v10 на OpenTelemetry требует init до express require). `Sentry.setupExpressErrorHandler(app)` перед custom error handler. Frontend: init в [frontend/src/index.js](frontend/src/index.js), `<Sentry.ErrorBoundary>` оборачивает `<App />` (fallback с кнопкой «Попробовать снова»). Без `SENTRY_DSN` / `REACT_APP_SENTRY_DSN` — SDK работает в noop-режиме, dev/тесты не нагружаются. **PII scrubbing:** ручной `beforeSend` чистит `password/token/code/code_hash/code_verifier/invite_code/nonce` из request data, headers `cookie`+`authorization` удаляются. `tracesSampleRate: 0.1` в проде, 0 в dev. **Чтобы активировать в проде:** создать 2 проекта на sentry.io (Node + React), положить DSN в GitHub Secrets → автоматически попадает в `/opt/azarean-rehab/backend/.env` через CI/CD, `pm2 reload`.
+
 ## Структура тестов
 
 ```

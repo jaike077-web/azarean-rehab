@@ -1,14 +1,52 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import './index.css';
 import './styles/common.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// =====================================================
+// Sentry observability
+// =====================================================
+// Если REACT_APP_SENTRY_DSN не задан — SDK не инициализируется,
+// init() ниже скипается, никаких событий не отправляется.
+// CRA injects REACT_APP_* env vars at build time.
+if (process.env.REACT_APP_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.REACT_APP_SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0,
+    // По умолчанию НЕ отправлять IP/cookies/headers с PII.
+    sendDefaultPii: false,
+  });
+  // eslint-disable-next-line no-console
+  console.log(`[Sentry] initialized (env: ${process.env.NODE_ENV})`);
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <Sentry.ErrorBoundary
+      fallback={({ error, resetError }) => (
+        <div style={{ padding: 24, fontFamily: 'system-ui', maxWidth: 640, margin: '40px auto' }}>
+          <h2>Что-то пошло не так</h2>
+          <p style={{ color: '#666' }}>
+            Ошибка отправлена нам автоматически. Попробуйте обновить страницу.
+          </p>
+          <button onClick={resetError} style={{ padding: '8px 16px', marginTop: 12 }}>
+            Попробовать снова
+          </button>
+          {process.env.NODE_ENV === 'development' && error && (
+            <pre style={{ marginTop: 16, color: '#c00', fontSize: 12 }}>
+              {error.toString()}
+            </pre>
+          )}
+        </div>
+      )}
+    >
+      <App />
+    </Sentry.ErrorBoundary>
   </React.StrictMode>
 );
 
