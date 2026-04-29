@@ -30,6 +30,7 @@ const {
   sendExerciseReminders,
   sendDiaryReminders,
   sendDailyTip,
+  processPatientDeletionQueue,
 } = require('../../services/scheduler');
 
 // =====================================================
@@ -183,5 +184,74 @@ describe('sendDailyTip', () => {
     await sendDailyTip();
 
     expect(sendTelegramMessage).not.toHaveBeenCalled();
+  });
+});
+
+// =====================================================
+// processPatientDeletionQueue (152-ФЗ ст.21 hard-delete после grace)
+// =====================================================
+describe('processPatientDeletionQueue', () => {
+
+  it('no-op если очередь пустая', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await processPatientDeletionQueue();
+
+    // Только один query (SELECT) — никаких INSERT audit / DELETE patients
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('обрабатывает due-записи: audit ACCOUNT_DELETE_EXECUTED + DELETE patient', async () => {
+    // SELECT due
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, patient_id: 100 },
+        { id: 2, patient_id: 200 },
+      ],
+    });
+    // Per patient: INSERT audit + DELETE patient → 4 queries
+    query.mockResolvedValue({ rowCount: 1 });
+
+    await processPatientDeletionQueue();
+
+    // 1 SELECT + 2 × (INSERT audit + DELETE patient) = 5 queries
+    expect(query).toHaveBeenCalledTimes(5);
+
+    const auditCalls = query.mock.calls.filter(([sql]) => /audit_logs/i.test(sql));
+    expect(auditCalls).toHaveLength(2);
+    auditCalls.forEach(([, params]) => {
+      expect(params[0]).toBe('ACCOUNT_DELETE_EXECUTED');
+    });
+
+    const deleteCalls = query.mock.calls.filter(([sql]) =>
+      /DELETE FROM patients WHERE id/i.test(sql)
+    );
+    expect(deleteCalls).toHaveLength(2);
+    expect(deleteCalls[0][1][0]).toBe(100);
+    expect(deleteCalls[1][1][0]).toBe(200);
+  });
+
+  it('продолжает с следующим патиентом если один упал', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, patient_id: 100 },
+        { id: 2, patient_id: 200 },
+      ],
+    });
+    // patient 100: audit ok, DELETE падает
+    query.mockResolvedValueOnce({ rowCount: 1 });  // audit для 100
+    query.mockRejectedValueOnce(new Error('FK constraint'));  // DELETE 100 fails
+    // patient 200: audit ok, DELETE ok
+    query.mockResolvedValueOnce({ rowCount: 1 });  // audit для 200
+    query.mockResolvedValueOnce({ rowCount: 1 });  // DELETE 200
+
+    // Не должно throw
+    await expect(processPatientDeletionQueue()).resolves.toBeUndefined();
+
+    // Обработано: 1 (200), failed: 1 (100)
+    const deleteCalls = query.mock.calls.filter(([sql]) =>
+      /DELETE FROM patients WHERE id/i.test(sql)
+    );
+    expect(deleteCalls).toHaveLength(2);
   });
 });

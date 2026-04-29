@@ -158,6 +158,13 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
   const [confirmPwd, setConfirmPwd] = useState('');
   const [changingPwd, setChangingPwd] = useState(false);
 
+  // Delete account collapse (152-ФЗ ст.21)
+  const [showDelete, setShowDelete] = useState(false);
+  const [deletePwd, setDeletePwd] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deleteConfirmCheck, setDeleteConfirmCheck] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   // Telegram (Zari)
   const [showTg, setShowTg] = useState(false);
   const [tgStatus, setTgStatus] = useState(null);
@@ -327,6 +334,40 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
       toast.error('Ошибка', err?.response?.data?.message || 'Не удалось сменить пароль');
     } finally {
       setChangingPwd(false);
+    }
+  };
+
+  // GDPR / 152-ФЗ ст.21 — запросить удаление аккаунта.
+  // Soft delete сразу + 30 дней grace period перед hard delete (cron).
+  // Если у пациента есть пароль — обязателен для подтверждения. OAuth-only
+  // (auth_provider != 'local') проходят без пароля, только чекбокс.
+  const hasPassword = profile?.auth_provider === 'local' || profile?.email_verified;
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmCheck) {
+      toast.error('Подтверждение', 'Поставьте галочку, что понимаете последствия');
+      return;
+    }
+    if (hasPassword && !deletePwd) {
+      toast.error('Пароль', 'Введите текущий пароль для подтверждения');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const body = { confirm: true };
+      if (hasPassword) body.current_password = deletePwd;
+      if (deleteReason.trim()) body.reason = deleteReason.trim();
+      await patientAuth.deleteAccount(body);
+      toast.success(
+        'Аккаунт помечен на удаление',
+        'Через 30 дней данные будут безвозвратно стёрты. Сейчас вы будете отключены.'
+      );
+      // Force logout — backend уже очистил cookies, но нам надо очистить state и редирект
+      setTimeout(() => handleLogout(), 2500);
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Не удалось удалить аккаунт';
+      toast.error('Ошибка', msg);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -813,7 +854,7 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
               </div>
             </div>
 
-            {/* ===== Мои данные (152-ФЗ право доступа) ===== */}
+            {/* ===== Мои данные (152-ФЗ право доступа + право удаления) ===== */}
             <div className="pd-profile-section">
               <div className="pd-profile-section-label">Мои данные</div>
               <div className="pd-profile-section-card">
@@ -821,12 +862,81 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                   label="Скачать мои данные"
                   Icon={Download}
                   onClick={handleDownloadMyData}
-                  last
                 />
+
+                {/* Collapsible — удаление аккаунта */}
+                <button
+                  type="button"
+                  className="pd-profile-collapse-trigger pd-profile-collapse-trigger--last"
+                  onClick={() => setShowDelete((s) => !s)}
+                >
+                  <span className="pd-profile-collapse-trigger-content pd-profile-row--destructive">
+                    <X size={16} />
+                    Удалить аккаунт
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className={`pd-profile-collapse-chevron ${showDelete ? 'pd-profile-collapse-chevron--open' : ''}`}
+                  />
+                </button>
+
+                {showDelete && (
+                  <div className="pd-profile-collapse-body">
+                    <div className="pd-profile-tg-hint" style={{ color: '#c62828' }}>
+                      Аккаунт будет помечен на удаление и заблокирован сразу.
+                      Через <strong>30 дней</strong> все ваши данные (профиль, дневник,
+                      прогресс, сообщения) будут <strong>безвозвратно стёрты</strong>.
+                      В течение 30 дней восстановление возможно через куратора.
+                    </div>
+
+                    {hasPassword && (
+                      <input
+                        type="password"
+                        className="pd-profile-input"
+                        value={deletePwd}
+                        onChange={(e) => setDeletePwd(e.target.value)}
+                        placeholder="Текущий пароль"
+                        autoComplete="current-password"
+                      />
+                    )}
+
+                    <textarea
+                      className="pd-profile-input"
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Причина (необязательно)"
+                      rows={2}
+                      style={{ resize: 'vertical', minHeight: 48 }}
+                    />
+
+                    <label className="pd-profile-tg-hint" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={deleteConfirmCheck}
+                        onChange={(e) => setDeleteConfirmCheck(e.target.checked)}
+                        style={{ marginTop: 2, flexShrink: 0 }}
+                      />
+                      <span>
+                        Я понимаю, что после 30 дней мои данные будут стёрты без возможности
+                        восстановления.
+                      </span>
+                    </label>
+
+                    <button
+                      type="button"
+                      className="pd-profile-btn-primary"
+                      onClick={handleDeleteAccount}
+                      disabled={deleting || !deleteConfirmCheck || (hasPassword && !deletePwd)}
+                      style={{ background: '#c62828' }}
+                    >
+                      {deleting ? 'Обрабатываем…' : 'Удалить аккаунт'}
+                    </button>
+                  </div>
+                )}
               </div>
               <div className="pd-profile-section-hint">
-                Получите все ваши данные одним JSON-файлом: профиль, дневник, прогресс,
-                сообщения, программу реабилитации.
+                По 152-ФЗ вы имеете право скачать все ваши данные и удалить аккаунт
+                в любой момент.
               </div>
             </div>
 

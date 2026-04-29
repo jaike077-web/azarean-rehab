@@ -101,6 +101,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_telegr
 
 **20260429_telegram_chat_id_numeric:** ALTER COLUMN `patients.telegram_chat_id` BIGINT → NUMERIC(20). Telegram OIDC sub'ы превысили BIGINT max (9.22e18) с 2024-2025 (видели `10399974012659476296`), UPDATE в phone-autolink ветке падал с code 22003. pg-node возвращает int8/numeric как строку (JS Number precision), поэтому миграция type-only — JS-код не меняется. Идемпотентна (DO-блок проверяет тип).
 
+**20260429_patient_deletion_queue:** новая таблица для очереди soft → hard delete (152-ФЗ ст.21 / GDPR Art.17). При запросе DELETE /me — `is_active=false` сразу + INSERT в очередь со `scheduled_for=NOW()+30d`. Cron в scheduler.js в 03:30 МСК берёт due-записи и делает hard DELETE patient (CASCADE через FK подчищает complexes/diary/progress). Partial UNIQUE индекс по `patient_id WHERE executed_at IS NULL AND cancelled_at IS NULL` — один активный запрос на пациента.
+
 ### 2. Переменные окружения
 
 **Backend (.env)**

@@ -889,6 +889,159 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
   }
 });
 
+// =====================================================
+// DELETE /me — запрос на удаление аккаунта (152-ФЗ ст.21 / GDPR Art.17)
+// =====================================================
+// Soft delete + 30 дней grace period перед hard delete.
+//
+// Body:
+//   { confirm: true, current_password?: string, reason?: string }
+//
+// Логика:
+//   1. Если у пациента есть password_hash — обязателен current_password,
+//      проверяется bcrypt.compare. Защита от случайного нажатия / CSRF.
+//      Если password_hash IS NULL (OAuth-only) — достаточно cookie auth.
+//   2. SET is_active = false → доступ к dashboard сразу блокируется
+//   3. INSERT в patient_deletion_queue со scheduled_for = NOW() + 30d
+//   4. DELETE refresh tokens — force logout всех сессий пациента
+//   5. Audit ACCOUNT_DELETE_REQUESTED
+//   6. Cookies очищаются
+//
+// Через 30 дней cron в scheduler.js делает hard DELETE из patients,
+// CASCADE подчищает complexes, progress_logs, diary_entries и т.д.
+// =====================================================
+router.delete('/me', authenticatePatient, async (req, res) => {
+  const patientId = req.patient.id;
+  const { confirm, current_password, reason } = req.body || {};
+
+  if (confirm !== true) {
+    return res.status(400).json({
+      error: 'CONFIRMATION_REQUIRED',
+      message: 'Подтверждение удаления обязательно (confirm: true)',
+    });
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Загружаем patient row под lock — нужен password_hash для проверки
+    const patientRes = await client.query(
+      `SELECT id, password_hash, is_active
+         FROM patients
+        WHERE id = $1
+        FOR UPDATE`,
+      [patientId]
+    );
+
+    if (patientRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Пациент не найден',
+      });
+    }
+
+    const patient = patientRes.rows[0];
+
+    // Если уже soft-deleted — отдаём 200 idempotent (не падаем на повторный запрос)
+    if (patient.is_active === false) {
+      await client.query('ROLLBACK');
+      return res.status(200).json({
+        data: null,
+        message: 'Аккаунт уже в очереди на удаление',
+      });
+    }
+
+    // Если есть пароль — обязателен current_password
+    if (patient.password_hash) {
+      if (!current_password || typeof current_password !== 'string') {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'PASSWORD_REQUIRED',
+          message: 'Введите текущий пароль для подтверждения удаления',
+        });
+      }
+      const ok = await bcrypt.compare(current_password, patient.password_hash);
+      if (!ok) {
+        await client.query('ROLLBACK');
+        return res.status(401).json({
+          error: 'INVALID_PASSWORD',
+          message: 'Неверный текущий пароль',
+        });
+      }
+    }
+    // OAuth-only пациент (password_hash IS NULL) → cookie auth + confirm=true достаточно
+
+    // Soft delete — is_active=false блокирует логин и доступ к dashboard
+    await client.query(
+      `UPDATE patients SET is_active = false, updated_at = NOW() WHERE id = $1`,
+      [patientId]
+    );
+
+    // Записываем в очередь — 30 дней grace period
+    const scheduledFor = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await client.query(
+      `INSERT INTO patient_deletion_queue (patient_id, scheduled_for, reason)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (patient_id) WHERE executed_at IS NULL AND cancelled_at IS NULL
+       DO UPDATE SET scheduled_for = EXCLUDED.scheduled_for,
+                     reason = EXCLUDED.reason,
+                     requested_at = NOW()`,
+      [patientId, scheduledFor, reason || null]
+    );
+
+    // Force logout — удаляем все refresh-токены пациента
+    await client.query(
+      `DELETE FROM patient_refresh_tokens WHERE patient_id = $1`,
+      [patientId]
+    );
+
+    await client.query('COMMIT');
+
+    // Audit log (вне транзакции — fire-and-forget)
+    query(
+      `INSERT INTO audit_logs
+         (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
+       VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
+      [
+        'ACCOUNT_DELETE_REQUESTED',
+        patientId,
+        patientId,
+        req.ip || null,
+        req.headers['user-agent'] || null,
+        JSON.stringify({
+          scheduled_for: scheduledFor.toISOString(),
+          had_password: !!patient.password_hash,
+          reason: reason || null,
+        }),
+      ]
+    ).catch((err) => console.warn('[audit] ACCOUNT_DELETE_REQUESTED log failed:', err.message));
+
+    // Очищаем cookies — пациент должен сразу выйти из аккаунта
+    clearAccessCookie(res);
+    clearRefreshCookie(res);
+
+    return res.status(200).json({
+      data: { scheduled_for: scheduledFor.toISOString() },
+      message: 'Аккаунт помечен на удаление. Через 30 дней данные будут стёрты безвозвратно.',
+    });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* ignore */ }
+    console.error('[delete-me] error:', err);
+    sendOpsAlert(
+      `Account delete failed: ${err.message || String(err)}`,
+      formatBackendAlertBody(err, req)
+    ).catch(() => {});
+    return res.status(500).json({
+      error: 'Server Error',
+      message: 'Не удалось обработать удаление аккаунта',
+    });
+  } finally {
+    client.release();
+  }
+});
+
 router.get('/me', authenticatePatient, async (req, res) => {
   try {
     // Allowlist полей. НЕ возвращаем password_hash, failed_login_attempts,

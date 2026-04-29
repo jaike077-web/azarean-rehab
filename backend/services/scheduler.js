@@ -56,8 +56,18 @@ function initScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
-  cronJobs = [exerciseJob, diaryJob, tipJob, cleanupJob];
-  console.log('⏰ Scheduler запущен (4 задачи)');
+  // Ежедневно в 03:30 МСК — hard delete пациентов после grace period (152-ФЗ)
+  // Со смещением 30 мин от cleanupJob чтобы не упереться вместе в DB connections.
+  const deletionJob = cron.schedule('30 3 * * *', async () => {
+    try {
+      await processPatientDeletionQueue();
+    } catch (error) {
+      console.error('Scheduler error (deletion-queue):', error.message);
+    }
+  }, { timezone: 'Europe/Moscow' });
+
+  cronJobs = [exerciseJob, diaryJob, tipJob, cleanupJob, deletionJob];
+  console.log('⏰ Scheduler запущен (5 задач)');
 }
 
 // =====================================================
@@ -161,6 +171,57 @@ async function cleanupExpiredTokens() {
 }
 
 // =====================================================
+// HARD DELETE PATIENTS — обрабатывает patient_deletion_queue
+// =====================================================
+// Раз в сутки берёт активные запросы (не cancelled, не executed)
+// у которых scheduled_for < NOW(), и физически удаляет patient row.
+// CASCADE через FK подчищает complexes, progress_logs, diary_entries
+// и т.д. Audit log пишется ПЕРЕД удалением (потом patient_id уже не
+// будет валидным).
+async function processPatientDeletionQueue() {
+  const dueResult = await query(
+    `SELECT id, patient_id
+       FROM patient_deletion_queue
+      WHERE scheduled_for < NOW()
+        AND executed_at IS NULL
+        AND cancelled_at IS NULL`
+  );
+
+  if (dueResult.rows.length === 0) {
+    return;
+  }
+
+  let processed = 0;
+  let failed = 0;
+  for (const row of dueResult.rows) {
+    try {
+      // Audit ПЕРЕД delete — потом patient_id невалидный
+      await query(
+        `INSERT INTO audit_logs
+           (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
+         VALUES (NULL, $1, 'patient', $2, $3, NULL, 'scheduler', $4)`,
+        [
+          'ACCOUNT_DELETE_EXECUTED',
+          row.patient_id,
+          row.patient_id,
+          JSON.stringify({ queue_id: row.id }),
+        ]
+      );
+
+      // Hard delete — CASCADE убирает complexes, progress_logs, diary, и т.д.
+      // patient_deletion_queue запись тоже cascade'ится (FK ON DELETE CASCADE).
+      await query(`DELETE FROM patients WHERE id = $1`, [row.patient_id]);
+      processed += 1;
+    } catch (err) {
+      failed += 1;
+      console.error(`[deletion-queue] failed to delete patient ${row.patient_id}: ${err.message}`);
+    }
+  }
+
+  console.log(`🗑️  Hard delete: обработано ${processed}, ошибок ${failed} (из ${dueResult.rows.length} due)`);
+}
+
+// =====================================================
 // ОСТАНОВКА
 // =====================================================
 function stopScheduler() {
@@ -176,4 +237,5 @@ module.exports = {
   sendDiaryReminders,
   sendDailyTip,
   cleanupExpiredTokens,
+  processPatientDeletionQueue,
 };

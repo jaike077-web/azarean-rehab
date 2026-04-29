@@ -418,6 +418,9 @@ patientAuth.resetPassword = (data) => patientApi.post('/patient-auth/reset-passw
 patientAuth.getMe = () => patientApi.get('/patient-auth/me');
 patientAuth.updateMe = (data) => patientApi.put('/patient-auth/me', data);
 patientAuth.changePassword = (data) => patientApi.post('/patient-auth/change-password', data);
+// 152-ФЗ ст.21 — soft delete + 30 дней grace period перед hard delete.
+// Body: { confirm: true, current_password?: string, reason?: string }
+patientAuth.deleteAccount = (data) => patientApi.delete('/patient-auth/me', { data });
 // FormData uploads. patientApi имеет default Content-Type: application/json
 // на instance level, который перебивает auto-detection axios v1 для FormData.
 // Решение: явно стереть instance default через Content-Type: undefined →
