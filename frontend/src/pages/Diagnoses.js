@@ -15,7 +15,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { PatientsPageSkeleton } from '../components/Skeleton';
-import './Diagnoses.css';
+import s from './Diagnoses.module.css';
 
 function Diagnoses() {
   const toast = useToast();
@@ -185,50 +185,50 @@ function Diagnoses() {
   }
 
   return (
-    <div className="diagnoses-page">
+    <div className={s.diagnosesPage}>
       {/* Header */}
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <div>
           <h1>
-            <FileText className="page-icon" size={28} />
+            <FileText className={s.pageIcon} size={28} />
             Диагнозы
           </h1>
-          <p className="page-subtitle">Управление диагнозами и патологиями</p>
+          <p className={s.pageSubtitle}>Управление диагнозами и патологиями</p>
         </div>
       </div>
 
       {/* Add Button */}
-      <button className="btn-add-diagnosis" onClick={handleOpenAddModal}>
+      <button className={s.btnAddDiagnosis} onClick={handleOpenAddModal}>
         <Plus size={20} />
         Добавить диагноз
       </button>
 
       {/* Search */}
-      <div className="search-box">
-        <Search className="search-icon" size={20} />
+      <div className={s.searchBox}>
+        <Search className={s.searchIcon} size={20} />
         <input
           type="text"
-          className="search-input"
+          className={s.searchInput}
           placeholder="Поиск по названию или описанию..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         {searchQuery && (
-          <button className="clear-search" onClick={() => setSearchQuery('')}>
+          <button className={s.clearSearch} onClick={() => setSearchQuery('')}>
             <X size={16} />
           </button>
         )}
       </div>
 
       {/* Results count */}
-      <p className="results-count">
+      <p className={s.resultsCount}>
         Найдено: <strong>{filteredDiagnoses.length}</strong> из {diagnosesList.length}
       </p>
 
       {/* Grid */}
       {filteredDiagnoses.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📋</div>
+        <div className={s.emptyState}>
+          <div className={s.emptyIcon}>📋</div>
           <h2>Нет диагнозов</h2>
           <p>
             {searchQuery
@@ -237,19 +237,19 @@ function Diagnoses() {
           </p>
         </div>
       ) : (
-        <div className="diagnoses-grid">
+        <div className={s.diagnosesGrid}>
           {filteredDiagnoses.map((diagnosis) => (
             <div
               key={diagnosis.id}
-              className="diagnosis-card"
+              className={s.diagnosisCard}
               onClick={() => handleOpenViewModal(diagnosis)}
             >
-              <div className="card-header">
+              <div className={s.cardHeader}>
                 <h3>{diagnosis.name}</h3>
               </div>
 
               {diagnosis.description && (
-                <p className="diagnosis-description">
+                <p className={s.diagnosisDescription}>
                   {diagnosis.description.length > 120
                     ? `${diagnosis.description.substring(0, 120)}...`
                     : diagnosis.description}
@@ -257,11 +257,11 @@ function Diagnoses() {
               )}
 
               <div
-                className="diagnosis-actions"
+                className={s.diagnosisActions}
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
-                  className="btn-action"
+                  className={s.btnAction}
                   onClick={() => handleOpenEditModal(diagnosis)}
                   title="Редактировать"
                 >
@@ -269,7 +269,7 @@ function Diagnoses() {
                   <span>Редактировать</span>
                 </button>
                 <button
-                  className="btn-icon-danger"
+                  className={s.btnIconDanger}
                   onClick={() => handleDelete(diagnosis.id, diagnosis.name)}
                   title="Удалить"
                   aria-label="Удалить"
@@ -285,23 +285,23 @@ function Diagnoses() {
 
       {/* Modal: Add/Edit Diagnosis */}
       {(showAddModal || showEditModal) && (
-        <div className="modal-overlay" onClick={handleCloseModals}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={s.modalOverlay} onClick={handleCloseModals}>
+          <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} />
                 {showEditModal ? 'Редактировать диагноз' : 'Добавить диагноз'}
               </h2>
-              <button className="modal-close" onClick={handleCloseModals}>
+              <button className={s.modalClose} onClick={handleCloseModals}>
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="modal-body">
+            <form onSubmit={handleSubmit} className={s.modalBody}>
               {/* Название */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="name">
-                  Название диагноза <span className="required">*</span>
+                  Название диагноза <span className={s.required}>*</span>
                 </label>
                 <input
                   type="text"
@@ -309,16 +309,16 @@ function Diagnoses() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className={formErrors.name ? 'input-error' : ''}
+                  className={formErrors.name ? s.inputError : ''}
                   placeholder="Грыжа межпозвоночного диска L5-S1"
                 />
                 {formErrors.name && (
-                  <span className="field-error">{formErrors.name}</span>
+                  <span className={s.fieldError}>{formErrors.name}</span>
                 )}
               </div>
 
               {/* Описание */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="description">Описание</label>
                 <textarea
                   id="description"
@@ -331,7 +331,7 @@ function Diagnoses() {
               </div>
 
               {/* Рекомендации */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="recommendations">Рекомендации</label>
                 <textarea
                   id="recommendations"
@@ -344,7 +344,7 @@ function Diagnoses() {
               </div>
 
               {/* Предостережения */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="warnings">Предостережения</label>
                 <textarea
                   id="warnings"
@@ -356,10 +356,10 @@ function Diagnoses() {
                 />
               </div>
 
-              <div className="modal-actions">
+              <div className={s.modalActions}>
                 <button
                   type="button"
-                  className="btn-cancel"
+                  className={s.btnCancel}
                   onClick={handleCloseModals}
                   disabled={submitting}
                 >
@@ -367,7 +367,7 @@ function Diagnoses() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-save"
+                  className={s.btnSave}
                   disabled={submitting}
                 >
                   {submitting ? 'Сохранение...' : 'Сохранить'}
@@ -380,55 +380,55 @@ function Diagnoses() {
 
       {/* Modal: View Diagnosis */}
       {showViewModal && selectedDiagnosis && (
-        <div className="modal-overlay" onClick={handleCloseModals}>
-          <div className="modal-content modal-view" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={s.modalOverlay} onClick={handleCloseModals}>
+          <div className={`${s.modalContent} ${s.modalView}`} onClick={(e) => e.stopPropagation()}>
+            <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} />
                 {selectedDiagnosis.name}
               </h2>
-              <button className="modal-close" onClick={handleCloseModals}>
+              <button className={s.modalClose} onClick={handleCloseModals}>
                 <X size={20} />
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className={s.modalBody}>
               {/* Описание */}
               {selectedDiagnosis.description && (
-                <div className="view-section">
+                <div className={s.viewSection}>
                   <h3>
                     <BookOpen size={18} />
                     Описание
                   </h3>
-                  <p className="view-text">{selectedDiagnosis.description}</p>
+                  <p className={s.viewText}>{selectedDiagnosis.description}</p>
                 </div>
               )}
 
               {/* Рекомендации */}
               {selectedDiagnosis.recommendations && (
-                <div className="view-section">
+                <div className={s.viewSection}>
                   <h3>
                     <CheckCircle size={18} />
                     Рекомендации
                   </h3>
-                  <p className="view-text">{selectedDiagnosis.recommendations}</p>
+                  <p className={s.viewText}>{selectedDiagnosis.recommendations}</p>
                 </div>
               )}
 
               {/* Предостережения */}
               {selectedDiagnosis.warnings && (
-                <div className="view-section warning-section">
+                <div className={`${s.viewSection} ${s.warningSection}`}>
                   <h3>
                     <AlertTriangle size={18} />
                     Предостережения
                   </h3>
-                  <p className="view-text">{selectedDiagnosis.warnings}</p>
+                  <p className={s.viewText}>{selectedDiagnosis.warnings}</p>
                 </div>
               )}
 
-              <div className="modal-actions">
+              <div className={s.modalActions}>
                 <button
-                  className="btn-edit-full"
+                  className={s.btnEditFull}
                   onClick={() => {
                     setShowViewModal(false);
                     handleOpenEditModal(selectedDiagnosis);
@@ -437,7 +437,7 @@ function Diagnoses() {
                   <Edit2 size={18} />
                   Редактировать
                 </button>
-                <button className="btn-close-modal" onClick={handleCloseModals}>
+                <button className={s.btnCloseModal} onClick={handleCloseModals}>
                   Закрыть
                 </button>
               </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { patients, complexes } from '../services/api';
 import { formatDateNumeric } from '../utils/dateUtils';
-import './Trash.css';
+import s from './Trash.module.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ConfirmModal from '../components/ConfirmModal';
@@ -125,7 +125,7 @@ function Trash() {
   }
 
   return (
-    <div className="trash-page">
+    <div className={s.trashPage}>
       <Breadcrumbs
         items={[
           {
@@ -143,7 +143,7 @@ function Trash() {
       
       <BackButton to="/" label="На главную" />
 
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <div>
           <h1>
             <Trash2 size={28} />
@@ -153,16 +153,16 @@ function Trash() {
         </div>
       </div>
 
-      <div className="trash-tabs">
+      <div className={s.trashTabs}>
         <button 
-          className={`tab-btn ${activeTab === 'patients' ? 'active' : ''}`}
+          className={`${s.tabBtn} ${activeTab === 'patients' ? s.active : ''}`}
           onClick={() => setActiveTab('patients')}
         >
           <UserX size={16} />
           Пациенты ({deletedPatients.length})
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'complexes' ? 'active' : ''}`}
+          className={`${s.tabBtn} ${activeTab === 'complexes' ? s.active : ''}`}
           onClick={() => setActiveTab('complexes')}
         >
           <FileText size={16} />
@@ -173,42 +173,42 @@ function Trash() {
       {activeTab === 'patients' && (
         <>
           {deletedPatients.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
+            <div className={s.emptyState}>
+              <div className={s.emptyIcon}>
                 <UserX size={56} />
               </div>
               <h2>Корзина пуста</h2>
               <p>Нет удалённых пациентов</p>
             </div>
           ) : (
-            <div className="trash-grid">
+            <div className={s.trashGrid}>
               {deletedPatients.map((patient) => (
-                <div key={patient.id} className="trash-item">
-                  <div className="trash-item-header">
-                    <div className="item-icon">
+                <div key={patient.id} className={s.trashItem}>
+                  <div className={s.trashItemHeader}>
+                    <div className={s.itemIcon}>
                       <UserX size={24} />
                     </div>
-                    <div className="item-info">
+                    <div className={s.itemInfo}>
                       <h4>{patient.full_name}</h4>
-                      <p className="deleted-date">
+                      <p className={s.deletedDate}>
                         Удалён: {formatDate(patient.updated_at)}
                       </p>
-                      <div className="trash-details">
-                        <div className="detail-row">
-                          <span className="detail-label">Email:</span>
-                          <span className="detail-value">
+                      <div className={s.trashDetails}>
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Email:</span>
+                          <span className={s.detailValue}>
                             {patient.email || 'Не указан'}
                           </span>
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Телефон:</span>
-                          <span className="detail-value">
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Телефон:</span>
+                          <span className={s.detailValue}>
                             {patient.phone || 'Не указан'}
                           </span>
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Комплексов:</span>
-                          <span className="detail-value">
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Комплексов:</span>
+                          <span className={s.detailValue}>
                             {patient.complexes_count || 0}
                           </span>
                         </div>
@@ -216,16 +216,16 @@ function Trash() {
                     </div>
                   </div>
 
-                  <div className="item-actions">
+                  <div className={s.itemActions}>
                     <button
-                      className="btn-restore"
+                      className={s.btnRestore}
                       onClick={() => handleRestorePatient(patient.id, patient.full_name)}
                     >
                       <RotateCcw size={16} />
                       Восстановить
                     </button>
                     <button
-                      className="btn-delete-permanent"
+                      className={s.btnDeletePermanent}
                       onClick={() => handleDeletePatientPermanent(patient.id, patient.full_name)}
                     >
                       <Trash2 size={16} />
@@ -242,42 +242,42 @@ function Trash() {
       {activeTab === 'complexes' && (
         <>
           {deletedComplexes.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
+            <div className={s.emptyState}>
+              <div className={s.emptyIcon}>
                 <FileText size={56} />
               </div>
               <h2>Корзина пуста</h2>
               <p>Нет удалённых комплексов</p>
             </div>
           ) : (
-            <div className="trash-grid">
+            <div className={s.trashGrid}>
               {deletedComplexes.map((complex) => (
-                <div key={complex.id} className="trash-item">
-                  <div className="trash-item-header">
-                    <div className="item-icon">
+                <div key={complex.id} className={s.trashItem}>
+                  <div className={s.trashItemHeader}>
+                    <div className={s.itemIcon}>
                       <FileText size={24} />
                     </div>
-                    <div className="item-info">
+                    <div className={s.itemInfo}>
                       <h4>{complex.patient_name}</h4>
-                      <p className="deleted-date">
+                      <p className={s.deletedDate}>
                         {complex.diagnosis_name || 'Без диагноза'}
                       </p>
-                      <div className="trash-details">
-                        <div className="detail-row">
-                          <span className="detail-label">Упражнений:</span>
-                          <span className="detail-value">
+                      <div className={s.trashDetails}>
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Упражнений:</span>
+                          <span className={s.detailValue}>
                             {complex.exercises_count || 0}
                           </span>
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Создан:</span>
-                          <span className="detail-value">
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Создан:</span>
+                          <span className={s.detailValue}>
                             {formatDate(complex.created_at)}
                           </span>
                         </div>
-                        <div className="detail-row">
-                          <span className="detail-label">Удалён:</span>
-                          <span className="detail-value">
+                        <div className={s.detailRow}>
+                          <span className={s.detailLabel}>Удалён:</span>
+                          <span className={s.detailValue}>
                             {formatDate(complex.updated_at)}
                           </span>
                         </div>
@@ -285,16 +285,16 @@ function Trash() {
                     </div>
                   </div>
 
-                  <div className="item-actions">
+                  <div className={s.itemActions}>
                     <button
-                      className="btn-restore"
+                      className={s.btnRestore}
                       onClick={() => handleRestoreComplex(complex.id, complex.patient_name)}
                     >
                       <RotateCcw size={16} />
                       Восстановить
                     </button>
                     <button
-                      className="btn-delete-permanent"
+                      className={s.btnDeletePermanent}
                       onClick={() => handleDeleteComplexPermanent(complex.id, complex.patient_name)}
                     >
                       <Trash2 size={16} />
