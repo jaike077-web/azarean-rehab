@@ -8,7 +8,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import InviteCodeModal from '../components/InviteCodeModal';
 import RehabProgramModal from '../components/RehabProgramModal';
 import useConfirm from '../hooks/useConfirm';
-import './Patients.css';
+import s from './Patients.module.css';
 import { useToast } from '../context/ToastContext';
 import { PatientsPageSkeleton } from '../components/Skeleton';
 
@@ -351,7 +351,7 @@ function Patients() {
   }
 
   return (
-    <div className="patients-page">
+    <div className={s.patientsPage}>
       <Breadcrumbs
   items={[
     {
@@ -366,53 +366,53 @@ function Patients() {
   ]}
 />
 
-<div className="back-button-wrapper">
+<div className={s.backButtonWrapper}>
   <BackButton to="/dashboard?home=1" label="На главную" />
 </div>
 
 
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <div>
           <h1>
-            <Users className="page-icon" size={22} />
+            <Users className={s.pageIcon} size={22} />
             <span>Пациенты</span>
           </h1>
           <p>Управление списком пациентов</p>
         </div>
-        <button className="btn-primary" onClick={handleOpenAddModal}>
-          <UserPlus className="btn-icon" size={18} />
+        <button className={s.btnPrimary} onClick={handleOpenAddModal}>
+          <UserPlus className={s.btnIcon} size={18} />
           <span>Добавить пациента</span>
         </button>
       </div>
 
       {patientsList.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">
+        <div className={s.emptyState}>
+          <div className={s.emptyIcon}>
             <Users size={32} />
           </div>
           <h2>Пока нет пациентов</h2>
           <p>Добавьте первого пациента, чтобы начать работу</p>
-          <button className="btn-primary" onClick={handleOpenAddModal}>
-            <UserPlus className="btn-icon" size={18} />
+          <button className={s.btnPrimary} onClick={handleOpenAddModal}>
+            <UserPlus className={s.btnIcon} size={18} />
             <span>Добавить пациента</span>
           </button>
         </div>
       ) : (
         <>
           {/* Панель управления: поиск, сортировка, вид */}
-          <div className="patients-controls">
-            <div className="search-box">
-              <Search className="search-icon" size={18} />
+          <div className={s.patientsControls}>
+            <div className={s.searchBox}>
+              <Search className={s.searchIcon} size={18} />
               <input
                 type="text"
                 placeholder="Поиск по имени, email, телефону..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
+                className={s.searchInput}
               />
               {searchQuery && (
                 <button
-                  className="clear-search"
+                  className={s.clearSearch}
                   onClick={() => setSearchQuery('')}
                 >
                   ✕
@@ -420,20 +420,20 @@ function Patients() {
               )}
             </div>
 
-            <div className="controls-group">
+            <div className={s.controlsGroup}>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="sort-select"
+                className={s.sortSelect}
               >
                 <option value="date">Сортировка: По дате</option>
                 <option value="name">Сортировка: По имени</option>
               </select>
 
-              <div className="view-toggle">
+              <div className={s.viewToggle}>
                 <button
-                  className={`view-btn ${
-                    viewMode === 'grid' ? 'active' : ''
+                  className={`${s.viewBtn} ${
+                    viewMode === 'grid' ? s.active : ''
                   }`}
                   onClick={() => setViewMode('grid')}
                   title="Сетка"
@@ -441,8 +441,8 @@ function Patients() {
                   <LayoutGrid size={18} />
                 </button>
                 <button
-                  className={`view-btn ${
-                    viewMode === 'list' ? 'active' : ''
+                  className={`${s.viewBtn} ${
+                    viewMode === 'list' ? s.active : ''
                   }`}
                   onClick={() => setViewMode('list')}
                   title="Список"
@@ -455,20 +455,20 @@ function Patients() {
 
           {/* Результаты поиска */}
           {searchQuery && (
-            <div className="search-results-info">
+            <div className={s.searchResultsInfo}>
               Найдено: {filteredPatients.length} из {patientsList.length}
             </div>
           )}
 
           {filteredPatients.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
+            <div className={s.emptyState}>
+              <div className={s.emptyIcon}>
                 <Search size={32} />
               </div>
               <h2>Ничего не найдено</h2>
               <p>Попробуйте изменить параметры поиска</p>
               <button
-                className="btn-secondary"
+                className={s.btnSecondary}
                 onClick={() => setSearchQuery('')}
               >
                 Очистить поиск
@@ -477,7 +477,7 @@ function Patients() {
           ) : (
             <div
               className={
-                viewMode === 'grid' ? 'patients-grid' : 'patients-list'
+                viewMode === 'grid' ? s.patientsGrid : s.patientsList
               }
               style={
                 viewMode === 'list'
@@ -493,7 +493,7 @@ function Patients() {
                   <div
                     key={patient.id}
                     className={
-                      viewMode === 'grid' ? 'patient-card' : 'patient-row'
+                      viewMode === 'grid' ? s.patientCard : s.patientRow
                     }
                     style={
                       viewMode === 'list'
@@ -505,21 +505,21 @@ function Patients() {
                         : {}
                     }
                   >
-                    <div className="patient-header">
+                    <div className={s.patientHeader}>
                       
-                      <div className="patient-info">
-                        <h3 className="patient-name">
+                      <div className={s.patientInfo}>
+                        <h3 className={s.patientName}>
                           {patient.full_name || 'Без имени'}
                         </h3>
                         
                       </div>
                     </div>
 
-                    <div className="patient-details">
+                    <div className={s.patientDetails}>
   {/* 1️⃣ ДАТА РОЖДЕНИЯ */}
-  <div className="detail-row">
-    <span className="detail-label">Дата рождения:</span>
-    <span className="detail-value">
+  <div className={s.detailRow}>
+    <span className={s.detailLabel}>Дата рождения:</span>
+    <span className={s.detailValue}>
       {formatDate(patient.birth_date)}
       {calculateAge(patient.birth_date) !== null && (
         <span style={{ color: '#718096', fontWeight: 400, marginLeft: '6px' }}>
@@ -537,74 +537,74 @@ function Patients() {
 
   {/* 2️⃣ ДИАГНОЗ - ОТДЕЛЬНЫЙ БЛОК */}
   {patient.diagnosis && (
-    <div className="detail-row">
-      <span className="detail-label">Диагноз:</span>
-      <span className="detail-value">{patient.diagnosis}</span>
+    <div className={s.detailRow}>
+      <span className={s.detailLabel}>Диагноз:</span>
+      <span className={s.detailValue}>{patient.diagnosis}</span>
     </div>
   )}
 
   {/* 3️⃣ КОМПЛЕКСОВ */}
-  <div className="detail-row">
-    <span className="detail-label">Комплексов:</span>
-    <span className="detail-value">
+  <div className={s.detailRow}>
+    <span className={s.detailLabel}>Комплексов:</span>
+    <span className={s.detailValue}>
       {patient.complexes_count || 0}
     </span>
   </div>
 
   {/* 4️⃣ ЗАМЕТКИ */}
   {patient.notes && viewMode === 'grid' && (
-    <div className="patient-notes">
-      <span className="detail-label">Заметки:</span>
+    <div className={s.patientNotes}>
+      <span className={s.detailLabel}>Заметки:</span>
       <p>{patient.notes}</p>
     </div>
   )}
 </div>
 
-                    <div className="patient-actions">
+                    <div className={s.patientActions}>
                       <button
-                        className="btn-secondary"
+                        className={s.btnSecondary}
                         onClick={() => handleViewComplexes(patient)}
                       >
-                        <ClipboardList className="btn-icon" size={16} />
+                        <ClipboardList className={s.btnIcon} size={16} />
                         <span>Комплексы</span>
                       </button>
                       <button
-                        className="btn-secondary"
+                        className={s.btnSecondary}
                         onClick={(event) => {
                           event.stopPropagation();
                           navigate(`/patient-progress/${patient.id}`);
                         }}
                       >
-                        <BarChart3 className="btn-icon" size={16} />
+                        <BarChart3 className={s.btnIcon} size={16} />
                         <span>Прогресс</span>
                       </button>
                       <button
-                        className="btn-secondary"
+                        className={s.btnSecondary}
                         onClick={() => setProgramPatient(patient)}
                         title="Программа реабилитации"
                       >
-                        <Activity className="btn-icon" size={16} />
+                        <Activity className={s.btnIcon} size={16} />
                         <span>Программа</span>
                       </button>
                       <button
-                        className="btn-secondary"
+                        className={s.btnSecondary}
                         onClick={() => handleOpenEditModal(patient)}
                       >
-                        <Edit2 className="btn-icon" size={16} />
+                        <Edit2 className={s.btnIcon} size={16} />
                         <span>Редактировать</span>
                       </button>
                       {!patient.is_registered && (
                         <button
-                          className="btn-secondary"
+                          className={s.btnSecondary}
                           onClick={() => setInviteCodePatient(patient)}
                           title="Сгенерировать код для регистрации пациента"
                         >
-                          <KeyRound className="btn-icon" size={16} />
+                          <KeyRound className={s.btnIcon} size={16} />
                           <span>Код приглашения</span>
                         </button>
                       )}
                       <button
-                        className="btn-delete"
+                        className={s.btnDelete}
                         onClick={() =>
                           handleDelete(patient.id, patient.full_name)
                         }
@@ -623,44 +623,44 @@ function Patients() {
       {/* Модальное окно добавления/редактирования */}
       {showModal && (
         <div
-          className="modal-overlay"
+          className={s.modalOverlay}
           onClick={() => setShowModal(false)}
         >
           <div
-            className="modal-content"
+            className={s.modalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div className={s.modalHeader}>
               <h2>
                 {editingPatient ? (
                   <>
-                    <Edit2 className="page-icon" size={20} />
+                    <Edit2 className={s.pageIcon} size={20} />
                     <span>Редактировать пациента</span>
                   </>
                 ) : (
                   <>
-                    <UserPlus className="page-icon" size={20} />
+                    <UserPlus className={s.pageIcon} size={20} />
                     <span>Добавить пациента</span>
                   </>
                 )}
               </h2>
               <button
-                className="modal-close"
+                className={s.modalClose}
                 onClick={() => setShowModal(false)}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleSubmit} className={s.modalForm}>
               {error && (
-                <div className="error-message">
-                  <AlertTriangle className="error-icon" size={16} />
+                <div className={s.errorMessage}>
+                  <AlertTriangle className={s.errorIcon} size={16} />
                   <span>{error}</span>
                 </div>
               )}
 
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="full_name">ФИО *</label>
                 <input
                   type="text"
@@ -671,15 +671,15 @@ function Patients() {
                   placeholder="Иванов Иван Иванович"
                   required
                   autoFocus
-                  className={fieldErrors.full_name ? 'input-error' : ''}
+                  className={fieldErrors.full_name ? s.inputError : ''}
                 />
                 {fieldErrors.full_name && (
-                  <span className="field-error">{fieldErrors.full_name}</span>
+                  <span className={s.fieldError}>{fieldErrors.full_name}</span>
                 )}
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
+              <div className={s.formRow}>
+                <div className={s.formGroup}>
                   <label htmlFor="email">Email</label>
                   <input
                     type="email"
@@ -688,14 +688,14 @@ function Patients() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="ivan@mail.ru"
-                    className={fieldErrors.email ? 'input-error' : ''}
+                    className={fieldErrors.email ? s.inputError : ''}
                   />
                   {fieldErrors.email && (
-                    <span className="field-error">{fieldErrors.email}</span>
+                    <span className={s.fieldError}>{fieldErrors.email}</span>
                   )}
                 </div>
 
-                <div className="form-group">
+                <div className={s.formGroup}>
                   <label htmlFor="phone">Телефон</label>
                   <input
                     type="tel"
@@ -704,10 +704,10 @@ function Patients() {
                     value={formData.phone}
                     onChange={handleInputChange}
                     placeholder="+7 (900) 123-45-67"
-                    className={fieldErrors.phone ? 'input-error' : ''}
+                    className={fieldErrors.phone ? s.inputError : ''}
                   />
                   {fieldErrors.phone ? (
-                    <span className="field-error">{fieldErrors.phone}</span>
+                    <span className={s.fieldError}>{fieldErrors.phone}</span>
                   ) : (
                     <small
                       style={{
@@ -723,7 +723,7 @@ function Patients() {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="birth_date">Дата рождения</label>
                 <input
                   type="date"
@@ -731,14 +731,14 @@ function Patients() {
                   name="birth_date"
                   value={formData.birth_date}
                   onChange={handleInputChange}
-                  className={fieldErrors.birth_date ? 'input-error' : ''}
+                  className={fieldErrors.birth_date ? s.inputError : ''}
                 />
                 {fieldErrors.birth_date && (
-                  <span className="field-error">{fieldErrors.birth_date}</span>
+                  <span className={s.fieldError}>{fieldErrors.birth_date}</span>
                 )}
               </div>
 
-              <div className="form-group">
+              <div className={s.formGroup}>
   <label htmlFor="diagnosis">Диагноз или проблема</label>
   <input
     type="text"
@@ -750,7 +750,7 @@ function Patients() {
   />
 </div>
 
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label htmlFor="notes">Заметки</label>
                 <textarea
                   id="notes"
@@ -762,16 +762,16 @@ function Patients() {
                 />
               </div>
 
-              <div className="modal-actions">
+              <div className={s.modalActions}>
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className={s.btnSecondary}
                   onClick={() => setShowModal(false)}
                   disabled={submitting}
                 >
                   Отмена
                 </button>
-                <button type="submit" className="btn-primary" disabled={submitting}>
+                <button type="submit" className={s.btnPrimary} disabled={submitting}>
                   {submitting
                     ? 'Сохранение...'
                     : editingPatient
@@ -787,34 +787,34 @@ function Patients() {
       {/* Модальное окно комплексов пациента */}
       {showComplexesModal && selectedPatient && (
         <div
-          className="modal-overlay"
+          className={s.modalOverlay}
           onClick={() => setShowComplexesModal(false)}
         >
           <div
-            className="modal-content"
+            className={s.modalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="modal-header">
+            <div className={s.modalHeader}>
               <h2>
-                <ClipboardList className="page-icon" size={20} />
+                <ClipboardList className={s.pageIcon} size={20} />
                 <span>Комплексы: {selectedPatient.full_name}</span>
               </h2>
               <button
-                className="modal-close"
+                className={s.modalClose}
                 onClick={() => setShowComplexesModal(false)}
               >
                 ✕
               </button>
             </div>
 
-            <div className="modal-form">
+            <div className={s.modalForm}>
               {patientComplexes.length === 0 ? (
                 <div
-                  className="empty-state"
+                  className={s.emptyState}
                   style={{ padding: '40px 20px' }}
                 >
                   <div
-                    className="empty-icon"
+                    className={s.emptyIcon}
                     style={{ fontSize: '48px' }}
                   >
                     <ClipboardList size={32} />
@@ -822,11 +822,11 @@ function Patients() {
                   <p>У этого пациента пока нет комплексов</p>
                 </div>
               ) : (
-                <div className="complexes-list">
+                <div className={s.complexesList}>
                   {patientComplexes.map((complex) => (
                     <div
                       key={complex.id}
-                      className="complex-item clickable"
+                      className={`${s.complexItem} ${s.clickable}`}
                       onClick={() => {
                         window.open(
                           `/progress/${complex.id}`,
@@ -834,20 +834,20 @@ function Patients() {
                         );
                       }}
                     >
-                      <div className="complex-item-header">
+                      <div className={s.complexItemHeader}>
                         <h4>
                           {complex.diagnosis_name || 'Без диагноза'}
                         </h4>
-                        <span className="complex-date">
+                        <span className={s.complexDate}>
                           {formatDate(complex.created_at)}
                         </span>
                       </div>
-                      <div className="complex-item-details">
+                      <div className={s.complexItemDetails}>
                         <span>
                           Упражнений:{' '}
                           {complex.exercises_count || 0}
                         </span>
-                        <span className="view-progress-hint">
+                        <span className={s.viewProgressHint}>
                           <Eye
                             size={16}
                             style={{ marginRight: 6 }}
