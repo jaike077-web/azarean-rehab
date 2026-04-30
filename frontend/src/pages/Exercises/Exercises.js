@@ -12,7 +12,7 @@ import ExerciseFilters from './components/ExerciseFilters';
 import ExerciseCard from './components/ExerciseCard';
 import ExerciseModal from './components/ExerciseModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
-import './Exercises.css';
+import s from './Exercises.module.css';
 import { Skeleton } from '../../components/Skeleton';
 import ExerciseCardSkeleton from '../../components/skeletons/ExerciseCardSkeleton';
 
@@ -32,7 +32,7 @@ function Exercises() {
     position: '',
     rehab_phase: '',
     sort_by: 'created_at',
-    sort_order: 'desc'
+    sort_order: s.desc
   });
 
   // Модалки
@@ -199,23 +199,23 @@ function Exercises() {
 
   if (loading) {
     return (
-      <div className="exercises-page">
-        <div className="exercises-page-header">
-          <div className="header-left">
+      <div className={s.exercisesPage}>
+        <div className={s.exercisesPageHeader}>
+          <div className={s.headerLeft}>
             <Skeleton width="180px" height="32px" />
             <Skeleton width="240px" height="18px" style={{ marginTop: '10px' }} />
           </div>
-          <div className="header-actions">
+          <div className={s.headerActions}>
             <Skeleton width="140px" height="42px" borderRadius="10px" />
           </div>
         </div>
-        <div className="exercises-content">
-          <div className="filters-row">
+        <div className={s.exercisesContent}>
+          <div className={s.filtersRow}>
             <Skeleton width="220px" height="40px" borderRadius="8px" />
             <Skeleton width="160px" height="40px" borderRadius="8px" />
             <Skeleton width="160px" height="40px" borderRadius="8px" />
           </div>
-          <div className="exercises-grid">
+          <div className={s.exercisesGrid}>
             {Array.from({ length: 8 }).map((_, index) => (
               <ExerciseCardSkeleton key={index} />
             ))}
@@ -227,23 +227,23 @@ function Exercises() {
 
   if (error) {
     return (
-      <div className="exercises-page">
-        <div className="exercises-page-header">
-          <div className="header-left">
-            <button className="back-button" onClick={() => navigate('/dashboard')}>
+      <div className={s.exercisesPage}>
+        <div className={s.exercisesPageHeader}>
+          <div className={s.headerLeft}>
+            <button className={s.backButton} onClick={() => navigate('/dashboard')}>
               <ArrowLeft size={20} />
               Назад в меню
             </button>
-            <h1 className="page-title">Библиотека упражнений</h1>
+            <h1 className={s.pageTitle}>Библиотека упражнений</h1>
           </div>
         </div>
-        <div className="exercises-content">
-          <div className="exercises-error">
-            <div className="error-icon">
+        <div className={s.exercisesContent}>
+          <div className={s.exercisesError}>
+            <div className={s.errorIcon}>
               <AlertTriangle size={32} />
             </div>
-            <h2 className="error-title">Ошибка загрузки</h2>
-            <p className="error-message">{error}</p>
+            <h2 className={s.errorTitle}>Ошибка загрузки</h2>
+            <p className={s.errorMessage}>{error}</p>
           </div>
         </div>
       </div>
@@ -251,18 +251,18 @@ function Exercises() {
   }
 
   return (
-    <div className="exercises-page">
+    <div className={s.exercisesPage}>
       {/* Header */}
-      <div className="exercises-page-header">
-        <div className="header-left">
-          <button className="back-button" onClick={() => navigate('/dashboard')}>
+      <div className={s.exercisesPageHeader}>
+        <div className={s.headerLeft}>
+          <button className={s.backButton} onClick={() => navigate('/dashboard')}>
             <ArrowLeft size={20} />
             Назад в меню
           </button>
-          <h1 className="page-title">Библиотека упражнений</h1>
+          <h1 className={s.pageTitle}>Библиотека упражнений</h1>
         </div>
-        <div className="header-actions">
-          <button className="btn-primary" onClick={handleCreate}>
+        <div className={s.headerActions}>
+          <button className={s.btnPrimary} onClick={handleCreate}>
             <Plus size={20} />
             Создать упражнение
           </button>
@@ -270,7 +270,7 @@ function Exercises() {
       </div>
 
       {/* Content */}
-      <div className="exercises-content">
+      <div className={s.exercisesContent}>
         {/* Фильтры */}
         <ExerciseFilters
           onFilterChange={handleFilterChange}
@@ -281,31 +281,31 @@ function Exercises() {
         {/* Упражнения */}
         {exercisesList.length === 0 ? (
           // Пусто совсем
-          <div className="exercises-empty">
-            <div className="empty-icon">
+          <div className={s.exercisesEmpty}>
+            <div className={s.emptyIcon}>
               <Inbox size={56} />
             </div>
-            <h2 className="empty-title">Упражнений пока нет</h2>
-            <p className="empty-message">
+            <h2 className={s.emptyTitle}>Упражнений пока нет</h2>
+            <p className={s.emptyMessage}>
               Создайте первое упражнение для библиотеки
             </p>
-            <button className="btn-primary" onClick={handleCreate}>
+            <button className={s.btnPrimary} onClick={handleCreate}>
               <Plus size={20} />
               Создать первое упражнение
             </button>
           </div>
         ) : filteredExercises.length === 0 ? (
           // Нет результатов фильтрации
-          <div className="no-results">
-            <div className="no-results-icon">
+          <div className={s.noResults}>
+            <div className={s.noResultsIcon}>
               <Search size={32} />
             </div>
-            <h3 className="no-results-title">Ничего не найдено</h3>
-            <p className="no-results-message">
+            <h3 className={s.noResultsTitle}>Ничего не найдено</h3>
+            <p className={s.noResultsMessage}>
               Попробуйте изменить параметры поиска
             </p>
             <button 
-              className="btn-clear-filters"
+              className={s.btnClearFilters}
               onClick={() => handleFilterChange({})}
             >
               Сбросить фильтры
@@ -313,7 +313,7 @@ function Exercises() {
           </div>
         ) : (
           // Сетка карточек
-          <div className="exercises-grid">
+          <div className={s.exercisesGrid}>
             {filteredExercises.map(exercise => (
               <ExerciseCard
                 key={exercise.id}

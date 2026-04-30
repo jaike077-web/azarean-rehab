@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
-import './DeleteConfirmModal.css';
+import s from './DeleteConfirmModal.module.css';
 
 function DeleteConfirmModal({ title, onConfirm, onCancel }) {
   const handleOverlayClick = (e) => {
@@ -13,24 +13,24 @@ function DeleteConfirmModal({ title, onConfirm, onCancel }) {
   };
 
   return (
-      <div className="modal-overlay" onClick={handleOverlayClick}>
-      <div className="delete-confirm-modal">
-        <div className="modal-icon" aria-hidden="true">
+      <div className={s.modalOverlay} onClick={handleOverlayClick}>
+      <div className={s.deleteConfirmModal}>
+        <div className={s.modalIcon} aria-hidden="true">
           <AlertTriangle size={48} />
         </div>
         <h2>Удалить упражнение?</h2>
-        <p className="modal-text">
+        <p className={s.modalText}>
           Вы уверены, что хотите удалить упражнение<br />
           <strong>"{title}"</strong>?
         </p>
-        <p className="modal-hint">
+        <p className={s.modalHint}>
           Это действие нельзя отменить. Упражнение будет архивировано.
         </p>
-        <div className="modal-actions">
-          <button className="btn-cancel" onClick={onCancel}>
+        <div className={s.modalActions}>
+          <button className={s.btnCancel} onClick={onCancel}>
             Отмена
           </button>
-          <button className="btn-confirm" onClick={onConfirm}>
+          <button className={s.btnConfirm} onClick={onConfirm}>
             Удалить
           </button>
         </div>

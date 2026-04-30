@@ -20,7 +20,7 @@ import {
   EXERCISE_TYPES,
   EQUIPMENT_OPTIONS
 } from '../../../utils/exerciseConstants';
-import './ExerciseCard.css';
+import s from './ExerciseCard.module.css';
 
 // Вспомогательные функции вынесены за пределы компонента для оптимизации
 const getVideoThumbnail = (exercise) => {
@@ -87,17 +87,17 @@ const getTypeIcon = (type) => {
 
 const getDifficultyBadge = (level) => {
   const config = {
-    1: { label: 'Легко', className: 'difficulty-easy' },
-    2: { label: 'Умеренно', className: 'difficulty-moderate' },
-    3: { label: 'Средне', className: 'difficulty-medium' },
-    4: { label: 'Сложно', className: 'difficulty-hard' },
-    5: { label: 'Очень сложно', className: 'difficulty-very-hard' }
+    1: { label: 'Легко', className: s.difficultyEasy },
+    2: { label: 'Умеренно', className: s.difficultyModerate },
+    3: { label: 'Средне', className: s.difficultyMedium },
+    4: { label: 'Сложно', className: s.difficultyHard },
+    5: { label: 'Очень сложно', className: s.difficultyVeryHard }
   };
 
   const { label, className } = config[level] || config[2];
 
   return (
-    <span className={`difficulty-badge ${className}`}>
+    <span className={`${s.difficultyBadge} ${className}`}>
       {label}
     </span>
   );
@@ -105,25 +105,25 @@ const getDifficultyBadge = (level) => {
 
 const getRehabPhaseBadge = (phase) => {
   const phases = {
-    ACUTE: { label: 'Острая', className: 'phase-acute' },
-    SUBACUTE: { label: 'Подострая', className: 'phase-subacute' },
-    CHRONIC: { label: 'Хроническая', className: 'phase-chronic' },
-    acute: { label: 'Острая', className: 'phase-acute' },
-    subacute: { label: 'Подострая', className: 'phase-subacute' },
-    chronic: { label: 'Хроническая', className: 'phase-chronic' }
+    ACUTE: { label: 'Острая', className: s.phaseAcute },
+    SUBACUTE: { label: 'Подострая', className: s.phaseSubacute },
+    CHRONIC: { label: 'Хроническая', className: s.phaseChronic },
+    acute: { label: 'Острая', className: s.phaseAcute },
+    subacute: { label: 'Подострая', className: s.phaseSubacute },
+    chronic: { label: 'Хроническая', className: s.phaseChronic }
   };
 
   const config = phases[phase] || phases.SUBACUTE;
 
   return (
-    <span className={`rehab-badge ${config.className}`}>
+    <span className={`${s.rehabBadge} ${config.className}`}>
       {config.label}
     </span>
   );
 };
 
 const getEquipmentIcon = () => (
-  <span className="equipment-icon" aria-hidden="true">
+  <span className={s.equipmentIcon} aria-hidden="true">
     <Dumbbell size={14} />
   </span>
 );
@@ -152,9 +152,9 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
   const thumbnail = getVideoThumbnail(exercise);
 
   return (
-    <div className="exercise-card" onClick={handleCardClick}>
+    <div className={s.exerciseCard} onClick={handleCardClick}>
       {/* Превью видео */}
-      <div className="card-thumbnail">
+      <div className={s.cardThumbnail}>
         {thumbnail ? (
           <img 
             src={thumbnail} 
@@ -167,10 +167,10 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
           />
         ) : null}
         <div 
-          className="card-thumbnail-placeholder"
-          style={{ display: thumbnail ? 'none' : 'flex' }}
+          className={s.cardThumbnailPlaceholder}
+          style={{ display: thumbnail ? s.none : s.flex }}
         >
-          <span className="placeholder-icon">
+          <span className={s.placeholderIcon}>
             {getBodyRegionIcon(exercise.body_region)}
           </span>
         </div>
@@ -179,9 +179,9 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
         {getDifficultyBadge(exercise.difficulty_level)}
 
         {/* Overlay с кнопками */}
-        <div className="card-overlay">
+        <div className={s.cardOverlay}>
           <button
-            className="btn-card-action btn-view"
+            className={`${s.btnCardAction} ${s.btnView}`}
             onClick={handleCardClick}
             title="Открыть"
           >
@@ -189,7 +189,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
           </button>
           {onEdit && (
             <button
-              className="btn-card-action btn-edit"
+              className={`${s.btnCardAction} ${s.btnEdit}`}
               onClick={handleEdit}
               title="Редактировать"
             >
@@ -198,7 +198,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
           )}
           {onDelete && (
             <button
-              className="btn-card-action btn-delete"
+              className={`${s.btnCardAction} ${s.btnDelete}`}
               onClick={handleDelete}
               title="Удалить"
             >
@@ -209,24 +209,24 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
       </div>
 
       {/* Информация */}
-      <div className="card-content">
+      <div className={s.cardContent}>
         {/* Заголовок */}
-        <h3 className="card-title">
+        <h3 className={s.cardTitle}>
           {exercise.short_title || exercise.title}
         </h3>
 
         {/* Метаданные */}
-        <div className="card-meta">
-          <span className="meta-item">
-            <span className="meta-icon">
+        <div className={s.cardMeta}>
+          <span className={s.metaItem}>
+            <span className={s.metaIcon}>
               {getBodyRegionIcon(exercise.body_region)}
             </span>
             {BODY_REGIONS[exercise.body_region] || exercise.body_region || 'Не указано'}
           </span>
           
           {exercise.exercise_type && (
-            <span className="meta-item">
-              <span className="meta-icon">
+            <span className={s.metaItem}>
+              <span className={s.metaIcon}>
                 {getTypeIcon(exercise.exercise_type)}
               </span>
               {EXERCISE_TYPES[exercise.exercise_type]}
@@ -236,7 +236,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
 
         {/* Оборудование */}
         {exercise.equipment && exercise.equipment.length > 0 && (
-          <div className="card-equipment">
+          <div className={s.cardEquipment}>
             {getEquipmentIcon()}
             {Array.isArray(exercise.equipment) 
               ? exercise.equipment.map(eq => EQUIPMENT_OPTIONS[eq] || eq).join(', ')
@@ -247,17 +247,17 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
 
         {/* Мышечные группы */}
         {exercise.muscle_groups && exercise.muscle_groups.length > 0 && (
-          <div className="card-muscles">
+          <div className={s.cardMuscles}>
             {exercise.muscle_groups.slice(0, 3).map((muscle, index) => (
               <span 
                 key={muscle.id || index} 
-                className={`muscle-tag ${muscle.is_primary ? 'primary' : 'secondary'}`}
+                className={`${s.muscleTag} ${muscle.is_primary ? s.primary : s.secondary}`}
               >
                 {muscle.name_ru}
               </span>
             ))}
             {exercise.muscle_groups.length > 3 && (
-              <span className="muscle-tag more">
+              <span className={`${s.muscleTag} ${s.more}`}>
                 +{exercise.muscle_groups.length - 3}
               </span>
             )}
@@ -266,14 +266,14 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
 
         {/* Фазы реабилитации */}
         {exercise.rehab_phases && exercise.rehab_phases.length > 0 && (
-          <div className="card-phases">
+          <div className={s.cardPhases}>
             {exercise.rehab_phases.slice(0, 2).map((phase, index) => (
               <React.Fragment key={index}>
                 {getRehabPhaseBadge(phase)}
               </React.Fragment>
             ))}
             {exercise.rehab_phases.length > 2 && (
-              <span className="phase-tag more">
+              <span className={`${s.phaseTag} ${s.more}`}>
                 +{exercise.rehab_phases.length - 2}
               </span>
             )}
@@ -282,12 +282,12 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
       </div>
 
       {/* Footer */}
-      <div className="card-footer">
-        <span className="card-date">
+      <div className={s.cardFooter}>
+        <span className={s.cardDate}>
           {exercise.created_at ? formatDateNumeric(exercise.created_at) : ''}
         </span>
         {exercise.is_unilateral && (
-          <span className="unilateral-badge" title="Одностороннее">
+          <span className={s.unilateralBadge} title="Одностороннее">
             <Scale size={16} />
           </span>
         )}

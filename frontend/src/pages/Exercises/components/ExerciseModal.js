@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi } from '../../../services/api';
-import './ExerciseModal.css';
+import s from './ExerciseModal.module.css';
 
 const ExerciseModal = ({ exercise, onClose, onSave }) => {
   // ========================================
@@ -201,72 +201,72 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   // ========================================
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={s.modalOverlay} onClick={onClose}>
       <div
-        className="modal-content exercise-modal"
+        className={`${s.modalContent} ${s.exerciseModal}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
-        <div className="modal-header">
+        <div className={s.modalHeader}>
           <h2>{exercise ? 'Редактировать упражнение' : 'Новое упражнение'}</h2>
-          <button className="close-btn" onClick={onClose} aria-label="Закрыть">
+          <button className={s.closeBtn} onClick={onClose} aria-label="Закрыть">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className="modal-body">
+          <div className={s.modalBody}>
             {/* ОБЯЗАТЕЛЬНЫЕ ПОЛЯ */}
-            <div className="form-section required-section">
-              <h3 className="section-title">Обязательные поля</h3>
-              <p className="section-description">
-                Поля, отмеченные <span className="required">*</span>, обязательны
+            <div className={`${s.formSection} ${s.requiredSection}`}>
+              <h3 className={s.sectionTitle}>Обязательные поля</h3>
+              <p className={s.sectionDescription}>
+                Поля, отмеченные <span className={s.required}>*</span>, обязательны
                 для заполнения
               </p>
 
               {/* Название упражнения */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>
-                  Название упражнения <span className="required">*</span>
+                  Название упражнения <span className={s.required}>*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Например: Маятник"
-                  className={errors.title ? 'error' : ''}
+                  className={errors.title ? s.error : ''}
                 />
                 {errors.title && (
-                  <span className="error-message">{errors.title}</span>
+                  <span className={s.errorMessage}>{errors.title}</span>
                 )}
               </div>
 
               {/* Ссылка на видео */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>
-                  Ссылка на видео <span className="required">*</span>
+                  Ссылка на видео <span className={s.required}>*</span>
                 </label>
                 <input
                   type="url"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
                   placeholder="https://kinescope.io/..."
-                  className={errors.videoUrl ? 'error' : ''}
+                  className={errors.videoUrl ? s.error : ''}
                 />
                 {errors.videoUrl && (
-                  <span className="error-message">{errors.videoUrl}</span>
+                  <span className={s.errorMessage}>{errors.videoUrl}</span>
                 )}
               </div>
             </div>
 
             {/* ОСНОВНАЯ ИНФОРМАЦИЯ (опционально) */}
-            <div className="form-section">
-              <h3 className="section-title">
-                Основная информация <span className="optional">(необязательно)</span>
+            <div className={s.formSection}>
+              <h3 className={s.sectionTitle}>
+                Основная информация <span className={s.optional}>(необязательно)</span>
               </h3>
 
               {/* Короткое название */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Короткое название</label>
                 <input
                   type="text"
@@ -277,9 +277,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               </div>
 
               {/* Описание - MARKDOWN EDITOR */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Описание</label>
-                <p className="field-hint">
+                <p className={s.fieldHint}>
                   Поддерживает форматирование: **жирный**, *курсив*, списки, заголовки
                 </p>
                 <div data-color-mode="light">
@@ -296,7 +296,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               </div>
 
               {/* Ссылка на превью */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Ссылка на превью (thumbnail)</label>
                 <input
                   type="url"
@@ -308,14 +308,14 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
             </div>
 
             {/* КЛАССИФИКАЦИЯ (опционально) */}
-            <div className="form-section">
-              <h3 className="section-title">
-                Классификация <span className="optional">(необязательно)</span>
+            <div className={s.formSection}>
+              <h3 className={s.sectionTitle}>
+                Классификация <span className={s.optional}>(необязательно)</span>
               </h3>
 
-              <div className="form-row">
+              <div className={s.formRow}>
                 {/* Тип упражнения */}
-                <div className="form-group">
+                <div className={s.formGroup}>
                   <label>Тип упражнения</label>
                   <select
                     value={exerciseType}
@@ -332,7 +332,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                 </div>
 
                 {/* Регион тела */}
-                <div className="form-group">
+                <div className={s.formGroup}>
                   <label>Регион тела</label>
                   <select
                     value={bodyRegion}
@@ -352,9 +352,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               </div>
 
               {/* Сложность */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Уровень сложности: {difficultyLevel}</label>
-                <div className="difficulty-slider">
+                <div className={s.difficultySlider}>
                   <input
                     type="range"
                     min="1"
@@ -364,7 +364,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       setDifficultyLevel(parseInt(e.target.value, 10))
                     }
                   />
-                  <div className="difficulty-labels">
+                  <div className={s.difficultyLabels}>
                     <span>1 - Легко</span>
                     <span>3 - Средне</span>
                     <span>5 - Сложно</span>
@@ -374,18 +374,18 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
             </div>
 
             {/* МНОЖЕСТВЕННЫЙ ВЫБОР */}
-            <div className="form-section">
-              <h3 className="section-title">
+            <div className={s.formSection}>
+              <h3 className={s.sectionTitle}>
                 Параметры выполнения{' '}
-                <span className="optional">(выберите все подходящие)</span>
+                <span className={s.optional}>(выберите все подходящие)</span>
               </h3>
 
               {/* Оборудование */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Оборудование (можно выбрать несколько)</label>
-                <div className="checkbox-group">
+                <div className={s.checkboxGroup}>
                   {EQUIPMENT_OPTIONS.map((option) => (
-                    <label key={option.value} className="checkbox-label">
+                    <label key={option.value} className={s.checkboxLabel}>
                       <input
                         type="checkbox"
                         checked={equipment.includes(option.value)}
@@ -398,13 +398,13 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   ))}
                 </div>
                 {equipment.length > 0 && (
-                  <div className="selected-tags">
+                  <div className={s.selectedTags}>
                     {equipment.map((item) => {
                       const opt = EQUIPMENT_OPTIONS.find(
                         (o) => o.value === item
                       );
                       return (
-                        <span key={item} className="tag">
+                        <span key={item} className={s.tag}>
                           {opt?.label}
                           <button
                             type="button"
@@ -427,11 +427,11 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               </div>
 
               {/* Положение */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Положение тела (можно выбрать несколько)</label>
-                <div className="checkbox-group">
+                <div className={s.checkboxGroup}>
                   {POSITION_OPTIONS.map((option) => (
-                    <label key={option.value} className="checkbox-label">
+                    <label key={option.value} className={s.checkboxLabel}>
                       <input
                         type="checkbox"
                         checked={position.includes(option.value)}
@@ -444,13 +444,13 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   ))}
                 </div>
                 {position.length > 0 && (
-                  <div className="selected-tags">
+                  <div className={s.selectedTags}>
                     {position.map((item) => {
                       const opt = POSITION_OPTIONS.find(
                         (o) => o.value === item
                       );
                       return (
-                        <span key={item} className="tag">
+                        <span key={item} className={s.tag}>
                           {opt?.label}
                           <button
                             type="button"
@@ -469,11 +469,11 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               </div>
 
               {/* Фазы реабилитации */}
-              <div className="form-group">
+              <div className={s.formGroup}>
                 <label>Фазы реабилитации (можно выбрать несколько)</label>
-                <div className="checkbox-group">
+                <div className={s.checkboxGroup}>
                   {REHAB_PHASE_OPTIONS.map((option) => (
-                    <label key={option.value} className="checkbox-label">
+                    <label key={option.value} className={s.checkboxLabel}>
                       <input
                         type="checkbox"
                         checked={rehabPhases.includes(option.value)}
@@ -490,13 +490,13 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   ))}
                 </div>
                 {rehabPhases.length > 0 && (
-                  <div className="selected-tags">
+                  <div className={s.selectedTags}>
                     {rehabPhases.map((item) => {
                       const opt = REHAB_PHASE_OPTIONS.find(
                         (o) => o.value === item
                       );
                       return (
-                        <span key={item} className="tag">
+                        <span key={item} className={s.tag}>
                           {opt?.label}
                           <button
                             type="button"
@@ -520,10 +520,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
             </div>
 
             {/* РАСШИРЕННЫЕ ПОЛЯ (скрываемые) */}
-            <div className="form-section">
+            <div className={s.formSection}>
               <button
                 type="button"
-                className="toggle-advanced-btn"
+                className={s.toggleAdvancedBtn}
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
                 {showAdvanced ? (
@@ -532,13 +532,13 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   <ChevronRight size={16} />
                 )}{' '}
                 Расширенные настройки{' '}
-                <span className="optional">(инструкции, противопоказания)</span>
+                <span className={s.optional}>(инструкции, противопоказания)</span>
               </button>
 
               {showAdvanced && (
-                <div className="advanced-fields">
+                <div className={s.advancedFields}>
                   {/* Инструкции */}
-                  <div className="form-group">
+                  <div className={s.formGroup}>
                     <label>Инструкции по выполнению</label>
                     <textarea
                       value={instructions}
@@ -549,7 +549,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   </div>
 
                   {/* Подсказки */}
-                  <div className="form-group">
+                  <div className={s.formGroup}>
                     <label>Вербальные подсказки (cues)</label>
                     <textarea
                       value={cues}
@@ -560,7 +560,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   </div>
 
                   {/* Советы */}
-                  <div className="form-group">
+                  <div className={s.formGroup}>
                     <label>Советы инструктору</label>
                     <textarea
                       value={tips}
@@ -571,7 +571,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   </div>
 
                   {/* Противопоказания */}
-                  <div className="form-group">
+                  <div className={s.formGroup}>
                     <label>Противопоказания</label>
                     <textarea
                       value={contraindications}
@@ -586,13 +586,13 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
           </div>
 
           {/* FOOTER */}
-          <div className="modal-footer">
+          <div className={s.modalFooter}>
             {errors.form && (
-              <div className="form-error-message">{errors.form}</div>
+              <div className={s.formErrorMessage}>{errors.form}</div>
             )}
             <button
               type="button"
-              className="btn-secondary"
+              className={s.btnSecondary}
               onClick={onClose}
               disabled={isSubmitting}
             >
@@ -600,7 +600,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="btn-primary"
+              className={s.btnPrimary}
               disabled={isSubmitting}
             >
               {isSubmitting
@@ -626,7 +626,7 @@ const EQUIPMENT_OPTIONS = [
   { value: 'dumbbell', label: 'Гантели' },
   { value: 'barbell', label: 'Штанга' },
   { value: 'medicine-ball', label: 'Медицинский мяч' },
-  { value: 'trx', label: 'TRX' },
+  { value: 'trx', label: s.TRX },
   { value: 'foam-roller', label: 'Ролик' },
   { value: 'swiss-ball', label: 'Фитбол' },
   { value: 'kettlebell', label: 'Гиря' },

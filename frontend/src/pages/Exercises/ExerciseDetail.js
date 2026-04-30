@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { exercises } from '../../services/api';
 import MDEditor from '@uiw/react-md-editor';
 import { AlertTriangle, ArrowLeft, Footprints, Heart, Move, User, Video, Zap } from 'lucide-react';
-import './ExerciseDetail.css';
+import s from './ExerciseDetail.module.css';
 
 import {
   getBodyRegionLabel,
@@ -110,14 +110,14 @@ const ExerciseDetail = () => {
   };
 
   const renderChips = (items, getLabelFn, colorFn) => {
-    if (!items || items.length === 0) return <span className="muted-text">Не указано</span>;
+    if (!items || items.length === 0) return <span className={s.mutedText}>Не указано</span>;
 
     return (
-      <div className="chips-row">
+      <div className={s.chipsRow}>
         {items.map((value) => (
           <span
             key={value}
-            className="chip chip-soft"
+            className={`${s.chip} ${s.chipSoft}`}
             style={colorFn ? { borderColor: colorFn(value), color: colorFn(value) } : {}}
           >
             {getLabelFn ? getLabelFn(value) : value}
@@ -130,8 +130,8 @@ const ExerciseDetail = () => {
   const renderVideo = (url) => {
     if (!url) {
       return (
-        <div className="video-placeholder">
-          <div className="video-placeholder-icon" aria-hidden="true">
+        <div className={s.videoPlaceholder}>
+          <div className={s.videoPlaceholderIcon} aria-hidden="true">
             <Video size={32} />
           </div>
           <p>Видео не прикреплено</p>
@@ -141,11 +141,11 @@ const ExerciseDetail = () => {
 
     // Простейшая попытка встроить
     return (
-      <div className="video-frame-wrapper">
+      <div className={s.videoFrameWrapper}>
         <iframe
           src={url}
           title="Видео упражнения"
-          className="video-frame"
+          className={s.videoFrame}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         />
       </div>
@@ -158,9 +158,9 @@ const ExerciseDetail = () => {
 
   if (loading) {
     return (
-      <div className="exercise-detail-page">
-        <div className="exercise-detail-inner loading-state">
-          <div className="loader-spinner" />
+      <div className={s.exerciseDetailPage}>
+        <div className={`${s.exerciseDetailInner} ${s.loadingState}`}>
+          <div className={s.loaderSpinner} />
           <p>Загружаем упражнение...</p>
         </div>
       </div>
@@ -169,15 +169,15 @@ const ExerciseDetail = () => {
 
   if (error || !exercise) {
     return (
-      <div className="exercise-detail-page">
-        <div className="exercise-detail-inner error-state">
-          <div className="error-icon" aria-hidden="true">
+      <div className={s.exerciseDetailPage}>
+        <div className={`${s.exerciseDetailInner} ${s.errorState}`}>
+          <div className={s.errorIcon} aria-hidden="true">
             <AlertTriangle size={32} />
           </div>
           <h2>Не удалось загрузить упражнение</h2>
-          <p className="muted-text">{error || 'Неизвестная ошибка'}</p>
+          <p className={s.mutedText}>{error || 'Неизвестная ошибка'}</p>
           <button
-            className="btn-primary-outline"
+            className={s.btnPrimaryOutline}
             onClick={() => navigate('/exercises')}
           >
             <ArrowLeft size={16} />
@@ -217,12 +217,12 @@ const ExerciseDetail = () => {
   const regionIcon = body_region ? getBodyRegionIcon(body_region) : null;
 
   return (
-    <div className="exercise-detail-page">
-      <div className="exercise-detail-inner">
+    <div className={s.exerciseDetailPage}>
+      <div className={s.exerciseDetailInner}>
         {/* HEADER */}
-        <div className="exercise-detail-header">
+        <div className={s.exerciseDetailHeader}>
           <button
-            className="back-button"
+            className={s.backButton}
             type="button"
             onClick={() => navigate('/exercises')}
           >
@@ -230,65 +230,60 @@ const ExerciseDetail = () => {
             Назад к библиотеке
           </button>
 
-          <div className="exercise-breadcrumb">
-            <span className="crumb">Библиотека упражнений</span>
-            <span className="crumb-separator">/</span>
-            <span className="crumb-active">
+          <div className={s.exerciseBreadcrumb}>
+            <span className={s.crumb}>Библиотека упражнений</span>
+            <span className={s.crumbSeparator}>/</span>
+            <span className={s.crumbActive}>
               {short_title || title}
             </span>
           </div>
         </div>
 
         {/* MAIN CARD LAYOUT */}
-        <div className="exercise-detail-grid">
+        <div className={s.exerciseDetailGrid}>
           {/* Левая колонка — видео + ключевые параметры */}
-          <section className="exercise-main-card">
-            <div className="exercise-main-header">
-              <div className="title-block">
-                <div className="title-row">
+          <section className={s.exerciseMainCard}>
+            <div className={s.exerciseMainHeader}>
+              <div className={s.titleBlock}>
+                <div className={s.titleRow}>
                   {regionIcon && (
-                    <span className="region-icon">
+                    <span className={s.regionIcon}>
                       {regionIcon}
                     </span>
                   )}
-                  <h1 className="exercise-title">
+                  <h1 className={s.exerciseTitle}>
                     {title}
                   </h1>
                 </div>
                 {short_title && (
-                  <p className="exercise-subtitle">
+                  <p className={s.exerciseSubtitle}>
                     {short_title}
                   </p>
                 )}
               </div>
 
-              <div className="pill-row">
-                <span className="pill pill-region">
-                  {regionIcon && <span className="pill-icon">{regionIcon}</span>}
+              <div className={s.pillRow}>
+                <span className={`${s.pill} ${s.pillRegion}`}>
+                  {regionIcon && <span className={s.pillIcon}>{regionIcon}</span>}
                   {regionLabel}
                 </span>
-                <span className="pill pill-type">
+                <span className={`${s.pill} ${s.pillType}`}>
                   {typeLabel}
                 </span>
               </div>
 
-              <div className="difficulty-badge">
-                <div className="difficulty-label">
+              <div className={s.difficultyBadge}>
+                <div className={s.difficultyLabel}>
                   Сложность:
                   <span style={{ color: difficultyColor, marginLeft: 6 }}>
                     {difficultyLabel}
                   </span>
                 </div>
-                <div className="difficulty-meter">
+                <div className={s.difficultyMeter}>
                   {[1, 2, 3, 4, 5].map((lvl) => (
                     <span
                       key={lvl}
-                      className={
-                        'difficulty-dot' +
-                        (difficulty_level && lvl <= difficulty_level
-                          ? ' difficulty-dot-active'
-                          : '')
-                      }
+                      className={`${s.difficultyDot} ${difficulty_level && lvl <= difficulty_level ? s.difficultyDotActive : ''}`}
                       style={
                         difficulty_level && lvl <= difficulty_level
                           ? { backgroundColor: difficultyColor }
@@ -300,13 +295,13 @@ const ExerciseDetail = () => {
               </div>
             </div>
 
-            <div className="exercise-video-card">
+            <div className={s.exerciseVideoCard}>
               {thumbnail_url && (
-                <div className="thumbnail-overlay">
+                <div className={s.thumbnailOverlay}>
                   <img
                     src={thumbnail_url}
                     alt={title}
-                    className="thumbnail-image"
+                    className={s.thumbnailImage}
                     onError={(e) => {
                       e.target.style.display = 'none';
                     }}
@@ -317,9 +312,9 @@ const ExerciseDetail = () => {
             </div>
 
             {description && (
-              <div className="exercise-section">
-                <h3 className="section-title">Описание</h3>
-                <div className="section-text markdown-content" data-color-mode="light">
+              <div className={s.exerciseSection}>
+                <h3 className={s.sectionTitle}>Описание</h3>
+                <div className={`${s.sectionText} ${s.markdownContent}`} data-color-mode="light">
                   <MDEditor.Markdown source={description} />
                 </div>
               </div>
@@ -327,28 +322,28 @@ const ExerciseDetail = () => {
           </section>
 
           {/* Правая колонка — карточки с деталями */}
-          <section className="exercise-side-column">
+          <section className={s.exerciseSideColumn}>
             {/* Параметры выполнения */}
-            <div className="info-card">
-              <h3 className="card-title">Параметры выполнения</h3>
+            <div className={s.infoCard}>
+              <h3 className={s.cardTitle}>Параметры выполнения</h3>
 
-              <div className="info-row">
-                <span className="info-label">Оборудование</span>
-                <div className="info-value">
+              <div className={s.infoRow}>
+                <span className={s.infoLabel}>Оборудование</span>
+                <div className={s.infoValue}>
                   {renderChips(equipment, getEquipmentLabel)}
                 </div>
               </div>
 
-              <div className="info-row">
-                <span className="info-label">Положение тела</span>
-                <div className="info-value">
+              <div className={s.infoRow}>
+                <span className={s.infoLabel}>Положение тела</span>
+                <div className={s.infoValue}>
                   {renderChips(position, getPositionLabel)}
                 </div>
               </div>
 
-              <div className="info-row">
-                <span className="info-label">Фазы реабилитации</span>
-                <div className="info-value">
+              <div className={s.infoRow}>
+                <span className={s.infoLabel}>Фазы реабилитации</span>
+                <div className={s.infoValue}>
                   {renderChips(
                     rehab_phases,
                     getRehabPhaseLabel,
@@ -360,31 +355,31 @@ const ExerciseDetail = () => {
 
             {/* Инструкции и подсказки */}
             {(instructions || cues || tips) && (
-              <div className="info-card">
-                <h3 className="card-title">Инструкции и подсказки</h3>
+              <div className={s.infoCard}>
+                <h3 className={s.cardTitle}>Инструкции и подсказки</h3>
 
                 {instructions && (
-                  <div className="info-block">
-                    <div className="info-block-label">Пошаговая инструкция</div>
-                    <p className="info-block-text" style={{ whiteSpace: 'pre-line' }}>
+                  <div className={s.infoBlock}>
+                    <div className={s.infoBlockLabel}>Пошаговая инструкция</div>
+                    <p className={s.infoBlockText} style={{ whiteSpace: s.preLine }}>
                       {instructions}
                     </p>
                   </div>
                 )}
 
                 {cues && (
-                  <div className="info-block">
-                    <div className="info-block-label">Вербальные подсказки</div>
-                    <p className="info-block-text" style={{ whiteSpace: 'pre-line' }}>
+                  <div className={s.infoBlock}>
+                    <div className={s.infoBlockLabel}>Вербальные подсказки</div>
+                    <p className={s.infoBlockText} style={{ whiteSpace: s.preLine }}>
                       {cues}
                     </p>
                   </div>
                 )}
 
                 {tips && (
-                  <div className="info-block">
-                    <div className="info-block-label">Советы инструктору</div>
-                    <p className="info-block-text" style={{ whiteSpace: 'pre-line' }}>
+                  <div className={s.infoBlock}>
+                    <div className={s.infoBlockLabel}>Советы инструктору</div>
+                    <p className={s.infoBlockText} style={{ whiteSpace: s.preLine }}>
                       {tips}
                     </p>
                   </div>
@@ -394,20 +389,20 @@ const ExerciseDetail = () => {
 
             {/* Безопасность */}
             {contraindications && (
-              <div className="info-card info-card-danger">
-                <h3 className="card-title card-title-danger">
+              <div className={`${s.infoCard} ${s.infoCardDanger}`}>
+                <h3 className={`${s.cardTitle} ${s.cardTitleDanger}`}>
                   Противопоказания
                 </h3>
-                <p className="info-block-text" style={{ whiteSpace: 'pre-line' }}>
+                <p className={s.infoBlockText} style={{ whiteSpace: s.preLine }}>
                   {contraindications}
                 </p>
               </div>
             )}
 
             {!instructions && !cues && !tips && !contraindications && (
-              <div className="info-card muted-card">
-                <h3 className="card-title">Дополнительная информация</h3>
-                <p className="muted-text">
+              <div className={`${s.infoCard} ${s.mutedCard}`}>
+                <h3 className={s.cardTitle}>Дополнительная информация</h3>
+                <p className={s.mutedText}>
                   Для этого упражнения ещё не добавлены инструкции или
                   противопоказания. Можно использовать как черновик и
                   постепенно дополнять.

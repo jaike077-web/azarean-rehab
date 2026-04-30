@@ -14,7 +14,7 @@ import {
   EXERCISE_TYPES,
   DIFFICULTY_LEVELS
 } from '../../../utils/exerciseConstants';
-import './ExerciseSelector.css';
+import s from './ExerciseSelector.module.css';
 
 function ExerciseSelector({ onSelect, selectedIds = [] }) {
   const [exercisesList, setExercisesList] = useState([]);
@@ -92,8 +92,8 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
 
   if (loading) {
     return (
-      <div className="exercise-selector loading">
-        <Loader2 className="spinner" size={32} />
+      <div className={`${s.exerciseSelector} ${s.loading}`}>
+        <Loader2 className={s.spinner} size={32} />
         <p>Загрузка упражнений...</p>
       </div>
     );
@@ -101,18 +101,18 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
 
   if (error) {
     return (
-      <div className="exercise-selector error">
+      <div className={`${s.exerciseSelector} ${s.error}`}>
         <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="exercise-selector">
+    <div className={s.exerciseSelector}>
       {/* Фильтры */}
-      <div className="selector-filters">
-        <div className="filter-search-wrapper">
-          <span className="search-icon" aria-hidden="true">
+      <div className={s.selectorFilters}>
+        <div className={s.filterSearchWrapper}>
+          <span className={s.searchIcon} aria-hidden="true">
             <Search size={16} />
           </span>
           <input
@@ -120,14 +120,14 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
             placeholder="Поиск упражнений..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="filter-search"
+            className={s.filterSearch}
           />
         </div>
 
         <select
           value={bodyRegion}
           onChange={(e) => setBodyRegion(e.target.value)}
-          className="filter-select"
+          className={s.filterSelect}
         >
           <option value="">Все регионы</option>
           {Object.entries(BODY_REGIONS).map(([key, label]) => (
@@ -138,7 +138,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
         <select
           value={exerciseType}
           onChange={(e) => setExerciseType(e.target.value)}
-          className="filter-select"
+          className={s.filterSelect}
         >
           <option value="">Все типы</option>
           {Object.entries(EXERCISE_TYPES).map(([key, label]) => (
@@ -148,7 +148,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
 
         {(search || bodyRegion || exerciseType) && (
           <button
-            className="btn-clear"
+            className={s.btnClear}
             onClick={() => {
               setSearch('');
               setBodyRegion('');
@@ -162,19 +162,19 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
       </div>
 
       {/* Результаты */}
-      <div className="selector-results">
-        <p className="results-count">
+      <div className={s.selectorResults}>
+        <p className={s.resultsCount}>
           Найдено: <strong>{filteredList.length}</strong> упражнений
         </p>
       </div>
 
       {/* Список упражнений */}
       {filteredList.length === 0 ? (
-        <div className="selector-empty">
+        <div className={s.selectorEmpty}>
           <p>Упражнений не найдено</p>
           {(search || bodyRegion || exerciseType) && (
             <button
-              className="btn-clear"
+              className={s.btnClear}
               onClick={() => {
                 setSearch('');
                 setBodyRegion('');
@@ -186,28 +186,28 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
           )}
         </div>
       ) : (
-        <div className="selector-list">
+        <div className={s.selectorList}>
           {filteredList.map(exercise => (
             <div
               key={exercise.id}
-              className={`selector-item ${isSelected(exercise.id) ? 'selected' : ''}`}
+              className={`${s.selectorItem} ${isSelected(exercise.id) ? s.selected : ''}`}
             >
-              <div className="item-info">
-                <h4 className="item-title">{exercise.short_title || exercise.title}</h4>
+              <div className={s.itemInfo}>
+                <h4 className={s.itemTitle}>{exercise.short_title || exercise.title}</h4>
                 
-                <div className="item-meta">
-                  <span className="meta-badge region">
+                <div className={s.itemMeta}>
+                  <span className={`${s.metaBadge} ${s.region}`}>
                     {BODY_REGIONS[exercise.body_region]}
                   </span>
                   
                   {exercise.exercise_type && (
-                    <span className="meta-badge type">
+                    <span className={`${s.metaBadge} ${s.type}`}>
                       {EXERCISE_TYPES[exercise.exercise_type]}
                     </span>
                   )}
                   
                   <span
-                    className="meta-badge difficulty"
+                    className={`${s.metaBadge} ${s.difficulty}`}
                     style={{ backgroundColor: getDifficultyColor(exercise.difficulty_level) }}
                   >
                     {DIFFICULTY_LEVELS[exercise.difficulty_level]}
@@ -215,14 +215,14 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                 </div>
 
                 {exercise.muscle_groups && exercise.muscle_groups.length > 0 && (
-                  <div className="item-muscles">
+                  <div className={s.itemMuscles}>
                     {exercise.muscle_groups.slice(0, 3).map(muscle => (
-                      <span key={muscle.id} className="muscle-badge">
+                      <span key={muscle.id} className={s.muscleBadge}>
                         {muscle.name_ru}
                       </span>
                     ))}
                     {exercise.muscle_groups.length > 3 && (
-                      <span className="muscle-badge more">
+                      <span className={`${s.muscleBadge} ${s.more}`}>
                         +{exercise.muscle_groups.length - 3}
                       </span>
                     )}
@@ -230,9 +230,9 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                 )}
               </div>
 
-              <div className="item-actions">
+              <div className={s.itemActions}>
                 <button
-                  className="btn-view"
+                  className={s.btnView}
                   onClick={() => setViewExercise(exercise)}
                   title="Просмотр"
                   aria-label="Просмотр"
@@ -241,7 +241,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                 </button>
                 
                 <button
-                  className={`btn-select ${isSelected(exercise.id) ? 'selected' : ''}`}
+                  className={`${s.btnSelect} ${isSelected(exercise.id) ? s.selected : ''}`}
                   onClick={() => handleSelect(exercise)}
                   title={isSelected(exercise.id) ? 'Убрать' : 'Добавить'}
                 >
