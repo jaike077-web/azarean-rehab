@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { complexes, templates } from '../services/api';
 import { formatDateNumeric } from '../utils/dateUtils';
-import './MyComplexes.css';
+import s from './MyComplexes.module.css';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ConfirmModal from '../components/ConfirmModal';
@@ -233,7 +233,7 @@ useEffect(() => {
   const formatDate = formatDateNumeric;
 
   if (error) {
-    return <div className="error-message">{error}</div>;
+    return <div className={s.errorMessage}>{error}</div>;
   }
 
   // Фильтрация и сортировка комплексов
@@ -271,7 +271,7 @@ useEffect(() => {
   
 
   return (
-    <div className="my-complexes-page">
+    <div className={s.myComplexesPage}>
       <Breadcrumbs
   items={[
     { 
@@ -287,29 +287,29 @@ useEffect(() => {
 />
 
       
-      <div className="back-button-wrapper">
+      <div className={s.backButtonWrapper}>
         <BackButton to="/" label="На главную" />
       </div>
 
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <div>
           <h1>
-            <ClipboardList className="page-icon" size={28} />
+            <ClipboardList className={s.pageIcon} size={28} />
             <span>Мои комплексы</span>
           </h1>
           <p>Управление комплексами упражнений</p>
         </div>
       </div>
 {/* Вкладки */}
-<div className="tabs-container">
+<div className={s.tabsContainer}>
         <button 
-          className={`tab-btn ${activeTab === 'complexes' ? 'active' : ''}`}
+          className={`${s.tabBtn} ${activeTab === 'complexes' ? s.active : ''}`}
           onClick={() => setActiveTab('complexes')}
         >
           <ClipboardList size={18} /> Комплексы ({complexesList.length})
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'templates' ? 'active' : ''}`}
+          className={`${s.tabBtn} ${activeTab === 'templates' ? s.active : ''}`}
           onClick={() => setActiveTab('templates')}
         >
           <Folder size={18} /> Шаблоны ({templatesList.length})
@@ -318,9 +318,9 @@ useEffect(() => {
 
       {/* Поиск и сортировка — только для комплексов */}
       {activeTab === 'complexes' && complexesList.length > 0 && (
-        <div className="filters-bar">
-          <div className="search-box">
-            <Search size={18} className="search-icon" />
+        <div className={s.filtersBar}>
+          <div className={s.searchBox}>
+            <Search size={18} className={s.searchIcon} />
             <input
               type="text"
               placeholder="Поиск по пациенту или диагнозу..."
@@ -328,12 +328,12 @@ useEffect(() => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchTerm && (
-              <button className="clear-search" onClick={() => setSearchTerm('')}>
+              <button className={s.clearSearch} onClick={() => setSearchTerm('')}>
                 <X size={16} />
               </button>
             )}
           </div>
-          <div className="sort-box">
+          <div className={s.sortBox}>
             <SortAsc size={18} />
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="date_desc">Сначала новые</option>
@@ -348,8 +348,8 @@ useEffect(() => {
         <>
 {/* Панель массового выбора */}
 {complexesList.length > 0 && (
-        <div className="bulk-actions-bar">
-          <button className="btn-select-all" onClick={toggleSelectAll}>
+        <div className={s.bulkActionsBar}>
+          <button className={s.btnSelectAll} onClick={toggleSelectAll}>
             {selectedIds.length === complexesList.length ? (
               <><CheckSquare size={18} /> Снять выделение</>
             ) : (
@@ -358,12 +358,12 @@ useEffect(() => {
           </button>
           
           {selectedIds.length > 0 && (
-            <div className="bulk-actions">
-              <span className="selected-count">Выбрано: {selectedIds.length}</span>
-              <button className="btn-bulk-delete" onClick={handleBulkDelete}>
+            <div className={s.bulkActions}>
+              <span className={s.selectedCount}>Выбрано: {selectedIds.length}</span>
+              <button className={s.btnBulkDelete} onClick={handleBulkDelete}>
                 <Trash2 size={16} /> Удалить
               </button>
-              <button className="btn-clear-selection" onClick={clearSelection}>
+              <button className={s.btnClearSelection} onClick={clearSelection}>
                 <X size={16} />
               </button>
             </div>
@@ -374,60 +374,60 @@ useEffect(() => {
       
 
       {loading ? (
-        <div className="complexes-grid">
+        <div className={s.complexesGrid}>
           {Array.from({ length: 6 }).map((_, index) => (
             <ComplexCardSkeleton key={index} />
           ))}
         </div>
       ) : complexesList.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">
+        <div className={s.emptyState}>
+          <div className={s.emptyIcon}>
             <ClipboardList size={64} />
           </div>
           <h2>Комплексов пока нет</h2>
           <p>Создайте первый комплекс для пациента</p>
         </div>
       ) : (
-        <div className="complexes-grid">
+        <div className={s.complexesGrid}>
           {paginatedComplexes.map((complex) => (
             <div key={complex.id} className={`complex-card ${selectedIds.includes(complex.id) ? 'selected' : ''}`}>
             <div 
-              className="card-checkbox" 
+              className={s.cardCheckbox} 
               onClick={(e) => { e.stopPropagation(); toggleSelect(complex.id); }}
             >
               {selectedIds.includes(complex.id) ? (
-                <CheckSquare size={20} className="checked" />
+                <CheckSquare size={20} className={s.checked} />
               ) : (
                 <Square size={20} />
               )}
             </div>
-              <div className="complex-header">
+              <div className={s.complexHeader}>
                 
-                <div className="complex-info">
+                <div className={s.complexInfo}>
                   <h3>{complex.patient_name}</h3>
-                  <p className="complex-meta">
+                  <p className={s.complexMeta}>
                     {complex.diagnosis_name || 'Без диагноза'}
                   </p>
                 </div>
               </div>
 
-              <div className="complex-details">
-                <div className="detail-row">
-                  <span className="detail-label">Упражнений:</span>
-                  <span className="detail-value">{complex.exercises_count || 0}</span>
+              <div className={s.complexDetails}>
+                <div className={s.detailRow}>
+                  <span className={s.detailLabel}>Упражнений:</span>
+                  <span className={s.detailValue}>{complex.exercises_count || 0}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Создан:</span>
-                  <span className="detail-value">{formatDate(complex.created_at)}</span>
+                <div className={s.detailRow}>
+                  <span className={s.detailLabel}>Создан:</span>
+                  <span className={s.detailValue}>{formatDate(complex.created_at)}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="detail-label">Выполнений:</span>
-                  <span className="detail-value">{complex.completions_count || 0}</span>
+                <div className={s.detailRow}>
+                  <span className={s.detailLabel}>Выполнений:</span>
+                  <span className={s.detailValue}>{complex.completions_count || 0}</span>
                 </div>
               </div>
 
               {complex.recommendations && (
-                <div className="complex-notes">
+                <div className={s.complexNotes}>
                   <strong>
                     <Lightbulb size={14} style={{ display: 'inline', marginRight: '4px' }} />
                     Рекомендации:
@@ -436,10 +436,10 @@ useEffect(() => {
                 </div>
               )}
 
-<div className="complex-actions">
+<div className={s.complexActions}>
   <button
     type="button"
-    className="btn-progress btn-primary-action"
+    className={`${s.btnProgress} ${s.btnPrimaryAction}`}
     onClick={() => handleViewProgress(complex.id)}
     title="Посмотреть прогресс пациента"
   >
@@ -449,7 +449,7 @@ useEffect(() => {
 
   <button
     type="button"
-    className="btn-composition btn-primary-action"
+    className={`${s.btnComposition} ${s.btnPrimaryAction}`}
     onClick={() => handleViewComposition(complex)}
     title="Посмотреть состав комплекса"
   >
@@ -459,7 +459,7 @@ useEffect(() => {
 
   <button
     type="button"
-    className="btn-edit icon-btn"
+    className={`${s.btnEdit} ${s.iconBtn}`}
     onClick={() => handleEdit(complex.id)}
     title="Редактировать"
     aria-label="Редактировать"
@@ -469,7 +469,7 @@ useEffect(() => {
 
   <button
     type="button"
-    className="btn-delete icon-btn"
+    className={`${s.btnDelete} ${s.iconBtn}`}
     onClick={() => handleDelete(complex.id, complex.patient_name)}
     title="Удалить"
     aria-label="Удалить"
@@ -485,9 +485,9 @@ useEffect(() => {
 
       {/* Пагинация */}
       {totalPages > 1 && (
-        <div className="pagination">
+        <div className={s.pagination}>
           <button 
-            className="pagination-btn"
+            className={s.paginationBtn}
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
           >
@@ -497,7 +497,7 @@ useEffect(() => {
           {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
             <button
               key={page}
-              className={`pagination-btn ${currentPage === page ? 'active' : ''}`}
+              className={`${s.paginationBtn} ${currentPage === page ? s.active : ''}`}
               onClick={() => setCurrentPage(page)}
             >
               {page}
@@ -505,7 +505,7 @@ useEffect(() => {
           ))}
           
           <button 
-            className="pagination-btn"
+            className={s.paginationBtn}
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
           >
@@ -516,7 +516,7 @@ useEffect(() => {
 
       {/* Результаты поиска */}
       {searchTerm && (
-        <p className="search-results-count">
+        <p className={s.searchResultsCount}>
           Найдено: {filteredComplexes.length} из {complexesList.length}
         </p>
       )}
@@ -525,39 +525,39 @@ useEffect(() => {
 
       {/* Вкладка Шаблоны */}
       {activeTab === 'templates' && (
-        <div className="templates-section">
+        <div className={s.templatesSection}>
           {templatesLoading ? (
-            <div className="templates-grid">
+            <div className={s.templatesGrid}>
               {Array.from({ length: 6 }).map((_, index) => (
                 <TemplateCardSkeleton key={index} />
               ))}
             </div>
           ) : templatesList.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
+            <div className={s.emptyState}>
+              <div className={s.emptyIcon}>
                 <Folder size={64} />
               </div>
               <h2>Шаблонов пока нет</h2>
               <p>Создайте комплекс и сохраните его как шаблон</p>
             </div>
           ) : (
-            <div className="templates-grid">
+            <div className={s.templatesGrid}>
               {templatesList.map(template => (
-                <div key={template.id} className="template-card">
-                  <div className="template-header">
-                    <Folder size={24} className="template-icon" />
-                    <div className="template-info">
+                <div key={template.id} className={s.templateCard}>
+                  <div className={s.templateHeader}>
+                    <Folder size={24} className={s.templateIcon} />
+                    <div className={s.templateInfo}>
                       <h3>{template.name}</h3>
                       {template.description && <p>{template.description}</p>}
                     </div>
                   </div>
-                  <div className="template-meta">
+                  <div className={s.templateMeta}>
                     <span>{template.exercises_count} упражнений</span>
                     {template.diagnosis_name && <span>• {template.diagnosis_name}</span>}
                   </div>
-                  <div className="template-actions">
+                  <div className={s.templateActions}>
   <button
-    className="btn-view icon-btn"
+    className={`${s.btnView} ${s.iconBtn}`}
     onClick={() => handleViewTemplate(template)}
     title="Просмотр"
     aria-label="Просмотр"
@@ -567,7 +567,7 @@ useEffect(() => {
   </button>
 
   <button
-    className="btn-edit icon-btn"
+    className={`${s.btnEdit} ${s.iconBtn}`}
     onClick={() => handleEditTemplate(template)}
     title="Редактировать"
     aria-label="Редактировать"
@@ -577,7 +577,7 @@ useEffect(() => {
   </button>
 
   <button
-    className="btn-delete icon-btn"
+    className={`${s.btnDelete} ${s.iconBtn}`}
     onClick={() => handleDeleteTemplate(template)}
     title="Удалить"
     aria-label="Удалить"
@@ -597,36 +597,36 @@ useEffect(() => {
 
       {/* Модальное окно состава комплекса */}
       {showCompositionModal && selectedComplex && (
-        <div className="modal-overlay" onClick={() => setShowCompositionModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className={s.modalOverlay} onClick={() => setShowCompositionModal(false)}>
+          <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
                 Состав комплекса: {selectedComplex.patient_name}
               </h2>
-              <button className="modal-close" onClick={() => setShowCompositionModal(false)}>
+              <button className={s.modalClose} onClick={() => setShowCompositionModal(false)}>
                 <X size={20} />
               </button>
             </div>
 
-            <div className="modal-body">
-              <div className="complex-info-block">
-                <div className="info-row">
-                  <span className="info-label">Диагноз:</span>
-                  <span className="info-value">{selectedComplex.diagnosis_name || 'Не указан'}</span>
+            <div className={s.modalBody}>
+              <div className={s.complexInfoBlock}>
+                <div className={s.infoRow}>
+                  <span className={s.infoLabel}>Диагноз:</span>
+                  <span className={s.infoValue}>{selectedComplex.diagnosis_name || 'Не указан'}</span>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Создан:</span>
-                  <span className="info-value">{formatDate(selectedComplex.created_at)}</span>
+                <div className={s.infoRow}>
+                  <span className={s.infoLabel}>Создан:</span>
+                  <span className={s.infoValue}>{formatDate(selectedComplex.created_at)}</span>
                 </div>
-                <div className="info-row">
-                  <span className="info-label">Всего упражнений:</span>
-                  <span className="info-value">{complexExercises.length}</span>
+                <div className={s.infoRow}>
+                  <span className={s.infoLabel}>Всего упражнений:</span>
+                  <span className={s.infoValue}>{complexExercises.length}</span>
                 </div>
               </div>
 
               {selectedComplex.recommendations && (
-                <div className="recommendations-block">
+                <div className={s.recommendationsBlock}>
                   <strong>
                     <Lightbulb size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} />
                     Рекомендации:
@@ -635,30 +635,30 @@ useEffect(() => {
                 </div>
               )}
 
-              <div className="exercises-list-modal">
+              <div className={s.exercisesListModal}>
                 <h3>Упражнения:</h3>
                 {complexExercises.length === 0 ? (
-                  <p className="empty-text">Нет упражнений в комплексе</p>
+                  <p className={s.emptyText}>Нет упражнений в комплексе</p>
                 ) : (
                   complexExercises.map((ex, index) => (
-                    <div key={ex.exercise_id} className="exercise-item-modal">
-                      <div className="exercise-number">{index + 1}</div>
-                      <div className="exercise-details-modal">
+                    <div key={ex.exercise_id} className={s.exerciseItemModal}>
+                      <div className={s.exerciseNumber}>{index + 1}</div>
+                      <div className={s.exerciseDetailsModal}>
                         <h4>{ex.exercise_title}</h4>
-                        <p className="exercise-description">{ex.exercise_description}</p>
-                        <div className="exercise-params-modal">
-                          <span className="param-badge">
+                        <p className={s.exerciseDescription}>{ex.exercise_description}</p>
+                        <div className={s.exerciseParamsModal}>
+                          <span className={s.paramBadge}>
                             <strong>Подходы:</strong> {ex.sets || '-'}
                           </span>
-                          <span className="param-badge">
+                          <span className={s.paramBadge}>
                             <strong>Повторения:</strong> {ex.reps || '-'}
                           </span>
-                          <span className="param-badge">
+                          <span className={s.paramBadge}>
                             <strong>Длительность:</strong> {ex.duration ? `${ex.duration} сек` : '-'}
                           </span>
                         </div>
                         {ex.notes && (
-                          <div className="exercise-notes">
+                          <div className={s.exerciseNotes}>
                             <strong>📝 Примечание:</strong> {ex.notes}
                           </div>
                         )}
@@ -669,12 +669,12 @@ useEffect(() => {
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={() => setShowCompositionModal(false)}>
+            <div className={s.modalFooter}>
+              <button className={s.btnSecondary} onClick={() => setShowCompositionModal(false)}>
                 Закрыть
               </button>
               <button 
-                className="btn-primary" 
+                className={s.btnPrimary} 
                 onClick={() => {
                   setShowCompositionModal(false);
                   handleEdit(selectedComplex.id);
