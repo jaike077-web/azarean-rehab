@@ -14,12 +14,12 @@ describe('LoadingSpinner', () => {
   });
 
   test('renders spinner element', () => {
-    const { container } = render(<LoadingSpinner />);
-    expect(container.querySelector('.loading-spinner')).toBeInTheDocument();
+    render(<LoadingSpinner />);
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
   test('has correct container class', () => {
-    const { container } = render(<LoadingSpinner />);
-    expect(container.querySelector('.loading-spinner-container')).toBeInTheDocument();
+    render(<LoadingSpinner />);
+    expect(screen.getByTestId('loading-spinner-container')).toBeInTheDocument();
   });
 });

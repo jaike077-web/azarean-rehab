@@ -7,7 +7,7 @@ import MyComplexes from './MyComplexes';
 import Trash from './Trash';
 import ImportExercises from './ImportExercises';
 import ProgressDashboard from './ProgressDashboard';
-import './Dashboard.css';
+import s from './Dashboard.module.css';
 import Diagnoses from './Diagnoses';
 import { dashboard } from '../services/api';
 import {
@@ -130,78 +130,78 @@ function Dashboard() {
         return <AdminSystem />;
       default:
         return (
-          <div className="welcome-section">
-            <h2 className="welcome-title">
+          <div className={s.welcomeSection}>
+            <h2 className={s.welcomeTitle}>
               <span>Добро пожаловать, {user?.full_name}!</span>
-              <HeartHandshake className="welcome-icon" size={26} />
+              <HeartHandshake className={s.welcomeIcon} size={26} />
             </h2>
 
             <p>Выберите раздел в меню для начала работы</p>
 
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">
+            <div className={s.statsGrid}>
+              <div className={s.statCard}>
+                <div className={s.statIcon}>
                   <Users size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats?.patients_count ?? '—'}</div>
-                  <div className="stat-label">Пациентов</div>
+                <div className={s.statInfo}>
+                  <div className={s.statValue}>{stats?.patients_count ?? '—'}</div>
+                  <div className={s.statLabel}>Пациентов</div>
                 </div>
               </div>
 
-              <div className="stat-card">
-                <div className="stat-icon">
+              <div className={s.statCard}>
+                <div className={s.statIcon}>
                   <ClipboardList size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats?.complexes_count ?? '—'}</div>
-                  <div className="stat-label">Комплексов</div>
+                <div className={s.statInfo}>
+                  <div className={s.statValue}>{stats?.complexes_count ?? '—'}</div>
+                  <div className={s.statLabel}>Комплексов</div>
                 </div>
               </div>
 
-              <div className="stat-card">
-                <div className="stat-icon">
+              <div className={s.statCard}>
+                <div className={s.statIcon}>
                   <Activity size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-value">
+                <div className={s.statInfo}>
+                  <div className={s.statValue}>
                     {stats?.completion_percent != null ? `${stats.completion_percent}%` : '—'}
                   </div>
-                  <div className="stat-label">Выполнение</div>
+                  <div className={s.statLabel}>Выполнение</div>
                 </div>
               </div>
 
               <div
-                className="stat-card"
+                className={s.statCard}
                 onClick={() => navigate('/exercises')}
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: s.pointer }}
               >
-                <div className="stat-icon">
+                <div className={s.statIcon}>
                   <Dumbbell size={24} />
                 </div>
-                <div className="stat-info">
-                  <div className="stat-value">{stats?.exercises_count ?? '—'}</div>
-                  <div className="stat-label">Упражнений</div>
+                <div className={s.statInfo}>
+                  <div className={s.statValue}>{stats?.exercises_count ?? '—'}</div>
+                  <div className={s.statLabel}>Упражнений</div>
                 </div>
               </div>
             </div>
 
-            <div className="quick-actions">
+            <div className={s.quickActions}>
               <h3>Быстрые действия</h3>
-              <div className="actions-grid">
-                <button className="action-card" onClick={() => handleNavClick('patients')}>
-                  <UserPlus className="action-icon" size={20} />
-                  <span className="action-text">Добавить пациента</span>
+              <div className={s.actionsGrid}>
+                <button className={s.actionCard} onClick={() => handleNavClick('patients')}>
+                  <UserPlus className={s.actionIcon} size={20} />
+                  <span className={s.actionText}>Добавить пациента</span>
                 </button>
 
-                <button className="action-card" onClick={() => handleNavClick('complexes')}>
-                  <ListPlus className="action-icon" size={20} />
-                  <span className="action-text">Создать комплекс</span>
+                <button className={s.actionCard} onClick={() => handleNavClick('complexes')}>
+                  <ListPlus className={s.actionIcon} size={20} />
+                  <span className={s.actionText}>Создать комплекс</span>
                 </button>
 
-                <button className="action-card" onClick={handleExercisesClick}>
-                  <Search className="action-icon" size={20} />
-                  <span className="action-text">Найти упражнение</span>
+                <button className={s.actionCard} onClick={handleExercisesClick}>
+                  <Search className={s.actionIcon} size={20} />
+                  <span className={s.actionText}>Найти упражнение</span>
                 </button>
               </div>
             </div>
@@ -211,155 +211,155 @@ function Dashboard() {
   };
 
   return (
-    <div className="dashboard-container">
-      <header className="dashboard-header">
-        <div className="header-left">
+    <div className={s.dashboardContainer}>
+      <header className={s.dashboardHeader}>
+        <div className={s.headerLeft}>
           {/* Бургер-кнопка для мобильных */}
           <button 
-            className={`burger-menu-btn ${isMobileMenuOpen ? 'active' : ''}`}
+            className={`${s.burgerMenuBtn} ${isMobileMenuOpen ? s.active : ''}`}
             onClick={toggleMobileMenu}
             aria-label="Открыть меню"
           >
-            <div className="burger-icon">
+            <div className={s.burgerIcon}>
               <span></span>
               <span></span>
               <span></span>
             </div>
           </button>
 
-          <div className="app-brand">
+          <div className={s.appBrand}>
             <img
               src="/AN-logo.jpg"
               alt="Azarean Network"
-              className="app-logo"
+              className={s.appLogo}
             />
-            <div className="app-brand-text">
-              <div className="app-brand-title">Azarean Network</div>
-              <div className="app-brand-subtitle">Система реабилитации</div>
+            <div className={s.appBrandText}>
+              <div className={s.appBrandTitle}>Azarean Network</div>
+              <div className={s.appBrandSubtitle}>Система реабилитации</div>
             </div>
           </div>
         </div>
 
-        <div className="header-right">
-          <span className="user-name">{user?.full_name}</span>
-          <span className="user-role">
+        <div className={s.headerRight}>
+          <span className={s.userName}>{user?.full_name}</span>
+          <span className={s.userRole}>
             {user?.role === 'admin' ? 'Администратор' : 'Инструктор'}
           </span>
-          <button onClick={handleLogout} className="btn-logout">
+          <button onClick={handleLogout} className={s.btnLogout}>
             Выйти
           </button>
         </div>
       </header>
 
-      <div className="dashboard-content">
+      <div className={s.dashboardContent}>
         {/* Overlay для закрытия меню */}
         <div 
-          className={`nav-overlay ${isMobileMenuOpen ? 'visible' : ''}`}
+          className={`${s.navOverlay} ${isMobileMenuOpen ? s.visible : ''}`}
           onClick={() => setIsMobileMenuOpen(false)}
         />
 
         {/* Навигация */}
-        <nav className={`dashboard-nav ${isMobileMenuOpen ? 'open' : ''}`}>
+        <nav className={`${s.dashboardNav} ${isMobileMenuOpen ? s.open : ''}`}>
           <button 
-            className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'home' ? s.active : ''}`}
             onClick={() => handleNavClick('home')}
           >
-            <LayoutDashboard className="nav-icon" size={18} />
+            <LayoutDashboard className={s.navIcon} size={18} />
             <span>Главная</span>
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'patients' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'patients' ? s.active : ''}`}
             onClick={() => handleNavClick('patients')}
           >
-            <Users className="nav-icon" size={18} />
+            <Users className={s.navIcon} size={18} />
             <span>Пациенты</span>
           </button>
 
           <button
-            className={`nav-item ${activeTab === 'progress' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'progress' ? s.active : ''}`}
             onClick={() => handleNavClick('progress')}
           >
-            <BarChart3 className="nav-icon" size={18} />
+            <BarChart3 className={s.navIcon} size={18} />
             <span>Прогресс пациентов</span>
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'exercises' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'exercises' ? s.active : ''}`}
             onClick={handleExercisesClick}
           >
-            <Dumbbell className="nav-icon" size={18} />
+            <Dumbbell className={s.navIcon} size={18} />
             <span>Библиотека упражнений</span>
           </button>
 
           <button 
-  className={`nav-item ${activeTab === 'diagnoses' ? 'active' : ''}`}
+  className={`${s.navItem} ${activeTab === 'diagnoses' ? s.active : ''}`}
   onClick={() => handleNavClick('diagnoses')}
 >
-  <FileText className="nav-icon" size={18} />
+  <FileText className={s.navIcon} size={18} />
   <span>Диагнозы</span>
 </button>
 
           <button 
-            className={`nav-item ${activeTab === 'complexes' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'complexes' ? s.active : ''}`}
             onClick={() => handleNavClick('complexes')}
           >
-            <ListPlus className="nav-icon" size={18} />
+            <ListPlus className={s.navIcon} size={18} />
             <span>Создать комплекс</span>
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'my-complexes' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'my-complexes' ? s.active : ''}`}
             onClick={() => handleNavClick('my-complexes')}
           >
-            <ClipboardList className="nav-icon" size={18} />
+            <ClipboardList className={s.navIcon} size={18} />
             <span>Мои комплексы</span>
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'import' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'import' ? s.active : ''}`}
             onClick={() => handleNavClick('import')}
           >
-            <Upload className="nav-icon" size={18} />
+            <Upload className={s.navIcon} size={18} />
             <span>Импорт упражнений</span>
           </button>
 
           <button 
-            className={`nav-item ${activeTab === 'trash' ? 'active' : ''}`}
+            className={`${s.navItem} ${activeTab === 'trash' ? s.active : ''}`}
             onClick={() => handleNavClick('trash')}
           >
-            <Trash2 className="nav-icon" size={18} />
+            <Trash2 className={s.navIcon} size={18} />
             <span>Корзина</span>
           </button>
 
           {user?.role === 'admin' && (
             <>
-              <div className="nav-divider" />
-              <button className={`nav-item ${activeTab === 'admin-stats' ? 'active' : ''}`} onClick={() => handleNavClick('admin-stats')}>
-                <Shield className="nav-icon" size={18} strokeWidth={1.8} />
+              <div className={s.navDivider} />
+              <button className={`${s.navItem} ${activeTab === 'admin-stats' ? s.active : ''}`} onClick={() => handleNavClick('admin-stats')}>
+                <Shield className={s.navIcon} size={18} strokeWidth={1.8} />
                 <span>Статистика</span>
               </button>
-              <button className={`nav-item ${activeTab === 'admin-users' ? 'active' : ''}`} onClick={() => handleNavClick('admin-users')}>
-                <Users className="nav-icon" size={18} strokeWidth={1.8} />
+              <button className={`${s.navItem} ${activeTab === 'admin-users' ? s.active : ''}`} onClick={() => handleNavClick('admin-users')}>
+                <Users className={s.navIcon} size={18} strokeWidth={1.8} />
                 <span>Пользователи</span>
               </button>
-              <button className={`nav-item ${activeTab === 'admin-audit' ? 'active' : ''}`} onClick={() => handleNavClick('admin-audit')}>
-                <ScrollText className="nav-icon" size={18} strokeWidth={1.8} />
+              <button className={`${s.navItem} ${activeTab === 'admin-audit' ? s.active : ''}`} onClick={() => handleNavClick('admin-audit')}>
+                <ScrollText className={s.navIcon} size={18} strokeWidth={1.8} />
                 <span>Журнал аудита</span>
               </button>
-              <button className={`nav-item ${activeTab === 'admin-content' ? 'active' : ''}`} onClick={() => handleNavClick('admin-content')}>
-                <Database className="nav-icon" size={18} strokeWidth={1.8} />
+              <button className={`${s.navItem} ${activeTab === 'admin-content' ? s.active : ''}`} onClick={() => handleNavClick('admin-content')}>
+                <Database className={s.navIcon} size={18} strokeWidth={1.8} />
                 <span>Контент</span>
               </button>
-              <button className={`nav-item ${activeTab === 'admin-system' ? 'active' : ''}`} onClick={() => handleNavClick('admin-system')}>
-                <Server className="nav-icon" size={18} strokeWidth={1.8} />
+              <button className={`${s.navItem} ${activeTab === 'admin-system' ? s.active : ''}`} onClick={() => handleNavClick('admin-system')}>
+                <Server className={s.navIcon} size={18} strokeWidth={1.8} />
                 <span>Система</span>
               </button>
             </>
           )}
         </nav>
 
-        <main className="dashboard-main">{renderContent()}</main>
+        <main className={s.dashboardMain}>{renderContent()}</main>
       </div>
     </div>
   );

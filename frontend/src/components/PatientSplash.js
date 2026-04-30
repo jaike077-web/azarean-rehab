@@ -1,5 +1,5 @@
 import React from 'react';
-import './PatientSplash.css';
+import s from './PatientSplash.module.css';
 
 // Полноэкранный splash для пациентского контура: показывается, пока
 // PatientAuthProvider выполняет getMe() (cookie → /patient-auth/me) и
@@ -7,14 +7,14 @@ import './PatientSplash.css';
 // и шапки PatientDashboard (зелёно-синяя точка + «Azarean»).
 export default function PatientSplash() {
   return (
-    <div className="patient-splash" role="status" aria-live="polite">
-      <div className="patient-splash-inner">
-        <div className="patient-splash-brand">
-          <span className="patient-splash-dot" aria-hidden="true" />
-          <span className="patient-splash-name">Azarean</span>
+    <div className={s.patientSplash} role="status" aria-live="polite">
+      <div className={s.patientSplashInner}>
+        <div className={s.patientSplashBrand}>
+          <span className={s.patientSplashDot} aria-hidden="true" />
+          <span className={s.patientSplashName}>Azarean</span>
         </div>
-        <div className="patient-splash-spinner" aria-hidden="true" />
-        <span className="patient-splash-sr">Загружаем кабинет…</span>
+        <div className={s.patientSplashSpinner} aria-hidden="true" />
+        <span className={s.patientSplashSr}>Загружаем кабинет…</span>
       </div>
     </div>
   );

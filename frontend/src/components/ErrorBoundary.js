@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import './ErrorBoundary.css';
+import s from './ErrorBoundary.module.css';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -58,14 +58,14 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
-          <div className="error-boundary-content">
-            <div className="error-icon">⚠️</div>
+        <div className={s.errorBoundary}>
+          <div className={s.errorBoundaryContent}>
+            <div className={s.errorIcon}>⚠️</div>
             <h1>Что-то пошло не так</h1>
             <p>Произошла непредвиденная ошибка. Пожалуйста, попробуйте обновить страницу.</p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="error-details">
+              <details className={s.errorDetails}>
                 <summary>Подробности ошибки (только для разработки)</summary>
                 <pre>{this.state.error.toString()}</pre>
                 {this.state.errorInfo && (
@@ -74,11 +74,11 @@ class ErrorBoundary extends Component {
               </details>
             )}
 
-            <div className="error-actions">
-              <button onClick={this.handleReload} className="btn-reload">
+            <div className={s.errorActions}>
+              <button onClick={this.handleReload} className={s.btnReload}>
                 Обновить страницу
               </button>
-              <button onClick={this.handleGoHome} className="btn-home">
+              <button onClick={this.handleGoHome} className={s.btnHome}>
                 На главную
               </button>
             </div>

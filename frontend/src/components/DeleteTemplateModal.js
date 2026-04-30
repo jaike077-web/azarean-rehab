@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import s from '../pages/MyComplexes.module.css';
 
 const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   const toast = useToast();
@@ -45,33 +46,33 @@ const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={s.modalOverlay} onClick={onClose}>
       <div
-        className="modal-content delete-template-modal"
+        className={`${s.modalContent} ${s.deleteTemplateModal}`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="modal-header">
+        <div className={s.modalHeader}>
           <h2>
             <AlertTriangle size={22} />
             <span>Удалить шаблон?</span>
           </h2>
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className={s.modalClose} onClick={onClose} aria-label="Закрыть">
             <X size={20} />
           </button>
         </div>
 
-        <div className="modal-body">
+        <div className={s.modalBody}>
           <p>
             Шаблон <strong>"{template?.name}"</strong> будет удалён навсегда.
           </p>
-          <p className="warning-text">Это действие нельзя отменить.</p>
+          <p className={s.warningText}>Это действие нельзя отменить.</p>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={deleting}>
+        <div className={s.modalFooter}>
+          <button className={s.btnSecondary} onClick={onClose} disabled={deleting}>
             Отмена
           </button>
-          <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
+          <button className={s.btnDanger} onClick={handleDelete} disabled={deleting}>
             <Trash2 size={16} />
             <span>{deleting ? 'Удаление...' : 'Удалить'}</span>
           </button>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Copy, Check, KeyRound, RefreshCw } from 'lucide-react';
 import { patients as patientsApi } from '../services/api';
 import { useToast } from '../context/ToastContext';
-import './InviteCodeModal.css';
+import s from './InviteCodeModal.module.css';
 
 // Форматируем дату-истечения в читаемом виде ("через 23 ч 14 мин").
 const formatExpiresIn = (expiresAt) => {
@@ -58,36 +58,36 @@ function InviteCodeModal({ patient, onClose }) {
     : null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content invite-code-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+    <div className={s.modalOverlay} onClick={onClose}>
+      <div className={`${s.modalContent} ${s.inviteCodeModal}`} onClick={(e) => e.stopPropagation()}>
+        <div className={s.modalHeader}>
           <h2>
-            <KeyRound size={20} className="page-icon" />
+            <KeyRound size={20} className={s.pageIcon} />
             <span>Код приглашения</span>
           </h2>
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className={s.modalClose} onClick={onClose} aria-label="Закрыть">
             <X size={20} />
           </button>
         </div>
 
-        <div className="invite-code-modal-body">
-          <p className="invite-code-patient">
+        <div className={s.inviteCodeModalBody}>
+          <p className={s.inviteCodePatient}>
             Пациент: <strong>{patient.full_name}</strong>
           </p>
 
           {!code && (
             <>
-              <p className="invite-code-help">
+              <p className={s.inviteCodeHelp}>
                 Сгенерируйте 8-значный код и передайте пациенту любым удобным способом:
                 Telegram, SMS, устно. Пациент введёт код на странице регистрации
                 и получит доступ к своему кабинету.
               </p>
-              <p className="invite-code-help-warn">
+              <p className={s.inviteCodeHelpWarn}>
                 Срок действия кода — 24 часа. Старые коды этого пациента будут аннулированы.
               </p>
               <button
                 type="button"
-                className="btn-primary invite-code-generate-btn"
+                className={`${s.btnPrimary} ${s.inviteCodeGenerateBtn}`}
                 onClick={requestCode}
                 disabled={loading}
               >
@@ -98,11 +98,11 @@ function InviteCodeModal({ patient, onClose }) {
 
           {code && (
             <>
-              <div className="invite-code-display">
-                <span className="invite-code-value">{code}</span>
+              <div className={s.inviteCodeDisplay}>
+                <span className={s.inviteCodeValue}>{code}</span>
                 <button
                   type="button"
-                  className="invite-code-copy-btn"
+                  className={s.inviteCodeCopyBtn}
                   onClick={handleCopy}
                   title="Скопировать"
                 >
@@ -110,31 +110,31 @@ function InviteCodeModal({ patient, onClose }) {
                 </button>
               </div>
 
-              <p className="invite-code-expires">
+              <p className={s.inviteCodeExpires}>
                 Действителен {formatExpiresIn(expiresAt)}
               </p>
 
-              <div className="invite-code-actions">
+              <div className={s.inviteCodeActions}>
                 <a
                   href={telegramShareUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn-secondary invite-code-share-btn"
+                  className={`${s.btnSecondary} ${s.inviteCodeShareBtn}`}
                 >
                   Отправить в Telegram
                 </a>
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className={s.btnSecondary}
                   onClick={requestCode}
                   disabled={loading}
                 >
-                  <RefreshCw size={16} className="btn-icon" />
+                  <RefreshCw size={16} className={s.btnIcon} />
                   <span>Сгенерировать новый</span>
                 </button>
               </div>
 
-              <p className="invite-code-help-warn">
+              <p className={s.inviteCodeHelpWarn}>
                 Этот код больше не отобразится — скопируйте сейчас.
                 Если потеряете, сгенерируйте новый.
               </p>

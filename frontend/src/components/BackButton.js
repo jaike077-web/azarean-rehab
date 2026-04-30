@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-import './BackButton.css';
+import s from './BackButton.module.css';
 
 function BackButton({ to, label = 'Назад' }) {
   const navigate = useNavigate();
@@ -15,8 +15,8 @@ function BackButton({ to, label = 'Назад' }) {
   };
 
   return (
-    <button className="back-button" onClick={handleClick}>
-      <span className="back-arrow">←</span>
+    <button className={s.backButton} onClick={handleClick}>
+      <span className={s.backArrow}>←</span>
       <span>{label}</span>
     </button>
   );

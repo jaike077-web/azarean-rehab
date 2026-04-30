@@ -1,13 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import './LoadingSpinner.css';
+import s from './LoadingSpinner.module.css';
 
 function LoadingSpinner({ message = 'Загрузка...' }) {
   return (
-    <div className="loading-spinner-container">
-      <div className="loading-spinner-content">
-        <div className="loading-spinner"></div>
-        <p className="loading-spinner-message">{message}</p>
+    <div className={s.loadingSpinnerContainer} data-testid="loading-spinner-container">
+      <div className={s.loadingSpinnerContent}>
+        <div className={s.loadingSpinner} data-testid="loading-spinner"></div>
+        <p className={s.loadingSpinnerMessage}>{message}</p>
       </div>
     </div>
   );

@@ -34,7 +34,7 @@ jest.mock('./ConfirmModal', () => ({
     ) : null,
 }));
 
-jest.mock('./RehabProgramModal.css', () => ({}));
+jest.mock('./RehabProgramModal.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
 
 const { rehabPrograms, complexes } = require('../services/api');
 import RehabProgramModal from './RehabProgramModal';

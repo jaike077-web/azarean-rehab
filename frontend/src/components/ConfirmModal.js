@@ -6,7 +6,7 @@
 import React, { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { AlertTriangle, X } from 'lucide-react';
-import './ConfirmModal.css';
+import s from './ConfirmModal.module.css';
 
 const ConfirmModal = ({
   isOpen,
@@ -42,43 +42,43 @@ const ConfirmModal = ({
   const Icon = CustomIcon || AlertTriangle;
 
   return (
-    <div className="confirm-modal-overlay" onClick={onClose}>
+    <div className={s.confirmModalOverlay} onClick={onClose}>
       <div
-        className={`confirm-modal confirm-modal-${variant}`}
+        className={`${s.confirmModal} ${s[`confirmModal${variant.charAt(0).toUpperCase()}${variant.slice(1)}`] || ''}`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
       >
         <button
-          className="confirm-modal-close"
+          className={s.confirmModalClose}
           onClick={onClose}
           aria-label="Закрыть"
         >
           <X size={20} />
         </button>
 
-        <div className="confirm-modal-icon">
+        <div className={s.confirmModalIcon}>
           <Icon size={32} />
         </div>
 
-        <h2 id="confirm-modal-title" className="confirm-modal-title">
+        <h2 id="confirm-modal-title" className={s.confirmModalTitle}>
           {title}
         </h2>
 
         {message && (
-          <p className="confirm-modal-message">{message}</p>
+          <p className={s.confirmModalMessage}>{message}</p>
         )}
 
-        <div className="confirm-modal-actions">
+        <div className={s.confirmModalActions}>
           <button
-            className="btn-secondary"
+            className={s.btnSecondary}
             onClick={onClose}
           >
             {cancelText}
           </button>
           <button
-            className={`btn-${variant === 'danger' ? 'danger' : 'primary'}`}
+            className={variant === 'danger' ? s.btnDanger : s.btnPrimary}
             onClick={() => {
               onConfirm();
               onClose();

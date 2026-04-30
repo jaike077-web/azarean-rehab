@@ -4,6 +4,7 @@ import { FolderOpen, Search, X } from 'lucide-react';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { SkeletonText } from './Skeleton';
+import s from '../pages/MyComplexes.module.css';
 
 const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
   const toast = useToast();
@@ -66,56 +67,56 @@ const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={s.modalOverlay} onClick={onClose}>
       <div
-        className="modal-content template-selector"
+        className={`${s.modalContent} ${s.templateSelector}`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="modal-header">
+        <div className={s.modalHeader}>
           <h3>
             <FolderOpen size={20} />
             <span>Выбор шаблона</span>
           </h3>
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className={s.modalClose} onClick={onClose} aria-label="Закрыть">
             <X size={20} />
           </button>
         </div>
 
-        <div className="modal-body">
-          <div className="search-box">
-            <Search size={18} className="search-icon" />
+        <div className={s.modalBody}>
+          <div className={s.searchBox}>
+            <Search size={18} className={s.searchIcon} />
             <input
               type="text"
-              className="search-input"
+              className={s.searchInput}
               placeholder="Поиск шаблона..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
             {searchTerm && (
-              <button className="clear-search" onClick={() => setSearchTerm('')}>
+              <button className={s.clearSearch} onClick={() => setSearchTerm('')}>
                 <X size={16} />
               </button>
             )}
           </div>
 
-          <div className="templates-list">
+          <div className={s.templatesList}>
             {loading ? (
-              <div className="templates-loading">
+              <div className={s.templatesLoading}>
                 <SkeletonText lines={3} />
               </div>
             ) : filteredTemplates.length === 0 ? (
-              <p className="empty-state">Шаблоны не найдены</p>
+              <p className={s.emptyState}>Шаблоны не найдены</p>
             ) : (
               filteredTemplates.map((template) => (
-                <div key={template.id} className="template-option">
-                  <div className="template-info">
+                <div key={template.id} className={s.templateOption}>
+                  <div className={s.templateInfo}>
                     <strong>{template.name}</strong>
-                    <div className="template-meta">
+                    <div className={s.templateMeta}>
                       {template.exercises_count || 0} упражнений
                       {template.diagnosis_name && ` • ${template.diagnosis_name}`}
                     </div>
                   </div>
-                  <button className="btn-primary" onClick={() => onSelect(template.id)}>
+                  <button className={s.btnPrimary} onClick={() => onSelect(template.id)}>
                     Выбрать
                   </button>
                 </div>

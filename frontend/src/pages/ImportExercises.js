@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { importAPI } from '../services/api';
 import { useToast } from '../context/ToastContext';
-import './ImportExercises.css';
+import s from './ImportExercises.module.css';
 
 function ImportExercises() {
   const [activeTab, setActiveTab] = useState('kinescope');
@@ -135,15 +135,15 @@ function ImportExercises() {
   };
 
   return (
-    <div className="import-exercises-page">
-      <div className="import-header">
+    <div className={s.importExercisesPage}>
+      <div className={s.importHeader}>
         <h1>Массовый импорт упражнений</h1>
-        <p className="subtitle">Импортируйте упражнения из Kinescope или загрузите CSV файл</p>
+        <p className={s.subtitle}>Импортируйте упражнения из Kinescope или загрузите CSV файл</p>
       </div>
 
-      <div className="import-tabs">
+      <div className={s.importTabs}>
         <button
-          className={`tab ${activeTab === 'kinescope' ? 'active' : ''}`}
+          className={`${s.tab} ${activeTab === 'kinescope' ? s.active : ''}`}
           onClick={() => setActiveTab('kinescope')}
           type="button"
         >
@@ -151,7 +151,7 @@ function ImportExercises() {
           Kinescope API
         </button>
         <button
-          className={`tab ${activeTab === 'csv' ? 'active' : ''}`}
+          className={`${s.tab} ${activeTab === 'csv' ? s.active : ''}`}
           onClick={() => setActiveTab('csv')}
           type="button"
         >
@@ -161,23 +161,23 @@ function ImportExercises() {
       </div>
 
       {activeTab === 'kinescope' && (
-        <div className="kinescope-import">
-          <div className="import-actions">
-            <button className="btn-primary" onClick={fetchKinescopeVideos} disabled={loading}>
+        <div className={s.kinescopeImport}>
+          <div className={s.importActions}>
+            <button className={s.btnPrimary} onClick={fetchKinescopeVideos} disabled={loading}>
               <RefreshCw size={18} />
               {loading ? 'Загрузка...' : 'Загрузить видео из Kinescope'}
             </button>
 
             {kinescopeVideos.length > 0 && (
               <>
-                <button className="btn-secondary" onClick={selectAllNew} type="button">
+                <button className={s.btnSecondary} onClick={selectAllNew} type="button">
                   Выбрать все новые
                 </button>
-                <button className="btn-secondary" onClick={deselectAll} type="button">
+                <button className={s.btnSecondary} onClick={deselectAll} type="button">
                   Снять выбор
                 </button>
                 <button
-                  className="btn-success"
+                  className={s.btnSuccess}
                   onClick={executeKinescopeImport}
                   disabled={importing || selectedVideos.size === 0}
                   type="button"
@@ -190,12 +190,12 @@ function ImportExercises() {
           </div>
 
           {kinescopeVideos.length > 0 && (
-            <div className="videos-grid">
+            <div className={s.videosGrid}>
               {kinescopeVideos.map((video) => (
                 <div
                   key={video.id}
-                  className={`video-card ${video.alreadyImported ? 'imported' : ''} ${
-                    selectedVideos.has(video.id) ? 'selected' : ''
+                  className={`${s.videoCard} ${video.alreadyImported ? s.imported : ''} ${
+                    selectedVideos.has(video.id) ? s.selected : ''
                   }`}
                   onClick={() => !video.alreadyImported && toggleVideoSelection(video.id)}
                   onKeyDown={(event) => {
@@ -209,24 +209,24 @@ function ImportExercises() {
                   role="button"
                   tabIndex={video.alreadyImported ? -1 : 0}
                 >
-                  <div className="video-thumbnail">
+                  <div className={s.videoThumbnail}>
                     {video.thumbnail ? (
                       <img src={video.thumbnail} alt={video.title} />
                     ) : (
-                      <div className="no-thumbnail">Нет превью</div>
+                      <div className={s.noThumbnail}>Нет превью</div>
                     )}
                   </div>
-                  <div className="video-info">
+                  <div className={s.videoInfo}>
                     <h4>{video.title}</h4>
-                    <div className="video-meta">
+                    <div className={s.videoMeta}>
                       {video.duration && (
-                        <span className="video-duration">
+                        <span className={s.videoDuration}>
                           <Clock size={14} />
                           {Math.round(video.duration / 60)} мин
                         </span>
                       )}
                       {video.alreadyImported && (
-                        <span className="imported-badge">
+                        <span className={s.importedBadge}>
                           <CheckCircle size={14} />
                           Уже импортировано
                         </span>
@@ -234,7 +234,7 @@ function ImportExercises() {
                     </div>
                   </div>
                   {!video.alreadyImported && (
-                    <div className="checkbox">
+                    <div className={s.checkbox}>
                       <input
                         type="checkbox"
                         checked={selectedVideos.has(video.id)}
@@ -250,19 +250,19 @@ function ImportExercises() {
           )}
 
           {importResults && (
-            <div className="import-results">
+            <div className={s.importResults}>
               <h3>Результаты импорта</h3>
-              <div className="results-stats">
-                <div className="stat success">
+              <div className={s.resultsStats}>
+                <div className={`${s.stat} ${s.success}`}>
                   <CheckCircle size={20} />
                   <span>Успешно: {importResults.success}</span>
                 </div>
-                <div className="stat skipped">
+                <div className={`${s.stat} ${s.skipped}`}>
                   <AlertCircle size={20} />
                   <span>Пропущено: {importResults.skipped}</span>
                 </div>
                 {importResults.failed > 0 && (
-                  <div className="stat error">
+                  <div className={`${s.stat} ${s.error}`}>
                     <XCircle size={20} />
                     <span>Ошибок: {importResults.failed}</span>
                   </div>
@@ -274,48 +274,48 @@ function ImportExercises() {
       )}
 
       {activeTab === 'csv' && (
-        <div className="csv-import">
-          <div className="csv-instructions">
+        <div className={s.csvImport}>
+          <div className={s.csvInstructions}>
             <h3>Инструкция по CSV импорту</h3>
             <ol>
               <li>Скачайте шаблон CSV файла</li>
               <li>Заполните данные об упражнениях</li>
               <li>Загрузите файл для импорта</li>
             </ol>
-            <button className="btn-secondary" onClick={downloadTemplate} type="button">
+            <button className={s.btnSecondary} onClick={downloadTemplate} type="button">
               <Download size={18} />
               Скачать шаблон CSV
             </button>
           </div>
 
-          <div className="csv-upload">
+          <div className={s.csvUpload}>
             <input type="file" accept=".csv" onChange={handleCSVUpload} id="csv-upload" />
-            <label htmlFor="csv-upload" className="upload-label">
+            <label htmlFor="csv-upload" className={s.uploadLabel}>
               <Upload size={24} />
               <span>{csvFile ? csvFile.name : 'Выберите CSV файл'}</span>
             </label>
           </div>
 
           {csvFile && (
-            <button className="btn-primary" onClick={executeCSVImport} disabled={importing}>
+            <button className={s.btnPrimary} onClick={executeCSVImport} disabled={importing}>
               {importing ? 'Импорт...' : 'Импортировать из CSV'}
             </button>
           )}
 
           {csvResults && (
-            <div className="import-results">
+            <div className={s.importResults}>
               <h3>Результаты импорта CSV</h3>
-              <div className="results-stats">
-                <div className="stat success">
+              <div className={s.resultsStats}>
+                <div className={`${s.stat} ${s.success}`}>
                   <CheckCircle size={20} />
                   <span>Создано: {csvResults.created}</span>
                 </div>
-                <div className="stat info">
+                <div className={`${s.stat} ${s.info}`}>
                   <AlertCircle size={20} />
                   <span>Обновлено: {csvResults.updated}</span>
                 </div>
                 {csvResults.failed > 0 && (
-                  <div className="stat error">
+                  <div className={`${s.stat} ${s.error}`}>
                     <XCircle size={20} />
                     <span>Ошибок: {csvResults.failed}</span>
                   </div>

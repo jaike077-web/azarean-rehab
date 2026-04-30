@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import useConfirm from '../hooks/useConfirm';
 import ConfirmModal from './ConfirmModal';
 import { formatDate } from '../utils/dateUtils';
-import './RehabProgramModal.css';
+import s from './RehabProgramModal.module.css';
 
 const EMPTY_FORM = {
   title: '',
@@ -137,55 +137,55 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
 
   return (
     <>
-    <div className="modal-overlay" onClick={onClose}>
+    <div className={s.modalOverlay} onClick={onClose}>
       <div
-        className="modal-content rehab-program-modal"
+        className={`${s.modalContent} ${s.rehabProgramModal}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-header">
+        <div className={s.modalHeader}>
           <h2>
-            <Activity size={20} className="page-icon" />
+            <Activity size={20} className={s.pageIcon} />
             <span>Программа реабилитации</span>
           </h2>
-          <button className="modal-close" onClick={onClose} aria-label="Закрыть">
+          <button className={s.modalClose} onClick={onClose} aria-label="Закрыть">
             <X size={20} />
           </button>
         </div>
 
-        <div className="rehab-program-modal-body">
-          <p className="rehab-program-patient">
+        <div className={s.rehabProgramModalBody}>
+          <p className={s.rehabProgramPatient}>
             Пациент: <strong>{patient.full_name}</strong>
           </p>
 
           {loading && (
-            <div className="rehab-program-loading">
-              <div className="rehab-program-spinner" />
+            <div className={s.rehabProgramLoading}>
+              <div className={s.rehabProgramSpinner} />
               <span>Загрузка…</span>
             </div>
           )}
 
           {!loading && mode === null && (
-            <div className="rehab-program-error">
+            <div className={s.rehabProgramError}>
               <p>Не удалось загрузить данные.</p>
-              <button type="button" className="btn-secondary" onClick={loadData}>
+              <button type="button" className={s.btnSecondary} onClick={loadData}>
                 Повторить
               </button>
             </div>
           )}
 
           {!loading && mode && (
-            <form onSubmit={handleSubmit} className="rehab-program-form">
+            <form onSubmit={handleSubmit} className={s.rehabProgramForm}>
               {complexesList.length === 0 && (
-                <div className="rehab-program-warn">
+                <div className={s.rehabProgramWarn}>
                   У пациента нет ни одного комплекса. Сначала создайте комплекс
                   упражнений на странице «Мои комплексы», иначе пациент не увидит
                   блок «комплекс на сегодня».
                 </div>
               )}
 
-              <div className="rehab-program-field">
+              <div className={s.rehabProgramField}>
                 <label htmlFor="rp-title">
-                  Название программы <span className="required">*</span>
+                  Название программы <span className={s.required}>*</span>
                 </label>
                 <input
                   id="rp-title"
@@ -199,9 +199,9 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                 />
               </div>
 
-              <div className="rehab-program-field">
+              <div className={s.rehabProgramField}>
                 <label htmlFor="rp-complex">
-                  Комплекс упражнений <span className="required">*</span>
+                  Комплекс упражнений <span className={s.required}>*</span>
                 </label>
                 <select
                   id="rp-complex"
@@ -218,14 +218,14 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                     </option>
                   ))}
                 </select>
-                <p className="rehab-program-help">
+                <p className={s.rehabProgramHelp}>
                   Этот комплекс пациент увидит как «комплекс на сегодня» в своём
                   кабинете.
                 </p>
               </div>
 
-              <div className="rehab-program-field-row">
-                <div className="rehab-program-field">
+              <div className={s.rehabProgramFieldRow}>
+                <div className={s.rehabProgramField}>
                   <label htmlFor="rp-diagnosis">Диагноз</label>
                   <input
                     id="rp-diagnosis"
@@ -236,7 +236,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                     placeholder="Например: ACL правое колено"
                   />
                 </div>
-                <div className="rehab-program-field">
+                <div className={s.rehabProgramField}>
                   <label htmlFor="rp-surgery">Дата операции</label>
                   <input
                     id="rp-surgery"
@@ -248,8 +248,8 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                 </div>
               </div>
 
-              <div className="rehab-program-field-row">
-                <div className="rehab-program-field">
+              <div className={s.rehabProgramFieldRow}>
+                <div className={s.rehabProgramField}>
                   <label htmlFor="rp-phase">Текущая фаза</label>
                   <select
                     id="rp-phase"
@@ -262,13 +262,13 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                     <option value={3}>3 — Фаза 3</option>
                     <option value={4}>4 — Фаза 4</option>
                   </select>
-                  <p className="rehab-program-help">
+                  <p className={s.rehabProgramHelp}>
                     Фазы относятся к ACL-программам.
                   </p>
                 </div>
 
                 {mode === 'edit' && (
-                  <div className="rehab-program-field">
+                  <div className={s.rehabProgramField}>
                     <label htmlFor="rp-status">Статус</label>
                     <select
                       id="rp-status"
@@ -284,7 +284,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                 )}
               </div>
 
-              <div className="rehab-program-field">
+              <div className={s.rehabProgramField}>
                 <label htmlFor="rp-notes">Заметки</label>
                 <textarea
                   id="rp-notes"
@@ -297,7 +297,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
               </div>
 
               {mode === 'edit' && program && (
-                <p className="rehab-program-meta">
+                <p className={s.rehabProgramMeta}>
                   Создана: {formatDate(program.created_at)}
                   {program.phase_started_at && (
                     <> · Текущая фаза начата: {formatDate(program.phase_started_at)}</>
@@ -305,24 +305,24 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                 </p>
               )}
 
-              <div className="rehab-program-footer">
+              <div className={s.rehabProgramFooter}>
                 {mode === 'edit' ? (
                   <button
                     type="button"
-                    className="btn-delete"
+                    className={s.btnDelete}
                     onClick={handleDelete}
                     disabled={submitting}
                   >
-                    <Trash2 size={16} className="btn-icon" />
+                    <Trash2 size={16} className={s.btnIcon} />
                     <span>Удалить программу</span>
                   </button>
                 ) : (
                   <span />
                 )}
-                <div className="rehab-program-footer-right">
+                <div className={s.rehabProgramFooterRight}>
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className={s.btnSecondary}
                     onClick={onClose}
                     disabled={submitting}
                   >
@@ -330,7 +330,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary"
+                    className={s.btnPrimary}
                     disabled={!isValid || submitting}
                   >
                     {submitting

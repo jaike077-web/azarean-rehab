@@ -1,18 +1,18 @@
 import React from 'react';
 import { Skeleton } from '../Skeleton';
-import './ProgressSkeleton.css';
+import s from './ProgressSkeleton.module.css';
 
 const ProgressSkeleton = () => {
   return (
-    <div className="progress-skeleton">
-      <div className="skeleton-progress-header">
+    <div className={s.progressSkeleton}>
+      <div className={s.skeletonProgressHeader}>
         <Skeleton width="200px" height="32px" />
         <Skeleton width="150px" height="20px" style={{ marginTop: '8px' }} />
       </div>
 
-      <div className="skeleton-stats">
+      <div className={s.skeletonStats}>
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="skeleton-stat-card">
+          <div key={i} className={s.skeletonStatCard}>
             <Skeleton width="60%" height="14px" />
             <Skeleton width="80px" height="28px" style={{ marginTop: '8px' }} />
           </div>
@@ -20,7 +20,7 @@ const ProgressSkeleton = () => {
       </div>
 
       {[1, 2].map((i) => (
-        <div key={i} className="skeleton-session">
+        <div key={i} className={s.skeletonSession}>
           <Skeleton width="250px" height="24px" />
           <Skeleton
             width="100%"

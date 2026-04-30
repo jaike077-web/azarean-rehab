@@ -1,31 +1,31 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import './Breadcrumbs.css';
+import s from './Breadcrumbs.module.css';
 
 function Breadcrumbs({ items = [] }) {
   if (!items.length) return null;
 
   return (
-    <nav className="breadcrumbs">
+    <nav className={s.breadcrumbs}>
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
 
         const content = (
           <>
             {item.icon && (
-              <span className="crumb-icon">
+              <span className={s.crumbIcon}>
                 {item.icon}
               </span>
             )}
-            <span className="crumb-label">{item.label}</span>
+            <span className={s.crumbLabel}>{item.label}</span>
           </>
         );
 
         return (
           <span
             key={index}
-            className={`crumb-item ${isLast ? 'active' : ''}`}
+            className={`${s.crumbItem} ${isLast ? s.active : ''}`}
           >
             {!isLast && item.path ? (
               <Link to={item.path}>
@@ -36,7 +36,7 @@ function Breadcrumbs({ items = [] }) {
             )}
 
             {!isLast && (
-              <span className="crumb-separator">/</span>
+              <span className={s.crumbSeparator}>/</span>
             )}
           </span>
         );

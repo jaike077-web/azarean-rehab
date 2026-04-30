@@ -17,7 +17,7 @@ import {
   SkipForward
 } from 'lucide-react';
 import ProgressSkeleton from '../components/skeletons/ProgressSkeleton';
-import './ViewProgress.css';
+import s from './ViewProgress.module.css';
 
 function ViewProgress() {
   const { complexId } = useParams();
@@ -192,7 +192,7 @@ function ViewProgress() {
   }
 
   return (
-    <div className="view-progress-page progress-page">
+    <div className={`${s.viewProgressPage} ${s.progressPage}`}>
       <Breadcrumbs
         items={[
           {
@@ -212,22 +212,22 @@ function ViewProgress() {
         ]}
       />
 
-      <div className="back-button-wrapper">
+      <div className={s.backButtonWrapper}>
         <BackButton to="/my-complexes" label="К списку комплексов" />
       </div>
 
       {error && (
-        <div className="error">
+        <div className={s.error}>
           <h2>Ошибка</h2>
           <p>{error}</p>
-          <button onClick={() => navigate('/dashboard')} className="btn-primary">
+          <button onClick={() => navigate('/dashboard')} className={s.btnPrimary}>
             На главную
           </button>
         </div>
       )}
 
       {!error && !data && (
-        <div className="empty-state">
+        <div className={s.emptyState}>
           <h3>Нет данных</h3>
           <p>Не удалось загрузить информацию о прогрессе.</p>
         </div>
@@ -235,53 +235,53 @@ function ViewProgress() {
 
       {!error && data && (
         <>
-          <div className="progress-header">
-            <div className="progress-header-main">
-              <div className="progress-avatar">
+          <div className={s.progressHeader}>
+            <div className={s.progressHeaderMain}>
+              <div className={s.progressAvatar}>
                 <User size={28} aria-hidden="true" />
               </div>
-              <div className="progress-header-text">
+              <div className={s.progressHeaderText}>
                 <h1>Прогресс пациента</h1>
-                <p className="progress-subtitle">
+                <p className={s.progressSubtitle}>
                   {patientName} · {complexName}
                 </p>
-                <div className="progress-dates">
+                <div className={s.progressDates}>
                   <CalendarRange size={16} aria-hidden="true" />
                   <span>{progressStats.dateRange}</span>
                 </div>
               </div>
             </div>
-            <div className="progress-stats">
-              <div className="stat-card">
-                <div className="stat-value">{progressStats.totalSessions}</div>
-                <div className="stat-label">Всего сессий</div>
+            <div className={s.progressStats}>
+              <div className={s.statCard}>
+                <div className={s.statValue}>{progressStats.totalSessions}</div>
+                <div className={s.statLabel}>Всего сессий</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value">{progressStats.uniqueDays} дней</div>
-                <div className="stat-label">Подряд: {progressStats.consecutiveDays}</div>
+              <div className={s.statCard}>
+                <div className={s.statValue}>{progressStats.uniqueDays} дней</div>
+                <div className={s.statLabel}>Подряд: {progressStats.consecutiveDays}</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value">{progressStats.avgPerWeek}</div>
-                <div className="stat-label">В среднем в неделю</div>
+              <div className={s.statCard}>
+                <div className={s.statValue}>{progressStats.avgPerWeek}</div>
+                <div className={s.statLabel}>В среднем в неделю</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value">{progressStats.avgPain.toFixed(1)}/10</div>
-                <div className="stat-label">Средняя боль</div>
+              <div className={s.statCard}>
+                <div className={s.statValue}>{progressStats.avgPain.toFixed(1)}/10</div>
+                <div className={s.statLabel}>Средняя боль</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value">{progressStats.avgDifficulty.toFixed(1)}/5</div>
-                <div className="stat-label">Средняя сложность</div>
+              <div className={s.statCard}>
+                <div className={s.statValue}>{progressStats.avgDifficulty.toFixed(1)}/5</div>
+                <div className={s.statLabel}>Средняя сложность</div>
               </div>
             </div>
           </div>
 
           {progressLogs.length === 0 ? (
-            <div className="empty-state">
+            <div className={s.emptyState}>
               <h3>Прогресса пока нет</h3>
               <p>Пациент ещё не выполнял упражнения из этого комплекса.</p>
             </div>
           ) : (
-            <div className="sessions-container">
+            <div className={s.sessionsContainer}>
               {groupedSessions.map((session, index) => {
                 const performedExercisesMap = session.exercises.reduce((acc, exercise) => {
                   acc[exercise.id] = exercise;
@@ -325,9 +325,9 @@ function ViewProgress() {
                   totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
                 return (
-                  <div key={session.sessionId} className="session-card">
-                    <div className="session-header">
-                      <div className="session-info">
+                  <div key={session.sessionId} className={s.sessionCard}>
+                    <div className={s.sessionHeader}>
+                      <div className={s.sessionInfo}>
                         <h3>
                           <CalendarRange size={16} aria-hidden="true" />
                           <span>
@@ -335,7 +335,7 @@ function ViewProgress() {
                             {groupedSessions.length - index}
                           </span>
                         </h3>
-                        <span className="session-time">
+                        <span className={s.sessionTime}>
                           <Clock size={14} aria-hidden="true" />
                           {new Date(session.date).toLocaleTimeString('ru-RU', {
                             hour: '2-digit',
@@ -345,34 +345,34 @@ function ViewProgress() {
                       </div>
                     </div>
 
-                    <div className="session-progress">
-                      <div className="progress-text">
+                    <div className={s.sessionProgress}>
+                      <div className={s.progressText}>
                         <strong>Выполнено:</strong> {completedCount} из {totalCount} (
                         {completionPercent}%)
                       </div>
-                      <div className="progress-bar" aria-hidden="true">
+                      <div className={s.progressBar} aria-hidden="true">
                         <div
-                          className="progress-fill"
+                          className={s.progressFill}
                           style={{ width: `${completionPercent}%` }}
                         />
                       </div>
                     </div>
 
-                    <div className="session-table-wrapper">
-                      <table className="session-table">
+                    <div className={s.sessionTableWrapper}>
+                      <table className={s.sessionTable}>
                         <thead>
                           <tr>
                             <th>Упражнение</th>
-                            <th className="text-center">Статус</th>
-                            <th className="text-center">Боль</th>
-                            <th className="text-center">Сложность</th>
+                            <th className={s.textCenter}>Статус</th>
+                            <th className={s.textCenter}>Боль</th>
+                            <th className={s.textCenter}>Сложность</th>
                           </tr>
                         </thead>
                         <tbody>
                           {allSessionExercises.map((exercise, exIndex) => {
                             const statusClass = exercise.wasPerformed
                               ? exercise.completed
-                                ? 'completed'
+                                ? s.completed
                                 : 'skipped'
                               : 'not-attempted';
                             const statusLabel = exercise.wasPerformed
@@ -393,34 +393,34 @@ function ViewProgress() {
                             return (
                               <tr
                                 key={`${session.sessionId}-${exercise.id}-${exIndex}`}
-                                className={exercise.wasPerformed ? '' : 'skipped-exercise'}
+                                className={exercise.wasPerformed ? '' : s.skippedExercise}
                               >
-                                <td className="exercise-name">{exercise.title}</td>
-                                <td className="text-center">
-                                  <span className={`status-badge ${statusClass}`}>
+                                <td className={s.exerciseName}>{exercise.title}</td>
+                                <td className={s.textCenter}>
+                                  <span className={`${s.statusBadge} ${statusClass}`}>
                                     {statusIcon}
                                     <span>{statusLabel}</span>
                                   </span>
                                 </td>
-                                <td className="text-center">
+                                <td className={s.textCenter}>
                                   {exercise.painLevel !== null &&
                                   exercise.painLevel !== undefined ? (
                                     <span
-                                      className={`pain-badge ${getPainClass(exercise.painLevel)}`}
+                                      className={`${s.painBadge} ${getPainClass(exercise.painLevel)}`}
                                     >
                                       {exercise.painLevel}
                                     </span>
                                   ) : (
-                                    <span className="no-data">—</span>
+                                    <span className={s.noData}>—</span>
                                   )}
                                 </td>
-                                <td className="text-center difficulty-cell">
+                                <td className={`${s.textCenter} ${s.difficultyCell}`}>
                                   {exercise.difficultyRating ? (
-                                    <span className="difficulty-badge">
+                                    <span className={s.difficultyBadge}>
                                       {getDifficultyLabel(exercise.difficultyRating)}
                                     </span>
                                   ) : (
-                                    <span className="no-data">—</span>
+                                    <span className={s.noData}>—</span>
                                   )}
                                 </td>
                               </tr>
@@ -431,7 +431,7 @@ function ViewProgress() {
                     </div>
 
                   {session.sessionComment && (
-                    <div className="session-comment">
+                    <div className={s.sessionComment}>
                       <MessageCircle size={16} aria-hidden="true" />
                       <span>
                         <strong>Самочувствие:</strong> {session.sessionComment}

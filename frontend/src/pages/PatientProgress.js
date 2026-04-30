@@ -24,43 +24,43 @@ import {
   SkeletonAvatar,
   SkeletonText
 } from '../components/Skeleton';
-import './PatientProgress.css';
+import s from './PatientProgress.module.css';
 
 function PatientProgressSkeleton() {
   return (
-    <div className="patient-progress-page">
-      <div className="patient-progress-loading">
-        <div className="patient-header">
-          <div className="patient-avatar">
+    <div className={s.patientProgressPage}>
+      <div className={s.patientProgressLoading}>
+        <div className={s.patientHeader}>
+          <div className={s.patientAvatar}>
             <SkeletonAvatar size="large" />
           </div>
-          <div className="patient-info">
-            <Skeleton className="skeleton-title" />
+          <div className={s.patientInfo}>
+            <Skeleton className={s.skeletonTitle} />
             <SkeletonText lines={2} />
           </div>
         </div>
 
-        <div className="overall-stats">
-          <Skeleton className="skeleton-title" />
-          <div className="stats-grid">
+        <div className={s.overallStats}>
+          <Skeleton className={s.skeletonTitle} />
+          <div className={s.statsGrid}>
             {Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="stat-card">
-                <Skeleton className="skeleton-icon" />
-                <div className="stat-content">
-                  <Skeleton className="skeleton-title" />
-                  <Skeleton className="skeleton-text short" />
+              <div key={index} className={s.statCard}>
+                <Skeleton className={s.skeletonIcon} />
+                <div className={s.statContent}>
+                  <Skeleton className={s.skeletonTitle} />
+                  <Skeleton className={`${s.skeletonText} ${s.short}`} />
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="complexes-section">
-          <Skeleton className="skeleton-title" />
-          <div className="complexes-grid">
+        <div className={s.complexesSection}>
+          <Skeleton className={s.skeletonTitle} />
+          <div className={s.complexesGrid}>
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="complex-card">
-                <Skeleton className="skeleton-title" />
+              <div key={index} className={s.complexCard}>
+                <Skeleton className={s.skeletonTitle} />
                 <SkeletonText lines={3} />
               </div>
             ))}
@@ -110,27 +110,27 @@ function PatientProgress() {
       return {
         icon: <CheckCircle2 size={14} />,
         text: 'Отлично',
-        className: 'excellent'
+        className: s.excellent
       };
     }
     if (avgPain <= 4) {
       return {
         icon: <ThumbsUp size={14} />,
         text: 'Хорошо',
-        className: 'good'
+        className: s.good
       };
     }
     if (avgPain <= 6) {
       return {
         icon: <AlertTriangle size={14} />,
         text: 'Средне',
-        className: 'medium'
+        className: s.medium
       };
     }
     return {
       icon: <XCircle size={14} />,
       text: 'Высокая',
-      className: 'high'
+      className: s.high
     };
   };
 
@@ -179,12 +179,12 @@ function PatientProgress() {
 
   if (error || !data) {
     return (
-      <div className="patient-progress-page">
-        <div className="error">
+      <div className={s.patientProgressPage}>
+        <div className={s.error}>
           <h2>Ошибка</h2>
           <p>{error || 'Данные не найдены'}</p>
           <button
-            className="btn-primary"
+            className={s.btnPrimary}
             onClick={() => navigate('/dashboard?tab=patients')}
           >
             Вернуться к пациентам
@@ -203,7 +203,7 @@ function PatientProgress() {
   } = derivedData;
 
   return (
-    <div className="patient-progress-page">
+    <div className={s.patientProgressPage}>
       <Breadcrumbs
         items={[
           {
@@ -223,81 +223,81 @@ function PatientProgress() {
         ]}
       />
 
-      <div className="back-button-wrapper">
+      <div className={s.backButtonWrapper}>
         <BackButton to="/dashboard?tab=patients" label="К списку пациентов" />
       </div>
 
-      <div className="patient-header">
-        <div className="patient-avatar" aria-hidden="true">
+      <div className={s.patientHeader}>
+        <div className={s.patientAvatar} aria-hidden="true">
           <User size={32} />
         </div>
-        <div className="patient-info">
+        <div className={s.patientInfo}>
           <h1>{patient.full_name || 'Пациент'}</h1>
-          <p className="patient-meta">
+          <p className={s.patientMeta}>
             {patient.email && <span>{patient.email}</span>}
             {patient.phone && <span>{patient.phone}</span>}
-            <span className="patient-meta-date">
+            <span className={s.patientMetaDate}>
               {`Добавлен: ${formatDate(patient.created_at)}`}
             </span>
           </p>
         </div>
       </div>
 
-      <div className="overall-stats">
-        <h2 className="section-title">
+      <div className={s.overallStats}>
+        <h2 className={s.sectionTitle}>
           <BarChart3 size={20} />
           Общая статистика
         </h2>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">
+        <div className={s.statsGrid}>
+          <div className={s.statCard}>
+            <div className={s.statIcon}>
               <ClipboardList size={22} />
             </div>
-            <div className="stat-content">
-              <div className="stat-value">{complexes.length}</div>
-              <div className="stat-label">Всего комплексов</div>
+            <div className={s.statContent}>
+              <div className={s.statValue}>{complexes.length}</div>
+              <div className={s.statLabel}>Всего комплексов</div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className={s.statCard}>
+            <div className={s.statIcon}>
               <Activity size={22} />
             </div>
-            <div className="stat-content">
-              <div className="stat-value">{overallStats.totalSessions}</div>
-              <div className="stat-label">Всего сессий</div>
+            <div className={s.statContent}>
+              <div className={s.statValue}>{overallStats.totalSessions}</div>
+              <div className={s.statLabel}>Всего сессий</div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
+          <div className={s.statCard}>
+            <div className={s.statIcon}>
               <Calendar size={22} />
             </div>
-            <div className="stat-content">
-              <div className="stat-value">{overallStats.uniqueDays}</div>
-              <div className="stat-label">Дней тренировок</div>
+            <div className={s.statContent}>
+              <div className={s.statValue}>{overallStats.uniqueDays}</div>
+              <div className={s.statLabel}>Дней тренировок</div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon pain">
+          <div className={s.statCard}>
+            <div className={`${s.statIcon} ${s.pain}`}>
               <TrendingDown size={22} />
             </div>
-            <div className="stat-content">
-              <div className="stat-value">
+            <div className={s.statContent}>
+              <div className={s.statValue}>
                 {overallStats.overallAvgPain.toFixed(1)}/10
               </div>
-              <div className="stat-label">Средняя боль</div>
+              <div className={s.statLabel}>Средняя боль</div>
             </div>
           </div>
         </div>
 
-        <div className="stats-subgrid">
-          <div className="stat-pill">
+        <div className={s.statsSubgrid}>
+          <div className={s.statPill}>
             <span>Всего отметок:</span>
             <strong>{overallStats.totalLogs}</strong>
           </div>
-          <div className="stat-pill">
+          <div className={s.statPill}>
             <span>Средняя сложность:</span>
             <strong>{overallStats.overallAvgDifficulty.toFixed(1)}/5</strong>
           </div>
@@ -305,19 +305,19 @@ function PatientProgress() {
       </div>
 
       {activeComplexes.length > 0 && (
-        <div className="complexes-section">
-          <h2 className="section-title">
+        <div className={s.complexesSection}>
+          <h2 className={s.sectionTitle}>
             <Activity size={20} />
             Активные комплексы ({activeComplexes.length})
           </h2>
-          <div className="complexes-grid">
+          <div className={s.complexesGrid}>
             {activeComplexes.map((complex) => {
               const painTrend = getPainTrend(complex.avgPain);
 
               return (
                 <div
                   key={complex.id}
-                  className="complex-card active"
+                  className={`${s.complexCard} ${s.active}`}
                   role="button"
                   tabIndex={0}
                   onClick={() => viewComplexProgress(complex.id)}
@@ -327,52 +327,52 @@ function PatientProgress() {
                     }
                   }}
                 >
-                  <div className="complex-header">
-                    <div className="complex-title">
+                  <div className={s.complexHeader}>
+                    <div className={s.complexTitle}>
                       <h3>{complex.diagnosis_name || 'Без диагноза'}</h3>
-                      <span className="status-badge active">Активный</span>
+                      <span className={`${s.statusBadge} ${s.active}`}>Активный</span>
                     </div>
                   </div>
 
-                  <div className="complex-stats">
-                    <div className="complex-stat">
-                      <span className="label">Сессий:</span>
-                      <span className="value">{complex.total_sessions}</span>
+                  <div className={s.complexStats}>
+                    <div className={s.complexStat}>
+                      <span className={s.label}>Сессий:</span>
+                      <span className={s.value}>{complex.total_sessions}</span>
                     </div>
-                    <div className="complex-stat">
-                      <span className="label">Последняя:</span>
-                      <span className="value">
+                    <div className={s.complexStat}>
+                      <span className={s.label}>Последняя:</span>
+                      <span className={s.value}>
                         {formatDate(complex.last_activity)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="complex-metrics">
-                    <div className="metric">
-                      <span className="metric-label">Боль:</span>
+                  <div className={s.complexMetrics}>
+                    <div className={s.metric}>
+                      <span className={s.metricLabel}>Боль:</span>
                       <span
                         className={`metric-value pain ${getPainClass(
                           complex.avgPain
                         )}`}
                       >
                         {complex.avgPain.toFixed(1)}
-                        <span className={`trend-badge ${painTrend.className}`}>
+                        <span className={`${s.trendBadge} ${painTrend.className}`}>
                           {painTrend.icon}
                           {painTrend.text}
                         </span>
                       </span>
                     </div>
-                    <div className="metric">
-                      <span className="metric-label">Сложность:</span>
-                      <span className="metric-value">
+                    <div className={s.metric}>
+                      <span className={s.metricLabel}>Сложность:</span>
+                      <span className={s.metricValue}>
                         {complex.avgDifficulty.toFixed(1)}/5
                       </span>
                     </div>
                   </div>
 
-                  <div className="complex-footer">
+                  <div className={s.complexFooter}>
                     <button
-                      className="btn-details"
+                      className={s.btnDetails}
                       onClick={(event) => viewComplexProgress(complex.id, event)}
                     >
                       Подробнее
@@ -387,16 +387,16 @@ function PatientProgress() {
       )}
 
       {completedComplexes.length > 0 && (
-        <div className="complexes-section">
-          <h2 className="section-title">
+        <div className={s.complexesSection}>
+          <h2 className={s.sectionTitle}>
             <ClipboardList size={20} />
             Завершённые комплексы ({completedComplexes.length})
           </h2>
-          <div className="complexes-grid">
+          <div className={s.complexesGrid}>
             {completedComplexes.map((complex) => (
               <div
                 key={complex.id}
-                className="complex-card completed"
+                className={`${s.complexCard} ${s.completed}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => viewComplexProgress(complex.id)}
@@ -406,29 +406,29 @@ function PatientProgress() {
                   }
                 }}
               >
-                <div className="complex-header">
-                  <div className="complex-title">
+                <div className={s.complexHeader}>
+                  <div className={s.complexTitle}>
                     <h3>{complex.diagnosis_name || 'Без диагноза'}</h3>
-                    <span className="status-badge completed">Завершён</span>
+                    <span className={`${s.statusBadge} ${s.completed}`}>Завершён</span>
                   </div>
                 </div>
 
-                <div className="complex-stats">
-                  <div className="complex-stat">
-                    <span className="label">Сессий:</span>
-                    <span className="value">{complex.total_sessions}</span>
+                <div className={s.complexStats}>
+                  <div className={s.complexStat}>
+                    <span className={s.label}>Сессий:</span>
+                    <span className={s.value}>{complex.total_sessions}</span>
                   </div>
-                  <div className="complex-stat">
-                    <span className="label">Завершён:</span>
-                    <span className="value">
+                  <div className={s.complexStat}>
+                    <span className={s.label}>Завершён:</span>
+                    <span className={s.value}>
                       {formatDate(complex.last_activity)}
                     </span>
                   </div>
                 </div>
 
-                <div className="complex-metrics">
-                  <div className="metric">
-                    <span className="metric-label">Финальная боль:</span>
+                <div className={s.complexMetrics}>
+                  <div className={s.metric}>
+                    <span className={s.metricLabel}>Финальная боль:</span>
                     <span
                       className={`metric-value pain ${getPainClass(
                         complex.avgPain
@@ -439,9 +439,9 @@ function PatientProgress() {
                   </div>
                 </div>
 
-                <div className="complex-footer">
+                <div className={s.complexFooter}>
                   <button
-                    className="btn-details"
+                    className={s.btnDetails}
                     onClick={(event) => viewComplexProgress(complex.id, event)}
                   >
                     Посмотреть
@@ -455,8 +455,8 @@ function PatientProgress() {
       )}
 
       {complexes.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">
+        <div className={s.emptyState}>
+          <div className={s.emptyIcon}>
             <ClipboardList size={32} />
           </div>
           <h3>Нет комплексов</h3>
