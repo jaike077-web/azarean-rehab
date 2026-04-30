@@ -3,6 +3,8 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
+@import './styles/tokens.css';
+
 * {
   margin: 0;
   padding: 0;
