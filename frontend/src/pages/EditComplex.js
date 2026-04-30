@@ -37,7 +37,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import './EditComplex.css';
+import s from './EditComplex.module.css';
 import { Skeleton } from '../components/Skeleton';
 import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
 
@@ -61,25 +61,25 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`selected-exercise ${isDragging ? 'is-dragging' : ''}`}
+      className={`${s.selectedExercise} ${isDragging ? s.isDragging : ''}`}
       {...attributes}
       {...listeners}
     >
-      <div className="drag-handle">
+      <div className={s.dragHandle}>
         ⋮⋮
       </div>
 
-      <div className="exercise-info">
+      <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
         {(exercise.category || exercise.difficulty) && (
-          <span className="exercise-meta">
+          <span className={s.exerciseMeta}>
             {exercise.category}
             {exercise.category && exercise.difficulty && ' • '}
             {exercise.difficulty}
           </span>
         )}
       </div>
-      <div className="exercise-params">
+      <div className={s.exerciseParams}>
         <input
           type="number"
           placeholder="Подходы"
@@ -106,11 +106,11 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           placeholder="Примечание"
           value={exercise.notes || ''}
           onChange={(e) => onUpdate(exercise.id, 'notes', e.target.value)}
-          className="notes-input"
+          className={s.notesInput}
         />
       </div>
       <button
-        className="remove-exercise-btn"
+        className={s.removeExerciseBtn}
         onClick={() => onRemove(exercise.id)}
         title="Удалить упражнение"
       >
@@ -301,23 +301,23 @@ function EditComplex() {
 
   if (loading) {
     return (
-      <div className="edit-complex-page">
-        <div className="page-header">
+      <div className={s.editComplexPage}>
+        <div className={s.pageHeader}>
           <Skeleton width="260px" height="32px" />
           <Skeleton width="200px" height="18px" style={{ marginTop: '10px' }} />
         </div>
-        <div className="complex-form">
-          <div className="form-section">
+        <div className={s.complexForm}>
+          <div className={s.formSection}>
             <Skeleton width="180px" height="20px" />
             <Skeleton width="100%" height="120px" style={{ marginTop: '12px' }} borderRadius="12px" />
           </div>
-          <div className="form-section">
+          <div className={s.formSection}>
             <Skeleton width="220px" height="20px" />
-            <div className="selected-exercises-list">
+            <div className={s.selectedExercisesList}>
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="selected-exercise">
+                <div key={index} className={s.selectedExercise}>
                   <Skeleton width="32px" height="32px" borderRadius="8px" />
-                  <div className="exercise-info">
+                  <div className={s.exerciseInfo}>
                     <Skeleton width="60%" height="16px" />
                     <Skeleton width="40%" height="14px" style={{ marginTop: '6px' }} />
                   </div>
@@ -326,10 +326,10 @@ function EditComplex() {
               ))}
             </div>
           </div>
-          <div className="form-section">
+          <div className={s.formSection}>
             <Skeleton width="200px" height="20px" />
             <Skeleton width="100%" height="40px" borderRadius="8px" style={{ marginTop: '12px' }} />
-            <div className="available-exercises-grid" style={{ marginTop: '16px' }}>
+            <div className={s.availableExercisesGrid} style={{ marginTop: '16px' }}>
               {Array.from({ length: 6 }).map((_, index) => (
                 <ExerciseCardSkeleton key={index} />
               ))}
@@ -342,10 +342,10 @@ function EditComplex() {
 
   if (error && !loading) {
     return (
-      <div className="error-view">
+      <div className={s.errorView}>
         <h2>❌ Ошибка</h2>
         <p>{error}</p>
-        <button className="btn-primary" onClick={() => navigate('/my-complexes')}>
+        <button className={s.btnPrimary} onClick={() => navigate('/my-complexes')}>
           ← Вернуться к комплексам
         </button>
       </div>
@@ -353,7 +353,7 @@ function EditComplex() {
   }
 
   return (
-    <div className="edit-complex-page">
+    <div className={s.editComplexPage}>
       <Breadcrumbs 
   items={[
     { 
@@ -373,22 +373,22 @@ function EditComplex() {
   ]}
 />
 
-      <div className="back-button-wrapper">
+      <div className={s.backButtonWrapper}>
         <BackButton to="/my-complexes" label="К списку комплексов" />
       </div>
 
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <h1>
-          <Edit2 className="page-icon" size={28} />
+          <Edit2 className={s.pageIcon} size={28} />
           <span>Редактирование комплекса</span>
         </h1>
         <p>Пациент: <strong>{patientName}</strong></p>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className={s.errorMessage}>{error}</div>}
 
-      <div className="complex-form">
-        <div className="form-section">
+      <div className={s.complexForm}>
+        <div className={s.formSection}>
           <h3>
             <FileText size={20} />
             <span>Рекомендации</span>
@@ -401,14 +401,14 @@ function EditComplex() {
           />
         </div>
 
-        <div className="form-section">
+        <div className={s.formSection}>
           <h3>
             <Dumbbell size={20} />
             <span>Упражнения ({selectedExercises.length})</span>
           </h3>
           
           {selectedExercises.length === 0 ? (
-            <div className="empty-exercises">
+            <div className={s.emptyExercises}>
               <p>Нет добавленных упражнений</p>
             </div>
           ) : (
@@ -422,7 +422,7 @@ function EditComplex() {
                 items={selectedExercises.map(e => e.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="selected-exercises-list">
+                <div className={s.selectedExercisesList}>
                   {selectedExercises.map((exercise) => (
                     <SortableExercise
                       key={exercise.id}
@@ -437,39 +437,39 @@ function EditComplex() {
           )}
         </div>
 
-        <div className="form-section">
+        <div className={s.formSection}>
           <h3>
             <Plus size={20} />
             <span>Добавить упражнения</span>
           </h3>
-          <div className="search-wrapper">
-            <Search className="search-icon-input" size={16} />
+          <div className={s.searchWrapper}>
+            <Search className={s.searchIconInput} size={16} />
             <input
               type="text"
               placeholder="Поиск упражнений..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
+              className={s.searchInput}
             />
           </div>
 
-          <div className="available-exercises-grid">
+          <div className={s.availableExercisesGrid}>
             {exercisesLoading
               ? Array.from({ length: 6 }).map((_, index) => (
                   <ExerciseCardSkeleton key={index} />
                 ))
               : filteredExercises.map((exercise) => (
-                  <div key={exercise.id} className="exercise-card-small">
+                  <div key={exercise.id} className={s.exerciseCardSmall}>
                     <h4>{exercise.title}</h4>
                     <p>{exercise.description}</p>
                     {(exercise.category || exercise.difficulty) && (
-                      <div className="exercise-tags">
-                        {exercise.category && <span className="tag">{exercise.category}</span>}
-                        {exercise.difficulty && <span className="tag">{exercise.difficulty}</span>}
+                      <div className={s.exerciseTags}>
+                        {exercise.category && <span className={s.tag}>{exercise.category}</span>}
+                        {exercise.difficulty && <span className={s.tag}>{exercise.difficulty}</span>}
                       </div>
                     )}
                     <button
-                      className="btn-add-exercise"
+                      className={s.btnAddExercise}
                       onClick={() => handleAddExercise(exercise)}
                       disabled={selectedExercises.find(e => e.id === exercise.id)}
                     >
@@ -490,11 +490,11 @@ function EditComplex() {
           </div>
         </div>
 
-        <div className="form-actions">
-          <button className="btn-secondary" onClick={() => navigate('/my-complexes')}>
+        <div className={s.formActions}>
+          <button className={s.btnSecondary} onClick={() => navigate('/my-complexes')}>
             Отмена
           </button>
-          <button className="btn-primary" onClick={handleSave}>
+          <button className={s.btnPrimary} onClick={handleSave}>
             <Save size={18} />
             <span>Сохранить изменения</span>
           </button>

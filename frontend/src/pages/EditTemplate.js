@@ -36,8 +36,8 @@ import { diagnoses, exercises, templates } from '../services/api';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useToast } from '../context/ToastContext';
-import './EditComplex.css';
-import './EditTemplate.css';
+import s from './EditComplex.module.css';
+import st from './EditTemplate.module.css';
 
 function SortableExercise({ exercise, onRemove, onUpdate }) {
   const {
@@ -58,21 +58,21 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`selected-exercise ${isDragging ? 'is-dragging' : ''}`}
+      className={`${s.selectedExercise} ${isDragging ? s.isDragging : ''}`}
     >
-      <div className="drag-handle" {...attributes} {...listeners}>
+      <div className={s.dragHandle} {...attributes} {...listeners}>
         <GripVertical size={18} />
       </div>
 
-      <div className="exercise-info">
+      <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
         {(exercise.body_region || exercise.category) && (
-          <span className="exercise-meta">
+          <span className={s.exerciseMeta}>
             {exercise.body_region || exercise.category}
           </span>
         )}
       </div>
-      <div className="exercise-params">
+      <div className={s.exerciseParams}>
         <input
           type="number"
           placeholder="Подходы"
@@ -111,11 +111,11 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           placeholder="Примечание"
           value={exercise.notes || ''}
           onChange={(event) => onUpdate(exercise.id, 'notes', event.target.value)}
-          className="notes-input"
+          className={s.notesInput}
         />
       </div>
       <button
-        className="remove-exercise-btn"
+        className={s.removeExerciseBtn}
         onClick={() => onRemove(exercise.id)}
         title="Удалить упражнение"
         type="button"
@@ -330,15 +330,15 @@ function EditTemplate() {
   );
 
   if (loading) {
-    return <div className="loading">Загрузка шаблона...</div>;
+    return <div className={s.loading}>Загрузка шаблона...</div>;
   }
 
   if (loadError && !loading) {
     return (
-      <div className="error-view">
+      <div className={s.errorView}>
         <h2>Ошибка</h2>
         <p>{loadError}</p>
-        <button className="btn-primary" onClick={() => navigate('/my-complexes?tab=templates')}>
+        <button className={s.btnPrimary} onClick={() => navigate('/my-complexes?tab=templates')}>
           Вернуться к шаблонам
         </button>
       </div>
@@ -346,7 +346,7 @@ function EditTemplate() {
   }
 
   return (
-    <div className="edit-complex-page edit-template-page">
+    <div className={`${s.editComplexPage} ${st.editTemplatePage}`}>
       <Breadcrumbs
         items={[
           {
@@ -366,28 +366,28 @@ function EditTemplate() {
         ]}
       />
 
-      <div className="back-button-wrapper">
+      <div className={s.backButtonWrapper}>
         <BackButton to="/my-complexes?tab=templates" label="К списку шаблонов" />
       </div>
 
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <h1>
-          <BookOpen className="page-icon" size={28} />
+          <BookOpen className={s.pageIcon} size={28} />
           <span>Редактирование шаблона</span>
         </h1>
         {templateName && <p>Шаблон: <strong>{templateName}</strong></p>}
       </div>
 
-      {formError && <div className="error-message">{formError}</div>}
+      {formError && <div className={s.errorMessage}>{formError}</div>}
 
-      <div className="complex-form">
-        <div className="form-section">
+      <div className={s.complexForm}>
+        <div className={s.formSection}>
           <h3>
             <FileText size={20} />
             <span>Данные шаблона</span>
           </h3>
-          <div className="template-form-grid">
-            <div className="form-field">
+          <div className={s.templateFormGrid}>
+            <div className={s.formField}>
               <label>Название *</label>
               <input
                 type="text"
@@ -396,7 +396,7 @@ function EditTemplate() {
                 placeholder="Введите название шаблона"
               />
             </div>
-            <div className="form-field">
+            <div className={s.formField}>
               <label>Диагноз</label>
               <select
                 value={diagnosisId}
@@ -410,7 +410,7 @@ function EditTemplate() {
                 ))}
               </select>
             </div>
-            <div className="form-field full-width">
+            <div className={`${s.formField} ${s.fullWidth}`}>
               <label>Описание</label>
               <textarea
                 rows="3"
@@ -422,14 +422,14 @@ function EditTemplate() {
           </div>
         </div>
 
-        <div className="form-section">
+        <div className={s.formSection}>
           <h3>
             <Dumbbell size={20} />
             <span>Упражнения ({selectedExercises.length})</span>
           </h3>
 
           {selectedExercises.length === 0 ? (
-            <div className="empty-exercises">
+            <div className={s.emptyExercises}>
               <p>Нет добавленных упражнений</p>
             </div>
           ) : (
@@ -443,7 +443,7 @@ function EditTemplate() {
                 items={selectedExercises.map((exercise) => exercise.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="selected-exercises-list">
+                <div className={s.selectedExercisesList}>
                   {selectedExercises.map((exercise) => (
                     <SortableExercise
                       key={exercise.id}
@@ -458,35 +458,35 @@ function EditTemplate() {
           )}
         </div>
 
-        <div className="form-section">
+        <div className={s.formSection}>
           <h3>
             <Plus size={20} />
             <span>Добавить упражнения</span>
           </h3>
-          <div className="search-wrapper">
-            <Search className="search-icon-input" size={16} />
+          <div className={s.searchWrapper}>
+            <Search className={s.searchIconInput} size={16} />
             <input
               type="text"
               placeholder="Поиск упражнений..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="search-input"
+              className={s.searchInput}
             />
           </div>
 
-          <div className="available-exercises-grid">
+          <div className={s.availableExercisesGrid}>
             {filteredExercises.map((exercise) => (
-              <div key={exercise.id} className="exercise-card-small">
+              <div key={exercise.id} className={s.exerciseCardSmall}>
                 <h4>{exercise.title}</h4>
                 <p>{exercise.description}</p>
                 {(exercise.category || exercise.difficulty) && (
-                  <div className="exercise-tags">
-                    {exercise.category && <span className="tag">{exercise.category}</span>}
-                    {exercise.difficulty && <span className="tag">{exercise.difficulty}</span>}
+                  <div className={s.exerciseTags}>
+                    {exercise.category && <span className={s.tag}>{exercise.category}</span>}
+                    {exercise.difficulty && <span className={s.tag}>{exercise.difficulty}</span>}
                   </div>
                 )}
                 <button
-                  className="btn-add-exercise"
+                  className={s.btnAddExercise}
                   onClick={() => handleAddExercise(exercise)}
                   disabled={selectedExercises.some((item) => item.id === exercise.id)}
                 >
@@ -507,11 +507,11 @@ function EditTemplate() {
           </div>
         </div>
 
-        <div className="form-actions">
-          <button className="btn-secondary" onClick={() => navigate('/my-complexes?tab=templates')}>
+        <div className={s.formActions}>
+          <button className={s.btnSecondary} onClick={() => navigate('/my-complexes?tab=templates')}>
             Отмена
           </button>
-          <button className="btn-primary" onClick={handleSave}>
+          <button className={s.btnPrimary} onClick={handleSave}>
             <Save size={18} />
             <span>Сохранить изменения</span>
           </button>

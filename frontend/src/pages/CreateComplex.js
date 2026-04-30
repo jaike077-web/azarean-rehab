@@ -32,7 +32,7 @@ import {
   Save,
   Folder,
 } from 'lucide-react';
-import './CreateComplex.css';
+import s from './CreateComplex.module.css';
 import TemplateSelector from '../components/TemplateSelector';
 
 // Компонент для перетаскиваемого упражнения
@@ -60,18 +60,18 @@ const SortableExercise = React.memo(function SortableExercise({ exercise, onRemo
     <div
       ref={setNodeRef}
       style={style}
-      className={`selected-exercise ${isDragging ? 'is-dragging' : ''}`}
+      className={`${s.selectedExercise} ${isDragging ? s.isDragging : ''}`}
     >
-      <div className="drag-handle" {...attributes} {...listeners}>
+      <div className={s.dragHandle} {...attributes} {...listeners}>
         <GripVertical size={20} />
       </div>
-      <div className="exercise-info">
+      <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
         {(exercise.body_region || exercise.category) && (
-          <span className="exercise-meta">{exercise.body_region || exercise.category}</span>
+          <span className={s.exerciseMeta}>{exercise.body_region || exercise.category}</span>
         )}
       </div>
-      <div className="exercise-params">
+      <div className={s.exerciseParams}>
         <input
           type="number"
           placeholder="Подходы"
@@ -120,11 +120,11 @@ const SortableExercise = React.memo(function SortableExercise({ exercise, onRemo
           onChange={(e) => onUpdate(exercise.id, 'notes', e.target.value)}
           onClick={handleInputClick}
           onPointerDown={handleInputClick}
-          className="notes-input"
+          className={s.notesInput}
         />
       </div>
       <button
-        className="remove-exercise-btn"
+        className={s.removeExerciseBtn}
         onClick={(e) => {
           e.stopPropagation();
           onRemove(exercise.id);
@@ -410,9 +410,9 @@ function CreateComplex() {
   ];
 
   return (
-    <div className="create-complex-page">
+    <div className={s.createComplexPage}>
       {/* Header */}
-      <div className="page-header">
+      <div className={s.pageHeader}>
         <h1>
           <ClipboardList size={28} />
           Создать комплекс
@@ -420,7 +420,7 @@ function CreateComplex() {
       </div>
 
       {/* Steps indicator */}
-      <div className="steps-indicator">
+      <div className={s.stepsIndicator}>
         {stepLabels.map((s) => (
           <div 
             key={s.num} 
@@ -431,24 +431,24 @@ function CreateComplex() {
         ))}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className={s.errorMessage}>{error}</div>}
 
       {/* Step 1: Patient selection */}
       {step === 1 && (
-        <div className="step-content">
+        <div className={s.stepContent}>
           <h2>Выберите пациента</h2>
           
-          <div className="search-box">
+          <div className={s.searchBox}>
             <input
               type="text"
-              className="search-input"
+              className={s.searchInput}
               placeholder="Поиск по имени или телефону..."
               value={patientSearch}
               onChange={(e) => setPatientSearch(e.target.value)}
             />
             {patientSearch && (
               <button 
-                className="clear-search" 
+                className={s.clearSearch} 
                 onClick={() => setPatientSearch('')}
               >
                 <X size={16} />
@@ -456,14 +456,14 @@ function CreateComplex() {
             )}
           </div>
 
-          <p className="results-count">
+          <p className={s.resultsCount}>
             Найдено: <strong>{patientsList.filter(p => 
               p.full_name.toLowerCase().includes(patientSearch.toLowerCase()) ||
               (p.phone && p.phone.includes(patientSearch))
             ).length}</strong> из {patientsList.length}
           </p>
 
-          <div className="create-patients-list">
+          <div className={s.createPatientsList}>
             {patientsList
               .filter(p => 
                 !patientSearch || 
@@ -473,27 +473,27 @@ function CreateComplex() {
               .map((patient) => (
                 <div
                   key={patient.id}
-                  className={`patient-item ${selectedPatient?.id === patient.id ? 'selected' : ''}`}
+                  className={`${s.patientItem} ${selectedPatient?.id === patient.id ? s.selected : ''}`}
                   onClick={() => setSelectedPatient(patient)}
                 >
-                  <div className="patient-avatar">
+                  <div className={s.patientAvatar}>
                     {patient.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                   </div>
-                  <div className="patient-details">
+                  <div className={s.patientDetails}>
                     <strong>{patient.full_name}</strong>
                     <span>{patient.phone || '—'}</span>
                   </div>
                   {selectedPatient?.id === patient.id && (
-                    <span className="check-mark"><Check size={20} /></span>
+                    <span className={s.checkMark}><Check size={20} /></span>
                   )}
                 </div>
               ))}
           </div>
 
-          <div className="step-buttons">
+          <div className={s.stepButtons}>
             <div></div>
             <button
-              className="btn-primary btn-next"
+              className={`${s.btnPrimary} ${s.btnNext}`}
               disabled={!selectedPatient}
               onClick={() => setStep(2)}
             >
@@ -505,10 +505,10 @@ function CreateComplex() {
 
       {/* Step 2: Diagnosis */}
       {step === 2 && (
-        <div className="step-content">
+        <div className={s.stepContent}>
           <h2>Диагноз и рекомендации</h2>
           
-          <div className="form-group">
+          <div className={s.formGroup}>
             <label>Диагноз (опционально)</label>
             <select
               value={selectedDiagnosis?.id || ''}
@@ -530,7 +530,7 @@ function CreateComplex() {
             </select>
           </div>
 
-          <div className="form-group">
+          <div className={s.formGroup}>
             <label>Примечание</label>
             <input
               type="text"
@@ -540,7 +540,7 @@ function CreateComplex() {
             />
           </div>
 
-          <div className="form-group">
+          <div className={s.formGroup}>
             <label>Рекомендации</label>
             <textarea
               rows="3"
@@ -550,7 +550,7 @@ function CreateComplex() {
             />
           </div>
 
-          <div className="form-group">
+          <div className={s.formGroup}>
             <label>Предостережения</label>
             <textarea
               rows="3"
@@ -560,11 +560,11 @@ function CreateComplex() {
             />
           </div>
 
-          <div className="step-buttons">
-            <button className="btn-secondary" onClick={() => setStep(1)}>
+          <div className={s.stepButtons}>
+            <button className={s.btnSecondary} onClick={() => setStep(1)}>
               <ChevronLeft size={18} /> Назад
             </button>
-            <button className="btn-primary" onClick={() => setStep(3)}>
+            <button className={s.btnPrimary} onClick={() => setStep(3)}>
               Далее <ChevronRight size={18} />
             </button>
           </div>
@@ -573,15 +573,15 @@ function CreateComplex() {
 
       {/* Step 3: Exercises */}
       {step === 3 && (
-        <div className="step-content step-exercises">
-          <div className="exercises-section">
-          <div className="section-header">
+        <div className={`${s.stepContent} ${s.stepExercises}`}>
+          <div className={s.exercisesSection}>
+          <div className={s.sectionHeader}>
   <h2><Search size={20} /> Упражнения</h2>
-  <button className="btn-template" onClick={openTemplatesModal}>
+  <button className={s.btnTemplate} onClick={openTemplatesModal}>
     <Folder size={16} /> Загрузить из шаблона
   </button>
 </div>
-            <div className="search-filters">
+            <div className={s.searchFilters}>
               <input
                 type="text"
                 placeholder="Поиск..."
@@ -596,21 +596,21 @@ function CreateComplex() {
                 <option value="hip">Бедро</option>
               </select>
             </div>
-            <div className="available-exercises">
+            <div className={s.availableExercises}>
             {filteredExercises.map((exercise) => {
   const isAdded = selectedExercises.some(e => e.id === exercise.id);
   return (
-    <div key={exercise.id} className={`exercise-item ${isAdded ? 'is-added' : ''}`}>
-      <div className="exercise-info">
+    <div key={exercise.id} className={`${s.exerciseItem} ${isAdded ? s.isAdded : ''}`}>
+      <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
-        <span className="exercise-meta">{exercise.body_region || exercise.category}</span>
+        <span className={s.exerciseMeta}>{exercise.body_region || exercise.category}</span>
       </div>
       {isAdded ? (
-        <button className="btn-added" disabled>
+        <button className={s.btnAdded} disabled>
           <Check size={16} /> Добавлено
         </button>
       ) : (
-        <button className="btn-add" onClick={() => addExercise(exercise)}>
+        <button className={s.btnAdd} onClick={() => addExercise(exercise)}>
           <Plus size={16} /> Добавить
         </button>
       )}
@@ -620,10 +620,10 @@ function CreateComplex() {
             </div>
           </div>
 
-          <div className="selected-section">
+          <div className={s.selectedSection}>
             <h2>Комплекс ({selectedExercises.length})</h2>
             {selectedExercises.length === 0 ? (
-              <div className="empty-complex">
+              <div className={s.emptyComplex}>
                 <p>Добавьте упражнения из списка</p>
               </div>
             ) : (
@@ -637,7 +637,7 @@ function CreateComplex() {
                   items={selectedExercises.map(e => e.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="selected-exercises-list">
+                  <div className={s.selectedExercisesList}>
                     {selectedExercises.map((exercise) => (
                       <SortableExercise
                         key={exercise.id}
@@ -652,12 +652,12 @@ function CreateComplex() {
             )}
           </div>
 
-          <div className="step-buttons full-width">
-            <button className="btn-secondary" onClick={() => setStep(2)}>
+          <div className={`${s.stepButtons} ${s.fullWidth}`}>
+            <button className={s.btnSecondary} onClick={() => setStep(2)}>
               <ChevronLeft size={18} /> Назад
             </button>
             <button
-              className="btn-primary"
+              className={s.btnPrimary}
               onClick={handleSubmit}
               disabled={loading || selectedExercises.length === 0}
             >
@@ -669,8 +669,8 @@ function CreateComplex() {
 
       {/* Step 4: Success */}
       {step === 4 && (
-        <div className="step-content success-step">
-          <div className="success-icon">
+        <div className={`${s.stepContent} ${s.successStep}`}>
+          <div className={s.successIcon}>
             <Check size={64} color="#48bb78" />
           </div>
           <h2>Комплекс создан</h2>
@@ -680,7 +680,7 @@ function CreateComplex() {
           <p>Упражнений: <strong>{selectedExercises.length}</strong></p>
 
           {!selectedPatient?.is_registered && (
-            <div className="info-hint" style={{
+            <div className={s.infoHint} style={{
               marginTop: 16, padding: 12,
               background: '#F0F7FF', border: '1px solid #D4E5F7',
               borderRadius: 8, fontSize: 13, color: '#2d3748', textAlign: 'left'
@@ -694,19 +694,19 @@ function CreateComplex() {
             </div>
           )}
 
-          <div className="success-actions" style={{ marginTop: 20 }}>
+          <div className={s.successActions} style={{ marginTop: 20 }}>
             <button
-              className="btn-save-template"
+              className={s.btnSaveTemplate}
               onClick={() => setShowSaveTemplateModal(true)}
             >
               <Save size={18} /> Сохранить как шаблон
             </button>
 
-            <div className="navigation-buttons">
-              <button className="btn-secondary" onClick={resetForm}>
+            <div className={s.navigationButtons}>
+              <button className={s.btnSecondary} onClick={resetForm}>
                 <Plus size={18} /> Новый комплекс
               </button>
-              <button className="btn-secondary" onClick={() => window.location.href = '/'}>
+              <button className={s.btnSecondary} onClick={() => window.location.href = '/'}>
                 <Home size={18} /> В Dashboard
               </button>
             </div>
@@ -724,16 +724,16 @@ function CreateComplex() {
 
 {/* Модалка сохранения шаблона */}
 {showSaveTemplateModal && (
-  <div className="modal-overlay" onClick={() => setShowSaveTemplateModal(false)}>
-    <div className="modal-content save-template-modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
+  <div className={s.modalOverlay} onClick={() => setShowSaveTemplateModal(false)}>
+    <div className={`${s.modalContent} ${s.saveTemplateModal}`} onClick={e => e.stopPropagation()}>
+      <div className={s.modalHeader}>
         <h3><Save size={20} /> Сохранить как шаблон</h3>
-        <button className="modal-close" onClick={() => setShowSaveTemplateModal(false)}>
+        <button className={s.modalClose} onClick={() => setShowSaveTemplateModal(false)}>
           <X size={20} />
         </button>
       </div>
-      <div className="modal-body">
-        <div className="form-field">
+      <div className={s.modalBody}>
+        <div className={s.formField}>
           <label>Название шаблона *</label>
           <input
             type="text"
@@ -743,7 +743,7 @@ function CreateComplex() {
             autoFocus
           />
         </div>
-        <div className="form-field">
+        <div className={s.formField}>
           <label>Описание (необязательно)</label>
           <textarea
             placeholder="Краткое описание шаблона..."
@@ -752,18 +752,18 @@ function CreateComplex() {
             rows={3}
           />
         </div>
-        <div className="template-summary">
+        <div className={s.templateSummary}>
           <p>Будет сохранено: <strong>{selectedExercises.length}</strong> упражнений</p>
           {selectedDiagnosis && (
             <p>Диагноз: <strong>{selectedDiagnosis.name}</strong></p>
           )}
         </div>
       </div>
-      <div className="modal-footer">
-        <button className="btn-secondary" onClick={() => setShowSaveTemplateModal(false)}>
+      <div className={s.modalFooter}>
+        <button className={s.btnSecondary} onClick={() => setShowSaveTemplateModal(false)}>
           Отмена
         </button>
-        <button className="btn-primary" onClick={saveAsTemplate}>
+        <button className={s.btnPrimary} onClick={saveAsTemplate}>
           <Save size={16} /> Сохранить
         </button>
       </div>
