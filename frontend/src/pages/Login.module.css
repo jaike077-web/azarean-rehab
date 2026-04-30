@@ -1,6 +1,7 @@
 /* =====================================================
    LOGIN PAGE - Azarean Network
    Fluid/Responsive дизайн
+   CSS Module — scoped, имена классов хешируются.
    ===================================================== */
 
 .login-container {
@@ -144,10 +145,6 @@
   text-decoration: underline;
 }
 
-/* =====================================================
-   LOADING STATE
-   ===================================================== */
-
 .btn-primary .spinner {
   width: 20px;
   height: 20px;
@@ -163,51 +160,15 @@
   }
 }
 
-/* =====================================================
-   PASSWORD TOGGLE
-   ===================================================== */
-
-.password-field {
-  position: relative;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: #a0aec0;
-  cursor: pointer;
-  padding: 8px;
-  min-height: auto;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.password-toggle:hover {
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
-}
-
-/* =====================================================
-   RESPONSIVE
-   ===================================================== */
-
 @media (max-width: 400px) {
   .login-box {
     padding: clamp(20px, 5vw, 32px);
   }
-  
+
   .login-header h1 {
     font-size: clamp(22px, 6vw, 28px);
   }
 }
-
-/* =====================================================
-   ACCESSIBILITY
-   ===================================================== */
 
 .form-group input:focus-visible {
   outline: 2px solid #667eea;
@@ -218,7 +179,7 @@
   .btn-primary {
     transition: none;
   }
-  
+
   .btn-primary:hover:not(:disabled) {
     transform: none;
   }

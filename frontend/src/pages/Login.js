@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Login.css';
+import styles from './Login.module.css';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -28,20 +28,20 @@ function Login() {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-box">
-      <div className="login-header">
-  <div className="login-logo">
+    <div className={styles.loginContainer}>
+      <div className={styles.loginBox}>
+      <div className={styles.loginHeader}>
+  <div className={styles.loginLogo}>
     <img src="/AN-logo.jpg" alt="Azarean Network Logo" />
   </div>
   <h1>Azarean Network</h1>
   <p>Система реабилитации</p>
 </div>
 
-        <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="error-message">{error}</div>}
+        <form onSubmit={handleSubmit} className={styles.loginForm}>
+          {error && <div className={styles.errorMessage}>{error}</div>}
 
-          <div className="form-group">
+          <div className={styles.formGroup}>
             <label htmlFor="email">Email</label>
             <input
               type="email"
@@ -54,7 +54,7 @@ function Login() {
             />
           </div>
 
-          <div className="form-group">
+          <div className={styles.formGroup}>
             <label htmlFor="password">Пароль</label>
             <div style={{ position: 'relative' }}>
               <input
@@ -90,12 +90,12 @@ function Login() {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button type="submit" className={styles.btnPrimary} disabled={loading}>
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
-        <div className="login-footer">
+        <div className={styles.loginFooter}>
           <p>Забыли пароль? Обратитесь к администратору</p>
         </div>
       </div>

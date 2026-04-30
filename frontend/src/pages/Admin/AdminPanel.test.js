@@ -57,12 +57,14 @@ jest.mock('../../components/ConfirmModal', () => ({
     ) : null,
 }));
 
-// Mock CSS
-jest.mock('./AdminStats.css', () => {});
-jest.mock('./AdminUsers.css', () => {});
-jest.mock('./AdminAuditLogs.css', () => {});
-jest.mock('./AdminContent.css', () => {});
-jest.mock('./AdminSystem.css', () => {});
+// Mock CSS Modules — возвращаем proxy-объект, где styles.anyClass вернёт строку имени класса.
+// Inline-фабрика чтобы соответствовать jest правилу "mock factory не должен ссылаться на
+// внешние переменные" (Babel jest-hoist).
+jest.mock('./AdminStats.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
+jest.mock('./AdminUsers.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
+jest.mock('./AdminAuditLogs.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
+jest.mock('./AdminContent.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
+jest.mock('./AdminSystem.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
 
 const { admin } = require('../../services/api');
 

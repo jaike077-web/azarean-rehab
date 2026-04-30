@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
 import { patientAuth } from '../../services/api';
 import PatientSplash from '../../components/PatientSplash';
-import './PatientLogin.css';
+import s from './PatientLogin.module.css';
 
 const PatientLogin = () => {
   const navigate = useNavigate();
@@ -90,44 +90,44 @@ const PatientLogin = () => {
   };
 
   return (
-    <div className="patient-auth-container">
-      <div className="patient-auth-card">
+    <div className={s.patientAuthContainer}>
+      <div className={s.patientAuthCard}>
         {/* Logo */}
-        <div className="patient-auth-logo">
-          <div className="patient-auth-logo-dot"></div>
-          <div className="patient-auth-logo-text">Azarean</div>
+        <div className={s.patientAuthLogo}>
+          <div className={s.patientAuthLogoDot}></div>
+          <div className={s.patientAuthLogoText}>Azarean</div>
         </div>
 
         {/* Heading */}
-        <h1 className="patient-auth-heading">Вход в личный кабинет</h1>
+        <h1 className={s.patientAuthHeading}>Вход в личный кабинет</h1>
 
         {/* Error Message */}
         {error && (
-          <div className="patient-auth-error">
+          <div className={s.patientAuthError}>
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {location.state?.message && (
-          <div className="patient-auth-success">
+          <div className={s.patientAuthSuccess}>
             {location.state.message}
           </div>
         )}
 
         {/* Login Form */}
-        <form className="patient-auth-form" onSubmit={handleSubmit}>
+        <form className={s.patientAuthForm} onSubmit={handleSubmit}>
           {/* Email Field */}
-          <div className="patient-auth-field">
-            <label htmlFor="email" className="patient-auth-label">
+          <div className={s.patientAuthField}>
+            <label htmlFor="email" className={s.patientAuthLabel}>
               Email
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Mail className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Mail className={s.patientAuthInputIcon} size={20} />
               <input
                 type="email"
                 id="email"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -138,16 +138,16 @@ const PatientLogin = () => {
           </div>
 
           {/* Password Field */}
-          <div className="patient-auth-field">
-            <label htmlFor="password" className="patient-auth-label">
+          <div className={s.patientAuthField}>
+            <label htmlFor="password" className={s.patientAuthLabel}>
               Пароль
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Lock className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Lock className={s.patientAuthInputIcon} size={20} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Введите пароль"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -156,7 +156,7 @@ const PatientLogin = () => {
               />
               <button
                 type="button"
-                className="patient-auth-password-toggle"
+                className={s.patientAuthPasswordToggle}
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               >
@@ -166,14 +166,14 @@ const PatientLogin = () => {
           </div>
 
           {/* Forgot Password Link */}
-          <Link to="/patient-forgot-password" className="patient-auth-forgot-link">
+          <Link to="/patient-forgot-password" className={s.patientAuthForgotLink}>
             Забыли пароль?
           </Link>
 
           {/* Submit Button */}
           <button
             type="submit"
-            className="patient-auth-btn-primary"
+            className={s.patientAuthBtnPrimary}
             disabled={loading}
           >
             {loading ? 'Вход...' : 'Войти'}
@@ -181,15 +181,15 @@ const PatientLogin = () => {
         </form>
 
         {/* Divider */}
-        <div className="patient-auth-divider">
+        <div className={s.patientAuthDivider}>
           <span>или</span>
         </div>
 
         {/* OAuth Buttons */}
-        <div className="patient-auth-oauth-grid">
+        <div className={s.patientAuthOauthGrid}>
           <button
             type="button"
-            className="patient-auth-oauth-btn"
+            className={s.patientAuthOauthBtn}
             onClick={() => handleOAuthClick('yandex')}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -199,7 +199,7 @@ const PatientLogin = () => {
           </button>
           <button
             type="button"
-            className="patient-auth-oauth-btn"
+            className={s.patientAuthOauthBtn}
             onClick={() => handleOAuthClick('google')}
           >
             <svg width="24" height="24" viewBox="0 0 24 24">
@@ -212,7 +212,7 @@ const PatientLogin = () => {
           </button>
           <button
             type="button"
-            className="patient-auth-oauth-btn"
+            className={s.patientAuthOauthBtn}
             onClick={() => handleOAuthClick('telegram')}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#0088cc">
@@ -222,7 +222,7 @@ const PatientLogin = () => {
           </button>
           <button
             type="button"
-            className="patient-auth-oauth-btn"
+            className={s.patientAuthOauthBtn}
             onClick={() => handleOAuthClick('vk')}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#0077FF">
@@ -233,7 +233,7 @@ const PatientLogin = () => {
         </div>
 
         {providers.telegram?.enabled && (
-          <p className="patient-auth-oauth-hint">
+          <p className={s.patientAuthOauthHint}>
             Если после авторизации в Telegram страница не вернулась — нажмите
             «Telegram» ещё раз. Иногда браузер не получает сигнал от Telegram
             Desktop, и редирект приходится повторить вручную.
@@ -241,9 +241,9 @@ const PatientLogin = () => {
         )}
 
         {/* Footer */}
-        <div className="patient-auth-footer">
+        <div className={s.patientAuthFooter}>
           Нет аккаунта?{' '}
-          <Link to="/patient-register" className="patient-auth-link">
+          <Link to="/patient-register" className={s.patientAuthLink}>
             Зарегистрироваться
           </Link>
         </div>

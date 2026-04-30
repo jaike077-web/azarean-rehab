@@ -3,7 +3,7 @@ import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { ScrollText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TableSkeleton } from '../../components/Skeleton';
-import './AdminAuditLogs.css';
+import s from './AdminAuditLogs.module.css';
 
 const ACTION_LABELS = {
   CREATE: 'Создание', READ: 'Чтение', UPDATE: 'Обновление',
@@ -62,14 +62,14 @@ function AdminAuditLogs() {
   };
 
   return (
-    <div className="admin-audit">
-      <h2 className="admin-section-title">
+    <div className={s.adminAudit}>
+      <h2 className={s.adminSectionTitle}>
         <ScrollText size={22} strokeWidth={1.8} />
         <span>Журнал аудита</span>
-        <span className="admin-title-badge">{total}</span>
+        <span className={s.adminTitleBadge}>{total}</span>
       </h2>
 
-      <div className="admin-filters">
+      <div className={s.adminFilters}>
         <select value={filters.user_id} onChange={e => handleFilterChange('user_id', e.target.value)}>
           <option value="">Все пользователи</option>
           {users.map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
@@ -90,8 +90,8 @@ function AdminAuditLogs() {
         <TableSkeleton rows={10} columns={6} />
       ) : (
         <>
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className={s.adminTableWrap}>
+            <table className={s.adminTable}>
               <thead>
                 <tr>
                   <th>Дата</th>
@@ -105,16 +105,16 @@ function AdminAuditLogs() {
               <tbody>
                 {logs.map(log => (
                   <tr key={log.id}>
-                    <td className="td-date">{formatDate(log.created_at)}</td>
-                    <td className="td-name">{log.user_name || '—'}</td>
+                    <td className={s.tdDate}>{formatDate(log.created_at)}</td>
+                    <td className={s.tdName}>{log.user_name || '—'}</td>
                     <td>
-                      <span className={`audit-action action-${log.action?.toLowerCase()}`}>
+                      <span className={`${s.auditAction} ${s[`action${(log.action || '').charAt(0)}${(log.action || '').slice(1).toLowerCase()}`] || ''}`}>
                         {ACTION_LABELS[log.action] || log.action}
                       </span>
                     </td>
                     <td>{ENTITY_LABELS[log.entity_type] || log.entity_type}</td>
-                    <td className="td-id">{log.entity_id || '—'}</td>
-                    <td className="td-ip">{log.ip_address || '—'}</td>
+                    <td className={s.tdId}>{log.entity_id || '—'}</td>
+                    <td className={s.tdIp}>{log.ip_address || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -122,7 +122,7 @@ function AdminAuditLogs() {
           </div>
 
           {totalPages > 1 && (
-            <div className="admin-pagination">
+            <div className={s.adminPagination}>
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft size={16} strokeWidth={1.8} /></button>
               <span>Стр. {page} из {totalPages}</span>
               <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><ChevronRight size={16} strokeWidth={1.8} /></button>
@@ -130,9 +130,9 @@ function AdminAuditLogs() {
           )}
 
           {!loading && logs.length === 0 && (
-            <div className="admin-empty-state">
-              <div className="empty-state-content">
-                <div className="empty-state-icon">
+            <div className={s.adminEmptyState}>
+              <div className={s.emptyStateContent}>
+                <div className={s.emptyStateIcon}>
                   <ScrollText size={48} strokeWidth={1.8} />
                 </div>
                 <h3>Нет записей в журнале</h3>

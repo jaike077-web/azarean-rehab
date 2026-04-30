@@ -5,7 +5,7 @@ import AdminUserModal from './AdminUserModal';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import { Users, Plus, Pencil, UserX, UserCheck, Unlock, Search } from 'lucide-react';
-import './AdminUsers.css';
+import s from './AdminUsers.module.css';
 
 function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -82,27 +82,27 @@ function AdminUsers() {
 
   const getStatusBadge = (user) => {
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      return <span className="admin-badge badge-locked">Заблокирован</span>;
+      return <span className={`${s.adminBadge} ${s.badgeLocked}`}>Заблокирован</span>;
     }
     if (!user.is_active) {
-      return <span className="admin-badge badge-inactive">Неактивен</span>;
+      return <span className={`${s.adminBadge} ${s.badgeInactive}`}>Неактивен</span>;
     }
-    return <span className="admin-badge badge-active">Активен</span>;
+    return <span className={`${s.adminBadge} ${s.badgeActive}`}>Активен</span>;
   };
 
   return (
-    <div className="admin-users">
-      <div className="admin-section-header">
-        <h2 className="admin-section-title">
+    <div className={s.adminUsers}>
+      <div className={s.adminSectionHeader}>
+        <h2 className={s.adminSectionTitle}>
           <Users size={22} strokeWidth={1.8} />
           <span>Управление пользователями</span>
         </h2>
-        <button className="admin-btn-primary" onClick={() => setShowModal(true)}>
+        <button className={s.adminBtnPrimary} onClick={() => setShowModal(true)}>
           <Plus size={16} strokeWidth={1.8} /> Создать
         </button>
       </div>
 
-      <div className="admin-search-bar">
+      <div className={s.adminSearchBar}>
         <Search size={16} strokeWidth={1.8} />
         <input
           type="text"
@@ -116,8 +116,8 @@ function AdminUsers() {
         <TableSkeleton rows={8} columns={6} />
       ) : (
         <>
-          <div className="admin-table-wrap">
-            <table className="admin-table">
+          <div className={s.adminTableWrap}>
+            <table className={s.adminTable}>
               <thead>
                 <tr>
                   <th>Имя</th>
@@ -130,33 +130,33 @@ function AdminUsers() {
               </thead>
               <tbody>
                 {filteredUsers.map(user => (
-                  <tr key={user.id} className={!user.is_active ? 'row-inactive' : ''}>
-                    <td className="td-name">{user.full_name}</td>
-                    <td className="td-email">{user.email}</td>
+                  <tr key={user.id} className={!user.is_active ? s.rowInactive : ''}>
+                    <td className={s.tdName}>{user.full_name}</td>
+                    <td className={s.tdEmail}>{user.email}</td>
                     <td>
-                      <span className={`admin-badge ${user.role === 'admin' ? 'badge-admin' : 'badge-instructor'}`}>
+                      <span className={`${s.adminBadge} ${user.role === 'admin' ? s.badgeAdmin : s.badgeInstructor}`}>
                         {user.role === 'admin' ? 'Админ' : 'Инструктор'}
                       </span>
                     </td>
                     <td>{getStatusBadge(user)}</td>
-                    <td className="td-date">{new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
-                    <td className="td-actions">
-                      <button className="admin-action-btn" title="Редактировать" onClick={() => setEditUser(user)}>
+                    <td className={s.tdDate}>{new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
+                    <td className={s.tdActions}>
+                      <button className={s.adminActionBtn} title="Редактировать" onClick={() => setEditUser(user)}>
                         <Pencil size={14} strokeWidth={1.8} />
                       </button>
                       {user.is_active ? (
-                        <button className="admin-action-btn btn-danger" title="Деактивировать"
+                        <button className={`${s.adminActionBtn} ${s.btnDanger}`} title="Деактивировать"
                           onClick={() => setConfirmAction({ type: 'deactivate', user })}>
                           <UserX size={14} strokeWidth={1.8} />
                         </button>
                       ) : (
-                        <button className="admin-action-btn btn-success" title="Активировать"
+                        <button className={`${s.adminActionBtn} ${s.btnSuccess}`} title="Активировать"
                           onClick={() => handleActivate(user)}>
                           <UserCheck size={14} strokeWidth={1.8} />
                         </button>
                       )}
                       {user.locked_until && new Date(user.locked_until) > new Date() && (
-                        <button className="admin-action-btn btn-warning" title="Разблокировать"
+                        <button className={`${s.adminActionBtn} ${s.btnWarning}`} title="Разблокировать"
                           onClick={() => handleUnlock(user)}>
                           <Unlock size={14} strokeWidth={1.8} />
                         </button>
@@ -168,9 +168,9 @@ function AdminUsers() {
             </table>
           </div>
           {!loading && filteredUsers.length === 0 && (
-            <div className="admin-empty-state">
-              <div className="empty-state-content">
-                <div className="empty-state-icon">
+            <div className={s.adminEmptyState}>
+              <div className={s.emptyStateContent}>
+                <div className={s.emptyStateIcon}>
                   <Users size={48} strokeWidth={1.8} />
                 </div>
                 <h3>{search ? 'Пользователи не найдены' : 'Нет пользователей'}</h3>

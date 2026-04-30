@@ -4,8 +4,8 @@ import { User, Mail, Phone, Lock, EyeOff, Eye, Check, KeyRound } from 'lucide-re
 import { patientAuth } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
-import './PatientLogin.css';
-import './PatientRegister.css';
+import s from './PatientLogin.module.css';
+import sr from './PatientRegister.module.css';
 
 function PatientRegister() {
   const navigate = useNavigate();
@@ -106,17 +106,17 @@ function PatientRegister() {
   const passwordStrength = getPasswordStrength();
 
   return (
-    <div className="patient-auth-container">
-      <div className="patient-auth-card">
-        <div className="patient-auth-logo">
-          <div className="patient-auth-logo-dot"></div>
-          <div className="patient-auth-logo-text">Azarean</div>
+    <div className={s.patientAuthContainer}>
+      <div className={s.patientAuthCard}>
+        <div className={s.patientAuthLogo}>
+          <div className={s.patientAuthLogoDot}></div>
+          <div className={s.patientAuthLogoText}>Azarean</div>
         </div>
 
-        <h1 className="patient-auth-heading">Создание аккаунта</h1>
+        <h1 className={s.patientAuthHeading}>Создание аккаунта</h1>
 
         {oauthProvider && (
-          <div className="patient-auth-info">
+          <div className={sr.patientAuthInfo}>
             Мы не нашли вашу карточку у инструктора. Попросите его сгенерировать
             код приглашения и введите его ниже — после этого ваш Telegram
             автоматически свяжется с профилем.
@@ -124,21 +124,21 @@ function PatientRegister() {
         )}
 
         {error && (
-          <div className="patient-auth-error">
+          <div className={s.patientAuthError}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="patient-auth-form">
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
-              Код приглашения <span className="patient-auth-required">*</span>
+        <form onSubmit={handleSubmit} className={s.patientAuthForm}>
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
+              Код приглашения <span className={sr.patientAuthRequired}>*</span>
             </label>
-            <div className="patient-auth-input-wrapper">
-              <KeyRound className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <KeyRound className={s.patientAuthInputIcon} size={20} />
               <input
                 type="text"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Введите код от инструктора"
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
@@ -150,20 +150,20 @@ function PatientRegister() {
                 required
               />
             </div>
-            <p className="patient-auth-hint">
+            <p className={sr.patientAuthHint}>
               Код вам должен передать ваш специалист
             </p>
           </div>
 
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
-              Имя <span className="patient-auth-required">*</span>
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
+              Имя <span className={sr.patientAuthRequired}>*</span>
             </label>
-            <div className="patient-auth-input-wrapper">
-              <User className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <User className={s.patientAuthInputIcon} size={20} />
               <input
                 type="text"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Введите ваше имя"
                 value={full_name}
                 onChange={(e) => setFullName(e.target.value)}
@@ -173,15 +173,15 @@ function PatientRegister() {
             </div>
           </div>
 
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
-              Email <span className="patient-auth-required">*</span>
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
+              Email <span className={sr.patientAuthRequired}>*</span>
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Mail className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Mail className={s.patientAuthInputIcon} size={20} />
               <input
                 type="email"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="example@mail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -191,15 +191,15 @@ function PatientRegister() {
             </div>
           </div>
 
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
               Телефон
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Phone className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Phone className={s.patientAuthInputIcon} size={20} />
               <input
                 type="tel"
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="+7 (___) ___-__-__"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -208,15 +208,15 @@ function PatientRegister() {
             </div>
           </div>
 
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
-              Пароль <span className="patient-auth-required">*</span>
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
+              Пароль <span className={sr.patientAuthRequired}>*</span>
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Lock className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Lock className={s.patientAuthInputIcon} size={20} />
               <input
                 type={showPassword ? 'text' : 'password'}
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Минимум 8 символов"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -225,7 +225,7 @@ function PatientRegister() {
               />
               <button
                 type="button"
-                className="patient-auth-password-toggle"
+                className={s.patientAuthPasswordToggle}
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={loading}
               >
@@ -234,10 +234,10 @@ function PatientRegister() {
             </div>
             {passwordStrength && (
               <>
-                <div className="patient-auth-password-strength">
-                  <div className={`patient-auth-password-strength-bar ${passwordStrength}`}></div>
+                <div className={sr.patientAuthPasswordStrength}>
+                  <div className={`${sr.patientAuthPasswordStrengthBar} ${sr[passwordStrength]}`}></div>
                 </div>
-                <p className="patient-auth-password-hint">
+                <p className={sr.patientAuthPasswordHint}>
                   {passwordStrength === 'weak' && 'Слабый пароль'}
                   {passwordStrength === 'medium' && 'Средний пароль'}
                   {passwordStrength === 'strong' && 'Надёжный пароль'}
@@ -246,15 +246,15 @@ function PatientRegister() {
             )}
           </div>
 
-          <div className="patient-auth-field">
-            <label className="patient-auth-label">
-              Подтверждение пароля <span className="patient-auth-required">*</span>
+          <div className={s.patientAuthField}>
+            <label className={s.patientAuthLabel}>
+              Подтверждение пароля <span className={sr.patientAuthRequired}>*</span>
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Lock className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Lock className={s.patientAuthInputIcon} size={20} />
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Повторите пароль"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -263,7 +263,7 @@ function PatientRegister() {
               />
               <button
                 type="button"
-                className="patient-auth-password-toggle"
+                className={s.patientAuthPasswordToggle}
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 disabled={loading}
               >
@@ -272,35 +272,35 @@ function PatientRegister() {
             </div>
           </div>
 
-          <div className="patient-auth-consent">
-            <label className="patient-auth-consent-checkbox-wrapper">
+          <div className={sr.patientAuthConsent}>
+            <label className={sr.patientAuthConsentCheckboxWrapper}>
               <input
                 type="checkbox"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
                 disabled={loading}
-                className="patient-auth-consent-checkbox-input"
+                className={sr.patientAuthConsentCheckboxInput}
               />
-              <span className="patient-auth-consent-checkbox">
+              <span className={sr.patientAuthConsentCheckbox}>
                 {consent && <Check size={14} />}
               </span>
             </label>
-            <label className="patient-auth-consent-label">
+            <label className={sr.patientAuthConsentLabel}>
               Я согласен на обработку персональных данных
             </label>
           </div>
 
           <button
             type="submit"
-            className="patient-auth-btn-primary"
+            className={s.patientAuthBtnPrimary}
             disabled={loading}
           >
             {loading ? 'Создание аккаунта...' : 'Создать аккаунт'}
           </button>
 
-          <div className="patient-auth-footer">
+          <div className={s.patientAuthFooter}>
             <span>Уже есть аккаунт?</span>
-            <Link to="/patient-login" className="patient-auth-link">
+            <Link to="/patient-login" className={s.patientAuthLink}>
               Войти
             </Link>
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { Users, UserCheck, Activity, BookOpen, MessageSquare, FileText, Shield, BarChart3, TrendingUp, Flame } from 'lucide-react';
-import './AdminStats.css';
+import s from './AdminStats.module.css';
 
 function AdminStats() {
   const [stats, setStats] = useState(null);
@@ -28,17 +28,17 @@ function AdminStats() {
 
   if (loading) {
     return (
-      <div className="admin-stats">
-        <h2 className="admin-section-title">
+      <div className={s.adminStats}>
+        <h2 className={s.adminSectionTitle}>
           <Shield size={22} strokeWidth={1.8} />
           <span>Статистика платформы</span>
         </h2>
-        <div className="admin-stats-grid">
+        <div className={s.adminStatsGrid}>
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="admin-stat-card skeleton-card">
-              <div className="skeleton-icon" />
-              <div className="skeleton-text" />
-              <div className="skeleton-number" />
+            <div key={i} className={`${s.adminStatCard} ${s.skeletonCard}`}>
+              <div className={s.skeletonIcon} />
+              <div className={s.skeletonText} />
+              <div className={s.skeletonNumber} />
             </div>
           ))}
         </div>
@@ -66,31 +66,31 @@ function AdminStats() {
   ];
 
   return (
-    <div className="admin-stats">
-      <h2 className="admin-section-title">
+    <div className={s.adminStats}>
+      <h2 className={s.adminSectionTitle}>
         <Shield size={22} strokeWidth={1.8} />
         <span>Статистика платформы</span>
       </h2>
 
-      <div className="admin-stats-grid">
+      <div className={s.adminStatsGrid}>
         {cards.map((card, i) => {
           const Icon = card.icon;
           return (
-            <div key={i} className="admin-stat-card">
-              <div className="admin-stat-icon" style={{ background: `${card.color}15`, color: card.color }}>
+            <div key={i} className={s.adminStatCard}>
+              <div className={s.adminStatIcon} style={{ background: `${card.color}15`, color: card.color }}>
                 <Icon size={20} strokeWidth={1.8} />
               </div>
-              <div className="admin-stat-info">
-                <div className="admin-stat-value">{card.value}</div>
-                <div className="admin-stat-label">{card.label}</div>
-                {card.sub && <div className="admin-stat-sub">{card.sub}</div>}
+              <div className={s.adminStatInfo}>
+                <div className={s.adminStatValue}>{card.value}</div>
+                <div className={s.adminStatLabel}>{card.label}</div>
+                {card.sub && <div className={s.adminStatSub}>{card.sub}</div>}
               </div>
             </div>
           );
         })}
       </div>
 
-      <button className="admin-refresh-btn" onClick={loadStats}>
+      <button className={s.adminRefreshBtn} onClick={loadStats}>
         Обновить статистику
       </button>
     </div>

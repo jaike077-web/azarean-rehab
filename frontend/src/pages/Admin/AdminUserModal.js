@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import s from './AdminUsers.module.css';
 
 function AdminUserModal({ user, onSave, onClose }) {
   const isEdit = !!user;
@@ -54,17 +55,17 @@ function AdminUserModal({ user, onSave, onClose }) {
   };
 
   return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" onClick={e => e.stopPropagation()}>
-        <div className="admin-modal-header">
+    <div className={s.adminModalOverlay} onClick={onClose}>
+      <div className={s.adminModal} onClick={e => e.stopPropagation()}>
+        <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}</h3>
-          <button className="admin-modal-close" onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="admin-modal-form">
-          {error && <div className="admin-form-error">{error}</div>}
+        <form onSubmit={handleSubmit} className={s.adminModalForm}>
+          {error && <div className={s.adminFormError}>{error}</div>}
 
-          <div className="admin-form-group">
+          <div className={s.adminFormGroup}>
             <label>ФИО</label>
             <input
               type="text"
@@ -75,7 +76,7 @@ function AdminUserModal({ user, onSave, onClose }) {
           </div>
 
           {!isEdit && (
-            <div className="admin-form-group">
+            <div className={s.adminFormGroup}>
               <label>Email</label>
               <input
                 type="email"
@@ -87,7 +88,7 @@ function AdminUserModal({ user, onSave, onClose }) {
           )}
 
           {!isEdit && (
-            <div className="admin-form-group">
+            <div className={s.adminFormGroup}>
               <label>Пароль</label>
               <input
                 type="password"
@@ -98,7 +99,7 @@ function AdminUserModal({ user, onSave, onClose }) {
             </div>
           )}
 
-          <div className="admin-form-group">
+          <div className={s.adminFormGroup}>
             <label>Роль</label>
             <select
               value={form.role}
@@ -109,9 +110,9 @@ function AdminUserModal({ user, onSave, onClose }) {
             </select>
           </div>
 
-          <div className="admin-modal-actions">
-            <button type="button" className="admin-btn-secondary" onClick={onClose}>Отмена</button>
-            <button type="submit" className="admin-btn-primary" disabled={saving}>
+          <div className={s.adminModalActions}>
+            <button type="button" className={s.adminBtnSecondary} onClick={onClose}>Отмена</button>
+            <button type="submit" className={s.adminBtnPrimary} disabled={saving}>
               {saving ? 'Сохранение...' : isEdit ? 'Сохранить' : 'Создать'}
             </button>
           </div>

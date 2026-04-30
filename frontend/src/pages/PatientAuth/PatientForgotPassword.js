@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { patientAuth } from '../../services/api';
-import './PatientLogin.css';
-import './PatientForgotPassword.css';
+import s from './PatientLogin.module.css';
+import sf from './PatientForgotPassword.module.css';
 
 const PatientForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -39,37 +39,37 @@ const PatientForgotPassword = () => {
   };
 
   return (
-    <div className="patient-auth-container">
-      <div className="patient-auth-card">
-        <div className="patient-auth-logo">
-          <div className="patient-auth-logo-dot" />
-          <span className="patient-auth-logo-text">Azarean</span>
+    <div className={s.patientAuthContainer}>
+      <div className={s.patientAuthCard}>
+        <div className={s.patientAuthLogo}>
+          <div className={s.patientAuthLogoDot} />
+          <span className={s.patientAuthLogoText}>Azarean</span>
         </div>
 
-        <h1 className="patient-auth-heading">Восстановление пароля</h1>
+        <h1 className={s.patientAuthHeading}>Восстановление пароля</h1>
 
-        <p className="patient-auth-subtitle">
+        <p className={sf.patientAuthSubtitle}>
           Введите email, на который зарегистрирован аккаунт
         </p>
 
         {error && (
-          <div className="patient-auth-error">
+          <div className={s.patientAuthError}>
             {error}
           </div>
         )}
 
         {!sent ? (
-          <form className="patient-auth-form" onSubmit={handleSubmit}>
-            <div className="patient-auth-field">
-              <label htmlFor="email" className="patient-auth-label">
+          <form className={s.patientAuthForm} onSubmit={handleSubmit}>
+            <div className={s.patientAuthField}>
+              <label htmlFor="email" className={s.patientAuthLabel}>
                 Email
               </label>
-              <div className="patient-auth-input-wrapper">
-                <Mail className="patient-auth-input-icon" size={20} />
+              <div className={s.patientAuthInputWrapper}>
+                <Mail className={s.patientAuthInputIcon} size={20} />
                 <input
                   id="email"
                   type="email"
-                  className="patient-auth-input"
+                  className={s.patientAuthInput}
                   placeholder="mail@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -81,7 +81,7 @@ const PatientForgotPassword = () => {
 
             <button
               type="submit"
-              className="patient-auth-btn-primary"
+              className={s.patientAuthBtnPrimary}
               disabled={loading}
             >
               {loading ? 'Отправка...' : 'Отправить ссылку'}
@@ -89,17 +89,17 @@ const PatientForgotPassword = () => {
           </form>
         ) : (
           <div>
-            <div className="patient-auth-success">
+            <div className={s.patientAuthSuccess}>
               Ссылка для сброса пароля отправлена на {email}
             </div>
 
-            <p className="patient-auth-dev-hint">
+            <p className={sf.patientAuthDevHint}>
               Проверьте консоль сервера (dev mode)
             </p>
 
             <button
               type="button"
-              className="patient-auth-btn-outlined"
+              className={sf.patientAuthBtnOutlined}
               onClick={handleResend}
               disabled={loading}
             >
@@ -108,8 +108,8 @@ const PatientForgotPassword = () => {
           </div>
         )}
 
-        <div className="patient-auth-footer">
-          <Link to="/patient-login" className="patient-auth-link patient-auth-back-link">
+        <div className={s.patientAuthFooter}>
+          <Link to="/patient-login" className={`${s.patientAuthLink} ${sf.patientAuthBackLink}`}>
             <ArrowLeft size={16} />
             Вернуться на вход
           </Link>

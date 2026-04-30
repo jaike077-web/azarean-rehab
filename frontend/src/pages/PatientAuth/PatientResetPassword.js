@@ -3,8 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { patientAuth } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import './PatientLogin.css';
-import './PatientResetPassword.css';
+import s from './PatientLogin.module.css';
+import sr from './PatientResetPassword.module.css';
 
 const PatientResetPassword = () => {
   const { token } = useParams();
@@ -60,35 +60,35 @@ const PatientResetPassword = () => {
 
   if (success) {
     return (
-      <div className="patient-auth-container">
-        <div className="patient-auth-card">
-          <div className="patient-auth-logo">
-            <div className="patient-auth-logo-dot" />
-            <span className="patient-auth-logo-text">Azarean</span>
+      <div className={s.patientAuthContainer}>
+        <div className={s.patientAuthCard}>
+          <div className={s.patientAuthLogo}>
+            <div className={s.patientAuthLogoDot} />
+            <span className={s.patientAuthLogoText}>Azarean</span>
           </div>
 
-          <div className="patient-auth-success-icon">
+          <div className={sr.patientAuthSuccessIcon}>
             <CheckCircle size={64} />
           </div>
 
-          <h1 className="patient-auth-success-heading">
+          <h1 className={sr.patientAuthSuccessHeading}>
             Пароль успешно изменён!
           </h1>
 
-          <p className="patient-auth-success-text">
+          <p className={sr.patientAuthSuccessText}>
             Теперь вы можете войти с новым паролем
           </p>
 
           <button
             type="button"
-            className="patient-auth-btn-primary"
+            className={s.patientAuthBtnPrimary}
             onClick={handleLoginClick}
           >
             Войти
           </button>
 
-          <div className="patient-auth-footer">
-            <Link to="/patient-login" className="patient-auth-link">
+          <div className={s.patientAuthFooter}>
+            <Link to="/patient-login" className={s.patientAuthLink}>
               Вернуться на вход
             </Link>
           </div>
@@ -98,32 +98,32 @@ const PatientResetPassword = () => {
   }
 
   return (
-    <div className="patient-auth-container">
-      <div className="patient-auth-card">
-        <div className="patient-auth-logo">
-          <div className="patient-auth-logo-dot" />
-          <span className="patient-auth-logo-text">Azarean</span>
+    <div className={s.patientAuthContainer}>
+      <div className={s.patientAuthCard}>
+        <div className={s.patientAuthLogo}>
+          <div className={s.patientAuthLogoDot} />
+          <span className={s.patientAuthLogoText}>Azarean</span>
         </div>
 
-        <h1 className="patient-auth-heading">Новый пароль</h1>
+        <h1 className={s.patientAuthHeading}>Новый пароль</h1>
 
         {error && (
-          <div className="patient-auth-error">
+          <div className={s.patientAuthError}>
             {error}
           </div>
         )}
 
-        <form className="patient-auth-form" onSubmit={handleSubmit}>
-          <div className="patient-auth-field">
-            <label htmlFor="password" className="patient-auth-label">
+        <form className={s.patientAuthForm} onSubmit={handleSubmit}>
+          <div className={s.patientAuthField}>
+            <label htmlFor="password" className={s.patientAuthLabel}>
               Новый пароль
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Lock className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Lock className={s.patientAuthInputIcon} size={20} />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Минимум 8 символов"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -133,7 +133,7 @@ const PatientResetPassword = () => {
               />
               <button
                 type="button"
-                className="patient-auth-password-toggle"
+                className={s.patientAuthPasswordToggle}
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
               >
@@ -141,15 +141,15 @@ const PatientResetPassword = () => {
               </button>
             </div>
             {password && (
-              <div className="patient-auth-password-strength">
-                <div className="patient-auth-password-strength-bar">
+              <div className={sr.patientAuthPasswordStrength}>
+                <div className={sr.patientAuthPasswordStrengthBar}>
                   <div
-                    className={`patient-auth-password-strength-fill patient-auth-password-strength-${passwordStrength.strength}`}
+                    className={`${sr.patientAuthPasswordStrengthFill} ${sr[`patientAuthPasswordStrength${passwordStrength.strength.charAt(0).toUpperCase()}${passwordStrength.strength.slice(1)}`]}`}
                     style={{ backgroundColor: passwordStrength.color }}
                   />
                 </div>
                 <span
-                  className="patient-auth-password-strength-label"
+                  className={sr.patientAuthPasswordStrengthLabel}
                   style={{ color: passwordStrength.color }}
                 >
                   {passwordStrength.label}
@@ -158,16 +158,16 @@ const PatientResetPassword = () => {
             )}
           </div>
 
-          <div className="patient-auth-field">
-            <label htmlFor="confirmPassword" className="patient-auth-label">
+          <div className={s.patientAuthField}>
+            <label htmlFor="confirmPassword" className={s.patientAuthLabel}>
               Подтвердите пароль
             </label>
-            <div className="patient-auth-input-wrapper">
-              <Lock className="patient-auth-input-icon" size={20} />
+            <div className={s.patientAuthInputWrapper}>
+              <Lock className={s.patientAuthInputIcon} size={20} />
               <input
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="patient-auth-input"
+                className={s.patientAuthInput}
                 placeholder="Повторите пароль"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -176,7 +176,7 @@ const PatientResetPassword = () => {
               />
               <button
                 type="button"
-                className="patient-auth-password-toggle"
+                className={s.patientAuthPasswordToggle}
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 tabIndex={-1}
               >
@@ -187,15 +187,15 @@ const PatientResetPassword = () => {
 
           <button
             type="submit"
-            className="patient-auth-btn-primary"
+            className={s.patientAuthBtnPrimary}
             disabled={loading}
           >
             {loading ? 'Сохранение...' : 'Сохранить пароль'}
           </button>
         </form>
 
-        <div className="patient-auth-footer">
-          <Link to="/patient-login" className="patient-auth-link">
+        <div className={s.patientAuthFooter}>
+          <Link to="/patient-login" className={s.patientAuthLink}>
             Вернуться на вход
           </Link>
         </div>

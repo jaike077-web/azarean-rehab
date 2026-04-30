@@ -3,7 +3,7 @@ import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { Server, RefreshCw, Database, Cpu, Clock, Bot, Globe } from 'lucide-react';
 import { Skeleton } from '../../components/Skeleton';
-import './AdminSystem.css';
+import s from './AdminSystem.module.css';
 
 function AdminSystem() {
   const [info, setInfo] = useState(null);
@@ -26,14 +26,14 @@ function AdminSystem() {
 
   if (loading) {
     return (
-      <div className="admin-system">
-        <h2 className="admin-section-title">
+      <div className={s.adminSystem}>
+        <h2 className={s.adminSectionTitle}>
           <Server size={22} strokeWidth={1.8} />
           <span>Система</span>
         </h2>
-        <div className="system-grid">
+        <div className={s.systemGrid}>
           {[...Array(7)].map((_, i) => (
-            <div key={i} className="system-card" style={{ opacity: 0.6 }}>
+            <div key={i} className={s.systemCard} style={{ opacity: 0.6 }}>
               <Skeleton width={44} height={44} borderRadius="10px" />
               <div style={{ flex: 1 }}>
                 <Skeleton width="60%" height="12px" style={{ marginBottom: 6 }} />
@@ -49,78 +49,78 @@ function AdminSystem() {
   if (!info) return null;
 
   return (
-    <div className="admin-system">
-      <div className="admin-section-header">
-        <h2 className="admin-section-title"><Server size={22} strokeWidth={1.8} /><span>Система</span></h2>
-        <button className="admin-btn-secondary" onClick={loadInfo}>
+    <div className={s.adminSystem}>
+      <div className={s.adminSectionHeader}>
+        <h2 className={s.adminSectionTitle}><Server size={22} strokeWidth={1.8} /><span>Система</span></h2>
+        <button className={s.adminBtnSecondary} onClick={loadInfo}>
           <RefreshCw size={14} strokeWidth={1.8} /> Обновить
         </button>
       </div>
 
-      <div className="system-grid">
-        <div className="system-card">
-          <div className="system-card-icon"><Clock size={20} strokeWidth={1.8} /></div>
-          <div className="system-card-info">
-            <div className="system-card-label">Uptime сервера</div>
-            <div className="system-card-value">{info.server_uptime_formatted}</div>
+      <div className={s.systemGrid}>
+        <div className={s.systemCard}>
+          <div className={s.systemCardIcon}><Clock size={20} strokeWidth={1.8} /></div>
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>Uptime сервера</div>
+            <div className={s.systemCardValue}>{info.server_uptime_formatted}</div>
           </div>
         </div>
 
-        <div className="system-card">
-          <div className="system-card-icon"><Cpu size={20} strokeWidth={1.8} /></div>
-          <div className="system-card-info">
-            <div className="system-card-label">Node.js</div>
-            <div className="system-card-value">{info.node_version}</div>
+        <div className={s.systemCard}>
+          <div className={s.systemCardIcon}><Cpu size={20} strokeWidth={1.8} /></div>
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>Node.js</div>
+            <div className={s.systemCardValue}>{info.node_version}</div>
           </div>
         </div>
 
-        <div className="system-card">
-          <div className="system-card-icon"><Globe size={20} strokeWidth={1.8} /></div>
-          <div className="system-card-info">
-            <div className="system-card-label">Окружение</div>
-            <div className="system-card-value">{info.environment}</div>
+        <div className={s.systemCard}>
+          <div className={s.systemCardIcon}><Globe size={20} strokeWidth={1.8} /></div>
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>Окружение</div>
+            <div className={s.systemCardValue}>{info.environment}</div>
           </div>
         </div>
 
-        <div className="system-card">
-          <div className="system-card-icon"><Cpu size={20} strokeWidth={1.8} /></div>
-          <div className="system-card-info">
-            <div className="system-card-label">Память (RSS)</div>
-            <div className="system-card-value">{info.memory_usage?.rss}</div>
-            <div className="system-card-sub">Heap: {info.memory_usage?.heap_used} / {info.memory_usage?.heap_total}</div>
+        <div className={s.systemCard}>
+          <div className={s.systemCardIcon}><Cpu size={20} strokeWidth={1.8} /></div>
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>Память (RSS)</div>
+            <div className={s.systemCardValue}>{info.memory_usage?.rss}</div>
+            <div className={s.systemCardSub}>Heap: {info.memory_usage?.heap_used} / {info.memory_usage?.heap_total}</div>
           </div>
         </div>
 
-        <div className="system-card">
-          <div className={`system-card-icon ${info.db_connected ? 'icon-success' : 'icon-error'}`}>
+        <div className={s.systemCard}>
+          <div className={`${s.systemCardIcon} ${info.db_connected ? s.iconSuccess : s.iconError}`}>
             <Database size={20} strokeWidth={1.8} />
           </div>
-          <div className="system-card-info">
-            <div className="system-card-label">База данных</div>
-            <div className="system-card-value">
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>База данных</div>
+            <div className={s.systemCardValue}>
               {info.db_connected ? '✅ Подключена' : '❌ Отключена'}
             </div>
-            <div className="system-card-sub">Размер: {info.db_size}</div>
+            <div className={s.systemCardSub}>Размер: {info.db_size}</div>
           </div>
         </div>
 
-        <div className="system-card">
-          <div className={`system-card-icon ${info.telegram_bot_active ? 'icon-success' : 'icon-warning'}`}>
+        <div className={s.systemCard}>
+          <div className={`${s.systemCardIcon} ${info.telegram_bot_active ? s.iconSuccess : s.iconWarning}`}>
             <Bot size={20} strokeWidth={1.8} />
           </div>
-          <div className="system-card-info">
-            <div className="system-card-label">Telegram бот</div>
-            <div className="system-card-value">
+          <div className={s.systemCardInfo}>
+            <div className={s.systemCardLabel}>Telegram бот</div>
+            <div className={s.systemCardValue}>
               {info.telegram_bot_active ? '✅ Активен' : '⚠️ Не настроен'}
             </div>
             {info.telegram_bot_username && (
-              <div className="system-card-sub">@{info.telegram_bot_username}</div>
+              <div className={s.systemCardSub}>@{info.telegram_bot_username}</div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="system-timestamp">
+      <div className={s.systemTimestamp}>
         Данные на: {new Date(info.timestamp).toLocaleString('ru-RU')}
       </div>
     </div>
