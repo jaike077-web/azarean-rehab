@@ -4,7 +4,7 @@
    Работает на экранах от 320px до 4K
    ===================================================== */
 
-.dashboard-container {
+.dashboardContainer {
   min-height: 100vh;
   background: var(--color-bg);
   display: flex;
@@ -15,7 +15,7 @@
    HEADER - адаптивный padding и размеры
    ===================================================== */
 
-.dashboard-header {
+.dashboardHeader {
   background: white;
   border-bottom: 2px solid var(--color-border);
   padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 32px);
@@ -29,14 +29,14 @@
   z-index: 100;
 }
 
-.header-left {
+.headerLeft {
   display: flex;
   align-items: center;
   gap: clamp(8px, 2vw, 16px);
   min-width: 0; /* для text-overflow */
 }
 
-.header-left h1 {
+.headerLeft h1 {
   margin: 0;
   font-size: clamp(18px, 4vw, 24px);
   color: var(--color-text);
@@ -45,14 +45,14 @@
   text-overflow: ellipsis;
 }
 
-.header-right {
+.headerRight {
   display: flex;
   align-items: center;
   gap: clamp(8px, 2vw, 16px);
   flex-shrink: 0;
 }
 
-.user-name {
+.userName {
   font-weight: 600;
   color: var(--color-text);
   font-size: clamp(14px, 2vw, 16px);
@@ -61,12 +61,12 @@
 
 /* Показываем имя на экранах шире 600px */
 @container (min-width: 600px) {
-  .user-name {
+  .userName {
     display: block;
   }
 }
 
-.user-role {
+.userRole {
   font-size: clamp(11px, 2vw, 14px);
   color: var(--color-text-muted);
   padding: 4px clamp(8px, 1.5vw, 12px);
@@ -75,7 +75,7 @@
   white-space: nowrap;
 }
 
-.btn-logout {
+.btnLogout {
   padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 16px);
   background: var(--color-text);
   color: white;
@@ -88,15 +88,15 @@
   white-space: nowrap;
 }
 
-.btn-logout:hover {
+.btnLogout:hover {
   background: #f56565;
 }
 
-.nav-item {
+.navItem {
   justify-content: flex-start; /* выравнивание слева */
 }
 
-.nav-divider {
+.navDivider {
   height: 1px;
   background: var(--color-border);
   margin: 8px 16px;
@@ -106,7 +106,7 @@
    BURGER MENU - показывается автоматически на узких экранах
    ===================================================== */
 
-.burger-menu-btn {
+.burgerMenuBtn {
   display: none;
   background: none;
   border: none;
@@ -117,29 +117,29 @@
 }
 
 /* Показываем бургер когда мало места */
-.burger-menu-btn {
+.burgerMenuBtn {
   display: block;
 }
 
 /* На широких экранах навигация открыта всегда */
 @media (min-width: 900px) {
-  .burger-menu-btn {
+  .burgerMenuBtn {
     display: none;
   }
 }
 
-.burger-menu-btn:hover {
+.burgerMenuBtn:hover {
   background: #f0f0f0;
 }
 
-.burger-icon {
+.burgerIcon {
   display: flex;
   flex-direction: column;
   gap: 5px;
   width: 24px;
 }
 
-.burger-icon span {
+.burgerIcon span {
   display: block;
   height: 3px;
   background: var(--color-text);
@@ -147,15 +147,15 @@
   transition: all 0.3s;
 }
 
-.burger-menu-btn.active .burger-icon span:nth-child(1) {
+.burgerMenuBtn.active .burgerIcon span:nth-child(1) {
   transform: rotate(45deg) translate(6px, 6px);
 }
 
-.burger-menu-btn.active .burger-icon span:nth-child(2) {
+.burgerMenuBtn.active .burgerIcon span:nth-child(2) {
   opacity: 0;
 }
 
-.burger-menu-btn.active .burger-icon span:nth-child(3) {
+.burgerMenuBtn.active .burgerIcon span:nth-child(3) {
   transform: rotate(-45deg) translate(6px, -6px);
 }
 
@@ -163,7 +163,7 @@
    CONTENT LAYOUT
    ===================================================== */
 
-.dashboard-content {
+.dashboardContent {
   display: flex;
   flex: 1;
   position: relative;
@@ -174,7 +174,7 @@
    NAVIGATION - адаптивная боковая панель
    ===================================================== */
 
-.dashboard-nav {
+.dashboardNav {
   width: clamp(200px, 20vw, 240px);
   background: white;
   border-right: 1px solid rgb(102 126 234 / 20%);
@@ -188,7 +188,7 @@
 
 /* На узких экранах навигация выезжает сбоку */
 @media (max-width: 900px) {
-  .dashboard-nav {
+  .dashboardNav {
     position: fixed;
     top: 0;
     left: 0;
@@ -200,13 +200,13 @@
     box-shadow: none;
   }
 
-  .dashboard-nav.open {
+  .dashboardNav.open {
     transform: translateX(0);
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   }
 }
 
-.nav-item {
+.navItem {
   display: flex;
   align-items: center;
   gap: clamp(6px, 1.5vw, 8px);
@@ -221,12 +221,12 @@
   border-left: 3px solid transparent;
 }
 
-.nav-item:hover {
+.navItem:hover {
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-.nav-item.active {
+.navItem.active {
   background: #ebf4ff;
   color: #3182ce;
   border-left-color: #3182ce;
@@ -237,12 +237,12 @@
   border-left: 4px solid #2b82d5;
 }
 
-.nav-icon {
+.navIcon {
   flex-shrink: 0;
   stroke-width: 1.8;
 }
 
-.nav-item.active .nav-icon {
+.navItem.active .navIcon {
   stroke: #5a67d8;
 }
 
@@ -250,7 +250,7 @@
    OVERLAY для мобильного меню
    ===================================================== */
 
-.nav-overlay {
+.navOverlay {
   display: none;
   position: fixed;
   top: 0;
@@ -264,13 +264,13 @@
   pointer-events: none;
 }
 
-.nav-overlay.visible {
+.navOverlay.visible {
   opacity: 1;
   pointer-events: auto;
 }
 
 @media (max-width: 900px) {
-  .nav-overlay {
+  .navOverlay {
     display: block;
   }
 }
@@ -279,7 +279,7 @@
    MAIN CONTENT - адаптивные отступы
    ===================================================== */
 
-.dashboard-main {
+.dashboardMain {
   flex: 1;
   padding: clamp(16px, 4vw, 32px);
   overflow-y: auto;
@@ -290,20 +290,20 @@
    WELCOME SECTION
    ===================================================== */
 
-.welcome-section h2 {
+.welcomeSection h2 {
   font-size: clamp(24px, 5vw, 32px);
   color: #424750;
   margin: 0 0 8px 0;
   font-family: roboto;
 }
 
-.welcome-section > p {
+.welcomeSection > p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0 0 clamp(24px, 4vw, 32px) 0;
 }
 
-.welcome-title {
+.welcomeTitle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -311,7 +311,7 @@
   flex-wrap: wrap;
 }
 
-.welcome-icon {
+.welcomeIcon {
   stroke-width: 1.8;
 }
 
@@ -319,14 +319,14 @@
    STATS GRID - автоматическая адаптация
    ===================================================== */
 
-.stats-grid {
+.statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: clamp(12px, 2vw, 20px);
   margin-bottom: clamp(24px, 4vw, 32px);
 }
 
-.stat-card {
+.statCard {
   background: white;
   border-radius: 12px;
   padding: clamp(16px, 3vw, 24px);
@@ -338,27 +338,27 @@
   min-width: 0;
 }
 
-.stat-card:hover {
+.statCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.stat-icon {
+.statIcon {
   font-size: clamp(28px, 5vw, 36px);
   flex-shrink: 0;
 }
 
-.stat-icon svg {
+.statIcon svg {
   stroke-width: 1.8;
   color: var(--color-primary);
 }
 
-.stat-info {
+.statInfo {
   flex: 1;
   min-width: 0;
 }
 
-.stat-value {
+.statValue {
   font-size: clamp(22px, 4vw, 28px);
   font-weight: 700;
   color: var(--color-text);
@@ -366,7 +366,7 @@
   margin-bottom: 4px;
 }
 
-.stat-label {
+.statLabel {
   font-size: clamp(12px, 2vw, 14px);
   color: var(--color-text-muted);
 }
@@ -375,23 +375,23 @@
    QUICK ACTIONS - адаптивная сетка
    ===================================================== */
 
-.quick-actions {
+.quickActions {
   margin-top: clamp(24px, 4vw, 32px);
 }
 
-.quick-actions h3 {
+.quickActions h3 {
   font-size: clamp(18px, 3vw, 20px);
   color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 16px) 0;
 }
 
-.actions-grid {
+.actionsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: clamp(12px, 2vw, 16px);
 }
 
-.action-card {
+.actionCard {
   background: white;
   border: 2px solid var(--color-border);
   border-radius: 12px;
@@ -406,19 +406,19 @@
   min-height: 120px;
 }
 
-.action-card:hover {
+.actionCard:hover {
   border-color: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
-.action-icon {
+.actionIcon {
   font-size: clamp(24px, 4vw, 32px);
   flex-shrink: 0;
   stroke-width: 1.8;
 }
 
-.action-text {
+.actionText {
   font-size: clamp(14px, 2vw, 16px);
   font-weight: 600;
   color: var(--color-text);
@@ -429,38 +429,38 @@
    APP BRAND (Logo) - адаптивный
    ===================================================== */
 
-.app-brand {
+.appBrand {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.app-logo {
+.appLogo {
   height: clamp(32px, 5vw, 40px);
   width: clamp(32px, 5vw, 40px);
   object-fit: contain;
   border-radius: 8px;
 }
 
-.app-brand-text {
+.appBrandText {
   display: flex;
   flex-direction: column;
 }
 
-.app-brand-title {
+.appBrandTitle {
   font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
   color: var(--color-text);
 }
 
-.app-brand-subtitle {
+.appBrandSubtitle {
   font-size: clamp(10px, 1.5vw, 12px);
   color: var(--color-text-muted);
 }
 
 /* Скрываем текст логотипа на очень узких экранах */
 @media (max-width: 400px) {
-  .app-brand-text {
+  .appBrandText {
     display: none;
   }
 }
@@ -470,11 +470,11 @@
    ===================================================== */
 
 @supports (padding-top: env(safe-area-inset-top)) {
-  .dashboard-header {
+  .dashboardHeader {
     padding-top: calc(clamp(12px, 3vw, 16px) + env(safe-area-inset-top));
   }
 
-  .dashboard-nav {
+  .dashboardNav {
     padding-top: calc(80px + env(safe-area-inset-top));
     padding-bottom: env(safe-area-inset-bottom);
   }
@@ -485,21 +485,21 @@
    ===================================================== */
 
 @media (max-width: 480px) {
-  .dashboard-header {
+  .dashboardHeader {
     padding: 12px 16px;
   }
 
-  .nav-item {
+  .navItem {
     padding: 10px 12px;
     font-size: 13px;
   }
 
-  .nav-item svg {
+  .navItem svg {
     width: 18px;
     height: 18px;
   }
 
-  .dashboard-content {
+  .dashboardContent {
     padding: 12px;
   }
 }

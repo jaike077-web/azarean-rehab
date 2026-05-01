@@ -2,12 +2,12 @@
    ADMIN CONTENT - Azarean Network
    ===================================================== */
 
-.admin-content {
+.adminContent {
   padding: clamp(12px, 2vw, 24px);
 }
 
 /* Sub-tabs */
-.content-tabs {
+.contentTabs {
   display: flex;
   gap: 4px;
   background: var(--color-bg);
@@ -17,7 +17,7 @@
   width: fit-content;
 }
 
-.content-tab {
+.contentTab {
   padding: clamp(8px, 1vw, 10px) clamp(14px, 2vw, 20px);
   border: none;
   border-radius: 8px;
@@ -32,48 +32,48 @@
   align-items: center;
 }
 
-.content-tab.active {
+.contentTab.active {
   background: var(--color-surface);
   color: var(--color-text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.content-tab:hover:not(.active) {
+.contentTab:hover:not(.active) {
   color: var(--color-text);
 }
 
-.content-header {
+.contentHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
 }
 
-.content-header span {
+.contentHeader span {
   font-size: 13px;
   color: var(--color-text-muted);
 }
 
 /* Wide modal */
-.admin-modal-wide {
+.adminModalWide {
   max-width: 720px;
 }
 
 /* Form grid */
-.content-form-grid {
+.contentFormGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
 
-.content-form-grid .full-width {
+.contentFormGrid .fullWidth {
   grid-column: 1 / -1;
 }
 
-.content-form-grid .admin-modal-actions {
+.contentFormGrid .adminModalActions {
   grid-column: 1 / -1;
 }
 
-.td-url {
+.tdUrl {
   font-size: 12px;
 }

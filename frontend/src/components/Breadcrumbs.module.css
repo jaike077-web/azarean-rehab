@@ -21,14 +21,14 @@
    BREADCRUMB ITEMS
    ===================================================== */
 
-.crumb-item {
+.crumbItem {
   display: flex;
   align-items: center;
   gap: clamp(4px, 1vw, 6px);
 }
 
-.breadcrumb-link,
-.crumb-item a {
+.breadcrumbLink,
+.crumbItem a {
   display: inline-flex;
   align-items: center;
   gap: clamp(4px, 1vw, 6px);
@@ -41,15 +41,15 @@
   min-height: 32px;
 }
 
-.breadcrumb-link:hover,
-.crumb-item a:hover {
+.breadcrumbLink:hover,
+.crumbItem a:hover {
   background: var(--color-bg);
   color: var(--color-primary-hover);
   text-decoration: none;
 }
 
-.breadcrumb-current,
-.crumb-item.active .crumb-label {
+.breadcrumbCurrent,
+.crumbItem.active .crumbLabel {
   display: inline-flex;
   align-items: center;
   gap: clamp(4px, 1vw, 6px);
@@ -62,16 +62,16 @@
    ICONS
    ===================================================== */
 
-.breadcrumb-icon,
-.crumb-icon {
+.breadcrumbIcon,
+.crumbIcon {
   font-size: clamp(16px, 3vw, 18px);
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
 }
 
-.crumb-icon svg,
-.breadcrumb-icon svg {
+.crumbIcon svg,
+.breadcrumbIcon svg {
   width: clamp(16px, 3vw, 18px);
   height: clamp(16px, 3vw, 18px);
   stroke-width: 2;
@@ -81,8 +81,8 @@
    SEPARATOR
    ===================================================== */
 
-.breadcrumb-separator,
-.crumb-separator {
+.breadcrumbSeparator,
+.crumbSeparator {
   color: var(--color-border-strong);
   font-size: clamp(14px, 2vw, 16px);
   user-select: none;
@@ -91,8 +91,8 @@
   align-items: center;
 }
 
-.breadcrumb-separator svg,
-.crumb-separator svg {
+.breadcrumbSeparator svg,
+.crumbSeparator svg {
   width: clamp(14px, 2vw, 16px);
   height: clamp(14px, 2vw, 16px);
 }
@@ -107,8 +107,8 @@
   min-height: 36px;
 }
 
-.breadcrumbs.compact .breadcrumb-link,
-.breadcrumbs.compact .breadcrumb-current {
+.breadcrumbs.compact .breadcrumbLink,
+.breadcrumbs.compact .breadcrumbCurrent {
   padding: clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 8px);
   font-size: clamp(12px, 2vw, 14px);
 }
@@ -134,12 +134,12 @@
   }
   
   /* Скрываем промежуточные элементы на очень узких экранах */
-  .breadcrumbs .crumb-item:not(:first-child):not(:last-child) {
+  .breadcrumbs .crumbItem:not(:first-child):not(:last-child) {
     display: none;
   }
   
   /* Показываем только первый и последний */
-  .breadcrumbs .crumb-item:first-child + .crumb-separator::after {
+  .breadcrumbs .crumbItem:first-child + .crumbSeparator::after {
     content: '...';
     margin: 0 4px;
     color: var(--color-text-subtle);
@@ -150,8 +150,8 @@
    ACCESSIBILITY
    ===================================================== */
 
-.breadcrumb-link:focus-visible,
-.crumb-item a:focus-visible {
+.breadcrumbLink:focus-visible,
+.crumbItem a:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -161,7 +161,7 @@
   /* уже есть aria-label в HTML */
 }
 
-.breadcrumb-current[aria-current="page"] {
+.breadcrumbCurrent[aria-current="page"] {
   /* уже есть aria-current в HTML */
 }
 
@@ -180,28 +180,28 @@
   }
 }
 
-.breadcrumbs.animate .crumb-item {
+.breadcrumbs.animate .crumbItem {
   animation: breadcrumbSlideIn 0.3s ease-out backwards;
 }
 
-.breadcrumbs.animate .crumb-item:nth-child(1) {
+.breadcrumbs.animate .crumbItem:nth-child(1) {
   animation-delay: 0s;
 }
 
-.breadcrumbs.animate .crumb-item:nth-child(2) {
+.breadcrumbs.animate .crumbItem:nth-child(2) {
   animation-delay: 0.05s;
 }
 
-.breadcrumbs.animate .crumb-item:nth-child(3) {
+.breadcrumbs.animate .crumbItem:nth-child(3) {
   animation-delay: 0.1s;
 }
 
-.breadcrumbs.animate .crumb-item:nth-child(4) {
+.breadcrumbs.animate .crumbItem:nth-child(4) {
   animation-delay: 0.15s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .breadcrumbs.animate .crumb-item {
+  .breadcrumbs.animate .crumbItem {
     animation: none;
   }
 }
@@ -215,7 +215,7 @@
   pointer-events: none;
 }
 
-.breadcrumbs.loading .breadcrumb-link,
-.breadcrumbs.loading .crumb-item a {
+.breadcrumbs.loading .breadcrumbLink,
+.breadcrumbs.loading .crumbItem a {
   cursor: wait;
 }

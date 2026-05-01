@@ -1,6 +1,6 @@
 /* Patient Authentication - Login Page */
 
-.patient-auth-container {
+.patientAuthContainer {
   min-height: 100vh;
   background-color: var(--color-bg);
   display: flex;
@@ -9,7 +9,7 @@
   padding: clamp(16px, 4vw, 24px);
 }
 
-.patient-auth-card {
+.patientAuthCard {
   background: white;
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -19,7 +19,7 @@
 }
 
 /* Logo */
-.patient-auth-logo {
+.patientAuthLogo {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,7 +27,7 @@
   margin-bottom: 24px;
 }
 
-.patient-auth-logo-dot {
+.patientAuthLogoDot {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -35,14 +35,14 @@
   flex-shrink: 0;
 }
 
-.patient-auth-logo-text {
+.patientAuthLogoText {
   font-size: 24px;
   font-weight: 600;
   color: var(--color-text);
 }
 
 /* Heading */
-.patient-auth-heading {
+.patientAuthHeading {
   font-size: clamp(20px, 4vw, 24px);
   font-weight: 600;
   color: var(--color-text);
@@ -51,30 +51,30 @@
 }
 
 /* Form */
-.patient-auth-form {
+.patientAuthForm {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.patient-auth-field {
+.patientAuthField {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.patient-auth-label {
+.patientAuthLabel {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
 }
 
-.patient-auth-input-wrapper {
+.patientAuthInputWrapper {
   position: relative;
   width: 100%;
 }
 
-.patient-auth-input {
+.patientAuthInput {
   width: 100%;
   padding: 14px 16px 14px 44px;
   border: 1px solid var(--color-border);
@@ -88,21 +88,21 @@
   font-family: inherit;
 }
 
-.patient-auth-input::placeholder {
+.patientAuthInput::placeholder {
   color: var(--color-text-subtle);
 }
 
-.patient-auth-input:focus {
+.patientAuthInput:focus {
   outline: none;
   border-color: #1A8A6A;
   box-shadow: 0 0 0 3px rgba(26, 138, 106, 0.1);
 }
 
-.patient-auth-input:hover:not(:focus) {
+.patientAuthInput:hover:not(:focus) {
   border-color: var(--color-border-strong);
 }
 
-.patient-auth-input-icon {
+.patientAuthInputIcon {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -111,7 +111,7 @@
   pointer-events: none;
 }
 
-.patient-auth-password-toggle {
+.patientAuthPasswordToggle {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -127,17 +127,17 @@
   transition: color 0.2s ease;
 }
 
-.patient-auth-password-toggle:hover {
+.patientAuthPasswordToggle:hover {
   color: var(--color-text-muted);
 }
 
-.patient-auth-password-toggle:focus {
+.patientAuthPasswordToggle:focus {
   outline: none;
   color: #1A8A6A;
 }
 
 /* Forgot Password Link */
-.patient-auth-forgot-link {
+.patientAuthForgotLink {
   text-align: right;
   font-size: 14px;
   color: #1A8A6A;
@@ -146,13 +146,13 @@
   margin-top: -8px;
 }
 
-.patient-auth-forgot-link:hover {
+.patientAuthForgotLink:hover {
   color: var(--color-success);
   text-decoration: underline;
 }
 
 /* Primary Button */
-.patient-auth-btn-primary {
+.patientAuthBtnPrimary {
   width: 100%;
   background: linear-gradient(135deg, #1A8A6A 0%, #2B7CB8 100%);
   color: white;
@@ -167,23 +167,23 @@
   box-shadow: 0 2px 4px rgba(26, 138, 106, 0.2);
 }
 
-.patient-auth-btn-primary:hover:not(:disabled) {
+.patientAuthBtnPrimary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(26, 138, 106, 0.3);
 }
 
-.patient-auth-btn-primary:active:not(:disabled) {
+.patientAuthBtnPrimary:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(26, 138, 106, 0.2);
 }
 
-.patient-auth-btn-primary:disabled {
+.patientAuthBtnPrimary:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
 /* Divider */
-.patient-auth-divider {
+.patientAuthDivider {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,8 +194,8 @@
   position: relative;
 }
 
-.patient-auth-divider::before,
-.patient-auth-divider::after {
+.patientAuthDivider::before,
+.patientAuthDivider::after {
   content: '';
   flex: 1;
   height: 1px;
@@ -203,14 +203,14 @@
 }
 
 /* OAuth Grid */
-.patient-auth-oauth-grid {
+.patientAuthOauthGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
 /* Подсказка под OAuth-кнопками (например, про Telegram redirect issue) */
-.patient-auth-oauth-hint {
+.patientAuthOauthHint {
   margin: 12px 4px 0;
   font-size: 12px;
   line-height: 1.4;
@@ -218,7 +218,7 @@
   text-align: center;
 }
 
-.patient-auth-oauth-btn {
+.patientAuthOauthBtn {
   padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -236,42 +236,42 @@
   font-family: inherit;
 }
 
-.patient-auth-oauth-btn:hover {
+.patientAuthOauthBtn:hover {
   border-color: var(--color-border-strong);
   background: var(--color-bg);
   transform: translateY(-1px);
 }
 
-.patient-auth-oauth-btn:active {
+.patientAuthOauthBtn:active {
   transform: translateY(0);
 }
 
-.patient-auth-oauth-btn svg {
+.patientAuthOauthBtn svg {
   flex-shrink: 0;
 }
 
 /* Footer */
-.patient-auth-footer {
+.patientAuthFooter {
   margin-top: 24px;
   text-align: center;
   font-size: 14px;
   color: var(--color-text-muted);
 }
 
-.patient-auth-link {
+.patientAuthLink {
   color: #1A8A6A;
   font-weight: 600;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-.patient-auth-link:hover {
+.patientAuthLink:hover {
   color: var(--color-success);
   text-decoration: underline;
 }
 
 /* Error Message */
-.patient-auth-error {
+.patientAuthError {
   padding: 12px;
   background-color: #FED7D7;
   color: var(--color-danger-hover);
@@ -282,7 +282,7 @@
 }
 
 /* Success Message */
-.patient-auth-success {
+.patientAuthSuccess {
   padding: 12px;
   background-color: #C6F6D5;
   color: #22543D;
@@ -294,42 +294,42 @@
 
 /* Mobile Responsive */
 @media (max-width: 480px) {
-  .patient-auth-oauth-grid {
+  .patientAuthOauthGrid {
     grid-template-columns: 1fr;
   }
 
-  .patient-auth-oauth-btn {
+  .patientAuthOauthBtn {
     min-height: 44px;
   }
 }
 
 /* Touch Device Enhancements */
 @media (hover: none) and (pointer: coarse) {
-  .patient-auth-input,
-  .patient-auth-btn-primary,
-  .patient-auth-oauth-btn,
-  .patient-auth-password-toggle {
+  .patientAuthInput,
+  .patientAuthBtnPrimary,
+  .patientAuthOauthBtn,
+  .patientAuthPasswordToggle {
     min-height: 44px;
   }
 }
 
 /* Accessibility - Focus Visible */
-.patient-auth-btn-primary:focus-visible,
-.patient-auth-oauth-btn:focus-visible,
-.patient-auth-link:focus-visible,
-.patient-auth-forgot-link:focus-visible {
+.patientAuthBtnPrimary:focus-visible,
+.patientAuthOauthBtn:focus-visible,
+.patientAuthLink:focus-visible,
+.patientAuthForgotLink:focus-visible {
   outline: 2px solid #1A8A6A;
   outline-offset: 2px;
 }
 
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
-  .patient-auth-input,
-  .patient-auth-btn-primary,
-  .patient-auth-oauth-btn,
-  .patient-auth-password-toggle,
-  .patient-auth-link,
-  .patient-auth-forgot-link {
+  .patientAuthInput,
+  .patientAuthBtnPrimary,
+  .patientAuthOauthBtn,
+  .patientAuthPasswordToggle,
+  .patientAuthLink,
+  .patientAuthForgotLink {
     transition: none;
   }
 }

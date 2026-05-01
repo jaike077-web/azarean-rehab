@@ -3,7 +3,7 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.delete-confirm-modal {
+.deleteConfirmModal {
   background: white;
   border-radius: clamp(12px, 2vw, 18px);
   padding: clamp(24px, 5vw, 36px);
@@ -12,7 +12,7 @@
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
 }
 
-.modal-icon {
+.modalIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -20,31 +20,31 @@
   margin-bottom: clamp(12px, 2vw, 18px);
 }
 
-.modal-icon svg {
+.modalIcon svg {
   width: clamp(48px, 10vw, 64px);
   height: clamp(48px, 10vw, 64px);
 }
 
-.delete-confirm-modal h2 {
+.deleteConfirmModal h2 {
   font-size: clamp(20px, 4vw, 26px);
   color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 18px) 0;
   line-height: 1.3;
 }
 
-.modal-text {
+.modalText {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0 0 clamp(10px, 2vw, 14px) 0;
   line-height: 1.6;
 }
 
-.modal-text strong {
+.modalText strong {
   color: var(--color-text);
   font-weight: 600;
 }
 
-.modal-hint {
+.modalHint {
   font-size: clamp(12px, 2vw, 14px);
   color: var(--color-text-subtle);
   margin: 0 0 clamp(20px, 4vw, 28px) 0;
@@ -55,15 +55,15 @@
    MODAL ACTIONS
    ===================================================== */
 
-.modal-actions {
+.modalActions {
   display: flex;
   gap: clamp(10px, 2vw, 14px);
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.btn-cancel,
-.btn-confirm {
+.btnCancel,
+.btnConfirm {
   padding: clamp(10px, 2vw, 14px) clamp(24px, 5vw, 36px);
   border: none;
   border-radius: 8px;
@@ -79,22 +79,22 @@
   gap: 6px;
 }
 
-.btn-cancel {
+.btnCancel {
   background: var(--color-border);
   color: var(--color-text-muted);
 }
 
-.btn-cancel:hover {
+.btnCancel:hover {
   background: var(--color-border);
   transform: translateY(-1px);
 }
 
-.btn-confirm {
+.btnConfirm {
   background: #f56565;
   color: white;
 }
 
-.btn-confirm:hover {
+.btnConfirm:hover {
   background: var(--color-danger);
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(245, 101, 101, 0.4);
@@ -105,17 +105,17 @@
    ===================================================== */
 
 @media (max-width: 480px) {
-  .delete-confirm-modal {
+  .deleteConfirmModal {
     padding: clamp(20px, 5vw, 28px);
   }
 
-  .modal-actions {
+  .modalActions {
     flex-direction: column;
     width: 100%;
   }
 
-  .btn-cancel,
-  .btn-confirm {
+  .btnCancel,
+  .btnConfirm {
     width: 100%;
     min-width: 100%;
   }

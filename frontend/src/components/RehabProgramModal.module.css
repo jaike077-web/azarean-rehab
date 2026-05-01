@@ -1,18 +1,18 @@
-.rehab-program-modal {
+.rehabProgramModal {
   max-width: 560px;
 }
 
-.rehab-program-modal-body {
+.rehabProgramModalBody {
   padding: 0 24px 8px;
 }
 
-.rehab-program-patient {
+.rehabProgramPatient {
   margin: 0 0 16px;
   color: var(--color-text-muted);
   font-size: 14px;
 }
 
-.rehab-program-loading {
+.rehabProgramLoading {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,7 +22,7 @@
   font-size: 14px;
 }
 
-.rehab-program-spinner {
+.rehabProgramSpinner {
   width: 20px;
   height: 20px;
   border: 2px solid var(--color-border);
@@ -37,7 +37,7 @@
   }
 }
 
-.rehab-program-error {
+.rehabProgramError {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -46,7 +46,7 @@
   color: var(--color-text-muted);
 }
 
-.rehab-program-warn {
+.rehabProgramWarn {
   margin: 0 0 16px;
   color: #b08400;
   background: #fffaeb;
@@ -57,33 +57,33 @@
   line-height: 1.5;
 }
 
-.rehab-program-form {
+.rehabProgramForm {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.rehab-program-field {
+.rehabProgramField {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
 }
 
-.rehab-program-field label {
+.rehabProgramField label {
   color: var(--color-text);
   font-size: 13px;
   font-weight: 600;
 }
 
-.rehab-program-field .required {
+.rehabProgramField .required {
   color: var(--color-danger);
   font-weight: 700;
 }
 
-.rehab-program-field input,
-.rehab-program-field select,
-.rehab-program-field textarea {
+.rehabProgramField input,
+.rehabProgramField select,
+.rehabProgramField textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--color-border-strong);
@@ -96,52 +96,52 @@
   box-sizing: border-box;
 }
 
-.rehab-program-field input:focus,
-.rehab-program-field select:focus,
-.rehab-program-field textarea:focus {
+.rehabProgramField input:focus,
+.rehabProgramField select:focus,
+.rehabProgramField textarea:focus {
   outline: none;
   border-color: #3182ce;
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
 }
 
-.rehab-program-field input:disabled,
-.rehab-program-field select:disabled,
-.rehab-program-field textarea:disabled {
+.rehabProgramField input:disabled,
+.rehabProgramField select:disabled,
+.rehabProgramField textarea:disabled {
   background: var(--color-bg);
   color: var(--color-text-subtle);
   cursor: not-allowed;
 }
 
-.rehab-program-field textarea {
+.rehabProgramField textarea {
   resize: vertical;
   min-height: 70px;
 }
 
-.rehab-program-help {
+.rehabProgramHelp {
   margin: 4px 0 0;
   color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.4;
 }
 
-.rehab-program-field-row {
+.rehabProgramFieldRow {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.rehab-program-field-row .rehab-program-field {
+.rehabProgramFieldRow .rehabProgramField {
   min-width: 200px;
 }
 
-.rehab-program-meta {
+.rehabProgramMeta {
   margin: 4px 0 0;
   color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.4;
 }
 
-.rehab-program-footer {
+.rehabProgramFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -152,30 +152,30 @@
   flex-wrap: wrap;
 }
 
-.rehab-program-footer-right {
+.rehabProgramFooterRight {
   display: flex;
   gap: 8px;
   margin-left: auto;
 }
 
 @media (max-width: 480px) {
-  .rehab-program-field-row {
+  .rehabProgramFieldRow {
     flex-direction: column;
     gap: 14px;
   }
 
-  .rehab-program-footer {
+  .rehabProgramFooter {
     flex-direction: column-reverse;
     align-items: stretch;
   }
 
-  .rehab-program-footer-right {
+  .rehabProgramFooterRight {
     margin-left: 0;
     flex-direction: column-reverse;
   }
 
-  .rehab-program-footer-right .btn-primary,
-  .rehab-program-footer-right .btn-secondary {
+  .rehabProgramFooterRight .btnPrimary,
+  .rehabProgramFooterRight .btnSecondary {
     width: 100%;
   }
 }

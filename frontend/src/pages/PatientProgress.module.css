@@ -2,7 +2,7 @@
    PATIENT PROGRESS PAGE - Azarean Network
    ===================================================== */
 
-.patient-progress-page {
+.patientProgressPage {
   padding: clamp(16px, 3vw, 32px);
   max-width: 1200px;
   margin: 0 auto;
@@ -11,17 +11,17 @@
   gap: clamp(16px, 3vw, 28px);
 }
 
-.patient-progress-loading {
+.patientProgressLoading {
   display: flex;
   flex-direction: column;
   gap: clamp(16px, 3vw, 28px);
 }
 
-.back-button-wrapper {
+.backButtonWrapper {
   margin-top: clamp(4px, 2vw, 12px);
 }
 
-.patient-header {
+.patientHeader {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(18px, 3vw, 28px);
@@ -31,7 +31,7 @@
   gap: clamp(12px, 2vw, 18px);
 }
 
-.patient-avatar {
+.patientAvatar {
   width: clamp(54px, 8vw, 64px);
   height: clamp(54px, 8vw, 64px);
   border-radius: 12px;
@@ -43,13 +43,13 @@
   flex-shrink: 0;
 }
 
-.patient-info h1 {
+.patientInfo h1 {
   margin: 0 0 6px;
   font-size: clamp(22px, 4vw, 32px);
   color: #1f2937;
 }
 
-.patient-meta {
+.patientMeta {
   margin: 0;
   display: flex;
   flex-wrap: wrap;
@@ -58,23 +58,23 @@
   color: var(--color-text-muted);
 }
 
-.patient-meta span {
+.patientMeta span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.patient-meta span + span::before {
+.patientMeta span + span::before {
   content: '•';
   margin-right: 6px;
   color: #cbd5f5;
 }
 
-.patient-meta-date {
+.patientMetaDate {
   color: var(--color-text-subtle);
 }
 
-.overall-stats {
+.overallStats {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(18px, 3vw, 28px);
@@ -84,7 +84,7 @@
   gap: clamp(12px, 2vw, 18px);
 }
 
-.section-title {
+.sectionTitle {
   margin: 0;
   display: flex;
   align-items: center;
@@ -93,13 +93,13 @@
   color: #111827;
 }
 
-.stats-grid {
+.statsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: clamp(12px, 2vw, 18px);
 }
 
-.stat-card {
+.statCard {
   background: var(--color-bg);
   border-radius: 10px;
   padding: clamp(12px, 2vw, 18px);
@@ -108,7 +108,7 @@
   gap: 12px;
 }
 
-.stat-icon {
+.statIcon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -119,35 +119,35 @@
   justify-content: center;
 }
 
-.stat-icon.pain {
+.statIcon.pain {
   background: #fee2e2;
   color: var(--color-danger-hover);
 }
 
-.stat-content {
+.statContent {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.stat-value {
+.statValue {
   font-size: clamp(18px, 3vw, 24px);
   font-weight: 700;
   color: #111827;
 }
 
-.stat-label {
+.statLabel {
   font-size: clamp(12px, 2vw, 14px);
   color: var(--color-text-muted);
 }
 
-.stats-subgrid {
+.statsSubgrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: clamp(10px, 2vw, 14px);
 }
 
-.stat-pill {
+.statPill {
   background: var(--color-surface-2);
   border-radius: 10px;
   padding: clamp(10px, 2vw, 14px);
@@ -158,24 +158,24 @@
   color: #475569;
 }
 
-.stat-pill strong {
+.statPill strong {
   color: #111827;
   font-weight: 600;
 }
 
-.complexes-section {
+.complexesSection {
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 2vw, 18px);
 }
 
-.complexes-grid {
+.complexesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(270px, 100%), 1fr));
   gap: clamp(16px, 3vw, 20px);
 }
 
-.complex-card {
+.complexCard {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 20px);
@@ -187,30 +187,30 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.complex-card:hover {
+.complexCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }
 
-.complex-header {
+.complexHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.complex-title {
+.complexTitle {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.complex-title h3 {
+.complexTitle h3 {
   margin: 0;
   font-size: clamp(16px, 2.5vw, 18px);
   color: #1f2937;
 }
 
-.status-badge {
+.statusBadge {
   width: fit-content;
   padding: 4px 12px;
   border-radius: 10px;
@@ -218,17 +218,17 @@
   font-weight: 600;
 }
 
-.status-badge.active {
+.statusBadge.active {
   background: #e0f2fe;
   color: #0369a1;
 }
 
-.status-badge.completed {
+.statusBadge.completed {
   background: #dcfce7;
   color: #15803d;
 }
 
-.complex-stats {
+.complexStats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 8px;
@@ -236,18 +236,18 @@
   color: #475569;
 }
 
-.complex-stat {
+.complexStat {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
 
-.complex-stat .value {
+.complexStat .value {
   font-weight: 600;
   color: #111827;
 }
 
-.complex-metrics {
+.complexMetrics {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -261,11 +261,11 @@
   gap: 12px;
 }
 
-.metric-label {
+.metricLabel {
   color: var(--color-text-muted);
 }
 
-.metric-value {
+.metricValue {
   font-weight: 600;
   color: #111827;
   display: inline-flex;
@@ -273,19 +273,19 @@
   gap: 8px;
 }
 
-.metric-value.pain.low {
+.metricValue.pain.low {
   color: #15803d;
 }
 
-.metric-value.pain.medium {
+.metricValue.pain.medium {
   color: #b45309;
 }
 
-.metric-value.pain.high {
+.metricValue.pain.high {
   color: #b91c1c;
 }
 
-.trend-badge {
+.trendBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -296,32 +296,32 @@
   color: #475569;
 }
 
-.trend-badge.excellent {
+.trendBadge.excellent {
   background: #dcfce7;
   color: #15803d;
 }
 
-.trend-badge.good {
+.trendBadge.good {
   background: #dbeafe;
   color: #1d4ed8;
 }
 
-.trend-badge.medium {
+.trendBadge.medium {
   background: #fef3c7;
   color: #b45309;
 }
 
-.trend-badge.high {
+.trendBadge.high {
   background: #fee2e2;
   color: #b91c1c;
 }
 
-.complex-footer {
+.complexFooter {
   display: flex;
   justify-content: flex-end;
 }
 
-.btn-details {
+.btnDetails {
   border: none;
   background: #eef2ff;
   color: #4f46e5;
@@ -336,11 +336,11 @@
   transition: background 0.2s ease;
 }
 
-.btn-details:hover {
+.btnDetails:hover {
   background: #e0e7ff;
 }
 
-.empty-state {
+.emptyState {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(20px, 4vw, 28px);
@@ -349,18 +349,18 @@
   color: var(--color-text-muted);
 }
 
-.empty-state h3 {
+.emptyState h3 {
   margin: 12px 0 6px;
   color: #111827;
   font-size: clamp(18px, 3vw, 22px);
 }
 
-.empty-state p {
+.emptyState p {
   margin: 0;
   font-size: clamp(13px, 2vw, 15px);
 }
 
-.empty-icon {
+.emptyIcon {
   width: 56px;
   height: 56px;
   margin: 0 auto;
@@ -393,24 +393,24 @@
   font-size: clamp(14px, 2vw, 16px);
 }
 
-.skeleton-title {
+.skeletonTitle {
   height: 20px;
   border-radius: 10px;
 }
 
-.skeleton-icon {
+.skeletonIcon {
   width: 40px;
   height: 40px;
   border-radius: 10px;
 }
 
 @media (max-width: 640px) {
-  .patient-header {
+  .patientHeader {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .complex-stat {
+  .complexStat {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -420,7 +420,7 @@
     align-items: flex-start;
   }
 
-  .complex-footer {
+  .complexFooter {
     justify-content: flex-start;
   }
 }

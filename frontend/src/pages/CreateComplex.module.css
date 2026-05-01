@@ -4,7 +4,7 @@
    Работает на экранах от 320px до 4K
    ===================================================== */
 
-.create-complex-page {
+.createComplexPage {
   padding: clamp(16px, 3vw, 20px);
   max-width: 1400px;
   margin: 0 auto;
@@ -14,11 +14,11 @@
    PAGE HEADER
    ===================================================== */
 
-.page-header {
+.pageHeader {
   margin-bottom: clamp(16px, 3vw, 24px);
 }
 
-.page-header h1 {
+.pageHeader h1 {
   font-size: clamp(20px, 4vw, 24px);
   color: var(--color-text);
   margin: 0 0 8px 0;
@@ -28,7 +28,7 @@
   flex-wrap: wrap;
 }
 
-.page-header h1 svg {
+.pageHeader h1 svg {
   color: var(--color-primary);
   flex-shrink: 0;
 }
@@ -37,7 +37,7 @@
    STEPS INDICATOR - Адаптивный
    ===================================================== */
 
-.steps-indicator {
+.stepsIndicator {
   display: flex;
   gap: clamp(8px, 2vw, 12px);
   margin: clamp(16px, 3vw, 20px) 0;
@@ -71,7 +71,7 @@
    ERROR MESSAGE
    ===================================================== */
 
-.error-message {
+.errorMessage {
   background: #fff5f5;
   border: 2px solid #feb2b2;
   border-radius: 12px;
@@ -86,7 +86,7 @@
    FORM SECTIONS - Адаптивные карточки
    ===================================================== */
 
-.form-section {
+.formSection {
   background: white;
   padding: clamp(16px, 3vw, 24px);
   border-radius: clamp(12px, 2vw, 16px);
@@ -94,7 +94,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.form-section h2 {
+.formSection h2 {
   font-size: clamp(18px, 3vw, 20px);
   color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 16px) 0;
@@ -103,7 +103,7 @@
   gap: clamp(6px, 1.5vw, 8px);
 }
 
-.form-section h2 svg {
+.formSection h2 svg {
   flex-shrink: 0;
   stroke-width: 2;
 }
@@ -112,11 +112,11 @@
    FORM FIELDS - Адаптивные инпуты
    ===================================================== */
 
-.form-field {
+.formField {
   margin-bottom: clamp(16px, 3vw, 20px);
 }
 
-.form-field label {
+.formField label {
   display: block;
   font-weight: 600;
   color: var(--color-text);
@@ -124,9 +124,9 @@
   font-size: clamp(13px, 2vw, 14px);
 }
 
-.form-field input,
-.form-field select,
-.form-field textarea {
+.formField input,
+.formField select,
+.formField textarea {
   width: 100%;
   padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
   border: 2px solid var(--color-border);
@@ -137,15 +137,15 @@
   font-family: inherit;
 }
 
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
+.formField input:focus,
+.formField select:focus,
+.formField textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-field textarea {
+.formField textarea {
   resize: vertical;
   min-height: clamp(80px, 15vw, 100px);
   line-height: 1.5;
@@ -155,11 +155,11 @@
    PATIENT SEARCH - Адаптивный
    ===================================================== */
 
-.patient-search {
+.patientSearch {
   position: relative;
 }
 
-.search-results {
+.searchResults {
   position: absolute;
   top: 100%;
   left: 0;
@@ -179,7 +179,7 @@
    ===================================================== */
 
 /* СПИСОК ПАЦИЕНТОВ */
-.create-patients-list {
+.createPatientsList {
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 2vw, 12px);
@@ -191,7 +191,7 @@
 }
 
 /* КАРТОЧКА ПАЦИЕНТА */
-.patient-item {
+.patientItem {
   display: flex;
   align-items: center;
   gap: clamp(12px, 2vw, 16px);
@@ -204,20 +204,20 @@
   position: relative;
 }
 
-.patient-item:hover {
+.patientItem:hover {
   border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
-.patient-item.selected {
+.patientItem.selected {
   border-color: var(--color-primary);
   background: #eef2ff;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 /* АВАТАР ПАЦИЕНТА */
-.patient-item .patient-avatar {
+.patientItem .patientAvatar {
   width: clamp(44px, 8vw, 52px);
   height: clamp(44px, 8vw, 52px);
   border-radius: 50%;
@@ -232,7 +232,7 @@
 }
 
 /* ДЕТАЛИ ПАЦИЕНТА */
-.patient-details {
+.patientDetails {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -240,7 +240,7 @@
   gap: 4px;
 }
 
-.patient-details strong {
+.patientDetails strong {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text);
   font-weight: 600;
@@ -249,13 +249,13 @@
   white-space: nowrap;
 }
 
-.patient-details span {
+.patientDetails span {
   font-size: clamp(12px, 1.5vw, 14px);
   color: var(--color-text-muted);
 }
 
 /* ГАЛОЧКА ВЫБОРА */
-.check-mark {
+.checkMark {
   color: #48bb78;
   flex-shrink: 0;
   display: flex;
@@ -264,24 +264,24 @@
 }
 
 /* СЧЕТЧИК РЕЗУЛЬТАТОВ */
-.results-count {
+.resultsCount {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-text-muted);
   margin: clamp(10px, 2vw, 12px) 0 0 0;
 }
 
-.results-count strong {
+.resultsCount strong {
   color: var(--color-primary);
   font-weight: 600;
 }
 
 /* ПОИСК */
-.search-box {
+.searchBox {
   position: relative;
   margin-top: clamp(12px, 2vw, 16px);
 }
 
-.search-input {
+.searchInput {
   width: 100%;
   padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
   padding-right: 40px;
@@ -292,13 +292,13 @@
   box-sizing: border-box;
 }
 
-.search-input:focus {
+.searchInput:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.clear-search {
+.clearSearch {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -317,19 +317,19 @@
   color: var(--color-text-muted);
 }
 
-.clear-search:hover {
+.clearSearch:hover {
   background: var(--color-border-strong);
 }
 
 /* STEP CONTENT */
-.step-content {
+.stepContent {
   background: white;
   padding: clamp(20px, 4vw, 28px);
   border-radius: clamp(12px, 2vw, 16px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.step-content h2 {
+.stepContent h2 {
   font-size: clamp(18px, 3vw, 22px);
   color: var(--color-text);
   margin: 0 0 clamp(16px, 3vw, 20px) 0;
@@ -338,14 +338,14 @@
 
 
 
-.search-result-item {
+.searchResultItem {
   padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
   cursor: pointer;
   transition: background 0.2s;
   font-size: clamp(13px, 2vw, 14px);
 }
 
-.search-result-item:hover {
+.searchResultItem:hover {
   background: var(--color-bg);
 }
 
@@ -353,7 +353,7 @@
    SELECTED EXERCISES - Адаптивный список
    ===================================================== */
 
-.selected-exercises-list {
+.selectedExercisesList {
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 2vw, 14px);
@@ -363,7 +363,7 @@
   padding: 4px;
 }
 
-.selected-exercise {
+.selectedExercise {
   display: flex;
   align-items: flex-start;
   gap: clamp(8px, 2vw, 12px);
@@ -378,17 +378,17 @@
   position: relative;
 }
 
-.selected-exercise:hover {
+.selectedExercise:hover {
   border-color: var(--color-primary);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
-.selected-exercise.is-dragging {
+.selectedExercise.isDragging {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
   opacity: 0.95;
 }
 
-.drag-handle {
+.dragHandle {
   cursor: grab;
   font-size: clamp(16px, 3vw, 18px);
   color: var(--color-border-strong);
@@ -399,20 +399,20 @@
   touch-action: none;
 }
 
-.drag-handle:hover {
+.dragHandle:hover {
   color: var(--color-primary);
 }
 
-.drag-handle:active {
+.dragHandle:active {
   cursor: grabbing;
 }
 
-.exercise-info {
+.exerciseInfo {
   flex: 1 1 min(120px, 100%);
   min-width: 0;
 }
 
-.exercise-info strong {
+.exerciseInfo strong {
   font-size: clamp(13px, 2vw, 15px);
   color: var(--color-text);
   font-weight: 600;
@@ -421,7 +421,7 @@
   word-break: break-word;
 }
 
-.exercise-meta {
+.exerciseMeta {
   font-size: clamp(11px, 1.5vw, 12px);
   color: var(--color-text-muted);
 }
@@ -430,7 +430,7 @@
    EXERCISE PARAMS - Адаптивная сетка
    ===================================================== */
 
-.create-complex-page .exercise-params {
+.createComplexPage .exerciseParams {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(60px, 100%), 1fr));
   gap: clamp(6px, 1.5vw, 8px);
@@ -438,7 +438,7 @@
   width: 100%;
 }
 
-.create-complex-page .exercise-params input {
+.createComplexPage .exerciseParams input {
   padding: clamp(8px, 1.5vw, 10px) clamp(6px, 1.5vw, 8px);
   border: 2px solid var(--color-border);
   border-radius: 8px;
@@ -450,19 +450,19 @@
   text-align: center;
 }
 
-.create-complex-page .exercise-params input::placeholder {
+.createComplexPage .exerciseParams input::placeholder {
   color: var(--color-text-subtle);
   font-size: clamp(11px, 1.5vw, 12px);
 }
 
-.create-complex-page .exercise-params input:focus {
+.createComplexPage .exerciseParams input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   background: white;
 }
 
-.create-complex-page .exercise-params input.notes-input {
+.createComplexPage .exerciseParams input.notesInput {
   grid-column: 1 / -1;
   text-align: left;
 }
@@ -471,7 +471,7 @@
    REMOVE BUTTON - Адаптивный
    ===================================================== */
 
-.remove-exercise-btn {
+.removeExerciseBtn {
   width: clamp(28px, 5vw, 32px);
   height: clamp(28px, 5vw, 32px);
   background: #fee;
@@ -489,7 +489,7 @@
   align-self: flex-start;
 }
 
-.remove-exercise-btn:hover {
+.removeExerciseBtn:hover {
   background: #fc8181;
   color: white;
   border-color: #fc8181;
@@ -497,11 +497,11 @@
 
 /* На узких экранах позиционируем абсолютно */
 @media (max-width: 500px) {
-  .selected-exercise {
+  .selectedExercise {
     padding-right: 40px;
   }
   
-  .remove-exercise-btn {
+  .removeExerciseBtn {
     position: absolute;
     top: 8px;
     right: 8px;
@@ -512,14 +512,14 @@
    AVAILABLE EXERCISES - Адаптивная сетка
    ===================================================== */
 
-.available-exercises-grid {
+.availableExercisesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
   gap: clamp(10px, 2vw, 14px);
   margin-top: clamp(12px, 2vw, 16px);
 }
 
-.exercise-card-small {
+.exerciseCardSmall {
   background: white;
   border: 2px solid var(--color-border);
   border-radius: 12px;
@@ -531,20 +531,20 @@
   cursor: pointer;
 }
 
-.exercise-card-small:hover {
+.exerciseCardSmall:hover {
   border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
-.exercise-card-small h4 {
+.exerciseCardSmall h4 {
   font-size: clamp(13px, 2vw, 15px);
   color: var(--color-text);
   margin: 0;
   font-weight: 600;
 }
 
-.exercise-card-small p {
+.exerciseCardSmall p {
   font-size: clamp(12px, 1.5vw, 13px);
   color: var(--color-text-muted);
   margin: 0;
@@ -556,7 +556,7 @@
   -webkit-box-orient: vertical;
 }
 
-.exercise-tags {
+.exerciseTags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -571,7 +571,7 @@
   font-weight: 500;
 }
 
-.btn-add {
+.btnAdd {
   padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
   background: #48bb78;
   color: white;
@@ -588,13 +588,13 @@
   margin-top: auto;
 }
 
-.btn-add:hover {
+.btnAdd:hover {
   background: var(--color-success);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
 }
 
-.btn-add:disabled {
+.btnAdd:disabled {
   background: var(--color-border);
   color: var(--color-text-subtle);
   cursor: not-allowed;
@@ -605,7 +605,7 @@
    NAVIGATION BUTTONS - Адаптивные
    ===================================================== */
 
-.step-buttons {
+.stepButtons {
   display: flex;
   gap: clamp(10px, 2vw, 12px);
   justify-content: space-between;
@@ -613,7 +613,7 @@
   flex-wrap: wrap;
 }
 
-.btn-step {
+.btnStep {
   padding: clamp(10px, 2vw, 12px) clamp(20px, 3vw, 24px);
   border-radius: 10px;
   font-size: clamp(13px, 2vw, 15px);
@@ -629,27 +629,27 @@
   justify-content: center;
 }
 
-.btn-back {
+.btnBack {
   background: var(--color-border);
   color: var(--color-text-muted);
 }
 
-.btn-back:hover {
+.btnBack:hover {
   background: var(--color-border);
   transform: translateY(-2px);
 }
 
-.btn-next {
+.btnNext {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
 }
 
-.btn-next:hover {
+.btnNext:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
 
-.btn-next:disabled {
+.btnNext:disabled {
   background: var(--color-border);
   color: var(--color-text-subtle);
   cursor: not-allowed;
@@ -658,11 +658,11 @@
 
 /* На узких экранах кнопки на всю ширину */
 @media (max-width: 500px) {
-  .step-buttons {
+  .stepButtons {
     flex-direction: column;
   }
   
-  .btn-step {
+  .btnStep {
     width: 100%;
   }
 }
@@ -671,7 +671,7 @@
    SUCCESS SCREEN - Адаптивный
    ===================================================== */
 
-.success-screen {
+.successScreen {
   text-align: center;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
   background: white;
@@ -679,25 +679,25 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-.success-icon {
+.successIcon {
   font-size: clamp(60px, 10vw, 80px);
   color: #48bb78;
   margin-bottom: clamp(16px, 3vw, 20px);
 }
 
-.success-screen h2 {
+.successScreen h2 {
   font-size: clamp(22px, 4vw, 28px);
   color: var(--color-text);
   margin: 0 0 clamp(10px, 2vw, 12px) 0;
 }
 
-.success-screen p {
+.successScreen p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0 0 clamp(24px, 4vw, 32px) 0;
 }
 
-.complex-link {
+.complexLink {
   background: var(--color-border);
   padding: clamp(10px, 2vw, 12px) clamp(14px, 2vw, 16px);
   border-radius: 8px;
@@ -707,7 +707,7 @@
   word-break: break-all;
 }
 
-.share-buttons {
+.shareButtons {
   display: flex;
   gap: clamp(10px, 2vw, 12px);
   justify-content: center;
@@ -715,7 +715,7 @@
   flex-wrap: wrap;
 }
 
-.btn-share {
+.btnShare {
   padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 20px);
   border-radius: 10px;
   font-size: clamp(13px, 2vw, 14px);
@@ -728,17 +728,17 @@
   transition: all 0.2s;
 }
 
-.btn-whatsapp {
+.btnWhatsapp {
   background: #25d366;
   color: white;
 }
 
-.btn-telegram {
+.btnTelegram {
   background: #0088cc;
   color: white;
 }
 
-.btn-share:hover {
+.btnShare:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -748,7 +748,7 @@
    ===================================================== */
 
 @media (max-width: 1024px) {
-  .back-button-wrapper {
+  .backButtonWrapper {
     display: none !important;
   }
 }
@@ -757,15 +757,15 @@
    STEP 3 - ДВУХКОЛОНОЧНЫЙ LAYOUT
    ===================================================== */
 
-   .step-exercises {
+   .stepExercises {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: clamp(16px, 3vw, 24px);
     align-items: start;
   }
   
-  .exercises-section,
-  .selected-section {
+  .exercisesSection,
+  .selectedSection {
     background: var(--color-bg);
     border-radius: 12px;
     padding: clamp(16px, 3vw, 20px);
@@ -773,8 +773,8 @@
     overflow-y: auto;
   }
   
-  .exercises-section h2,
-  .selected-section h2 {
+  .exercisesSection h2,
+  .selectedSection h2 {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -788,13 +788,13 @@
   }
   
   /* Поиск и фильтры */
-  .search-filters {
+  .searchFilters {
     display: flex;
     gap: clamp(8px, 1.5vw, 12px);
     margin-bottom: clamp(12px, 2vw, 16px);
   }
   
-  .search-filters input {
+  .searchFilters input {
     flex: 1;
     padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
     border: 2px solid var(--color-border);
@@ -802,7 +802,7 @@
     font-size: clamp(13px, 2vw, 14px);
   }
   
-  .search-filters select {
+  .searchFilters select {
     padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
     border: 2px solid var(--color-border);
     border-radius: 8px;
@@ -811,20 +811,20 @@
     min-width: 100px;
   }
   
-  .search-filters input:focus,
-  .search-filters select:focus {
+  .searchFilters input:focus,
+  .searchFilters select:focus {
     outline: none;
     border-color: var(--color-primary);
   }
   
   /* Список доступных упражнений */
-  .available-exercises {
+  .availableExercises {
     display: flex;
     flex-direction: column;
     gap: clamp(8px, 1.5vw, 10px);
   }
   
-  .exercise-item {
+  .exerciseItem {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -836,35 +836,35 @@
     transition: all 0.2s;
   }
   
-  .exercise-item:hover {
+  .exerciseItem:hover {
     border-color: var(--color-primary);
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
   }
   
-  .exercise-item.is-added {
+  .exerciseItem.isAdded {
     background: #f0fdf4;
     border-color: #86efac;
   }
   
-  .exercise-item .exercise-info {
+  .exerciseItem .exerciseInfo {
     flex: 1;
     min-width: 0;
   }
   
-  .exercise-item .exercise-info strong {
+  .exerciseItem .exerciseInfo strong {
     display: block;
     font-size: clamp(13px, 2vw, 14px);
     color: var(--color-text);
     margin-bottom: 2px;
   }
   
-  .exercise-item .exercise-info .exercise-meta {
+  .exerciseItem .exerciseInfo .exerciseMeta {
     font-size: clamp(11px, 1.5vw, 12px);
     color: var(--color-text-muted);
   }
   
   /* Кнопка "Добавлено" */
-  .btn-added {
+  .btnAdded {
     padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
     background: var(--color-border);
     color: #48bb78;
@@ -880,35 +880,35 @@
   }
   
   /* Секция комплекса */
-  .selected-section {
+  .selectedSection {
     background: #eef2ff;
     border: 2px dashed #c7d2fe;
   }
   
-  .empty-complex {
+  .emptyComplex {
     text-align: center;
     padding: clamp(30px, 6vw, 40px);
     color: var(--color-text-muted);
   }
   
-  .empty-complex p {
+  .emptyComplex p {
     margin: 0;
     font-size: clamp(13px, 2vw, 14px);
   }
   
   /* Кнопки навигации на всю ширину */
-  .step-buttons.full-width {
+  .stepButtons.fullWidth {
     grid-column: 1 / -1;
   }
   
   /* Адаптив для мобильных */
   @media (max-width: 768px) {
-    .step-exercises {
+    .stepExercises {
       grid-template-columns: 1fr;
     }
     
-    .exercises-section,
-    .selected-section {
+    .exercisesSection,
+    .selectedSection {
       max-height: 50vh;
     }
   }
@@ -917,19 +917,19 @@
    STEP 1 - ФИКС ВЫСОТЫ ДЛЯ СПИСКА ПАЦИЕНТОВ
    ===================================================== */
 
-.step-content:has(.create-patients-list) {
+.stepContent:has(.createPatientsList) {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - 250px);
 }
 
-.step-content:has(.create-patients-list) h2,
-.step-content:has(.create-patients-list) .search-box,
-.step-content:has(.create-patients-list) .results-count {
+.stepContent:has(.createPatientsList) h2,
+.stepContent:has(.createPatientsList) .searchBox,
+.stepContent:has(.createPatientsList) .resultsCount {
   flex-shrink: 0;
 }
 
-.create-patients-list {
+.createPatientsList {
   flex: 1;
   overflow-y: auto;
   min-height: 150px;
@@ -939,7 +939,7 @@
    ШАБЛОНЫ
    ===================================================== */
 
-   .section-header {
+   .sectionHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -948,11 +948,11 @@
     margin-bottom: clamp(12px, 2vw, 16px);
   }
   
-  .section-header h2 {
+  .sectionHeader h2 {
     margin: 0;
   }
   
-  .btn-template {
+  .btnTemplate {
     padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
     background: var(--color-border);
     color: var(--color-text-muted);
@@ -967,12 +967,12 @@
     transition: all 0.2s;
   }
   
-  .btn-template:hover {
+  .btnTemplate:hover {
     background: var(--color-border);
     border-color: var(--color-border-strong);
   }
   
-  .btn-save-template {
+  .btnSaveTemplate {
     width: 100%;
     padding: clamp(12px, 2vw, 14px);
     background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
@@ -990,13 +990,13 @@
     margin-bottom: 12px;
   }
   
-  .btn-save-template:hover {
+  .btnSaveTemplate:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
   }
   
   /* Модалки */
-  .modal-overlay {
+  .modalOverlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -1010,7 +1010,7 @@
     padding: 20px;
   }
   
-  .modal-content {
+  .modalContent {
     background: white;
     border-radius: 16px;
     width: 100%;
@@ -1022,7 +1022,7 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   }
   
-  .modal-header {
+  .modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1030,7 +1030,7 @@
     border-bottom: 1px solid var(--color-border);
   }
   
-  .modal-header h3 {
+  .modalHeader h3 {
     margin: 0;
     font-size: clamp(16px, 3vw, 18px);
     display: flex;
@@ -1039,7 +1039,7 @@
     color: var(--color-text);
   }
   
-  .modal-close {
+  .modalClose {
     background: none;
     border: none;
     padding: 8px;
@@ -1049,18 +1049,18 @@
     transition: all 0.2s;
   }
   
-  .modal-close:hover {
+  .modalClose:hover {
     background: var(--color-bg);
     color: var(--color-text);
   }
   
-  .modal-body {
+  .modalBody {
     padding: clamp(16px, 3vw, 20px);
     overflow-y: auto;
     flex: 1;
   }
   
-  .modal-footer {
+  .modalFooter {
     display: flex;
     gap: 12px;
     justify-content: flex-end;
@@ -1069,13 +1069,13 @@
   }
   
   /* Список шаблонов */
-  .templates-list {
+  .templatesList {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
   
-  .template-item {
+  .templateItem {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1087,44 +1087,44 @@
     transition: all 0.2s;
   }
   
-  .template-item:hover {
+  .templateItem:hover {
     border-color: var(--color-primary);
     background: #eef2ff;
   }
   
-  .template-info {
+  .templateInfo {
     flex: 1;
     min-width: 0;
   }
   
-  .template-info strong {
+  .templateInfo strong {
     display: block;
     font-size: clamp(14px, 2vw, 15px);
     color: var(--color-text);
     margin-bottom: 4px;
   }
   
-  .template-info p {
+  .templateInfo p {
     font-size: clamp(12px, 1.5vw, 13px);
     color: var(--color-text-muted);
     margin: 0 0 4px 0;
   }
   
-  .template-meta {
+  .templateMeta {
     font-size: clamp(11px, 1.5vw, 12px);
     color: var(--color-text-muted);
   }
   
-  .template-arrow {
+  .templateArrow {
     color: var(--color-text-subtle);
     flex-shrink: 0;
   }
 
-  .template-selector .search-box {
+  .templateSelector .searchBox {
     margin-top: 0;
   }
 
-  .template-selector .search-icon {
+  .templateSelector .searchIcon {
     position: absolute;
     left: 12px;
     top: 50%;
@@ -1132,15 +1132,15 @@
     color: var(--color-text-subtle);
   }
 
-  .template-selector .search-input {
+  .templateSelector .searchInput {
     padding-left: 40px;
   }
 
-  .template-selector .templates-list {
+  .templateSelector .templatesList {
     gap: 12px;
   }
 
-  .template-option {
+  .templateOption {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1151,61 +1151,61 @@
     border-radius: 10px;
   }
 
-  .template-option .btn-primary {
+  .templateOption .btnPrimary {
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 600;
     border-radius: 8px;
   }
 
-  .templates-loading {
+  .templatesLoading {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .template-selector .empty-state {
+  .templateSelector .emptyState {
     text-align: center;
     color: var(--color-text-muted);
     font-size: 14px;
     padding: 12px 0;
   }
   
-  .empty-templates {
+  .emptyTemplates {
     text-align: center;
     padding: clamp(30px, 5vw, 40px) 20px;
     color: var(--color-text-muted);
   }
   
-  .empty-templates p {
+  .emptyTemplates p {
     margin: 0 0 8px 0;
     font-size: clamp(14px, 2vw, 16px);
     color: var(--color-text-muted);
   }
   
-  .empty-templates span {
+  .emptyTemplates span {
     font-size: clamp(12px, 1.5vw, 14px);
   }
   
   /* Форма сохранения шаблона */
-  .template-summary {
+  .templateSummary {
     background: var(--color-bg);
     padding: 12px 16px;
     border-radius: 8px;
     margin-top: 16px;
   }
   
-  .template-summary p {
+  .templateSummary p {
     margin: 0;
     font-size: clamp(13px, 2vw, 14px);
     color: var(--color-text-muted);
   }
   
-  .template-summary p + p {
+  .templateSummary p + p {
     margin-top: 4px;
   }
 
-  .template-summary strong {
+  .templateSummary strong {
     color: var(--color-primary);
   }
 
@@ -1214,19 +1214,19 @@
    ===================================================== */
 
 @media (max-width: 480px) {
-  .create-complex-container {
+  .createComplexContainer {
     padding: 12px;
   }
 
-  .step-content {
+  .stepContent {
     padding: 16px;
   }
 
-  .form-group label {
+  .formGroup label {
     font-size: 14px;
   }
 
-  .selected-exercises-list {
+  .selectedExercisesList {
     gap: 8px;
   }
 }

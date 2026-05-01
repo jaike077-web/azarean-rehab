@@ -2,7 +2,7 @@
    CONFIRM MODAL STYLES - Azarean Network
    ===================================================== */
 
-.confirm-modal-overlay {
+.confirmModalOverlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -14,7 +14,7 @@
   animation: fadeIn 0.2s ease;
 }
 
-.confirm-modal {
+.confirmModal {
   background: white;
   border-radius: 16px;
   padding: 24px;
@@ -42,7 +42,7 @@
   }
 }
 
-.confirm-modal-close {
+.confirmModalClose {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -55,12 +55,12 @@
   transition: all 0.2s;
 }
 
-.confirm-modal-close:hover {
+.confirmModalClose:hover {
   background: var(--color-surface-2);
   color: var(--color-text);
 }
 
-.confirm-modal-icon {
+.confirmModalIcon {
   width: 64px;
   height: 64px;
   border-radius: 50%;
@@ -70,42 +70,42 @@
   margin: 0 auto 16px;
 }
 
-.confirm-modal-danger .confirm-modal-icon {
+.confirmModalDanger .confirmModalIcon {
   background: #fee2e2;
   color: var(--color-danger-hover);
 }
 
-.confirm-modal-warning .confirm-modal-icon {
+.confirmModalWarning .confirmModalIcon {
   background: #fef3c7;
   color: var(--color-warning);
 }
 
-.confirm-modal-info .confirm-modal-icon {
+.confirmModalInfo .confirmModalIcon {
   background: #dbeafe;
   color: #2563eb;
 }
 
-.confirm-modal-title {
+.confirmModalTitle {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--color-text);
   margin: 0 0 8px;
 }
 
-.confirm-modal-message {
+.confirmModalMessage {
   color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.5;
   margin: 0 0 24px;
 }
 
-.confirm-modal-actions {
+.confirmModalActions {
   display: flex;
   gap: 12px;
   justify-content: center;
 }
 
-.confirm-modal-actions button {
+.confirmModalActions button {
   flex: 1;
   padding: 12px 20px;
   font-size: 0.95rem;
@@ -115,47 +115,47 @@
   transition: all 0.2s;
 }
 
-.confirm-modal-actions .btn-secondary {
+.confirmModalActions .btnSecondary {
   background: var(--color-surface-2);
   border: none;
   color: #475569;
 }
 
-.confirm-modal-actions .btn-secondary:hover {
+.confirmModalActions .btnSecondary:hover {
   background: var(--color-border);
 }
 
-.confirm-modal-actions .btn-danger {
+.confirmModalActions .btnDanger {
   background: var(--color-danger-hover);
   border: none;
   color: white;
 }
 
-.confirm-modal-actions .btn-danger:hover {
+.confirmModalActions .btnDanger:hover {
   background: #b91c1c;
 }
 
-.confirm-modal-actions .btn-primary {
+.confirmModalActions .btnPrimary {
   background: var(--color-primary);
   border: none;
   color: white;
 }
 
-.confirm-modal-actions .btn-primary:hover {
+.confirmModalActions .btnPrimary:hover {
   background: #5a67d8;
 }
 
 /* Mobile */
 @media (max-width: 480px) {
-  .confirm-modal {
+  .confirmModal {
     padding: 20px;
   }
 
-  .confirm-modal-actions {
+  .confirmModalActions {
     flex-direction: column;
   }
 
-  .confirm-modal-actions button {
+  .confirmModalActions button {
     width: 100%;
   }
 }

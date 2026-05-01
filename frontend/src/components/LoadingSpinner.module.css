@@ -1,4 +1,4 @@
-.loading-spinner-container {
+.loadingSpinnerContainer {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7,7 +7,7 @@
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
 }
 
-.loading-spinner-content {
+.loadingSpinnerContent {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -18,7 +18,7 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
-.loading-spinner {
+.loadingSpinner {
   width: 60px;
   height: 60px;
   border: 5px solid #f3f4f6;
@@ -36,7 +36,7 @@
   }
 }
 
-.loading-spinner-message {
+.loadingSpinnerMessage {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
@@ -45,7 +45,7 @@
 }
 
 /* Вариант для маленького спиннера (встроенного) */
-.loading-spinner-small {
+.loadingSpinnerSmall {
   display: inline-block;
   width: 20px;
   height: 20px;

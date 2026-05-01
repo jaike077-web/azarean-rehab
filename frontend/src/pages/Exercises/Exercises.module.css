@@ -3,7 +3,7 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.exercises-page {
+.exercisesPage {
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(16px, 3vw, 24px);
@@ -13,7 +13,7 @@
    HEADER
    ===================================================== */
 
-.exercises-page .exercises-page-header {
+.exercisesPage .exercisesPageHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -21,26 +21,26 @@
   margin-bottom: clamp(20px, 4vw, 32px);
 }
 
-.exercises-page .header-left {
+.exercisesPage .headerLeft {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.exercises-page .page-title {
+.exercisesPage .pageTitle {
   margin: 0;
   font-size: clamp(22px, 4vw, 32px);
   font-weight: 700;
   color: #111827;
 }
 
-.exercises-page .header-actions {
+.exercisesPage .headerActions {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.exercises-page .back-button {
+.exercisesPage .backButton {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -55,13 +55,13 @@
   transition: all 0.2s;
 }
 
-.exercises-page .back-button:hover {
+.exercisesPage .backButton:hover {
   background: #f9fafb;
   border-color: #6366f1;
   color: #6366f1;
 }
 
-.exercises-page .btn-primary {
+.exercisesPage .btnPrimary {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -77,12 +77,12 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
-.exercises-page .btn-primary:hover {
+.exercisesPage .btnPrimary:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
-.exercises-page .btn-clear-filters {
+.exercisesPage .btnClearFilters {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -97,11 +97,11 @@
   transition: all 0.2s;
 }
 
-.exercises-page .btn-clear-filters:hover {
+.exercisesPage .btnClearFilters:hover {
   background: #eef2ff;
 }
 
-.exercises-page .exercises-content {
+.exercisesPage .exercisesContent {
   display: flex;
   flex-direction: column;
   gap: clamp(20px, 4vw, 32px);
@@ -111,7 +111,7 @@
    FILTERS SECTION
    ===================================================== */
 
-.filters-section {
+.filtersSection {
   background: white;
   border-radius: clamp(10px, 2vw, 14px);
   padding: clamp(18px, 4vw, 28px);
@@ -119,11 +119,11 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.search-box {
+.searchBox {
   margin-bottom: clamp(16px, 3vw, 24px);
 }
 
-.search-box input {
+.searchBox input {
   width: 100%;
   padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 22px);
   border: 1px solid rgba(99, 102, 241, 0.4);
@@ -134,13 +134,13 @@
   box-sizing: border-box;
 }
 
-.search-box input:focus {
+.searchBox input:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.search-box input::placeholder {
+.searchBox input::placeholder {
   color: var(--color-text-subtle);
 }
 
@@ -148,28 +148,28 @@
    FILTERS ROW
    ===================================================== */
 
-.filters-row {
+.filtersRow {
   display: flex;
   gap: clamp(14px, 3vw, 22px);
   align-items: center;
   flex-wrap: wrap;
 }
 
-.filter-group {
+.filterGroup {
   display: flex;
   align-items: center;
   gap: clamp(10px, 2vw, 14px);
   flex-wrap: wrap;
 }
 
-.filter-group label {
+.filterGroup label {
   font-size: clamp(13px, 2vw, 14px);
   font-weight: 600;
   color: var(--color-text);
   white-space: nowrap;
 }
 
-.filter-group select {
+.filterGroup select {
   padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 18px);
   border: 2px solid var(--color-border);
   border-radius: 8px;
@@ -181,13 +181,13 @@
   transition: all 0.2s;
 }
 
-.filter-group select:focus {
+.filterGroup select:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.results-count {
+.resultsCount {
   margin-left: auto;
   padding: clamp(8px, 2vw, 12px) clamp(14px, 3vw, 22px);
   background: var(--color-border);
@@ -197,7 +197,7 @@
   white-space: nowrap;
 }
 
-.results-count strong {
+.resultsCount strong {
   color: #6366f1;
   font-weight: 700;
 }
@@ -206,7 +206,7 @@
    EXERCISES GRID
    ===================================================== */
 
-.exercises-page .exercises-grid {
+.exercisesPage .exercisesGrid {
   display: grid;
   gap: 20px;
   padding: 20px;
@@ -217,7 +217,7 @@
    (shared card styles live in components/ExerciseCard.css)
    ===================================================== */
 
-.exercises-page .exercise-card {
+.exercisesPage .exerciseCard {
   background: white;
   border-radius: 12px;
   overflow: hidden;
@@ -226,12 +226,12 @@
   cursor: pointer;
 }
 
-.exercises-page .exercise-card:hover {
+.exercisesPage .exerciseCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
 }
 
-.exercise-video {
+.exerciseVideo {
   width: 100%;
   height: clamp(160px, 35vw, 220px);
   background: var(--color-bg);
@@ -239,18 +239,18 @@
   overflow: hidden;
 }
 
-.exercises-page .exercise-video img {
+.exercisesPage .exerciseVideo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s;
 }
 
-.exercises-page .exercise-card:hover .exercise-video img {
+.exercisesPage .exerciseCard:hover .exerciseVideo img {
   transform: scale(1.05);
 }
 
-.video-placeholder {
+.videoPlaceholder {
   width: 100%;
   height: 100%;
   display: flex;
@@ -265,15 +265,15 @@
    EXERCISE CONTENT
    ===================================================== */
 
-.exercise-content {
+.exerciseContent {
   padding: clamp(16px, 3vw, 22px);
 }
 
-.exercise-header {
+.exerciseHeader {
   margin-bottom: clamp(12px, 2vw, 18px);
 }
 
-.exercise-header h3 {
+.exerciseHeader h3 {
   font-size: clamp(18px, 3vw, 22px);
   color: var(--color-text);
   margin: 0 0 clamp(10px, 2vw, 14px) 0;
@@ -284,7 +284,7 @@
   overflow: hidden;
 }
 
-.exercise-badges {
+.exerciseBadges {
   display: flex;
   gap: clamp(6px, 1.5vw, 10px);
   flex-wrap: wrap;
@@ -301,17 +301,17 @@
   white-space: nowrap;
 }
 
-.badge-category {
+.badgeCategory {
   background: #e6fffa;
   color: #047857;
 }
 
-.badge-difficulty {
+.badgeDifficulty {
   background: #48bb78;
   color: white;
 }
 
-.exercise-description {
+.exerciseDescription {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-text-muted);
   line-height: 1.6;
@@ -322,13 +322,13 @@
    EXERCISE DETAILS
    ===================================================== */
 
-.exercise-details {
+.exerciseDetails {
   border-top: 2px solid var(--color-bg);
   padding-top: clamp(12px, 2vw, 18px);
   margin-bottom: clamp(12px, 2vw, 18px);
 }
 
-.detail-item {
+.detailItem {
   display: flex;
   gap: clamp(6px, 1.5vw, 10px);
   margin-bottom: clamp(8px, 2vw, 12px);
@@ -337,7 +337,7 @@
   line-height: 1.5;
 }
 
-.detail-item.warning {
+.detailItem.warning {
   color: var(--color-danger-hover);
   background: #fff5f5;
   padding: clamp(6px, 1.5vw, 10px);
@@ -345,7 +345,7 @@
   border-left: 3px solid #f56565;
 }
 
-.detail-icon {
+.detailIcon {
   flex-shrink: 0;
   font-size: clamp(14px, 3vw, 16px);
 }
@@ -354,12 +354,12 @@
    EXERCISE ACTIONS
    ===================================================== */
 
-.exercise-actions {
+.exerciseActions {
   display: flex;
   gap: clamp(10px, 2vw, 14px);
 }
 
-.exercise-actions .btn-secondary {
+.exerciseActions .btnSecondary {
   flex: 1;
   padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 18px);
   background: var(--color-border);
@@ -377,7 +377,7 @@
   gap: 6px;
 }
 
-.exercise-actions .btn-secondary:hover {
+.exerciseActions .btnSecondary:hover {
   background: var(--color-border);
   transform: translateY(-1px);
 }
@@ -386,9 +386,9 @@
    EMPTY STATE
    ===================================================== */
 
-.exercises-page .exercises-empty,
-.exercises-page .no-results,
-.exercises-page .exercises-error {
+.exercisesPage .exercisesEmpty,
+.exercisesPage .noResults,
+.exercisesPage .exercisesError {
   background: white;
   border-radius: 12px;
   padding: clamp(40px, 8vw, 60px) clamp(24px, 5vw, 40px);
@@ -396,7 +396,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.exercises-page .empty-icon {
+.exercisesPage .emptyIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -405,30 +405,30 @@
   opacity: 0.8;
 }
 
-.exercises-page .empty-icon svg {
+.exercisesPage .emptyIcon svg {
   width: clamp(60px, 12vw, 80px);
   height: clamp(60px, 12vw, 80px);
 }
 
-.exercises-page .empty-title,
-.exercises-page .no-results-title,
-.exercises-page .error-title {
+.exercisesPage .emptyTitle,
+.exercisesPage .noResultsTitle,
+.exercisesPage .errorTitle {
   font-size: clamp(20px, 4vw, 28px);
   color: var(--color-text);
   margin: 0 0 clamp(10px, 2vw, 14px) 0;
 }
 
-.exercises-page .empty-message,
-.exercises-page .no-results-message,
-.exercises-page .error-message {
+.exercisesPage .emptyMessage,
+.exercisesPage .noResultsMessage,
+.exercisesPage .errorMessage {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0;
   line-height: 1.6;
 }
 
-.exercises-page .no-results-icon,
-.exercises-page .error-icon {
+.exercisesPage .noResultsIcon,
+.exercisesPage .errorIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -440,16 +440,16 @@
   color: #6366f1;
 }
 
-.exercises-page .error-icon {
+.exercisesPage .errorIcon {
   color: var(--color-danger-hover);
   background: #fef2f2;
 }
 
-.exercises-page .exercises-empty .btn-primary {
+.exercisesPage .exercisesEmpty .btnPrimary {
   margin-top: 16px;
 }
 
-.exercises-page .no-results .btn-clear-filters {
+.exercisesPage .noResults .btnClearFilters {
   margin-top: 16px;
 }
 
@@ -459,57 +459,57 @@
 
 /* Desktop: 3 columns */
 @media (min-width: 1024px) {
-  .exercises-page .exercises-grid {
+  .exercisesPage .exercisesGrid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 /* Tablet: 2 columns */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .exercises-page .exercises-grid {
+  .exercisesPage .exercisesGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 /* Mobile: 1 column */
 @media (max-width: 767px) {
-  .exercises-page .exercises-page-header {
+  .exercisesPage .exercisesPageHeader {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .exercises-page .back-button,
-  .exercises-page .btn-primary {
+  .exercisesPage .backButton,
+  .exercisesPage .btnPrimary {
     width: 100%;
     justify-content: center;
   }
 
-  .exercises-page .exercises-grid {
+  .exercisesPage .exercisesGrid {
     grid-template-columns: 1fr;
     padding: 12px;
     gap: 16px;
   }
 
-  .exercises-page .filters-row {
+  .exercisesPage .filtersRow {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .exercises-page .filters-row > * {
+  .exercisesPage .filtersRow > * {
     width: 100%;
   }
 
-  .exercises-page .filter-group {
+  .exercisesPage .filterGroup {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
   }
 
-  .exercises-page .filter-group select {
+  .exercisesPage .filterGroup select {
     width: 100%;
   }
 
-  .exercises-page .results-count {
+  .exercisesPage .resultsCount {
     margin-left: 0;
     text-align: center;
   }
@@ -520,24 +520,24 @@
    ===================================================== */
 
 @media (max-width: 480px) {
-  .exercises-page {
+  .exercisesPage {
     padding: 12px;
   }
 
-  .exercises-page-header {
+  .exercisesPageHeader {
     gap: 12px;
   }
 
-  .exercises-page .page-title {
+  .exercisesPage .pageTitle {
     font-size: 20px;
   }
 
-  .exercises-page .btn-create {
+  .exercisesPage .btnCreate {
     width: 100%;
     justify-content: center;
   }
 
-  .exercises-grid {
+  .exercisesGrid {
     gap: 12px;
   }
 }

@@ -4,7 +4,7 @@
    Работает на экранах от 320px до 4K
    ===================================================== */
 
-.my-complexes-page {
+.myComplexesPage {
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(16px, 3vw, 24px);
@@ -14,7 +14,7 @@
    PAGE HEADER
    ===================================================== */
 
-.page-header {
+.pageHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -23,7 +23,7 @@
   flex-wrap: wrap;
 }
 
-.page-header h1 {
+.pageHeader h1 {
   font-size: clamp(22px, 4vw, 32px);
   margin: 0 0 8px 0;
   color: var(--color-text);
@@ -32,12 +32,12 @@
   gap: clamp(8px, 2vw, 12px);
 }
 
-.page-icon {
+.pageIcon {
   flex-shrink: 0;
   stroke-width: 1.8;
 }
 
-.page-header p {
+.pageHeader p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0;
@@ -54,7 +54,7 @@
   color: var(--color-text-muted);
 }
 
-.error-message {
+.errorMessage {
   background: #fed7d7;
   color: var(--color-danger-hover);
   padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 24px);
@@ -68,7 +68,7 @@
    EMPTY STATE
    ===================================================== */
 
-.empty-state {
+.emptyState {
   background: white;
   border-radius: 12px;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
@@ -76,20 +76,20 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.empty-icon {
+.emptyIcon {
   margin-bottom: clamp(16px, 3vw, 20px);
   opacity: 0.3;
   color: var(--color-text-subtle);
   font-size: clamp(48px, 10vw, 64px);
 }
 
-.empty-state h3 {
+.emptyState h3 {
   font-size: clamp(18px, 3vw, 22px);
   color: var(--color-text-muted);
   margin: 0 0 clamp(8px, 2vw, 12px) 0;
 }
 
-.empty-state p {
+.emptyState p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0 0 clamp(20px, 4vw, 24px) 0;
@@ -99,19 +99,19 @@
    FILTERS - Адаптивная панель фильтров
    ===================================================== */
 
-.filters-bar {
+.filtersBar {
   display: flex;
   gap: clamp(10px, 2vw, 12px);
   margin-bottom: clamp(16px, 3vw, 24px);
   flex-wrap: wrap;
 }
 
-.search-box {
+.searchBox {
   position: relative;
   flex: 1 1 min(300px, 100%);
 }
 
-.search-icon {
+.searchIcon {
   position: absolute;
   left: clamp(12px, 2vw, 14px);
   top: 50%;
@@ -121,7 +121,7 @@
   pointer-events: none;
 }
 
-.search-input {
+.searchInput {
   width: 100%;
   padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px) clamp(8px, 1.5vw, 10px) clamp(35px, 6vw, 40px);
   border: 2px solid var(--color-border);
@@ -131,13 +131,13 @@
   box-sizing: border-box;
 }
 
-.search-input:focus {
+.searchInput:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.filter-select {
+.filterSelect {
   padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px);
   border: 2px solid var(--color-border);
   border-radius: 8px;
@@ -148,7 +148,7 @@
   white-space: nowrap;
 }
 
-.filter-select:focus {
+.filterSelect:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -158,14 +158,14 @@
    STATS - Адаптивные статистические карточки
    ===================================================== */
 
-.stats-row {
+.statsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: clamp(12px, 2vw, 16px);
   margin-bottom: clamp(20px, 4vw, 24px);
 }
 
-.stat-card {
+.statCard {
   background: white;
   padding: clamp(14px, 3vw, 20px);
   border-radius: 12px;
@@ -176,23 +176,23 @@
   transition: all 0.2s;
 }
 
-.stat-card:hover {
+.statCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.stat-icon {
+.statIcon {
   font-size: clamp(28px, 5vw, 36px);
   flex-shrink: 0;
   stroke-width: 1.8;
 }
 
-.stat-info {
+.statInfo {
   flex: 1;
   min-width: 0;
 }
 
-.stat-value {
+.statValue {
   font-size: clamp(20px, 4vw, 26px);
   font-weight: 700;
   color: var(--color-text);
@@ -200,7 +200,7 @@
   margin-bottom: 4px;
 }
 
-.stat-label {
+.statLabel {
   font-size: clamp(12px, 2vw, 13px);
   color: var(--color-text-muted);
 }
@@ -209,13 +209,13 @@
    COMPLEXES GRID - Адаптивная сетка карточек
    ===================================================== */
 
-.complexes-grid {
+.complexesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: clamp(16px, 3vw, 20px);
 }
 
-.complex-card {
+.complexCard {
   background: white;
   border-radius: clamp(12px, 2vw, 14px);
   padding: clamp(16px, 3vw, 20px);
@@ -228,25 +228,25 @@
   border: 2px solid transparent;
 }
 
-.complex-card:hover {
+.complexCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   border-color: var(--color-primary);
 }
 
-.complex-card-header {
+.complexCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
 }
 
-.complex-patient {
+.complexPatient {
   flex: 1;
   min-width: 0;
 }
 
-.complex-patient-name {
+.complexPatientName {
   font-size: clamp(16px, 3vw, 18px);
   font-weight: 600;
   color: var(--color-text);
@@ -254,7 +254,7 @@
   word-break: break-word;
 }
 
-.complex-diagnosis {
+.complexDiagnosis {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-primary);
   background: #ebf4ff;
@@ -264,7 +264,7 @@
   margin-top: 4px;
 }
 
-.complex-badge {
+.complexBadge {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   padding: 4px 10px;
@@ -275,13 +275,13 @@
   flex-shrink: 0;
 }
 
-.complex-info {
+.complexInfo {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.complex-info-row {
+.complexInfoRow {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -289,19 +289,19 @@
   color: var(--color-text-muted);
 }
 
-.complex-info-row svg {
+.complexInfoRow svg {
   flex-shrink: 0;
   color: var(--color-primary);
   stroke-width: 2;
 }
 
-.complex-date {
+.complexDate {
   color: var(--color-text-muted);
   font-size: clamp(12px, 2vw, 13px);
   margin-top: 4px;
 }
 
-.complex-actions {
+.complexActions {
   display: inline-grid;
   gap: 8px;
   margin-top: auto;
@@ -309,7 +309,7 @@
   border-top: 1px solid var(--color-border);
 }
 
-.btn-action {
+.btnAction {
   flex: 1;
   padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
   border: none;
@@ -324,39 +324,39 @@
   gap: 4px;
 }
 
-.btn-view {
+.btnView {
   background: var(--color-border);
   color: var(--color-text-muted);
 }
 
-.btn-view:hover {
+.btnView:hover {
   background: var(--color-border);
 }
 
-.btn-edit {
+.btnEdit {
   background: #bee3f8;
   color: #2c5282;
 }
 
-.btn-edit:hover {
+.btnEdit:hover {
   background: #90cdf4;
 }
 
-.btn-progress {
+.btnProgress {
   background: #c6f6d5;
   color: #22543d;
 }
 
-.btn-progress:hover {
+.btnProgress:hover {
   background: #9ae6b4;
 }
 
-.btn-delete {
+.btnDelete {
   background: #fed7d7;
   color: var(--color-danger-hover);
 }
 
-.btn-delete:hover {
+.btnDelete:hover {
   background: #fc8181;
   color: white;
 }
@@ -405,7 +405,7 @@
    MODAL - Адаптивный
    ===================================================== */
 
-.modal-overlay {
+.modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -419,7 +419,7 @@
   padding: clamp(16px, 3vw, 20px);
 }
 
-.modal-content {
+.modalContent {
   background: white;
   border-radius: clamp(12px, 2vw, 16px);
   padding: clamp(20px, 4vw, 24px);
@@ -428,30 +428,30 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
-.modal-header {
+.modalHeader {
   margin-bottom: clamp(16px, 3vw, 20px);
 }
 
-.modal-header h2 {
+.modalHeader h2 {
   font-size: clamp(18px, 3vw, 20px);
   color: var(--color-text);
   margin: 0 0 8px 0;
 }
 
-.modal-header p {
+.modalHeader p {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-text-muted);
   margin: 0;
 }
 
-.modal-actions {
+.modalActions {
   display: flex;
   gap: clamp(10px, 2vw, 12px);
   justify-content: flex-end;
   flex-wrap: wrap;
 }
 
-.modal-actions button {
+.modalActions button {
   padding: clamp(8px, 1.5vw, 10px) clamp(16px, 3vw, 20px);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
@@ -463,31 +463,31 @@
   min-width: min-content;
 }
 
-.btn-cancel {
+.btnCancel {
   background: var(--color-border);
   color: var(--color-text-muted);
 }
 
-.btn-cancel:hover {
+.btnCancel:hover {
   background: var(--color-border);
 }
 
-.btn-confirm-delete {
+.btnConfirmDelete {
   background: var(--color-danger-hover);
   color: white;
 }
 
-.btn-confirm-delete:hover {
+.btnConfirmDelete:hover {
   background: #9b2c2c;
 }
 
 /* На узких экранах кнопки на всю ширину */
 @media (max-width: 500px) {
-  .modal-actions {
+  .modalActions {
     flex-direction: column;
   }
   
-  .modal-actions button {
+  .modalActions button {
     width: 100%;
   }
 }
@@ -496,23 +496,23 @@
    TEMPLATE MODALS
    ===================================================== */
 
-.template-view-modal {
+.templateViewModal {
   max-width: min(700px, 95vw);
 }
 
-.template-view-modal .modal-header h2 {
+.templateViewModal .modalHeader h2 {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.template-view-modal .template-description {
+.templateViewModal .templateDescription {
   color: var(--color-text-muted);
   font-size: clamp(13px, 2vw, 14px);
   margin-bottom: 16px;
 }
 
-.template-view-modal .template-info {
+.templateViewModal .templateInfo {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 10px;
@@ -522,19 +522,19 @@
   margin-bottom: 16px;
 }
 
-.template-view-modal .info-item {
+.templateViewModal .infoItem {
   font-size: 14px;
   color: var(--color-text);
 }
 
-.template-view-modal .exercises-list {
+.templateViewModal .exercisesList {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-top: 12px;
 }
 
-.template-view-modal .exercise-item {
+.templateViewModal .exerciseItem {
   display: flex;
   gap: 12px;
   padding: 12px;
@@ -543,7 +543,7 @@
   background: var(--color-surface);
 }
 
-.template-view-modal .exercise-number {
+.templateViewModal .exerciseNumber {
   width: 28px;
   height: 28px;
   border-radius: 10px;
@@ -556,13 +556,13 @@
   font-size: 13px;
 }
 
-.template-view-modal .exercise-title {
+.templateViewModal .exerciseTitle {
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 6px;
 }
 
-.template-view-modal .exercise-params {
+.templateViewModal .exerciseParams {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -570,19 +570,19 @@
   color: var(--color-text-muted);
 }
 
-.delete-template-modal .modal-header h2 {
+.deleteTemplateModal .modalHeader h2 {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.delete-template-modal .warning-text {
+.deleteTemplateModal .warningText {
   color: var(--color-danger-hover);
   font-weight: 600;
   margin-top: 8px;
 }
 
-.delete-template-modal .btn-danger {
+.deleteTemplateModal .btnDanger {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -596,14 +596,14 @@
   transition: all 0.2s;
 }
 
-.delete-template-modal .btn-danger:hover {
+.deleteTemplateModal .btnDanger:hover {
   background: #9b2c2c;
 }
 /* =====================================================
    МАССОВОЕ ВЫДЕЛЕНИЕ
    ===================================================== */
 
-   .bulk-actions-bar {
+   .bulkActionsBar {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -615,7 +615,7 @@
     flex-wrap: wrap;
   }
   
-  .btn-select-all {
+  .btnSelectAll {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -630,25 +630,25 @@
     transition: all 0.2s;
   }
   
-  .btn-select-all:hover {
+  .btnSelectAll:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
   }
   
-  .bulk-actions {
+  .bulkActions {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
   }
   
-  .selected-count {
+  .selectedCount {
     font-weight: 600;
     color: var(--color-primary);
     font-size: 14px;
   }
   
-  .btn-bulk-delete {
+  .btnBulkDelete {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -663,13 +663,13 @@
     transition: all 0.2s;
   }
   
-  .btn-bulk-delete:hover {
+  .btnBulkDelete:hover {
     background: var(--color-danger-hover);
     border-color: var(--color-danger-hover);
     color: white;
   }
   
-  .btn-clear-selection {
+  .btnClearSelection {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -683,13 +683,13 @@
     transition: all 0.2s;
   }
   
-  .btn-clear-selection:hover {
+  .btnClearSelection:hover {
     background: var(--color-border);
     color: var(--color-text);
   }
   
   /* Чекбокс на карточке */
-  .card-checkbox {
+  .cardCheckbox {
     position: absolute;
     top: 12px;
     right: 12px;
@@ -699,27 +699,27 @@
     z-index: 2;
   }
   
-  .card-checkbox:hover {
+  .cardCheckbox:hover {
     color: var(--color-primary);
   }
   
-  .card-checkbox .checked {
+  .cardCheckbox .checked {
     color: var(--color-primary);
   }
   
   /* Выделенная карточка */
-  .complex-card {
+  .complexCard {
     position: relative;
   }
   
-  .complex-card.selected {
+  .complexCard.selected {
     border-color: var(--color-primary);
     background: #eef2ff;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   }
   
   /* Сдвигаем контент карточки чтобы не перекрывал чекбокс 
-  .complex-card .complex-header {
+  .complexCard .complexHeader {
     padding-left: 32px;
   } */
 
@@ -727,13 +727,13 @@
    ВКЛАДКИ
    ===================================================== */
 
-.tabs-container {
+.tabsContainer {
   display: flex;
   gap: 8px;
   margin-bottom: clamp(16px, 3vw, 20px);
 }
 
-.tab-btn {
+.tabBtn {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -748,12 +748,12 @@
   transition: all 0.2s;
 }
 
-.tab-btn:hover {
+.tabBtn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
-.tab-btn.active {
+.tabBtn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
@@ -763,14 +763,14 @@
    ПОИСК И СОРТИРОВКА
    ===================================================== */
 
-.filters-bar {
+.filtersBar {
   display: flex;
   gap: 12px;
   margin-bottom: clamp(16px, 3vw, 20px);
   flex-wrap: wrap;
 }
 
-.search-box {
+.searchBox {
   flex: 1;
   min-width: 200px;
   position: relative;
@@ -778,14 +778,14 @@
   align-items: center;
 }
 
-.search-box .search-icon {
+.searchBox .searchIcon {
   position: absolute;
   left: 14px;
   color: var(--color-text-subtle);
   pointer-events: none;
 }
 
-.search-box input {
+.searchBox input {
   width: 100%;
   padding: 12px 40px 12px 44px;
   border: 2px solid var(--color-border);
@@ -794,13 +794,13 @@
   transition: all 0.2s;
 }
 
-.search-box input:focus {
+.searchBox input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.search-box .clear-search {
+.searchBox .clearSearch {
   position: absolute;
   right: 10px;
   background: var(--color-border);
@@ -815,18 +815,18 @@
   color: var(--color-text-muted);
 }
 
-.search-box .clear-search:hover {
+.searchBox .clearSearch:hover {
   background: var(--color-border-strong);
 }
 
-.sort-box {
+.sortBox {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--color-text-muted);
 }
 
-.sort-box select {
+.sortBox select {
   padding: 12px 16px;
   border: 2px solid var(--color-border);
   border-radius: 10px;
@@ -836,7 +836,7 @@
   transition: all 0.2s;
 }
 
-.sort-box select:focus {
+.sortBox select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
@@ -854,7 +854,7 @@
   flex-wrap: wrap;
 }
 
-.pagination-btn {
+.paginationBtn {
   min-width: 40px;
   height: 40px;
   display: flex;
@@ -870,23 +870,23 @@
   transition: all 0.2s;
 }
 
-.pagination-btn:hover:not(:disabled) {
+.paginationBtn:hover:not(:disabled) {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
 
-.pagination-btn.active {
+.paginationBtn.active {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
 }
 
-.pagination-btn:disabled {
+.paginationBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.search-results-count {
+.searchResultsCount {
   text-align: center;
   color: var(--color-text-muted);
   font-size: 14px;
@@ -897,17 +897,17 @@
    ШАБЛОНЫ
    ===================================================== */
 
-.templates-section {
+.templatesSection {
   margin-top: 20px;
 }
 
-.templates-grid {
+.templatesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: clamp(12px, 2vw, 16px);
 }
 
-.template-card {
+.templateCard {
   background: white;
   border: 2px solid var(--color-border);
   border-radius: 12px;
@@ -915,54 +915,54 @@
   transition: all 0.2s;
 }
 
-.template-card:hover {
+.templateCard:hover {
   border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
-.template-header {
+.templateHeader {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.template-icon {
+.templateIcon {
   color: var(--color-primary);
   flex-shrink: 0;
 }
 
-.template-info h3 {
+.templateInfo h3 {
   margin: 0 0 4px 0;
   font-size: 16px;
   color: var(--color-text);
 }
 
-.template-info p {
+.templateInfo p {
   margin: 0;
   font-size: 13px;
   color: var(--color-text-muted);
 }
 
-.template-meta {
+.templateMeta {
   font-size: 13px;
   color: var(--color-text-muted);
   margin-bottom: 12px;
 }
 
-.template-meta span {
+.templateMeta span {
   margin-right: 8px;
 }
 
-.template-actions {
+.templateActions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.template-actions .btn-view,
-.template-actions .btn-edit,
-.template-actions .btn-delete {
+.templateActions .btnView,
+.templateActions .btnEdit,
+.templateActions .btnDelete {
   flex: 1 1 0;
   min-width: 0;          /* важно: разрешает сжиматься */
   justify-content: center;
@@ -970,7 +970,7 @@
 }
 
 
-.template-actions .btn-delete {
+.templateActions .btnDelete {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -985,14 +985,14 @@
   transition: all 0.2s;
 }
 
-.template-actions .btn-delete:hover {
+.templateActions .btnDelete:hover {
   background: var(--color-danger-hover);
   border-color: var(--color-danger-hover);
   color: white;
 }
 
 /* Кнопка просмотра шаблона */
-.template-actions .btn-view {
+.templateActions .btnView {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1007,43 +1007,43 @@
   transition: all 0.2s;
 }
 
-.template-actions .btn-view:hover {
+.templateActions .btnView:hover {
   background: #3182ce;
   border-color: #3182ce;
   color: white;
 }
 
 /* Детали комплекса */
-.complex-details {
+.complexDetails {
   margin: 12px 0;
   padding: 12px;
   background: var(--color-bg);
   border-radius: 8px;
 }
 
-.detail-row {
+.detailRow {
   display: flex;
   justify-content: space-between;
   padding: 6px 0;
   font-size: 14px;
 }
 
-.detail-row + .detail-row {
+.detailRow + .detailRow {
   border-top: 1px solid var(--color-border);
 }
 
-.detail-label {
+.detailLabel {
   color: var(--color-text-muted);
   font-weight: 500;
 }
 
-.detail-value {
+.detailValue {
   color: var(--color-text);
   font-weight: 600;
 }
 
 /* Иконки-кнопки в строке */
-.template-actions {
+.templateActions {
   display: flex;
   gap: 10px;
   justify-content: flex-start;
@@ -1051,7 +1051,7 @@
   flex-wrap: nowrap;
 }
 
-.template-actions .icon-btn {
+.templateActions .iconBtn {
   width: 40px;
   height: 40px;
   padding: 0;
@@ -1064,7 +1064,7 @@
   white-space: nowrap;
 }
 
-.template-actions .btn-edit {
+.templateActions .btnEdit {
   background: #ebf8ff;
   border: 2px solid #bee3f8;
   color: #3182ce;
@@ -1072,7 +1072,7 @@
   transition: all 0.2s;
 }
 
-.template-actions .btn-edit:hover {
+.templateActions .btnEdit:hover {
   background: #3182ce;
   border-color: #3182ce;
   color: white;
@@ -1081,7 +1081,7 @@
    PATCH: ровные кнопки в карточке комплекса
    ===================================================== */
 
-   .complex-card .complex-actions {
+   .complexCard .complexActions {
     display: flex;          /* вместо inline-grid */
     flex-wrap: wrap;
     gap: 8px;
@@ -1091,7 +1091,7 @@
     border-top: 1px solid var(--color-border);
   }
   
-  .complex-card .complex-actions button {
+  .complexCard .complexActions button {
     border: none;
     border-radius: 10px;
     height: 40px;
@@ -1107,34 +1107,34 @@
   }
   
   /* Две главные кнопки: занимают место и красиво переносятся */
-  .complex-card .complex-actions .btn-primary-action {
+  .complexCard .complexActions .btnPrimaryAction {
     flex: 1 1 180px;     /* <= магия: без breakpoint, само переносится */
     min-width: 0;
     white-space: nowrap; /* текст в одну строку */
   }
   
   /* Иконки-кнопки: фиксированный квадрат */
-  .complex-card .complex-actions .icon-btn {
+  .complexCard .complexActions .iconBtn {
     flex: 0 0 40px;
     width: 40px;
     padding: 0;
   }
   
   /* Если у тебя не было стилей для этих двух — добавим */
-  .complex-card .complex-actions .btn-composition {
+  .complexCard .complexActions .btnComposition {
     background: #ebf8ff;
     color: #3182ce;
   }
-  .complex-card .complex-actions .btn-composition:hover {
+  .complexCard .complexActions .btnComposition:hover {
     background: #3182ce;
     color: var(--color-surface);
   }
   
-  .complex-card .complex-actions .btn-copy-link {
+  .complexCard .complexActions .btnCopyLink {
     background: #fffbea;
     color: #744210;
   }
-  .complex-card .complex-actions .btn-copy-link:hover {
+  .complexCard .complexActions .btnCopyLink:hover {
     background: #f6e05e;
     color: var(--color-text);
   }
@@ -1147,7 +1147,7 @@
    упражнения в модалке состава.
    ===================================================== */
 
-.exercise-description {
+.exerciseDescription {
   font-size: clamp(14px, 1vw, 16px);
   color: var(--color-text);
   line-height: 1.6;
@@ -1157,7 +1157,7 @@
   max-width: 100%;
 }
 
-.exercise-description.collapsed {
+.exerciseDescription.collapsed {
   position: relative;
   max-height: 4.8em;
   overflow: hidden;
@@ -1167,7 +1167,7 @@
   transition: max-height 0.3s ease;
 }
 
-.exercise-description.collapsed::after {
+.exerciseDescription.collapsed::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1178,7 +1178,7 @@
   pointer-events: none;
 }
 
-.exercise-description.expanded {
+.exerciseDescription.expanded {
   max-height: none;
   overflow: visible;
   display: block;

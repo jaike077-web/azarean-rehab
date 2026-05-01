@@ -3,7 +3,7 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.toast-container {
+.toastContainer {
   position: fixed;
   top: clamp(16px, 3vw, 20px);
   right: clamp(16px, 3vw, 20px);
@@ -32,7 +32,7 @@
   overflow: hidden;
 }
 
-.toast.toast-exiting {
+.toast.toastExiting {
   animation: toastSlideOut 0.3s ease-in forwards;
 }
 
@@ -75,16 +75,16 @@
   border-radius: 0 2px 2px 0;
 }
 
-.toast-success::before { background: var(--color-success); }
-.toast-error::before   { background: var(--color-danger); }
-.toast-warning::before { background: var(--color-warning); }
-.toast-info::before    { background: var(--color-info); }
+.toastSuccess::before { background: var(--color-success); }
+.toastError::before   { background: var(--color-danger); }
+.toastWarning::before { background: var(--color-warning); }
+.toastInfo::before    { background: var(--color-info); }
 
 /* =====================================================
    ИКОНКА
    ===================================================== */
 
-.toast-icon {
+.toastIcon {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -95,21 +95,21 @@
   margin-top: 1px;
 }
 
-.toast-icon svg {
+.toastIcon svg {
   width: 20px;
   height: 20px;
 }
 
-.toast-success .toast-icon { color: var(--color-success); background: rgba(34, 197, 94, 0.10); }
-.toast-error   .toast-icon { color: var(--color-danger-hover); background: rgba(239, 68, 68, 0.10); }
-.toast-warning .toast-icon { color: var(--color-warning); background: rgba(245, 158, 11, 0.10); }
-.toast-info    .toast-icon { color: #2563eb; background: rgba(59, 130, 246, 0.10); }
+.toastSuccess .toastIcon { color: var(--color-success); background: rgba(34, 197, 94, 0.10); }
+.toastError   .toastIcon { color: var(--color-danger-hover); background: rgba(239, 68, 68, 0.10); }
+.toastWarning .toastIcon { color: var(--color-warning); background: rgba(245, 158, 11, 0.10); }
+.toastInfo    .toastIcon { color: #2563eb; background: rgba(59, 130, 246, 0.10); }
 
 /* =====================================================
    КОНТЕНТ
    ===================================================== */
 
-.toast-content {
+.toastContent {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -117,7 +117,7 @@
   gap: 2px;
 }
 
-.toast-title {
+.toastTitle {
   font-weight: 700;
   font-size: 14px;
   color: #0f172a;
@@ -126,7 +126,7 @@
   letter-spacing: -0.005em;
 }
 
-.toast-message {
+.toastMessage {
   font-size: 13px;
   color: #475569;
   margin: 2px 0 0;
@@ -138,7 +138,7 @@
    КНОПКА ЗАКРЫТИЯ
    ===================================================== */
 
-.toast-close {
+.toastClose {
   background: transparent;
   border: none;
   color: var(--color-text-subtle);
@@ -156,18 +156,18 @@
   line-height: 1;
 }
 
-.toast-close svg {
+.toastClose svg {
   width: 16px;
   height: 16px;
   display: block;
 }
 
-.toast-close:hover {
+.toastClose:hover {
   background: rgba(15, 23, 42, 0.06);
   color: #475569;
 }
 
-.toast-close:active {
+.toastClose:active {
   transform: scale(0.92);
 }
 
@@ -175,7 +175,7 @@
    ПРОГРЕСС-БАР АВТОЗАКРЫТИЯ
    ===================================================== */
 
-.toast-progress {
+.toastProgress {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -185,19 +185,19 @@
   animation: toastProgress linear forwards;
 }
 
-.toast-success .toast-progress {
+.toastSuccess .toastProgress {
   background: var(--color-success);
 }
 
-.toast-error .toast-progress {
+.toastError .toastProgress {
   background: var(--color-danger);
 }
 
-.toast-warning .toast-progress {
+.toastWarning .toastProgress {
   background: var(--color-warning);
 }
 
-.toast-info .toast-progress {
+.toastInfo .toastProgress {
   background: var(--color-info);
 }
 
@@ -214,13 +214,13 @@
    ДЕЙСТВИЯ (ACTION BUTTONS)
    ===================================================== */
 
-.toast-actions {
+.toastActions {
   display: flex;
   gap: clamp(8px, 2vw, 10px);
   margin-top: clamp(10px, 2vw, 12px);
 }
 
-.toast-action-btn {
+.toastActionBtn {
   padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 16px);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 13px);
@@ -231,21 +231,21 @@
   min-height: 32px;
 }
 
-.toast-action-btn.primary {
+.toastActionBtn.primary {
   background: var(--color-primary);
   color: white;
 }
 
-.toast-action-btn.primary:hover {
+.toastActionBtn.primary:hover {
   background: var(--color-primary-hover);
 }
 
-.toast-action-btn.secondary {
+.toastActionBtn.secondary {
   background: var(--color-surface-2);
   color: #475569;
 }
 
-.toast-action-btn.secondary:hover {
+.toastActionBtn.secondary:hover {
   background: var(--color-border);
 }
 
@@ -254,7 +254,7 @@
    ===================================================== */
 
 @media (max-width: 640px) {
-  .toast-container {
+  .toastContainer {
     top: auto;
     bottom: clamp(16px, 3vw, 20px);
     left: clamp(12px, 3vw, 16px);
@@ -299,12 +299,12 @@
     animation: none;
   }
   
-  .toast.toast-exiting {
+  .toast.toastExiting {
     animation: none;
     opacity: 0;
   }
   
-  .toast-progress {
+  .toastProgress {
     animation: none;
   }
 }
@@ -327,10 +327,10 @@
   padding: clamp(18px, 3vw, 22px) clamp(20px, 4vw, 26px);
 }
 
-.toast.large .toast-title {
+.toast.large .toastTitle {
   font-size: clamp(15px, 3vw, 17px);
 }
 
-.toast.large .toast-message {
+.toast.large .toastMessage {
   font-size: clamp(14px, 2vw, 15px);
 }

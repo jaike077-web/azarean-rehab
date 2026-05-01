@@ -20,7 +20,7 @@
   font-family: "Roboto", "Arial", sans-serif;
 }
 
-.patients-page {
+.patientsPage {
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(16px, 3vw, 24px);
@@ -30,18 +30,18 @@
    PAGE HEADER
    ===================================================== */
 
-.page-header {
+.pageHeader {
   margin-bottom: clamp(20px, 4vw, 32px);
 }
 
-.page-header h1 {
+.pageHeader h1 {
   font-size: clamp(24px, 5vw, 32px);
   color: var(--color-text);
   margin: 0 0 clamp(8px, 2vw, 12px) 0;
   font-weight: 700;
 }
 
-.page-subtitle {
+.pageSubtitle {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0;
@@ -51,7 +51,7 @@
    ADD PATIENT BUTTON
    ===================================================== */
 
-.btn-add-patient {
+.btnAddPatient {
   width: 100%;
   padding: clamp(12px, 2vw, 14px) clamp(20px, 4vw, 28px);
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
@@ -71,13 +71,13 @@
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
-.btn-add-patient:hover {
+.btnAddPatient:hover {
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 /* На десктопе - автоширина */
 @media (min-width: 769px) {
-  .btn-add-patient {
+  .btnAddPatient {
     width: auto;
     align-self: flex-start;
   }
@@ -87,7 +87,7 @@
    CONTROLS
    ===================================================== */
 
-.patients-controls {
+.patientsControls {
   display: flex;
   flex-direction: row;
   gap: clamp(12px, 2vw, 16px);
@@ -96,16 +96,16 @@
 }
 
 /* SEARCH BOX - БЕЗ ИКОНКИ ЛУПЫ */
-.search-box {
+.searchBox {
   position: relative;
   width: 100%;
 }
 
-.search-icon {
+.searchIcon {
   display: none; /* УБРАНА ИКОНКА */
 }
 
-.search-input {
+.searchInput {
   width: 100%;
   padding: clamp(11px, 2vw, 13px) clamp(12px, 2vw, 16px);
   border: 1px solid var(--color-border);
@@ -118,17 +118,17 @@
   min-height: 48px;
 }
 
-.search-input::placeholder {
+.searchInput::placeholder {
   color: var(--color-text-subtle);
 }
 
-.search-input:focus {
+.searchInput:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.clear-search {
+.clearSearch {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -149,19 +149,19 @@
   padding: 0;
 }
 
-.clear-search:hover {
+.clearSearch:hover {
   background: var(--color-border-strong);
 }
 
 /* CONTROLS ROW */
-.controls-row {
+.controlsRow {
   display: flex;
   align-items: center;
   gap: clamp(16px, 3vw, 20px); /* УВЕЛИЧЕН ОТСТУП */
   flex-wrap: wrap;
 }
 
-.sort-select {
+.sortSelect {
   flex: 1 1 auto;
   min-width: min(180px, 100%);
   padding: clamp(11px, 2vw, 16px) clamp(14px, 2vw, 25px);
@@ -177,18 +177,18 @@
   box-sizing: border-box;
 }
 
-.sort-select:focus {
+.sortSelect:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.sort-select:hover {
+.sortSelect:hover {
   border-color: var(--color-border-strong);
 }
 
 /* VIEW TOGGLE BUTTONS */
-.view-toggle {
+.viewToggle {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
@@ -196,7 +196,7 @@
   justify-content: flex-end;
 }
 
-.view-toggle button {
+.viewToggle button {
   width: 48px;
   height: 48px;
   min-height: 48px;
@@ -213,12 +213,12 @@
   color: var(--color-text-muted);
 }
 
-.view-toggle button:hover {
+.viewToggle button:hover {
   border-color: var(--color-border-strong);
   background: var(--color-bg);
 }
 
-.view-toggle button.active {
+.viewToggle button.active {
   border-color: var(--color-primary);
   background: #eef2ff;
   color: var(--color-primary);
@@ -228,7 +228,7 @@
    GRID VIEW
    ===================================================== */
 
-.patients-grid {
+.patientsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   gap: clamp(16px, 3vw, 20px);
@@ -238,7 +238,7 @@
    PATIENT CARD
    ===================================================== */
 
-.patient-card {
+.patientCard {
   background: white;
   border-radius: 12px;
   padding: 20px;
@@ -248,13 +248,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.patient-card:hover {
+.patientCard:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   transform: translateY(-2px);
 }
 
 /* CARD HEADER - БЕЗ АВАТАРА */
-.patient-card-header {
+.patientCardHeader {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -266,7 +266,7 @@
 }
 
 /* HEADER С КРАСИВЫМ БОРДЕРОМ */
-.patient-header {
+.patientHeader {
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid #e5e7eb;
@@ -275,11 +275,11 @@
   align-items: center;
 }
 
-.patient-avatar {
+.patientAvatar {
   display: none; /* УБРАН АВАТАР */
 }
 
-.patient-info {
+.patientInfo {
   flex: 1;
   min-width: 0;
   width: 100%;
@@ -289,7 +289,7 @@
   gap: 4px;
 }
 
-.patient-name {
+.patientName {
   font-size: 20px;
   font-weight: 700;
   color: #1a1a1a;
@@ -299,19 +299,19 @@
   word-break: break-word;
 }
 
-.patient-contact {
+.patientContact {
   display: none; /* УБРАНЫ EMAIL И ТЕЛЕФОН */
 }
 
 /* CARD DETAILS */
-.patient-details {
+.patientDetails {
   display: flex;
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.patients-page .detail-row {
+.patientsPage .detailRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -319,19 +319,19 @@
   gap: 12px;
 }
 
-.patients-page .detail-label {
+.patientsPage .detailLabel {
   color: var(--color-text-muted);
   font-weight: 400;
 }
 
-.patients-page .detail-value {
+.patientsPage .detailValue {
   color: #1a1a1a;
   font-weight: 500;
   text-align: right;
 }
 
 /* ЗАМЕТКИ */
-.patient-notes {
+.patientNotes {
   font-size: 14px;
   color: var(--color-text-muted);
   background: var(--color-bg);
@@ -342,14 +342,14 @@
 }
 
 /* CARD ACTIONS */
-.patient-actions {
+.patientActions {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
 }
 
-.patient-actions .btn-secondary {
+.patientActions .btnSecondary {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,13 +366,13 @@
   transition: all 0.2s;
 }
 
-.patient-actions .btn-secondary:hover {
+.patientActions .btnSecondary:hover {
   background: #f9fafb;
   border-color: #6366f1;
   color: #6366f1;
 }
 
-.patient-actions .btn-delete {
+.patientActions .btnDelete {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -388,7 +388,7 @@
   transition: all 0.2s;
 }
 
-.patient-actions .btn-delete:hover {
+.patientActions .btnDelete:hover {
   background: #fee2e2;
   border-color: #fca5a5;
 }
@@ -398,18 +398,18 @@
    LIST VIEW - НОВОЕ ФОРМАТИРОВАНИЕ
    ===================================================== */
 
-.patients-list {
+.patientsList {
   display: none;
 }
 
-.patients-list.active {
+.patientsList.active {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 /* НОВЫЙ СТИЛЬ СПИСКА */
-.patient-list-item {
+.patientListItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -422,13 +422,13 @@
   transition: all 0.2s;
 }
 
-.patient-list-item:hover {
+.patientListItem:hover {
   border-color: rgba(102, 126, 234, 0.4);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
   transform: translateY(-1px);
 }
 
-.patient-list-info {
+.patientListInfo {
   flex: 1;
   display: flex;
   align-items: center;
@@ -436,14 +436,14 @@
   min-width: 0;
 }
 
-.patient-list-name {
+.patientListName {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text);
   min-width: 200px;
 }
 
-.patient-list-details {
+.patientListDetails {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -452,14 +452,14 @@
   flex-wrap: wrap;
 }
 
-.patient-list-actions {
+.patientListActions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
 }
 
 /* ТАБЛИЦА (оставлена для совместимости) */
-.patients-table-container {
+.patientsTableContainer {
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 14px;
@@ -467,17 +467,17 @@
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
-.patients-table {
+.patientsTable {
   width: 100%;
   border-collapse: collapse;
 }
 
-.patients-table thead {
+.patientsTable thead {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
 }
 
-.patients-table th {
+.patientsTable th {
   padding: clamp(14px, 2vw, 16px);
   text-align: left;
   font-weight: 600;
@@ -486,27 +486,27 @@
   white-space: nowrap;
 }
 
-.patients-table td {
+.patientsTable td {
   padding: clamp(14px, 2vw, 16px);
   border-bottom: 1px solid var(--color-border);
   font-size: 16px; /* УВЕЛИЧЕНО С 14px */
   color: var(--color-text-muted);
 }
 
-.patients-table tbody tr:hover {
+.patientsTable tbody tr:hover {
   background: var(--color-bg);
 }
 
-.patients-table tbody tr:last-child td {
+.patientsTable tbody tr:last-child td {
   border-bottom: none;
 }
 
-.table-actions {
+.tableActions {
   display: flex;
   gap: 8px;
 }
 
-.btn-table-action {
+.btnTableAction {
   padding: 8px 12px;
   border: none;
   background: var(--color-border);
@@ -523,31 +523,31 @@
   min-height: 36px;
 }
 
-.btn-table-action:hover {
+.btnTableAction:hover {
   background: var(--color-border);
 }
 
-.btn-table-action.btn-edit {
+.btnTableAction.btnEdit {
   background: #ebf8ff;
   color: #3182ce;
 }
 
-.btn-table-action.btn-edit:hover {
+.btnTableAction.btnEdit:hover {
   background: #bee3f8;
 }
 
-.btn-table-action.btn-delete {
+.btnTableAction.btnDelete {
   background: #fff5f5;
   color: var(--color-danger-hover);
 }
 
-.btn-table-action.btn-delete:hover {
+.btnTableAction.btnDelete:hover {
   background: #fed7d7;
 }
 
 /* АДАПТИВНОСТЬ СПИСКА */
 @media (max-width: 1242px) {
-  .patient-list-details {
+  .patientListDetails {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
@@ -555,11 +555,11 @@
 }
 
 @media (max-width: 1024px) {
-  .patients-list {
+  .patientsList {
     display: none !important;
   }
   
-  .view-toggle {
+  .viewToggle {
     display: none;
   }
 }
@@ -568,7 +568,7 @@
    EMPTY STATE
    ===================================================== */
 
-.empty-state {
+.emptyState {
   text-align: center;
   padding: clamp(48px, 10vw, 80px) clamp(24px, 5vw, 40px);
   color: var(--color-text-subtle);
@@ -577,13 +577,13 @@
   border: 2px dashed var(--color-border-strong);
 }
 
-.empty-state-icon {
+.emptyStateIcon {
   font-size: clamp(48px, 10vw, 72px);
   margin-bottom: clamp(16px, 3vw, 24px);
   opacity: 0.5;
 }
 
-.empty-state p {
+.emptyState p {
   font-size: clamp(15px, 3vw, 17px);
   margin: 0 0 clamp(20px, 4vw, 28px) 0;
   color: var(--color-text-muted);
@@ -604,7 +604,7 @@
    MODAL - АДАПТИВНАЯ ШИРИНА
    ===================================================== */
 
-.modal-overlay {
+.modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -618,7 +618,7 @@
   padding: 20px;
 }
 
-.modal-content {
+.modalContent {
   background: white;
   border-radius: 16px;
   padding: clamp(24px, 5vw, 32px);
@@ -629,7 +629,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.modal-header {
+.modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -637,7 +637,7 @@
   gap: 16px;
 }
 
-.modal-header h2 {
+.modalHeader h2 {
   font-size: clamp(20px, 4vw, 24px);
   color: var(--color-text);
   margin: 0;
@@ -647,7 +647,7 @@
   gap: 10px;
 }
 
-.modal-close {
+.modalClose {
   width: 36px;
   height: 36px;
   min-height: auto;
@@ -665,35 +665,35 @@
   flex-shrink: 0;
 }
 
-.modal-close:hover {
+.modalClose:hover {
   background: var(--color-border);
   color: var(--color-text);
   transform: scale(1.1);
 }
 
-.modal-body {
+.modalBody {
   margin-bottom: clamp(20px, 4vw, 28px);
 }
 
-.modal-form {
+.modalForm {
   /* Стили формы */
 }
 
-.form-row {
+.formRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: clamp(12px, 3vw, 16px);
 }
 
-.form-group {
+.formGroup {
   margin-bottom: clamp(16px, 3vw, 20px);
 }
 
-.form-group:last-child {
+.formGroup:last-child {
   margin-bottom: 0;
 }
 
-.form-group label {
+.formGroup label {
   display: block;
   font-weight: 600;
   color: var(--color-text);
@@ -701,9 +701,9 @@
   font-size: clamp(14px, 2vw, 15px);
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+.formGroup input,
+.formGroup textarea,
+.formGroup select {
   width: 100%;
   padding: clamp(11px, 2vw, 13px) clamp(14px, 2vw, 16px);
   border: 1px solid var(--color-border);
@@ -717,40 +717,40 @@
   min-height: 48px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.formGroup input:focus,
+.formGroup textarea:focus,
+.formGroup select:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-group input.input-error,
-.form-group textarea.input-error,
-.form-group select.input-error {
+.formGroup input.inputError,
+.formGroup textarea.inputError,
+.formGroup select.inputError {
   border-color: #f56565;
 }
 
-.field-error {
+.fieldError {
   display: block;
   color: #f56565;
   font-size: 13px;
   margin-top: 4px;
 }
 
-.form-group textarea {
+.formGroup textarea {
   resize: vertical;
   min-height: clamp(80px, 18vw, 100px);
 }
 
-.modal-actions {
+.modalActions {
   display: flex;
   flex-direction: column;
   gap: 0;
   margin-top: clamp(20px, 4vw, 24px);
 }
 
-.modal-actions button {
+.modalActions button {
   width: 100%;
   padding: clamp(12px, 2vw, 14px) clamp(20px, 4vw, 28px);
   border-radius: 10px;
@@ -765,56 +765,56 @@
   justify-content: center;
 }
 
-.modal-actions button:last-child {
+.modalActions button:last-child {
   margin-bottom: 0;
 }
 
-.btn-secondary,
-.btn-cancel {
+.btnSecondary,
+.btnCancel {
   background: white;
   color: var(--color-text);
   border: solid 1px var(--color-primary);
 }
 
-.btn-secondary:hover,
-.btn-cancel:hover {
+.btnSecondary:hover,
+.btnCancel:hover {
   background: var(--color-bg);
   border-color: var(--color-primary-hover);
 }
 
-.btn-primary,
-.btn-save {
+.btnPrimary,
+.btnSave {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
-.btn-primary:hover,
-.btn-save:hover {
+.btnPrimary:hover,
+.btnSave:hover {
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
-.btn-delete {
+.btnDelete {
   background: #f56565;
   color: white;
   border: solid 1px #a2a2a2;
   width: 100%;
 }
 
-.btn-delete:hover {
+.btnDelete:hover {
   background: #fc8181;
   border-color: #8a8a8a;
 }
 
 /* КОМПЛЕКСЫ В МОДАЛКЕ */
-.complexes-list {
+.complexesList {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.complex-item {
+.complexItem {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -823,14 +823,14 @@
   cursor: pointer;
 }
 
-.complex-item.clickable:hover {
+.complexItem.clickable:hover {
   border-color: var(--color-primary);
   background: #eef2ff;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
-.complex-item-header {
+.complexItemHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -838,20 +838,20 @@
   gap: 12px;
 }
 
-.complex-item-header h4 {
+.complexItemHeader h4 {
   font-size: 16px;
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
 }
 
-.complex-date {
+.complexDate {
   font-size: 13px;
   color: var(--color-text-muted);
   white-space: nowrap;
 }
 
-.complex-item-details {
+.complexItemDetails {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -860,7 +860,7 @@
   gap: 12px;
 }
 
-.view-progress-hint {
+.viewProgressHint {
   color: var(--color-primary);
   font-weight: 500;
   display: flex;
@@ -869,7 +869,7 @@
 }
 
 /* ERROR MESSAGE */
-.error-message {
+.errorMessage {
   background: #fed7d7;
   color: var(--color-danger-hover);
   padding: 12px 16px;
@@ -881,12 +881,12 @@
   font-size: 14px;
 }
 
-.error-icon {
+.errorIcon {
   flex-shrink: 0;
 }
 
 /* PAGE ICON */
-.page-icon {
+.pageIcon {
   flex-shrink: 0;
 }
 
@@ -895,21 +895,21 @@
    ===================================================== */
 
 @media (max-width: 768px) {
-  .patients-controls {
+  .patientsControls {
     flex-direction: row;
    /* align-items: baseline;*/
   }
   
-  .controls-row {
+  .controlsRow {
     width: 100%;
   }
   
-  .sort-select {
+  .sortSelect {
     flex: 1;
   }
 }
 
-.patient-row {
+.patientRow {
   display: flex;
   align-items: center;
   gap: 24px;
@@ -925,25 +925,25 @@
    ===================================================== */
 
 @media (max-width: 480px) {
-  .patient-list-name {
+  .patientListName {
     min-width: auto;
   }
 
-  .patient-list-details {
+  .patientListDetails {
     gap: 12px;
   }
 
-  .patient-list-actions {
+  .patientListActions {
     flex-direction: column;
     width: 100%;
   }
 
-  .patient-list-actions .btn-action {
+  .patientListActions .btnAction {
     width: 100%;
     justify-content: center;
   }
 
-  .patient-row {
+  .patientRow {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;

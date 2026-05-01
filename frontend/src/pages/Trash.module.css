@@ -3,13 +3,13 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.trash-page {
+.trashPage {
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(16px, 3vw, 24px);
 }
 
-.page-header {
+.pageHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -18,7 +18,7 @@
   flex-wrap: wrap;
 }
 
-.page-header h1 {
+.pageHeader h1 {
   font-size: clamp(24px, 5vw, 36px);
   margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
   color: var(--color-text);
@@ -28,7 +28,7 @@
   gap: 12px;
 }
 
-.page-header p {
+.pageHeader p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0;
@@ -45,7 +45,7 @@
    TABS
    ===================================================== */
 
-.trash-tabs {
+.trashTabs {
   display: flex;
   gap: clamp(10px, 2vw, 14px);
   margin-bottom: clamp(24px, 5vw, 36px);
@@ -55,7 +55,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.tab-btn {
+.tabBtn {
   flex: 1;
   padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 28px);
   border: none;
@@ -73,12 +73,12 @@
   gap: 8px;
 }
 
-.tab-btn:hover {
+.tabBtn:hover {
   background: var(--color-bg);
   color: var(--color-text);
 }
 
-.tab-btn.active {
+.tabBtn.active {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
 }
@@ -87,7 +87,7 @@
    EMPTY STATE
    ===================================================== */
 
-.empty-state {
+.emptyState {
   background: white;
   border-radius: clamp(10px, 2vw, 14px);
   padding: clamp(40px, 8vw, 60px) clamp(24px, 5vw, 40px);
@@ -95,7 +95,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.empty-icon {
+.emptyIcon {
   font-size: clamp(60px, 12vw, 80px);
   margin-bottom: clamp(16px, 3vw, 24px);
   opacity: 0.3;
@@ -104,13 +104,13 @@
   justify-content: center;
 }
 
-.empty-state h2 {
+.emptyState h2 {
   font-size: clamp(20px, 4vw, 28px);
   color: var(--color-text);
   margin: 0 0 clamp(10px, 2vw, 14px) 0;
 }
 
-.empty-state p {
+.emptyState p {
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
   margin: 0;
@@ -121,7 +121,7 @@
    TRASH GRID
    ===================================================== */
 
-.trash-grid {
+.trashGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
   gap: clamp(18px, 4vw, 28px);
@@ -131,7 +131,7 @@
    TRASH ITEM
    ===================================================== */
 
-.trash-item {
+.trashItem {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -141,14 +141,14 @@
   border: 1px solid #e5e7eb;
 }
 
-.trash-item-header {
+.trashItemHeader {
   display: flex;
   align-items: flex-start;
   gap: 16px;
   width: 100%;
 }
 
-.item-icon {
+.itemIcon {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
@@ -160,18 +160,18 @@
   color: var(--color-text);
 }
 
-.item-info {
+.itemInfo {
   flex: 1;
 }
 
-.item-info h4 {
+.itemInfo h4 {
   margin: 0 0 4px 0;
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
 }
 
-.deleted-date {
+.deletedDate {
   font-size: 13px;
   color: var(--color-text-muted);
   margin: 0 0 12px 0;
@@ -181,11 +181,11 @@
    TRASH DETAILS
    ===================================================== */
 
-.trash-details {
+.trashDetails {
   margin-bottom: clamp(16px, 3vw, 24px);
 }
 
-.trash-page .detail-row {
+.trashPage .detailRow {
   display: flex;
   justify-content: space-between;
   padding: clamp(6px, 1.5vw, 10px) 0;
@@ -193,12 +193,12 @@
   gap: clamp(8px, 2vw, 12px);
 }
 
-.trash-page .detail-label {
+.trashPage .detailLabel {
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
-.trash-page .detail-value {
+.trashPage .detailValue {
   color: var(--color-text);
   font-weight: 600;
   text-align: right;
@@ -208,7 +208,7 @@
    TRASH ACTIONS
    ===================================================== */
 
-.item-actions {
+.itemActions {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
@@ -217,7 +217,7 @@
   justify-content: flex-start;
 }
 
-.btn-restore {
+.btnRestore {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -232,11 +232,11 @@
   transition: all 0.2s;
 }
 
-.btn-restore:hover {
+.btnRestore:hover {
   background: #059669;
 }
 
-.btn-delete-permanent {
+.btnDeletePermanent {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -251,7 +251,7 @@
   transition: all 0.2s;
 }
 
-.btn-delete-permanent:hover {
+.btnDeletePermanent:hover {
   background: #fee2e2;
   border-color: #fca5a5;
 }
@@ -261,32 +261,32 @@
    ===================================================== */
 
 @media (max-width: 767px) {
-  .trash-grid {
+  .trashGrid {
     grid-template-columns: 1fr;
   }
 
-  .trash-tabs {
+  .trashTabs {
     flex-direction: column;
   }
 
-  .trash-item {
+  .trashItem {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
 
-  .item-actions {
+  .itemActions {
     width: 100%;
     flex-direction: column;
   }
 
-  .btn-restore,
-  .btn-delete-permanent {
+  .btnRestore,
+  .btnDeletePermanent {
     width: 100%;
     justify-content: center;
   }
   
-  .page-header {
+  .pageHeader {
     flex-direction: column;
     align-items: flex-start;
   }

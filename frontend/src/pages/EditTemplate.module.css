@@ -1,28 +1,28 @@
-.edit-template-page .template-form-grid {
+.editTemplatePage .templateFormGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: clamp(12px, 2vw, 16px);
 }
 
-.edit-template-page .template-form-grid .full-width {
+.editTemplatePage .templateFormGrid .fullWidth {
   grid-column: 1 / -1;
 }
 
-.edit-template-page .form-field {
+.editTemplatePage .formField {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.edit-template-page .form-field label {
+.editTemplatePage .formField label {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-text-muted);
   font-weight: 600;
 }
 
-.edit-template-page .form-field input,
-.edit-template-page .form-field select,
-.edit-template-page .form-field textarea {
+.editTemplatePage .formField input,
+.editTemplatePage .formField select,
+.editTemplatePage .formField textarea {
   width: 100%;
   padding: clamp(10px, 2vw, 12px);
   border: 2px solid var(--color-border);
@@ -33,14 +33,14 @@
   box-sizing: border-box;
 }
 
-.edit-template-page .form-field textarea {
+.editTemplatePage .formField textarea {
   min-height: clamp(90px, 15vw, 120px);
   resize: vertical;
 }
 
-.edit-template-page .form-field input:focus,
-.edit-template-page .form-field select:focus,
-.edit-template-page .form-field textarea:focus {
+.editTemplatePage .formField input:focus,
+.editTemplatePage .formField select:focus,
+.editTemplatePage .formField textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);

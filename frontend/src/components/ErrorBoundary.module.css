@@ -1,4 +1,4 @@
-.error-boundary {
+.errorBoundary {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -7,7 +7,7 @@
   padding: 20px;
 }
 
-.error-boundary-content {
+.errorBoundaryContent {
   background: white;
   border-radius: 16px;
   padding: 40px;
@@ -16,25 +16,25 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
-.error-icon {
+.errorIcon {
   font-size: 64px;
   margin-bottom: 20px;
 }
 
-.error-boundary-content h1 {
+.errorBoundaryContent h1 {
   color: var(--color-text);
   font-size: 24px;
   margin-bottom: 12px;
 }
 
-.error-boundary-content p {
+.errorBoundaryContent p {
   color: var(--color-text-muted);
   font-size: 16px;
   margin-bottom: 24px;
   line-height: 1.5;
 }
 
-.error-details {
+.errorDetails {
   text-align: left;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -43,14 +43,14 @@
   margin-bottom: 24px;
 }
 
-.error-details summary {
+.errorDetails summary {
   cursor: pointer;
   color: var(--color-text-muted);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
-.error-details pre {
+.errorDetails pre {
   font-size: 12px;
   color: var(--color-danger);
   overflow-x: auto;
@@ -59,14 +59,14 @@
   margin: 8px 0;
 }
 
-.error-actions {
+.errorActions {
   display: flex;
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.btn-reload {
+.btnReload {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -78,12 +78,12 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.btn-reload:hover {
+.btnReload:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-.btn-home {
+.btnHome {
   background: white;
   color: var(--color-primary);
   border: 2px solid var(--color-primary);
@@ -95,7 +95,7 @@
   transition: all 0.2s;
 }
 
-.btn-home:hover {
+.btnHome:hover {
   background: var(--color-primary);
   color: white;
 }

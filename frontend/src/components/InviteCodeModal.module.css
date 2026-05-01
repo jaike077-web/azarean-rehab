@@ -1,25 +1,25 @@
-.invite-code-modal {
+.inviteCodeModal {
   max-width: 520px;
 }
 
-.invite-code-modal-body {
+.inviteCodeModalBody {
   padding: 0 24px 24px;
 }
 
-.invite-code-patient {
+.inviteCodePatient {
   margin: 0 0 16px;
   color: var(--color-text-muted);
   font-size: 14px;
 }
 
-.invite-code-help {
+.inviteCodeHelp {
   margin: 0 0 12px;
   color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.5;
 }
 
-.invite-code-help-warn {
+.inviteCodeHelpWarn {
   margin: 16px 0 0;
   color: #b08400;
   background: #fffaeb;
@@ -30,12 +30,12 @@
   line-height: 1.5;
 }
 
-.invite-code-generate-btn {
+.inviteCodeGenerateBtn {
   width: 100%;
   margin-top: 16px;
 }
 
-.invite-code-display {
+.inviteCodeDisplay {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,7 +47,7 @@
   margin: 8px 0 12px;
 }
 
-.invite-code-value {
+.inviteCodeValue {
   flex: 1;
   font-family: 'JetBrains Mono', 'Consolas', monospace;
   font-size: 28px;
@@ -58,7 +58,7 @@
   text-align: center;
 }
 
-.invite-code-copy-btn {
+.inviteCodeCopyBtn {
   background: none;
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
@@ -71,25 +71,25 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
-.invite-code-copy-btn:hover {
+.inviteCodeCopyBtn:hover {
   background: var(--color-border);
   border-color: var(--color-text-subtle);
 }
 
-.invite-code-expires {
+.inviteCodeExpires {
   margin: 0 0 16px;
   color: var(--color-text-muted);
   font-size: 13px;
   text-align: center;
 }
 
-.invite-code-actions {
+.inviteCodeActions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.invite-code-actions > * {
+.inviteCodeActions > * {
   flex: 1 1 auto;
   min-width: 180px;
   text-align: center;
@@ -101,7 +101,7 @@
 }
 
 @media (max-width: 480px) {
-  .invite-code-value {
+  .inviteCodeValue {
     font-size: 22px;
     letter-spacing: 2px;
   }

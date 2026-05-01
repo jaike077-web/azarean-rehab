@@ -1,27 +1,27 @@
-.import-exercises-page {
+.importExercisesPage {
   display: flex;
   flex-direction: column;
   gap: clamp(1.5rem, 2vw, 2rem);
   padding: clamp(1.5rem, 2vw, 2.5rem);
 }
 
-.import-header h1 {
+.importHeader h1 {
   margin-bottom: 0.4rem;
   font-size: clamp(1.5rem, 2.5vw, 2.2rem);
 }
 
-.import-header .subtitle {
+.importHeader .subtitle {
   color: #5b6470;
   font-size: clamp(0.95rem, 1.5vw, 1.05rem);
 }
 
-.import-tabs {
+.importTabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: clamp(0.75rem, 1.2vw, 1rem);
 }
 
-.import-tabs .tab {
+.importTabs .tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -36,21 +36,21 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.import-tabs .tab.active {
+.importTabs .tab.active {
   border-color: #4a7bff;
   color: #4a7bff;
 }
 
-.import-actions {
+.importActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
 }
 
-.btn-primary,
-.btn-secondary,
-.btn-success {
+.btnPrimary,
+.btnSecondary,
+.btnSuccess {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -63,36 +63,36 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.btn-primary {
+.btnPrimary {
   background: #4a7bff;
   color: var(--color-surface);
 }
 
-.btn-secondary {
+.btnSecondary {
   background: #f2f4f8;
   color: #2c3340;
 }
 
-.btn-success {
+.btnSuccess {
   background: #24a66b;
   color: var(--color-surface);
 }
 
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-success:disabled {
+.btnPrimary:disabled,
+.btnSecondary:disabled,
+.btnSuccess:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.videos-grid {
+.videosGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: clamp(1rem, 1.5vw, 1.5rem);
   margin-top: clamp(1rem, 1.5vw, 1.5rem);
 }
 
-.video-card {
+.videoCard {
   border-radius: 12px;
   border: 1px solid #e2e6ec;
   background: var(--color-surface);
@@ -103,22 +103,22 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.video-card:hover {
+.videoCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
-.video-card.selected {
+.videoCard.selected {
   border-color: #4a7bff;
   box-shadow: 0 8px 20px rgba(74, 123, 255, 0.2);
 }
 
-.video-card.imported {
+.videoCard.imported {
   opacity: 0.6;
   cursor: default;
 }
 
-.video-thumbnail {
+.videoThumbnail {
   background: #f5f6fa;
   height: clamp(120px, 20vw, 160px);
   display: flex;
@@ -126,31 +126,31 @@
   justify-content: center;
 }
 
-.video-thumbnail img {
+.videoThumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.no-thumbnail {
+.noThumbnail {
   color: #8a94a6;
   font-size: 0.9rem;
 }
 
-.video-info {
+.videoInfo {
   padding: 0.9rem 1rem 1.2rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.video-info h4 {
+.videoInfo h4 {
   margin: 0;
   font-size: 1rem;
   color: #1d2430;
 }
 
-.video-meta {
+.videoMeta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
@@ -158,13 +158,13 @@
   color: #5b6470;
 }
 
-.video-duration {
+.videoDuration {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
 }
 
-.imported-badge {
+.importedBadge {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -182,7 +182,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.import-results {
+.importResults {
   margin-top: clamp(1rem, 1.5vw, 1.5rem);
   padding: 1rem 1.2rem;
   background: var(--color-surface);
@@ -191,14 +191,14 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.results-stats {
+.resultsStats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
   margin-top: 0.8rem;
 }
 
-.results-stats .stat {
+.resultsStats .stat {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -209,29 +209,29 @@
   color: #2c3340;
 }
 
-.results-stats .stat.success {
+.resultsStats .stat.success {
   color: #1f7a52;
 }
 
-.results-stats .stat.error {
+.resultsStats .stat.error {
   color: #c23b3b;
 }
 
-.results-stats .stat.skipped {
+.resultsStats .stat.skipped {
   color: #a36a00;
 }
 
-.results-stats .stat.info {
+.resultsStats .stat.info {
   color: #3657b5;
 }
 
-.csv-import {
+.csvImport {
   display: flex;
   flex-direction: column;
   gap: clamp(1rem, 1.6vw, 1.5rem);
 }
 
-.csv-instructions {
+.csvInstructions {
   background: var(--color-surface);
   border-radius: 12px;
   padding: 1rem 1.2rem;
@@ -239,23 +239,23 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.csv-instructions ol {
+.csvInstructions ol {
   padding-left: 1.2rem;
   margin: 0.6rem 0 1rem;
   color: #5b6470;
 }
 
-.csv-upload {
+.csvUpload {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
 
-.csv-upload input {
+.csvUpload input {
   display: none;
 }
 
-.upload-label {
+.uploadLabel {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -269,27 +269,27 @@
 }
 
 @media (max-width: 768px) {
-  .import-actions {
+  .importActions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .btn-primary,
-  .btn-secondary,
-  .btn-success {
+  .btnPrimary,
+  .btnSecondary,
+  .btnSuccess {
     width: 100%;
     justify-content: center;
   }
 }
 
-.thumbnail-image {
+.thumbnailImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 8px;
 }
 
-.no-thumbnail {
+.noThumbnail {
   display: flex;
   align-items: center;
   justify-content: center;

@@ -3,7 +3,7 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.exercise-selector {
+.exerciseSelector {
   display: flex;
   flex-direction: column;
   gap: clamp(12px, 3vw, 18px);
@@ -13,8 +13,8 @@
    LOADING & ERROR
    ===================================================== */
 
-.exercise-selector.loading,
-.exercise-selector.error {
+.exerciseSelector.loading,
+.exerciseSelector.error {
   min-height: 200px;
   display: flex;
   flex-direction: column;
@@ -23,12 +23,12 @@
   gap: clamp(10px, 2vw, 14px);
 }
 
-.exercise-selector .spinner {
+.exerciseSelector .spinner {
   color: #6366f1;
   animation: spin 2s linear infinite;
 }
 
-.exercise-selector .spinner svg {
+.exerciseSelector .spinner svg {
   width: clamp(28px, 6vw, 36px);
   height: clamp(28px, 6vw, 36px);
 }
@@ -42,19 +42,19 @@
    FILTERS
    ===================================================== */
 
-.selector-filters {
+.selectorFilters {
   display: flex;
   gap: clamp(10px, 2vw, 14px);
   flex-wrap: wrap;
 }
 
-.filter-search-wrapper {
+.filterSearchWrapper {
   position: relative;
   flex: 1;
   min-width: min(180px, 100%);
 }
 
-.search-icon {
+.searchIcon {
   position: absolute;
   left: clamp(12px, 2vw, 16px);
   top: 50%;
@@ -66,7 +66,7 @@
   pointer-events: none;
 }
 
-.filter-search {
+.filterSearch {
   width: 100%;
   padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 16px) clamp(9px, 2vw, 11px) clamp(38px, 6vw, 44px);
   border: 2px solid var(--color-border);
@@ -77,17 +77,17 @@
   box-sizing: border-box;
 }
 
-.filter-search:focus {
+.filterSearch:focus {
   outline: none;
   border-color: #6366f1;
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.filter-search::placeholder {
+.filterSearch::placeholder {
   color: var(--color-text-subtle);
 }
 
-.filter-select {
+.filterSelect {
   padding: clamp(9px, 2vw, 11px) clamp(10px, 2vw, 14px);
   border: 2px solid var(--color-border);
   border-radius: 8px;
@@ -99,16 +99,16 @@
   min-height: 44px;
 }
 
-.filter-select:hover {
+.filterSelect:hover {
   border-color: var(--color-border-strong);
 }
 
-.filter-select:focus {
+.filterSelect:focus {
   outline: none;
   border-color: #6366f1;
 }
 
-.btn-clear {
+.btnClear {
   padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 18px);
   border: none;
   background: #fff5f5;
@@ -126,12 +126,12 @@
   gap: 6px;
 }
 
-.btn-clear svg {
+.btnClear svg {
   width: 14px;
   height: 14px;
 }
 
-.btn-clear:hover {
+.btnClear:hover {
   background: #feb2b2;
   color: white;
 }
@@ -140,18 +140,18 @@
    RESULTS
    ===================================================== */
 
-.selector-results {
+.selectorResults {
   padding: clamp(6px, 1.5vw, 10px) 0;
   border-bottom: 2px solid var(--color-border);
 }
 
-.results-count {
+.resultsCount {
   font-size: clamp(13px, 2vw, 14px);
   color: var(--color-text-muted);
   margin: 0;
 }
 
-.results-count strong {
+.resultsCount strong {
   color: var(--color-text);
   font-weight: 700;
 }
@@ -160,7 +160,7 @@
    EMPTY
    ===================================================== */
 
-.selector-empty {
+.selectorEmpty {
   text-align: center;
   padding: clamp(30px, 6vw, 44px) clamp(16px, 3vw, 24px);
   color: var(--color-text-subtle);
@@ -171,7 +171,7 @@
    LIST
    ===================================================== */
 
-.selector-list {
+.selectorList {
   display: flex;
   flex-direction: column;
   gap: clamp(10px, 2vw, 14px);
@@ -181,21 +181,21 @@
 }
 
 /* Custom scrollbar */
-.selector-list::-webkit-scrollbar {
+.selectorList::-webkit-scrollbar {
   width: clamp(6px, 1.5vw, 8px);
 }
 
-.selector-list::-webkit-scrollbar-track {
+.selectorList::-webkit-scrollbar-track {
   background: var(--color-bg);
   border-radius: 4px;
 }
 
-.selector-list::-webkit-scrollbar-thumb {
+.selectorList::-webkit-scrollbar-thumb {
   background: var(--color-border-strong);
   border-radius: 4px;
 }
 
-.selector-list::-webkit-scrollbar-thumb:hover {
+.selectorList::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-subtle);
 }
 
@@ -203,7 +203,7 @@
    ITEM
    ===================================================== */
 
-.selector-item {
+.selectorItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -216,12 +216,12 @@
   cursor: pointer;
 }
 
-.selector-item:hover {
+.selectorItem:hover {
   border-color: var(--color-border-strong);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.selector-item.selected {
+.selectorItem.selected {
   background: #f0fff4;
   border-color: #48bb78;
 }
@@ -230,7 +230,7 @@
    ITEM INFO
    ===================================================== */
 
-.item-info {
+.itemInfo {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -238,7 +238,7 @@
   min-width: 0;
 }
 
-.item-title {
+.itemTitle {
   font-size: clamp(15px, 3vw, 17px);
   font-weight: 600;
   color: var(--color-text);
@@ -250,13 +250,13 @@
   overflow: hidden;
 }
 
-.item-meta {
+.itemMeta {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.meta-badge {
+.metaBadge {
   padding: clamp(4px, 0.5vw, 5px) clamp(8px, 2vw, 12px);
   border-radius: 4px;
   font-size: clamp(11px, 2vw, 12px);
@@ -264,19 +264,19 @@
   white-space: nowrap;
 }
 
-.meta-badge.region {
+.metaBadge.region {
   background: #e6fffa;
   color: #234e52;
   border: 1px solid #81e6d9;
 }
 
-.meta-badge.type {
+.metaBadge.type {
   background: #fef5e7;
   color: #78350f;
   border: 1px solid #fad390;
 }
 
-.meta-badge.difficulty {
+.metaBadge.difficulty {
   color: white;
   border: none;
 }
@@ -285,13 +285,13 @@
    MUSCLES
    ===================================================== */
 
-.item-muscles {
+.itemMuscles {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.muscle-badge {
+.muscleBadge {
   padding: clamp(3px, 0.5vw, 4px) clamp(7px, 1.5vw, 10px);
   background: var(--color-border);
   border: 1px solid var(--color-border-strong);
@@ -301,7 +301,7 @@
   font-weight: 500;
 }
 
-.muscle-badge.more {
+.muscleBadge.more {
   font-weight: 600;
 }
 
@@ -309,14 +309,14 @@
    ACTIONS
    ===================================================== */
 
-.item-actions {
+.itemActions {
   display: flex;
   gap: clamp(8px, 2vw, 10px);
   align-items: center;
   flex-shrink: 0;
 }
 
-.btn-view {
+.btnView {
   width: clamp(38px, 7vw, 44px);
   height: clamp(38px, 7vw, 44px);
   border: 2px solid var(--color-border);
@@ -331,18 +331,18 @@
   padding: 0;
 }
 
-.btn-view svg {
+.btnView svg {
   width: 18px;
   height: 18px;
 }
 
-.btn-view:hover {
+.btnView:hover {
   border-color: #6366f1;
   background: var(--color-bg);
   transform: scale(1.05);
 }
 
-.btn-select {
+.btnSelect {
   padding: clamp(9px, 2vw, 11px) clamp(16px, 3vw, 22px);
   border: none;
   background: #6366f1;
@@ -361,22 +361,22 @@
   gap: 6px;
 }
 
-.btn-select svg {
+.btnSelect svg {
   width: 16px;
   height: 16px;
 }
 
-.btn-select:hover {
+.btnSelect:hover {
   background: #4f46e5;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
 }
 
-.btn-select.selected {
+.btnSelect.selected {
   background: #48bb78;
 }
 
-.btn-select.selected:hover {
+.btnSelect.selected:hover {
   background: var(--color-success);
 }
 
@@ -385,25 +385,25 @@
    ===================================================== */
 
 @media (max-width: 768px) {
-  .selector-filters {
+  .selectorFilters {
     flex-direction: column;
   }
 
-  .filter-search-wrapper,
-  .filter-select {
+  .filterSearchWrapper,
+  .filterSelect {
     width: 100%;
   }
 
-  .selector-item {
+  .selectorItem {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .item-actions {
+  .itemActions {
     justify-content: space-between;
   }
 
-  .btn-select {
+  .btnSelect {
     flex: 1;
   }
 }

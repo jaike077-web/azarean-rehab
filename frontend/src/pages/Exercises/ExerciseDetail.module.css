@@ -2,7 +2,7 @@
    Страница детального просмотра упражнения
    ================================ */
 
-   .exercise-detail-page {
+   .exerciseDetailPage {
     min-height: 100vh;
     padding: 32px 16px;
     background: radial-gradient(circle at top left, #e0e7ff 0, transparent 45%),
@@ -11,7 +11,7 @@
     box-sizing: border-box;
   }
   
-  .exercise-detail-inner {
+  .exerciseDetailInner {
     max-width: 1200px;
     margin: 0 auto;
     background: rgba(255, 255, 255, 0.96);
@@ -27,8 +27,8 @@
      Состояния: загрузка / ошибка
      ================================ */
   
-  .loading-state,
-  .error-state {
+  .loadingState,
+  .errorState {
     min-height: 40vh;
     display: flex;
     flex-direction: column;
@@ -37,7 +37,7 @@
     text-align: center;
   }
   
-  .loader-spinner {
+  .loaderSpinner {
     width: 42px;
     height: 42px;
     border-radius: 999px;
@@ -53,7 +53,7 @@
     }
   }
   
-.error-icon {
+.errorIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -61,12 +61,12 @@
   margin-bottom: 12px;
 }
 
-.error-icon svg {
+.errorIcon svg {
   width: 42px;
   height: 42px;
 }
 
-.btn-primary-outline {
+.btnPrimaryOutline {
   margin-top: 16px;
   padding: 10px 18px;
   border-radius: 999px;
@@ -82,11 +82,11 @@
   gap: 6px;
 }
 
-.btn-primary-outline svg {
+.btnPrimaryOutline svg {
   width: 16px;
   height: 16px;
 }
-  .btn-primary-outline:hover {
+  .btnPrimaryOutline:hover {
     background: rgba(79, 70, 229, 0.08);
   }
   
@@ -94,7 +94,7 @@
      Header: назад + «хлебные крошки»
      ================================ */
   
-  .exercise-detail-header {
+  .exerciseDetailHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -102,7 +102,7 @@
     margin-bottom: 24px;
   }
   
-  .back-button {
+  .backButton {
     border: none;
     background: rgba(15, 23, 42, 0.04);
     border-radius: 999px;
@@ -117,12 +117,12 @@
     transition: all 0.18s ease;
   }
   
-  .back-button:hover {
+  .backButton:hover {
     background: rgba(79, 70, 229, 0.09);
     transform: translateY(-1px);
   }
   
-  .exercise-breadcrumb {
+  .exerciseBreadcrumb {
     font-size: 13px;
     color: var(--color-text-muted);
     display: flex;
@@ -135,11 +135,11 @@
     opacity: 0.8;
   }
   
-  .crumb-separator {
+  .crumbSeparator {
     opacity: 0.4;
   }
   
-  .crumb-active {
+  .crumbActive {
     font-weight: 600;
     color: #111827;
   }
@@ -148,7 +148,7 @@
      Основная сетка
      ================================ */
   
-  .exercise-detail-grid {
+  .exerciseDetailGrid {
     display: grid;
     grid-template-columns: minmax(0, 1.75fr) minmax(0, 1.1fr);
     gap: 24px;
@@ -156,7 +156,7 @@
   
   /* Левая колонка — главная карточка */
   
-  .exercise-main-card {
+  .exerciseMainCard {
     background: radial-gradient(circle at top left, #eef2ff 0, transparent 55%),
                 #f9fafb;
     border-radius: 20px;
@@ -167,21 +167,21 @@
   
   /* Заголовок, подзаголовок, теги */
   
-  .exercise-main-header {
+  .exerciseMainHeader {
     margin-bottom: 16px;
   }
   
-  .title-block {
+  .titleBlock {
     margin-bottom: 12px;
   }
   
-  .title-row {
+  .titleRow {
     display: flex;
     align-items: center;
     gap: 10px;
   }
   
-  .region-icon {
+  .regionIcon {
     width: 40px;
     height: 40px;
     border-radius: 999px;
@@ -192,20 +192,20 @@
     font-size: 20px;
   }
   
-  .exercise-title {
+  .exerciseTitle {
     font-size: 22px;
     line-height: 1.2;
     margin: 0;
     color: #111827;
   }
   
-  .exercise-subtitle {
+  .exerciseSubtitle {
     margin: 6px 0 0;
     font-size: 14px;
     color: var(--color-text-muted);
   }
   
-  .pill-row {
+  .pillRow {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -222,30 +222,30 @@
     border-radius: 999px;
   }
   
-  .pill-region {
+  .pillRegion {
     background: rgba(79, 70, 229, 0.1);
     color: #3730a3;
   }
   
-  .pill-type {
+  .pillType {
     background: rgba(15, 23, 42, 0.04);
     color: #111827;
   }
   
-.pill-icon {
+.pillIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.pill-icon svg {
+.pillIcon svg {
   width: 14px;
   height: 14px;
 }
   
   /* Сложность */
   
-  .difficulty-badge {
+  .difficultyBadge {
     margin-top: 12px;
     background: rgba(15, 23, 42, 0.03);
     border-radius: 14px;
@@ -258,26 +258,26 @@
     color: var(--color-text);
   }
   
-  .difficulty-meter {
+  .difficultyMeter {
     display: flex;
     gap: 4px;
     align-items: center;
   }
   
-  .difficulty-dot {
+  .difficultyDot {
     width: 11px;
     height: 11px;
     border-radius: 999px;
     background: rgba(148, 163, 184, 0.5);
   }
   
-  .difficulty-dot-active {
+  .difficultyDotActive {
     transform: scale(1.05);
   }
   
   /* Видео */
   
-  .exercise-video-card {
+  .exerciseVideoCard {
     margin-top: 16px;
     position: relative;
     border-radius: 18px;
@@ -286,13 +286,13 @@
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.6);
   }
   
-  .thumbnail-overlay {
+  .thumbnailOverlay {
     position: absolute;
     inset: 0;
     z-index: 1;
   }
   
-  .thumbnail-image {
+  .thumbnailImage {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -300,7 +300,7 @@
     opacity: 0.75;
   }
   
-  .video-frame-wrapper {
+  .videoFrameWrapper {
     position: relative;
     padding-bottom: 56.25%;
     /* 16:9 */
@@ -308,7 +308,7 @@
     z-index: 2;
   }
   
-  .video-frame {
+  .videoFrame {
     position: absolute;
     inset: 0;
     border: none;
@@ -317,7 +317,7 @@
     border-radius: 18px;
   }
   
-  .video-placeholder {
+  .videoPlaceholder {
     padding: 28px 20px;
     text-align: center;
     color: #e5e7eb;
@@ -325,21 +325,21 @@
                 #020617;
   }
   
-.video-placeholder-icon {
+.videoPlaceholderIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 8px;
 }
 
-.video-placeholder-icon svg {
+.videoPlaceholderIcon svg {
   width: 32px;
   height: 32px;
 }
   
   /* Описание */
   
-  .exercise-section {
+  .exerciseSection {
     margin-top: 18px;
     background: var(--color-surface);
     border-radius: 16px;
@@ -347,14 +347,14 @@
     border: 1px solid rgba(209, 213, 219, 0.8);
   }
   
-  .section-title {
+  .sectionTitle {
     font-size: 14px;
     font-weight: 600;
     margin: 0 0 8px;
     color: #111827;
   }
   
-  .section-text {
+  .sectionText {
     font-size: 14px;
     line-height: 1.5;
     color: #4b5563;
@@ -363,7 +363,7 @@
   
   /* Правая колонка */
   
-  .exercise-side-column {
+  .exerciseSideColumn {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -371,7 +371,7 @@
   
   /* Информационные карточки */
   
-  .info-card {
+  .infoCard {
     background: #f9fafb;
     border-radius: 16px;
     padding: 14px 14px 12px;
@@ -379,7 +379,7 @@
     box-sizing: border-box;
   }
   
-  .card-title {
+  .cardTitle {
     font-size: 14px;
     font-weight: 600;
     margin: 0 0 10px;
@@ -388,7 +388,7 @@
   
   /* Строки с label / value */
   
-  .info-row {
+  .infoRow {
     display: grid;
     grid-template-columns: 120px minmax(0, 1fr);
     gap: 6px 12px;
@@ -397,17 +397,17 @@
     padding: 4px 0;
   }
   
-  .info-label {
+  .infoLabel {
     color: var(--color-text-muted);
   }
   
-  .info-value {
+  .infoValue {
     color: #111827;
   }
   
   /* Чипы */
   
-  .chips-row {
+  .chipsRow {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -423,7 +423,7 @@
     white-space: nowrap;
   }
   
-  .chip-soft {
+  .chipSoft {
     background: #eef2ff;
     border: 1px solid rgba(129, 140, 248, 0.6);
     color: #3730a3;
@@ -431,11 +431,11 @@
   
   /* Блоки текста внутри карточек */
   
-  .info-block {
+  .infoBlock {
     margin-top: 6px;
   }
   
-  .info-block-label {
+  .infoBlockLabel {
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
@@ -444,7 +444,7 @@
     margin-bottom: 4px;
   }
   
-  .info-block-text {
+  .infoBlockText {
     font-size: 13px;
     line-height: 1.5;
     color: var(--color-text);
@@ -453,22 +453,22 @@
   
   /* Опасные карточки */
   
-  .info-card-danger {
+  .infoCardDanger {
     background: #fef2f2;
     border-color: rgba(248, 113, 113, 0.7);
   }
   
-  .card-title-danger {
+  .cardTitleDanger {
     color: #b91c1c;
   }
   
   /* Пустая / «мутная» карточка */
   
-  .muted-card {
+  .mutedCard {
     background: #f3f4f6;
   }
   
-  .muted-text {
+  .mutedText {
     font-size: 13px;
     color: #9ca3af;
   }
@@ -478,23 +478,23 @@
      ================================ */
   
   @media (max-width: 1024px) {
-    .exercise-detail-inner {
+    .exerciseDetailInner {
       padding: 20px 16px 26px;
       border-radius: 20px;
     }
   
-    .exercise-detail-grid {
+    .exerciseDetailGrid {
       grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr);
       gap: 18px;
     }
   }
   
   @media (max-width: 768px) {
-    .exercise-detail-page {
+    .exerciseDetailPage {
       padding: 20px 10px;
     }
   
-    .exercise-detail-inner {
+    .exerciseDetailInner {
       padding: 16px 12px 22px;
       border-radius: 18px;
       box-shadow:
@@ -502,43 +502,43 @@
         0 0 0 1px rgba(148, 163, 184, 0.28);
     }
   
-    .exercise-detail-header {
+    .exerciseDetailHeader {
       flex-direction: column-reverse;
       align-items: flex-start;
       gap: 10px;
     }
   
-    .exercise-detail-grid {
+    .exerciseDetailGrid {
       grid-template-columns: minmax(0, 1fr);
     }
   
-    .exercise-main-card {
+    .exerciseMainCard {
       padding: 14px;
     }
   
-    .exercise-side-column {
+    .exerciseSideColumn {
       margin-top: 4px;
     }
   
-    .exercise-title {
+    .exerciseTitle {
       font-size: 19px;
     }
   
-    .exercise-section {
+    .exerciseSection {
       padding: 12px 12px 10px;
     }
   
-    .info-card {
+    .infoCard {
       padding: 12px 12px 10px;
     }
   
-    .info-row {
+    .infoRow {
       grid-template-columns: minmax(0, 1fr);
     }
   }
   
   @media (max-width: 480px) {
-    .back-button {
+    .backButton {
       padding: 7px 14px;
       font-size: 12px;
     }

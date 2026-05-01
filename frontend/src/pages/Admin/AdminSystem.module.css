@@ -2,17 +2,17 @@
    ADMIN SYSTEM - Azarean Network
    ===================================================== */
 
-.admin-system {
+.adminSystem {
   padding: clamp(12px, 2vw, 24px);
 }
 
-.system-grid {
+.systemGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(220px, 25vw, 300px), 1fr));
   gap: clamp(10px, 1.5vw, 16px);
 }
 
-.system-card {
+.systemCard {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(14px, 2vw, 20px);
@@ -23,12 +23,12 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.system-card:hover {
+.systemCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
 }
 
-.system-card-icon {
+.systemCardIcon {
   width: 44px;
   height: 44px;
   border-radius: 10px;
@@ -40,41 +40,41 @@
   flex-shrink: 0;
 }
 
-.system-card-icon.icon-success {
+.systemCardIcon.iconSuccess {
   background: #dcfce7;
   color: var(--color-success);
 }
 
-.system-card-icon.icon-error {
+.systemCardIcon.iconError {
   background: #fef2f2;
   color: var(--color-danger-hover);
 }
 
-.system-card-icon.icon-warning {
+.systemCardIcon.iconWarning {
   background: #fef3c7;
   color: var(--color-warning);
 }
 
-.system-card-label {
+.systemCardLabel {
   font-size: 12px;
   color: var(--color-text-subtle);
   font-weight: 500;
 }
 
-.system-card-value {
+.systemCardValue {
   font-size: clamp(14px, 1.5vw, 16px);
   font-weight: 600;
   color: var(--color-text);
   margin-top: 2px;
 }
 
-.system-card-sub {
+.systemCardSub {
   font-size: 11px;
   color: var(--color-text-subtle);
   margin-top: 2px;
 }
 
-.system-timestamp {
+.systemTimestamp {
   margin-top: 20px;
   font-size: 12px;
   color: var(--color-text-subtle);

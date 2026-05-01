@@ -2,7 +2,7 @@
    VIEW PROGRESS PAGE - Azarean Network
    ===================================================== */
 
-.progress-page {
+.progressPage {
   padding: clamp(16px, 3vw, 32px);
   max-width: 1200px;
   margin: 0 auto;
@@ -37,7 +37,7 @@
   font-size: clamp(14px, 2vw, 16px);
 }
 
-.progress-header {
+.progressHeader {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(20px, 3vw, 32px);
@@ -48,13 +48,13 @@
   gap: clamp(16px, 3vw, 24px);
 }
 
-.progress-header-main {
+.progressHeaderMain {
   display: flex;
   align-items: flex-start;
   gap: clamp(12px, 2vw, 16px);
 }
 
-.progress-avatar {
+.progressAvatar {
   width: clamp(48px, 6vw, 56px);
   height: clamp(48px, 6vw, 56px);
   background: #eef2ff;
@@ -65,26 +65,26 @@
   color: #4f46e5;
 }
 
-.progress-avatar-skeleton {
+.progressAvatarSkeleton {
   width: clamp(48px, 6vw, 56px);
   height: clamp(48px, 6vw, 56px);
   border-radius: 12px;
 }
 
-.progress-header-text h1 {
+.progressHeaderText h1 {
   font-size: clamp(22px, 4vw, 32px);
   margin: 0 0 6px;
   color: #1f2937;
   font-weight: 700;
 }
 
-.progress-subtitle {
+.progressSubtitle {
   font-size: clamp(14px, 2vw, 16px);
   color: #4b5563;
   margin: 0 0 8px;
 }
 
-.progress-dates {
+.progressDates {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -92,68 +92,68 @@
   color: var(--color-text-muted);
 }
 
-.progress-stats {
+.progressStats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: clamp(12px, 2vw, 16px);
 }
 
-.stat-card {
+.statCard {
   background: var(--color-bg);
   border-radius: 10px;
   padding: clamp(12px, 2vw, 16px);
   text-align: center;
 }
 
-.stat-value {
+.statValue {
   font-size: clamp(18px, 3vw, 24px);
   font-weight: 700;
   color: #111827;
   margin-bottom: 4px;
 }
 
-.stat-label {
+.statLabel {
   font-size: clamp(12px, 2vw, 14px);
   color: var(--color-text-muted);
 }
 
-.sessions-container {
+.sessionsContainer {
   display: flex;
   flex-direction: column;
   gap: clamp(20px, 3vw, 24px);
 }
 
-.session-card {
+.sessionCard {
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.session-header {
+.sessionHeader {
   background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   padding: clamp(16px, 3vw, 20px) clamp(20px, 4vw, 24px);
 }
 
-.session-progress {
+.sessionProgress {
   padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
 }
 
-.progress-text {
+.progressText {
   font-size: clamp(13px, 2.5vw, 14px);
   color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
-.progress-text strong {
+.progressText strong {
   color: var(--color-text);
   font-weight: 600;
 }
 
-.progress-bar {
+.progressBar {
   height: 12px;
   background: var(--color-border);
   border-radius: 999px;
@@ -161,7 +161,7 @@
   position: relative;
 }
 
-.progress-fill {
+.progressFill {
   height: 100%;
   background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success) 100%);
   border-radius: 999px;
@@ -169,7 +169,7 @@
   position: relative;
 }
 
-.progress-fill::after {
+.progressFill::after {
   content: '';
   position: absolute;
   top: 0;
@@ -194,7 +194,7 @@
   }
 }
 
-.session-info h3 {
+.sessionInfo h3 {
   margin: 0;
   font-size: clamp(16px, 3vw, 18px);
   font-weight: 600;
@@ -203,13 +203,13 @@
   gap: 8px;
 }
 
-.session-info h3 span {
+.sessionInfo h3 span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.session-time {
+.sessionTime {
   font-size: clamp(13px, 2.5vw, 14px);
   opacity: 0.9;
   display: inline-flex;
@@ -218,19 +218,19 @@
   margin-top: 6px;
 }
 
-.session-table-wrapper {
+.sessionTableWrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
   padding: clamp(16px, 3vw, 20px);
   max-width: 100%;
 }
 
-.session-table {
+.sessionTable {
   width: 100%;
   border-collapse: collapse;
 }
 
-.session-table th {
+.sessionTable th {
   background: var(--color-bg);
   padding: 12px;
   text-align: left;
@@ -240,18 +240,18 @@
   border-bottom: 2px solid var(--color-border);
 }
 
-.session-table td {
+.sessionTable td {
   padding: 12px;
   border-bottom: 1px solid var(--color-border);
   font-size: clamp(13px, 2.5vw, 14px);
 }
 
-.exercise-name {
+.exerciseName {
   font-weight: 500;
   color: var(--color-text);
 }
 
-.status-badge {
+.statusBadge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -261,32 +261,32 @@
   font-weight: 500;
 }
 
-.status-badge.completed {
+.statusBadge.completed {
   background: #c6f6d5;
   color: #22543d;
 }
 
-.status-badge.skipped {
+.statusBadge.skipped {
   background: #fed7d7;
   color: #742a2a;
 }
 
-.status-badge.not-attempted {
+.statusBadge.notAttempted {
   background: #f3f4f6;
   color: var(--color-text-muted);
   border: 1px dashed #d1d5db;
 }
 
-.skipped-exercise {
+.skippedExercise {
   opacity: 0.6;
   background: #fafafa;
 }
 
-.skipped-exercise .exercise-name {
+.skippedExercise .exerciseName {
   color: var(--color-text-muted);
 }
 
-.pain-badge {
+.painBadge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 8px;
@@ -294,26 +294,26 @@
   font-size: 13px;
 }
 
-.pain-badge.pain-low {
+.painBadge.painLow {
   background: var(--color-success);
   color: white;
 }
 
-.pain-badge.pain-medium {
+.painBadge.painMedium {
   background: #fbbf24;
   color: #1f2937;
 }
 
-.pain-badge.pain-high {
+.painBadge.painHigh {
   background: var(--color-danger);
   color: white;
 }
 
-.difficulty-cell {
+.difficultyCell {
   font-size: 14px;
 }
 
-.difficulty-badge {
+.difficultyBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -325,7 +325,7 @@
   font-size: 13px;
 }
 
-.session-comment {
+.sessionComment {
   padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
   background: var(--color-bg);
   border-top: 1px solid var(--color-border);
@@ -336,32 +336,32 @@
   gap: 8px;
 }
 
-.text-center {
+.textCenter {
   text-align: center;
 }
 
-.no-data {
+.noData {
   color: var(--color-text-subtle);
 }
 
-.exercise-name,
-.status-badge,
-.pain-badge,
-.difficulty-badge {
+.exerciseName,
+.statusBadge,
+.painBadge,
+.difficultyBadge {
   white-space: nowrap;
 }
 
-.session-table td.text-center {
+.sessionTable td.textCenter {
   min-width: 110px;
 }
 
-.exercises-progress-grid {
+.exercisesProgressGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: clamp(16px, 3vw, 24px);
 }
 
-.exercise-progress-card {
+.exerciseProgressCard {
   background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 24px);
@@ -371,44 +371,44 @@
   gap: clamp(12px, 2vw, 18px);
 }
 
-.exercise-card-header {
+.exerciseCardHeader {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.exercise-card-header h3 {
+.exerciseCardHeader h3 {
   margin: 0;
   font-size: clamp(16px, 2.5vw, 20px);
   color: #1f2937;
 }
 
-.exercise-category {
+.exerciseCategory {
   margin: 0;
   font-size: clamp(12px, 2vw, 14px);
   color: var(--color-text-muted);
 }
 
-.completion-info {
+.completionInfo {
   font-size: clamp(13px, 2vw, 15px);
   color: #4b5563;
 }
 
-.pain-section h4,
-.difficulty-section h4,
-.comments-section h4 {
+.painSection h4,
+.difficultySection h4,
+.commentsSection h4 {
   margin: 0 0 8px;
   font-size: clamp(14px, 2vw, 16px);
   color: #111827;
 }
 
-.pain-history {
+.painHistory {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.pain-indicator {
+.painIndicator {
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -420,53 +420,53 @@
   color: var(--color-surface);
 }
 
-.pain-indicator.low {
+.painIndicator.low {
   background: var(--color-success);
 }
 
-.pain-indicator.medium {
+.painIndicator.medium {
   background: var(--color-warning);
 }
 
-.pain-indicator.high {
+.painIndicator.high {
   background: var(--color-danger);
 }
 
-.difficulty-history {
+.difficultyHistory {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.difficulty-icon {
+.difficultyIcon {
   font-size: 22px;
 }
 
-.comments-section {
+.commentsSection {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.comment-item {
+.commentItem {
   background: var(--color-bg);
   border-radius: 8px;
   border-left: 3px solid var(--color-info);
   padding: 12px;
 }
 
-.comment-date {
+.commentDate {
   font-size: 12px;
   color: var(--color-text-muted);
   margin-bottom: 4px;
 }
 
-.comment-text {
+.commentText {
   font-size: clamp(13px, 2vw, 15px);
   color: #1f2937;
 }
 
-.empty-state {
+.emptyState {
   text-align: center;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
   background: var(--color-surface);
@@ -474,13 +474,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.empty-state h3 {
+.emptyState h3 {
   margin: 0 0 8px;
   font-size: clamp(18px, 3vw, 22px);
   color: var(--color-text);
 }
 
-.empty-state p {
+.emptyState p {
   margin: 0;
   font-size: clamp(14px, 2vw, 16px);
   color: var(--color-text-muted);
@@ -488,25 +488,25 @@
 
 /* Mobile responsive */
 @media (max-width: 640px) {
-  .session-progress {
+  .sessionProgress {
     padding: 12px 16px;
   }
 
-  .progress-text {
+  .progressText {
     font-size: 12px;
   }
 
-  .progress-bar {
+  .progressBar {
     height: 10px;
   }
 
-  .session-table th,
-  .session-table td {
+  .sessionTable th,
+  .sessionTable td {
     padding: 8px;
     font-size: 12px;
   }
 
-  .exercise-name {
+  .exerciseName {
     max-width: 150px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -515,7 +515,7 @@
 }
 
 @media (max-width: 1024px) {
-  .back-button-wrapper {
+  .backButtonWrapper {
     display: none !important;
   }
 }

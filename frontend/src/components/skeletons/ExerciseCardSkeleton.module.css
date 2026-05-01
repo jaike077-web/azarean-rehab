@@ -1,4 +1,4 @@
-.exercise-card-skeleton {
+.exerciseCardSkeleton {
   background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   padding: clamp(14px, 3vw, 18px);
@@ -7,6 +7,6 @@
   flex-direction: column;
 }
 
-.exercise-card-skeleton .skeleton:first-child {
+.exerciseCardSkeleton .skeleton:first-child {
   border-radius: clamp(10px, 2vw, 14px);
 }

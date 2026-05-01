@@ -2,11 +2,11 @@
    ADMIN AUDIT LOGS - Azarean Network
    ===================================================== */
 
-.admin-audit {
+.adminAudit {
   padding: clamp(12px, 2vw, 24px);
 }
 
-.admin-title-badge {
+.adminTitleBadge {
   background: var(--color-border);
   color: var(--color-text-muted);
   padding: 2px 8px;
@@ -17,15 +17,15 @@
 }
 
 /* Filters */
-.admin-filters {
+.adminFilters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.admin-filters select,
-.admin-filters input {
+.adminFilters select,
+.adminFilters input {
   padding: clamp(8px, 1vw, 10px) 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -38,14 +38,14 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.admin-filters select:focus,
-.admin-filters input:focus {
+.adminFilters select:focus,
+.adminFilters input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 /* Action badges */
-.audit-action {
+.auditAction {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 6px;
@@ -53,30 +53,30 @@
   font-weight: 600;
 }
 
-.action-create { background: #dcfce7; color: var(--color-success); }
-.action-update { background: #dbeafe; color: #2563eb; }
-.action-delete { background: #fef2f2; color: var(--color-danger-hover); }
-.action-login { background: #ede9fe; color: #7c3aed; }
-.action-logout { background: var(--color-surface-2); color: var(--color-text-muted); }
-.action-deactivate { background: #fef2f2; color: var(--color-danger-hover); }
-.action-activate { background: #dcfce7; color: var(--color-success); }
-.action-unlock { background: #fef3c7; color: var(--color-warning); }
-.action-read { background: #f0f9ff; color: var(--color-info); }
+.actionCreate { background: #dcfce7; color: var(--color-success); }
+.actionUpdate { background: #dbeafe; color: #2563eb; }
+.actionDelete { background: #fef2f2; color: var(--color-danger-hover); }
+.actionLogin { background: #ede9fe; color: #7c3aed; }
+.actionLogout { background: var(--color-surface-2); color: var(--color-text-muted); }
+.actionDeactivate { background: #fef2f2; color: var(--color-danger-hover); }
+.actionActivate { background: #dcfce7; color: var(--color-success); }
+.actionUnlock { background: #fef3c7; color: var(--color-warning); }
+.actionRead { background: #f0f9ff; color: var(--color-info); }
 
-.td-id {
+.tdId {
   color: var(--color-text-subtle);
   font-size: 12px;
   font-family: monospace;
 }
 
-.td-ip {
+.tdIp {
   color: var(--color-text-subtle);
   font-size: 12px;
   font-family: monospace;
 }
 
 /* Pagination */
-.admin-pagination {
+.adminPagination {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +85,7 @@
   padding: 12px;
 }
 
-.admin-pagination button {
+.adminPagination button {
   min-width: 44px;
   min-height: 44px;
   border: 1px solid var(--color-border);
@@ -99,18 +99,18 @@
   transition: all 0.2s;
 }
 
-.admin-pagination button:hover:not(:disabled) {
+.adminPagination button:hover:not(:disabled) {
   background: var(--color-bg);
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.admin-pagination button:disabled {
+.adminPagination button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.admin-pagination span {
+.adminPagination span {
   font-size: 13px;
   color: var(--color-text-muted);
 }

@@ -3,11 +3,11 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-   body.modal-open {
+   body.modalOpen {
     overflow: hidden;
   }
   
-  .exercise-modal {
+  .exerciseModal {
     max-width: 600px;
     width: 100%;
     max-height: 90vh;
@@ -19,7 +19,7 @@
      Это исправляет проблему с невидимой кнопкой "Сохранить"
      ===================================================== */
   
-  .exercise-modal form {
+  .exerciseModal form {
     display: flex;
     flex-direction: column;
     flex: 1;
@@ -31,19 +31,19 @@
      FORM SECTIONS
      ===================================================== */
   
-  .form-section {
+  .formSection {
     margin-bottom: clamp(24px, 5vw, 36px);
     padding: clamp(18px, 4vw, 28px);
     background: #f9fafb;
     border-radius: clamp(10px, 2vw, 14px);
   }
   
-  .form-section.required-section {
+  .formSection.requiredSection {
     background: #fef3c7;
     border: 1px solid #fde68a;
   }
   
-  .section-title {
+  .sectionTitle {
     font-size: clamp(16px, 3vw, 20px);
     font-weight: 700;
     color: var(--color-text);
@@ -53,7 +53,7 @@
     gap: clamp(6px, 1.5vw, 10px);
   }
   
-  .section-description {
+  .sectionDescription {
     font-size: clamp(13px, 2vw, 14px);
     color: var(--color-text-muted);
     margin: 0 0 clamp(16px, 3vw, 24px) 0;
@@ -84,15 +84,15 @@
      FORM GROUPS
      ===================================================== */
   
-  .form-group {
+  .formGroup {
     margin-bottom: clamp(16px, 3vw, 24px);
   }
   
-  .form-group:last-child {
+  .formGroup:last-child {
     margin-bottom: 0;
   }
   
-  .form-group label {
+  .formGroup label {
     display: block;
     font-size: clamp(13px, 2vw, 14px);
     font-weight: 600;
@@ -100,10 +100,10 @@
     margin-bottom: clamp(6px, 1.5vw, 10px);
   }
   
-  .form-group input[type="text"],
-  .form-group input[type="url"],
-  .form-group textarea,
-  .form-group select {
+  .formGroup input[type="text"],
+  .formGroup input[type="url"],
+  .formGroup textarea,
+  .formGroup select {
     width: 100%;
     padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
     border: 1px solid #d1d5db;
@@ -115,20 +115,20 @@
     box-sizing: border-box;
   }
   
-  .form-group input:focus,
-  .form-group textarea:focus,
-  .form-group select:focus {
+  .formGroup input:focus,
+  .formGroup textarea:focus,
+  .formGroup select:focus {
     outline: none;
     border-color: #6366f1;
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
   
-  .form-group input.error,
-  .form-group textarea.error {
+  .formGroup input.error,
+  .formGroup textarea.error {
     border-color: var(--color-danger);
   }
   
-  .form-group textarea {
+  .formGroup textarea {
     resize: vertical;
     min-height: clamp(60px, 15vw, 90px);
   }
@@ -137,7 +137,7 @@
      ERROR MESSAGES
      ===================================================== */
   
-  .error-message {
+  .errorMessage {
     display: block;
     font-size: clamp(12px, 2vw, 13px);
     color: var(--color-danger);
@@ -145,7 +145,7 @@
     font-weight: 500;
   }
   
-  .form-error-message {
+  .formErrorMessage {
     width: 100%;
     padding: 10px 16px;
     background: #fef2f2;
@@ -160,7 +160,7 @@
      FORM ROW (2 columns)
      ===================================================== */
   
-  .form-row {
+  .formRow {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: clamp(12px, 3vw, 18px);
@@ -170,11 +170,11 @@
      DIFFICULTY SLIDER
      ===================================================== */
   
-  .difficulty-slider {
+  .difficultySlider {
     margin-top: clamp(10px, 2vw, 14px);
   }
   
-  .difficulty-slider input[type="range"] {
+  .difficultySlider input[type="range"] {
     width: 100%;
     height: clamp(6px, 1.5vw, 8px);
     border-radius: 4px;
@@ -183,7 +183,7 @@
     -webkit-appearance: none;
   }
   
-  .difficulty-slider input[type="range"]::-webkit-slider-thumb {
+  .difficultySlider input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: clamp(20px, 4vw, 26px);
@@ -194,7 +194,7 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
   
-  .difficulty-slider input[type="range"]::-moz-range-thumb {
+  .difficultySlider input[type="range"]::-moz-range-thumb {
     width: clamp(20px, 4vw, 26px);
     height: clamp(20px, 4vw, 26px);
     border-radius: 50%;
@@ -204,7 +204,7 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
   
-  .difficulty-labels {
+  .difficultyLabels {
     display: flex;
     justify-content: space-between;
     margin-top: clamp(6px, 1.5vw, 10px);
@@ -216,14 +216,14 @@
      CHECKBOX GROUP (Multiple Select)
      ===================================================== */
   
-  .checkbox-group {
+  .checkboxGroup {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
     gap: clamp(10px, 2vw, 14px);
     margin-top: clamp(10px, 2vw, 14px);
   }
   
-  .checkbox-label {
+  .checkboxLabel {
     display: flex;
     align-items: center;
     gap: clamp(6px, 1.5vw, 10px);
@@ -239,12 +239,12 @@
     min-height: 44px;
   }
   
-  .checkbox-label:hover {
+  .checkboxLabel:hover {
     border-color: var(--color-border-strong);
     background: var(--color-bg);
   }
   
-  .checkbox-label input[type="checkbox"] {
+  .checkboxLabel input[type="checkbox"] {
     width: clamp(16px, 3vw, 18px);
     height: clamp(16px, 3vw, 18px);
     cursor: pointer;
@@ -252,12 +252,12 @@
     flex-shrink: 0;
   }
   
-  .checkbox-label input[type="checkbox"]:checked + span {
+  .checkboxLabel input[type="checkbox"]:checked + span {
     font-weight: 600;
     color: #6366f1;
   }
   
-  .checkbox-label:has(input:checked) {
+  .checkboxLabel:has(input:checked) {
     border-color: #6366f1;
     background: #eef2ff;
   }
@@ -266,7 +266,7 @@
      SELECTED TAGS (Chips)
      ===================================================== */
   
-  .selected-tags {
+  .selectedTags {
     display: flex;
     flex-wrap: wrap;
     gap: clamp(6px, 1.5vw, 10px);
@@ -316,7 +316,7 @@
      TOGGLE ADVANCED BUTTON
      ===================================================== */
   
-  .toggle-advanced-btn {
+  .toggleAdvancedBtn {
     width: 100%;
     padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 22px);
     background: white;
@@ -334,12 +334,12 @@
     min-height: 48px;
   }
   
-  .toggle-advanced-btn:hover {
+  .toggleAdvancedBtn:hover {
     border-color: var(--color-border-strong);
     background: var(--color-bg);
   }
   
-  .advanced-fields {
+  .advancedFields {
     margin-top: clamp(16px, 3vw, 24px);
     animation: slideDown 0.3s ease-out;
   }
@@ -359,7 +359,7 @@
      MODAL FOOTER - КРИТИЧНО: flex-shrink: 0
      ===================================================== */
   
-  .modal-footer {
+  .modalFooter {
     display: flex;
     flex-direction: row;
     gap: 12px;
@@ -369,7 +369,7 @@
     flex-shrink: 0;  /* КРИТИЧНО: не сжимается */
   }
   
-  .btn-secondary {
+  .btnSecondary {
     flex: 1;
     padding: 12px 24px;
     background: white;
@@ -386,13 +386,13 @@
     justify-content: center;
   }
   
-  .btn-secondary:hover {
+  .btnSecondary:hover {
     background: var(--color-bg);
     border-color: #6366f1;
     color: #6366f1;
   }
   
-  .btn-primary {
+  .btnPrimary {
     flex: 1;
     padding: 12px 24px;
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -410,17 +410,17 @@
     justify-content: center;
   }
   
-  .btn-primary:hover {
+  .btnPrimary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
   }
   
-  .btn-primary:active {
+  .btnPrimary:active {
     transform: translateY(0);
   }
   
-  .btn-primary:disabled,
-  .btn-secondary:disabled {
+  .btnPrimary:disabled,
+  .btnSecondary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
@@ -430,7 +430,7 @@
      MODAL OVERLAY & CONTENT
      ===================================================== */
   
-  .modal-overlay {
+  .modalOverlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
@@ -451,7 +451,7 @@
     }
   }
   
-  .modal-content {
+  .modalContent {
     background: white;
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -477,7 +477,7 @@
      MODAL HEADER
      ===================================================== */
   
-  .modal-header {
+  .modalHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -487,14 +487,14 @@
     flex-shrink: 0;  /* Не сжимается */
   }
   
-  .modal-header h2 {
+  .modalHeader h2 {
     font-size: clamp(20px, 4vw, 24px);
     color: #111827;
     margin: 0;
     line-height: 1.3;
   }
   
-  .close-btn {
+  .closeBtn {
     width: 36px;
     height: 36px;
     border: none;
@@ -511,12 +511,12 @@
     min-height: auto;
   }
   
-  .close-btn svg {
+  .closeBtn svg {
     width: 20px;
     height: 20px;
   }
   
-  .close-btn:hover {
+  .closeBtn:hover {
     background: #e5e7eb;
   }
   
@@ -524,7 +524,7 @@
      MODAL BODY - КРИТИЧНО: flex: 1 и overflow
      ===================================================== */
   
-  .modal-body {
+  .modalBody {
     padding: 24px 32px;
     overflow-y: auto;
     flex: 1;           /* Занимает доступное пространство */
@@ -535,20 +535,20 @@
      SCROLLBAR STYLING
      ===================================================== */
   
-  .modal-body::-webkit-scrollbar {
+  .modalBody::-webkit-scrollbar {
     width: clamp(6px, 1.5vw, 8px);
   }
   
-  .modal-body::-webkit-scrollbar-track {
+  .modalBody::-webkit-scrollbar-track {
     background: var(--color-bg);
   }
   
-  .modal-body::-webkit-scrollbar-thumb {
+  .modalBody::-webkit-scrollbar-thumb {
     background: var(--color-border-strong);
     border-radius: 4px;
   }
   
-  .modal-body::-webkit-scrollbar-thumb:hover {
+  .modalBody::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-subtle);
   }
   
@@ -556,19 +556,19 @@
      HELP TEXT
      ===================================================== */
   
-  .help-text {
+  .helpText {
     font-size: clamp(12px, 2vw, 13px);
     color: var(--color-text-muted);
     margin-top: clamp(5px, 1vw, 7px);
     line-height: 1.5;
   }
   
-  .help-text a {
+  .helpText a {
     color: #6366f1;
     text-decoration: none;
   }
   
-  .help-text a:hover {
+  .helpText a:hover {
     text-decoration: underline;
   }
   
@@ -577,83 +577,83 @@
      ===================================================== */
   
   @media (max-width: 768px) {
-    .modal-overlay {
+    .modalOverlay {
       padding: 0;
       align-items: flex-end;
     }
   
-    .modal-content {
+    .modalContent {
       width: 100%;
       border-radius: 16px 16px 0 0;
       max-height: 95vh;
       animation: slideUp 0.3s ease-out;
     }
   
-    .modal-header {
+    .modalHeader {
       padding: 16px 20px 12px;
     }
   
-    .modal-header h2 {
+    .modalHeader h2 {
       font-size: 20px;
     }
   
-    .close-btn {
+    .closeBtn {
       width: 32px;
       height: 32px;
     }
   
-    .modal-body {
+    .modalBody {
       padding: 16px 20px;
       flex: 1;
       min-height: 0;
     }
   
-    .form-group input[type="text"],
-    .form-group input[type="url"],
-    .form-group textarea,
-    .form-group select {
+    .formGroup input[type="text"],
+    .formGroup input[type="url"],
+    .formGroup textarea,
+    .formGroup select {
       font-size: 16px;
       padding: 10px 14px;
       min-height: 44px;
     }
   
-    .form-group textarea {
+    .formGroup textarea {
       min-height: 100px;
     }
   
-    .form-section {
+    .formSection {
       padding: 16px;
       margin-bottom: 14px;
     }
   
-    .form-section.required-section {
+    .formSection.requiredSection {
       padding: 12px;
     }
   
-    .form-section.required-section .section-title {
+    .formSection.requiredSection .sectionTitle {
       font-size: 14px;
     }
   
-    .form-section.required-section .section-description {
+    .formSection.requiredSection .sectionDescription {
       font-size: 12px;
       line-height: 1.4;
       margin-bottom: 12px;
     }
   
-    .modal-footer {
+    .modalFooter {
       flex-direction: column;
       padding: 16px 20px 20px;
       gap: 10px;
       flex-shrink: 0;
     }
   
-    .checkbox-group {
+    .checkboxGroup {
       grid-template-columns: 1fr;
     }
   }
   
   @media (min-width: 768px) and (max-width: 1023px) {
-    .exercise-modal {
+    .exerciseModal {
       max-width: 90%;
       width: 90%;
     }
