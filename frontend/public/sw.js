@@ -4,8 +4,11 @@
 // =====================================================
 
 // Бамп версии при изменении SW — `activate` снесёт все кеши с другим именем.
-const CACHE_NAME = 'azarean-v2';
-const API_CACHE = 'azarean-api-v2';
+// v3 (2026-05-01) — CSS Modules + dark theme миграция, hashed class names
+// в module.css изменили все JS bundle hash'и; старый кеш v2 подгружал stale
+// JS без соответствующих CSS chunks → страницы рендерились без стилей.
+const CACHE_NAME = 'azarean-v3';
+const API_CACHE = 'azarean-api-v3';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
