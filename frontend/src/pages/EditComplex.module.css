@@ -17,7 +17,7 @@
 
 .page-header h1 {
   font-size: clamp(22px, 4vw, 32px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
@@ -32,7 +32,7 @@
 
 .page-header p {
   font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -52,7 +52,7 @@
 
 .form-section h3 {
   font-size: clamp(17px, 3vw, 20px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 16px) 0;
   display: flex;
   align-items: center;
@@ -67,7 +67,7 @@
 .form-section textarea {
   width: 100%;
   padding: clamp(12px, 2vw, 16px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   font-size: clamp(14px, 2vw, 15px);
   font-family: inherit;
@@ -80,7 +80,7 @@
 
 .form-section textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -104,7 +104,7 @@
   gap: clamp(8px, 2vw, 16px);
   padding: clamp(12px, 2vw, 16px);
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   position: relative;
   transition: all 0.2s;
@@ -115,7 +115,7 @@
 }
 
 .selected-exercise:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
@@ -127,7 +127,7 @@
 .drag-handle {
   cursor: grab;
   font-size: clamp(16px, 3vw, 20px);
-  color: #cbd5e0;
+  color: var(--color-border-strong);
   user-select: none;
   padding: clamp(4px, 1vw, 8px) clamp(6px, 1.5vw, 10px);
   transition: color 0.2s;
@@ -136,7 +136,7 @@
 }
 
 .drag-handle:hover {
-  color: #667eea;
+  color: var(--color-primary);
 }
 
 .drag-handle:active {
@@ -153,7 +153,7 @@
 
 .exercise-info strong {
   font-size: clamp(14px, 2vw, 16px);
-  color: #1a202c;
+  color: var(--color-text);
   font-weight: 600;
   display: block;
   word-break: break-word;
@@ -161,7 +161,7 @@
 
 .exercise-meta {
   font-size: clamp(12px, 1.5vw, 13px);
-  color: #718096;
+  color: var(--color-text-muted);
   display: block;
 }
 
@@ -180,7 +180,7 @@
 .edit-complex-page .exercise-params input[type="number"],
 .edit-complex-page .exercise-params input[type="text"] {
   padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
   transition: all 0.2s;
@@ -195,7 +195,7 @@
 
 .edit-complex-page .exercise-params input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -209,7 +209,7 @@
   background: #fee;
   border: 2px solid #fed7d7;
   border-radius: 8px;
-  color: #e53e3e;
+  color: var(--color-danger);
   font-size: clamp(16px, 2vw, 18px);
   font-weight: bold;
   cursor: pointer;
@@ -244,10 +244,10 @@
 .empty-exercises {
   text-align: center;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
-  color: #a0aec0;
-  background: #f7fafc;
+  color: var(--color-text-subtle);
+  background: var(--color-bg);
   border-radius: 12px;
-  border: 2px dashed #cbd5e0;
+  border: 2px dashed var(--color-border-strong);
 }
 
 .empty-exercises p {
@@ -269,14 +269,14 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #a0aec0;
+  color: var(--color-text-subtle);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
   padding: clamp(10px, 2vw, 12px) clamp(14px, 3vw, 16px) clamp(10px, 2vw, 12px) clamp(35px, 7vw, 40px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
   transition: all 0.2s;
@@ -285,7 +285,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -305,7 +305,7 @@
 
 .exercise-card-small {
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: clamp(12px, 2vw, 16px);
   transition: all 0.2s;
@@ -315,21 +315,21 @@
 }
 
 .exercise-card-small:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
 .exercise-card-small h4 {
   font-size: clamp(14px, 2vw, 16px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0;
   font-weight: 600;
 }
 
 .exercise-card-small p {
   font-size: clamp(13px, 1.5vw, 14px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin: 0;
   line-height: 1.5;
   overflow: hidden;
@@ -346,11 +346,11 @@
 }
 
 .tag {
-  background: #edf2f7;
+  background: var(--color-border);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: clamp(11px, 1.5vw, 12px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -360,7 +360,7 @@
 
 .btn-add-exercise {
   padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -386,8 +386,8 @@
 }
 
 .btn-add-exercise:disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
+  background: var(--color-border);
+  color: var(--color-text-subtle);
   cursor: not-allowed;
 }
 
@@ -438,17 +438,17 @@
 }
 
 .btn-secondary {
-  background: #edf2f7;
-  color: #4a5568;
+  background: var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: var(--color-border);
   transform: translateY(-2px);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
 }
 
@@ -479,7 +479,7 @@
 
 .error-view p {
   font-size: clamp(16px, 2vw, 18px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin: 0 0 24px 0;
 }
 
@@ -487,7 +487,7 @@
   text-align: center;
   padding: clamp(60px, 10vw, 100px) 20px;
   font-size: clamp(16px, 3vw, 20px);
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 .error-message {
@@ -495,7 +495,7 @@
   border: 2px solid #feb2b2;
   border-radius: 12px;
   padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
-  color: #c53030;
+  color: var(--color-danger-hover);
   margin-bottom: clamp(16px, 3vw, 24px);
   font-weight: 500;
   font-size: clamp(13px, 2vw, 14px);

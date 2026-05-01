@@ -37,7 +37,7 @@
   left: clamp(12px, 2vw, 16px);
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -47,7 +47,7 @@
 .search-input {
   width: 100%;
   padding: clamp(10px, 2vw, 14px) clamp(35px, 7vw, 45px) clamp(10px, 2vw, 14px) clamp(38px, 6vw, 44px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(14px, 2vw, 15px);
   transition: all 0.2s;
@@ -62,7 +62,7 @@
 }
 
 .search-input::placeholder {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
 }
 
 .clear-search {
@@ -73,9 +73,9 @@
   width: clamp(22px, 4vw, 26px);
   height: clamp(22px, 4vw, 26px);
   border: none;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 50%;
-  color: #4a5568;
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -91,7 +91,7 @@
 }
 
 .clear-search:hover {
-  background: #cbd5e0;
+  background: var(--color-border-strong);
   transform: translateY(-50%) scale(1.1);
 }
 
@@ -107,7 +107,7 @@
 
 .filter-select {
   padding: clamp(9px, 2vw, 11px) clamp(10px, 2vw, 14px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
   background: white;
@@ -118,7 +118,7 @@
 }
 
 .filter-select:hover {
-  border-color: #cbd5e0;
+  border-color: var(--color-border-strong);
 }
 
 .filter-select:focus {
@@ -145,7 +145,7 @@
 
 .btn-expand {
   padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 18px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   background: white;
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
@@ -166,12 +166,12 @@
 }
 
 .btn-expand:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
+  background: var(--color-bg);
+  border-color: var(--color-border-strong);
 }
 
 .btn-expand.active {
-  background: #edf2f7;
+  background: var(--color-border);
   border-color: #6366f1;
   color: #6366f1;
 }
@@ -223,7 +223,7 @@
 .filters-expanded {
   margin-top: clamp(16px, 3vw, 24px);
   padding-top: clamp(16px, 3vw, 24px);
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--color-border);
   animation: slideDown 0.3s ease;
 }
 
@@ -254,7 +254,7 @@
 .filter-group label {
   font-size: clamp(12px, 2vw, 13px);
   font-weight: 600;
-  color: #4a5568;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -264,7 +264,7 @@
    ===================================================== */
 
 .active-filters {
-  background: #f7fafc;
+  background: var(--color-bg);
   border-radius: 8px;
   padding: clamp(10px, 2vw, 14px);
   display: flex;
@@ -276,7 +276,7 @@
 .active-filters-label {
   font-size: clamp(12px, 2vw, 13px);
   font-weight: 600;
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin-right: clamp(6px, 1.5vw, 10px);
 }
 
@@ -293,10 +293,10 @@
   gap: clamp(5px, 1vw, 7px);
   padding: clamp(5px, 1vw, 7px) clamp(8px, 2vw, 12px);
   background: white;
-  border: 1px solid #cbd5e0;
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 13px);
-  color: #2d3748;
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -304,9 +304,9 @@
   width: clamp(14px, 3vw, 16px);
   height: clamp(14px, 3vw, 16px);
   border: none;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 50%;
-  color: #4a5568;
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -323,7 +323,7 @@
 }
 
 .active-filter button:hover {
-  background: #cbd5e0;
+  background: var(--color-border-strong);
   transform: scale(1.1);
 }
 
@@ -334,14 +334,14 @@
 .filters-results {
   margin-top: clamp(12px, 3vw, 18px);
   padding-top: clamp(12px, 3vw, 18px);
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--color-border);
   font-size: clamp(13px, 2vw, 14px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
 .filters-results strong {
-  color: #2d3748;
+  color: var(--color-text);
   font-weight: 700;
 }
 

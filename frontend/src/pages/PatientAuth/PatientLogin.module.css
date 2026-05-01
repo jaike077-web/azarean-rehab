@@ -2,7 +2,7 @@
 
 .patient-auth-container {
   min-height: 100vh;
-  background-color: #F7F8FA;
+  background-color: var(--color-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,14 +38,14 @@
 .patient-auth-logo-text {
   font-size: 24px;
   font-weight: 600;
-  color: #1A202C;
+  color: var(--color-text);
 }
 
 /* Heading */
 .patient-auth-heading {
   font-size: clamp(20px, 4vw, 24px);
   font-weight: 600;
-  color: #1A202C;
+  color: var(--color-text);
   text-align: center;
   margin: 0 0 24px 0;
 }
@@ -66,7 +66,7 @@
 .patient-auth-label {
   font-size: 14px;
   font-weight: 500;
-  color: #4A5568;
+  color: var(--color-text-muted);
 }
 
 .patient-auth-input-wrapper {
@@ -77,10 +77,10 @@
 .patient-auth-input {
   width: 100%;
   padding: 14px 16px 14px 44px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   font-size: 16px;
-  color: #1A202C;
+  color: var(--color-text);
   background: white;
   min-height: 48px;
   transition: all 0.2s ease;
@@ -89,7 +89,7 @@
 }
 
 .patient-auth-input::placeholder {
-  color: #A0AEC0;
+  color: var(--color-text-subtle);
 }
 
 .patient-auth-input:focus {
@@ -99,7 +99,7 @@
 }
 
 .patient-auth-input:hover:not(:focus) {
-  border-color: #CBD5E0;
+  border-color: var(--color-border-strong);
 }
 
 .patient-auth-input-icon {
@@ -107,7 +107,7 @@
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9AA1B2;
+  color: var(--color-text-subtle);
   pointer-events: none;
 }
 
@@ -120,7 +120,7 @@
   border: none;
   padding: 8px;
   cursor: pointer;
-  color: #9AA1B2;
+  color: var(--color-text-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,7 +128,7 @@
 }
 
 .patient-auth-password-toggle:hover {
-  color: #4A5568;
+  color: var(--color-text-muted);
 }
 
 .patient-auth-password-toggle:focus {
@@ -147,7 +147,7 @@
 }
 
 .patient-auth-forgot-link:hover {
-  color: #15725A;
+  color: var(--color-success);
   text-decoration: underline;
 }
 
@@ -189,7 +189,7 @@
   justify-content: center;
   gap: 12px;
   margin: 24px 0;
-  color: #718096;
+  color: var(--color-text-muted);
   font-size: 14px;
   position: relative;
 }
@@ -199,7 +199,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background-color: #E2E8F0;
+  background-color: var(--color-border);
 }
 
 /* OAuth Grid */
@@ -214,13 +214,13 @@
   margin: 12px 4px 0;
   font-size: 12px;
   line-height: 1.4;
-  color: #718096;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
 .patient-auth-oauth-btn {
   padding: 12px;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   background: white;
   min-height: 48px;
@@ -232,13 +232,13 @@
   transition: all 0.2s ease;
   font-size: 14px;
   font-weight: 500;
-  color: #4A5568;
+  color: var(--color-text-muted);
   font-family: inherit;
 }
 
 .patient-auth-oauth-btn:hover {
-  border-color: #CBD5E0;
-  background: #F7FAFC;
+  border-color: var(--color-border-strong);
+  background: var(--color-bg);
   transform: translateY(-1px);
 }
 
@@ -255,7 +255,7 @@
   margin-top: 24px;
   text-align: center;
   font-size: 14px;
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 .patient-auth-link {
@@ -266,7 +266,7 @@
 }
 
 .patient-auth-link:hover {
-  color: #15725A;
+  color: var(--color-success);
   text-decoration: underline;
 }
 
@@ -274,7 +274,7 @@
 .patient-auth-error {
   padding: 12px;
   background-color: #FED7D7;
-  color: #C53030;
+  color: var(--color-danger-hover);
   border-radius: 12px;
   font-size: 14px;
   text-align: center;

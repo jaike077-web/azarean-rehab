@@ -20,7 +20,7 @@
 
 .page-header h1 {
   font-size: clamp(20px, 4vw, 24px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 8px 0;
   display: flex;
   align-items: center;
@@ -29,7 +29,7 @@
 }
 
 .page-header h1 svg {
-  color: #667eea;
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 
@@ -47,9 +47,9 @@
 
 .step {
   padding: clamp(8px, 1.5vw, 10px) clamp(12px, 3vw, 20px);
-  background: #edf2f7;
+  background: var(--color-border);
   border-radius: 8px;
-  color: #718096;
+  color: var(--color-text-muted);
   font-weight: 600;
   transition: all 0.2s;
   font-size: clamp(12px, 2vw, 14px);
@@ -58,7 +58,7 @@
 }
 
 .step.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
 }
 
@@ -76,7 +76,7 @@
   border: 2px solid #feb2b2;
   border-radius: 12px;
   padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 18px);
-  color: #c53030;
+  color: var(--color-danger-hover);
   margin-bottom: clamp(16px, 3vw, 20px);
   font-weight: 500;
   font-size: clamp(13px, 2vw, 14px);
@@ -96,7 +96,7 @@
 
 .form-section h2 {
   font-size: clamp(18px, 3vw, 20px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 16px) 0;
   display: flex;
   align-items: center;
@@ -119,7 +119,7 @@
 .form-field label {
   display: block;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text);
   margin-bottom: clamp(6px, 1vw, 8px);
   font-size: clamp(13px, 2vw, 14px);
 }
@@ -129,7 +129,7 @@
 .form-field textarea {
   width: 100%;
   padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
   transition: all 0.2s;
@@ -141,7 +141,7 @@
 .form-field select:focus,
 .form-field textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -165,7 +165,7 @@
   left: 0;
   right: 0;
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   margin-top: 4px;
   max-height: min(300px, 40vh);
@@ -197,7 +197,7 @@
   gap: clamp(12px, 2vw, 16px);
   padding: clamp(12px, 2vw, 16px);
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -205,13 +205,13 @@
 }
 
 .patient-item:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
 .patient-item.selected {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   background: #eef2ff;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
@@ -221,7 +221,7 @@
   width: clamp(44px, 8vw, 52px);
   height: clamp(44px, 8vw, 52px);
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -242,7 +242,7 @@
 
 .patient-details strong {
   font-size: clamp(14px, 2vw, 16px);
-  color: #1a202c;
+  color: var(--color-text);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -251,7 +251,7 @@
 
 .patient-details span {
   font-size: clamp(12px, 1.5vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 /* ГАЛОЧКА ВЫБОРА */
@@ -266,12 +266,12 @@
 /* СЧЕТЧИК РЕЗУЛЬТАТОВ */
 .results-count {
   font-size: clamp(13px, 2vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: clamp(10px, 2vw, 12px) 0 0 0;
 }
 
 .results-count strong {
-  color: #667eea;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
@@ -285,7 +285,7 @@
   width: 100%;
   padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 16px);
   padding-right: 40px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   font-size: clamp(14px, 2vw, 15px);
   transition: all 0.2s;
@@ -294,7 +294,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -303,7 +303,7 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  background: #e2e8f0;
+  background: var(--color-border);
   border: none;
   border-radius: 50%;
   width: 24px;
@@ -314,11 +314,11 @@
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
-  color: #4a5568;
+  color: var(--color-text-muted);
 }
 
 .clear-search:hover {
-  background: #cbd5e0;
+  background: var(--color-border-strong);
 }
 
 /* STEP CONTENT */
@@ -331,7 +331,7 @@
 
 .step-content h2 {
   font-size: clamp(18px, 3vw, 22px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 clamp(16px, 3vw, 20px) 0;
   font-weight: 700;
 }
@@ -346,7 +346,7 @@
 }
 
 .search-result-item:hover {
-  background: #f7fafc;
+  background: var(--color-bg);
 }
 
 /* =====================================================
@@ -369,7 +369,7 @@
   gap: clamp(8px, 2vw, 12px);
   padding: clamp(10px, 2vw, 14px);
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   transition: all 0.2s;
   user-select: none;
@@ -379,7 +379,7 @@
 }
 
 .selected-exercise:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
@@ -391,7 +391,7 @@
 .drag-handle {
   cursor: grab;
   font-size: clamp(16px, 3vw, 18px);
-  color: #cbd5e0;
+  color: var(--color-border-strong);
   user-select: none;
   padding: clamp(4px, 1vw, 6px);
   transition: color 0.2s;
@@ -400,7 +400,7 @@
 }
 
 .drag-handle:hover {
-  color: #667eea;
+  color: var(--color-primary);
 }
 
 .drag-handle:active {
@@ -414,7 +414,7 @@
 
 .exercise-info strong {
   font-size: clamp(13px, 2vw, 15px);
-  color: #1a202c;
+  color: var(--color-text);
   font-weight: 600;
   display: block;
   margin-bottom: 2px;
@@ -423,7 +423,7 @@
 
 .exercise-meta {
   font-size: clamp(11px, 1.5vw, 12px);
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 /* =====================================================
@@ -440,24 +440,24 @@
 
 .create-complex-page .exercise-params input {
   padding: clamp(8px, 1.5vw, 10px) clamp(6px, 1.5vw, 8px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(12px, 2vw, 14px);
   transition: all 0.2s;
   width: 100%;
   box-sizing: border-box;
-  background: #f7fafc;
+  background: var(--color-bg);
   text-align: center;
 }
 
 .create-complex-page .exercise-params input::placeholder {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
   font-size: clamp(11px, 1.5vw, 12px);
 }
 
 .create-complex-page .exercise-params input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   background: white;
 }
@@ -477,7 +477,7 @@
   background: #fee;
   border: 2px solid #fed7d7;
   border-radius: 8px;
-  color: #e53e3e;
+  color: var(--color-danger);
   font-size: clamp(14px, 2vw, 16px);
   font-weight: bold;
   cursor: pointer;
@@ -521,7 +521,7 @@
 
 .exercise-card-small {
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: clamp(10px, 2vw, 14px);
   transition: all 0.2s;
@@ -532,21 +532,21 @@
 }
 
 .exercise-card-small:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
 .exercise-card-small h4 {
   font-size: clamp(13px, 2vw, 15px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0;
   font-weight: 600;
 }
 
 .exercise-card-small p {
   font-size: clamp(12px, 1.5vw, 13px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin: 0;
   line-height: 1.4;
   overflow: hidden;
@@ -563,11 +563,11 @@
 }
 
 .tag {
-  background: #edf2f7;
+  background: var(--color-border);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: clamp(10px, 1.5vw, 11px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -589,14 +589,14 @@
 }
 
 .btn-add:hover {
-  background: #38a169;
+  background: var(--color-success);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
 }
 
 .btn-add:disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
+  background: var(--color-border);
+  color: var(--color-text-subtle);
   cursor: not-allowed;
   transform: none;
 }
@@ -630,17 +630,17 @@
 }
 
 .btn-back {
-  background: #edf2f7;
-  color: #4a5568;
+  background: var(--color-border);
+  color: var(--color-text-muted);
 }
 
 .btn-back:hover {
-  background: #e2e8f0;
+  background: var(--color-border);
   transform: translateY(-2px);
 }
 
 .btn-next {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
 }
 
@@ -650,8 +650,8 @@
 }
 
 .btn-next:disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
+  background: var(--color-border);
+  color: var(--color-text-subtle);
   cursor: not-allowed;
   transform: none;
 }
@@ -687,22 +687,22 @@
 
 .success-screen h2 {
   font-size: clamp(22px, 4vw, 28px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 clamp(10px, 2vw, 12px) 0;
 }
 
 .success-screen p {
   font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: 0 0 clamp(24px, 4vw, 32px) 0;
 }
 
 .complex-link {
-  background: #edf2f7;
+  background: var(--color-border);
   padding: clamp(10px, 2vw, 12px) clamp(14px, 2vw, 16px);
   border-radius: 8px;
   font-size: clamp(12px, 2vw, 14px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin: clamp(16px, 3vw, 20px) 0;
   word-break: break-all;
 }
@@ -766,7 +766,7 @@
   
   .exercises-section,
   .selected-section {
-    background: #f8fafc;
+    background: var(--color-bg);
     border-radius: 12px;
     padding: clamp(16px, 3vw, 20px);
     max-height: 70vh;
@@ -782,7 +782,7 @@
     margin: 0 0 clamp(12px, 2vw, 16px) 0;
     position: sticky;
     top: 0;
-    background: #f8fafc;
+    background: var(--color-bg);
     padding-bottom: 8px;
     z-index: 1;
   }
@@ -797,14 +797,14 @@
   .search-filters input {
     flex: 1;
     padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: clamp(13px, 2vw, 14px);
   }
   
   .search-filters select {
     padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: clamp(13px, 2vw, 14px);
     background: white;
@@ -814,7 +814,7 @@
   .search-filters input:focus,
   .search-filters select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--color-primary);
   }
   
   /* Список доступных упражнений */
@@ -831,13 +831,13 @@
     gap: clamp(10px, 2vw, 12px);
     padding: clamp(10px, 2vw, 12px);
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--color-border);
     border-radius: 10px;
     transition: all 0.2s;
   }
   
   .exercise-item:hover {
-    border-color: #667eea;
+    border-color: var(--color-primary);
     box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
   }
   
@@ -854,19 +854,19 @@
   .exercise-item .exercise-info strong {
     display: block;
     font-size: clamp(13px, 2vw, 14px);
-    color: #1a202c;
+    color: var(--color-text);
     margin-bottom: 2px;
   }
   
   .exercise-item .exercise-info .exercise-meta {
     font-size: clamp(11px, 1.5vw, 12px);
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   /* Кнопка "Добавлено" */
   .btn-added {
     padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
-    background: #e2e8f0;
+    background: var(--color-border);
     color: #48bb78;
     border: 2px solid #c6f6d5;
     border-radius: 8px;
@@ -888,7 +888,7 @@
   .empty-complex {
     text-align: center;
     padding: clamp(30px, 6vw, 40px);
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   .empty-complex p {
@@ -954,9 +954,9 @@
   
   .btn-template {
     padding: clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 16px);
-    background: #edf2f7;
-    color: #4a5568;
-    border: 2px solid #e2e8f0;
+    background: var(--color-border);
+    color: var(--color-text-muted);
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: clamp(12px, 2vw, 14px);
     font-weight: 600;
@@ -968,14 +968,14 @@
   }
   
   .btn-template:hover {
-    background: #e2e8f0;
-    border-color: #cbd5e0;
+    background: var(--color-border);
+    border-color: var(--color-border-strong);
   }
   
   .btn-save-template {
     width: 100%;
     padding: clamp(12px, 2vw, 14px);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 10px;
@@ -1027,7 +1027,7 @@
     justify-content: space-between;
     align-items: center;
     padding: clamp(16px, 3vw, 20px);
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-border);
   }
   
   .modal-header h3 {
@@ -1036,7 +1036,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #1a202c;
+    color: var(--color-text);
   }
   
   .modal-close {
@@ -1044,14 +1044,14 @@
     border: none;
     padding: 8px;
     cursor: pointer;
-    color: #718096;
+    color: var(--color-text-muted);
     border-radius: 8px;
     transition: all 0.2s;
   }
   
   .modal-close:hover {
-    background: #f7fafc;
-    color: #1a202c;
+    background: var(--color-bg);
+    color: var(--color-text);
   }
   
   .modal-body {
@@ -1065,7 +1065,7 @@
     gap: 12px;
     justify-content: flex-end;
     padding: clamp(16px, 3vw, 20px);
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--color-border);
   }
   
   /* Список шаблонов */
@@ -1080,15 +1080,15 @@
     align-items: center;
     justify-content: space-between;
     padding: clamp(12px, 2vw, 16px);
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
+    background: var(--color-bg);
+    border: 2px solid var(--color-border);
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
   }
   
   .template-item:hover {
-    border-color: #667eea;
+    border-color: var(--color-primary);
     background: #eef2ff;
   }
   
@@ -1100,23 +1100,23 @@
   .template-info strong {
     display: block;
     font-size: clamp(14px, 2vw, 15px);
-    color: #1a202c;
+    color: var(--color-text);
     margin-bottom: 4px;
   }
   
   .template-info p {
     font-size: clamp(12px, 1.5vw, 13px);
-    color: #4a5568;
+    color: var(--color-text-muted);
     margin: 0 0 4px 0;
   }
   
   .template-meta {
     font-size: clamp(11px, 1.5vw, 12px);
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   .template-arrow {
-    color: #a0aec0;
+    color: var(--color-text-subtle);
     flex-shrink: 0;
   }
 
@@ -1129,7 +1129,7 @@
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #a0aec0;
+    color: var(--color-text-subtle);
   }
 
   .template-selector .search-input {
@@ -1146,8 +1146,8 @@
     justify-content: space-between;
     gap: 12px;
     padding: clamp(12px, 2vw, 16px);
-    background: #f7fafc;
-    border: 2px solid #e2e8f0;
+    background: var(--color-bg);
+    border: 2px solid var(--color-border);
     border-radius: 10px;
   }
 
@@ -1166,7 +1166,7 @@
 
   .template-selector .empty-state {
     text-align: center;
-    color: #718096;
+    color: var(--color-text-muted);
     font-size: 14px;
     padding: 12px 0;
   }
@@ -1174,13 +1174,13 @@
   .empty-templates {
     text-align: center;
     padding: clamp(30px, 5vw, 40px) 20px;
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   .empty-templates p {
     margin: 0 0 8px 0;
     font-size: clamp(14px, 2vw, 16px);
-    color: #4a5568;
+    color: var(--color-text-muted);
   }
   
   .empty-templates span {
@@ -1189,7 +1189,7 @@
   
   /* Форма сохранения шаблона */
   .template-summary {
-    background: #f7fafc;
+    background: var(--color-bg);
     padding: 12px 16px;
     border-radius: 8px;
     margin-top: 16px;
@@ -1198,7 +1198,7 @@
   .template-summary p {
     margin: 0;
     font-size: clamp(13px, 2vw, 14px);
-    color: #4a5568;
+    color: var(--color-text-muted);
   }
   
   .template-summary p + p {
@@ -1206,7 +1206,7 @@
   }
 
   .template-summary strong {
-    color: #667eea;
+    color: var(--color-primary);
   }
 
 /* =====================================================

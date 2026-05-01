@@ -12,7 +12,7 @@
   gap: 8px;
   font-size: clamp(18px, 2.5vw, 24px);
   font-weight: 600;
-  color: #1a202c;
+  color: var(--color-text);
   margin-bottom: clamp(16px, 2vw, 24px);
 }
 
@@ -23,7 +23,7 @@
 }
 
 .admin-stat-card {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(12px, 1.5vw, 20px);
   display: flex;
@@ -51,19 +51,19 @@
 .admin-stat-value {
   font-size: clamp(20px, 2.5vw, 28px);
   font-weight: 700;
-  color: #1a202c;
+  color: var(--color-text);
   line-height: 1;
 }
 
 .admin-stat-label {
   font-size: clamp(12px, 1.2vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
 .admin-stat-sub {
   font-size: 11px;
-  color: #a0aec0;
+  color: var(--color-text-subtle);
   margin-top: 1px;
 }
 
@@ -76,14 +76,14 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 .skeleton-text {
   width: 80px;
   height: 12px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--color-border);
   margin-top: 8px;
 }
 
@@ -91,7 +91,7 @@
   width: 50px;
   height: 20px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: var(--color-border);
   margin-top: 4px;
 }
 
@@ -104,10 +104,10 @@
 .admin-refresh-btn {
   margin-top: clamp(16px, 2vw, 24px);
   padding: clamp(10px, 1.5vw, 12px) clamp(16px, 2vw, 24px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   border: none;
   border-radius: 8px;
-  color: #fff;
+  color: var(--color-surface);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

@@ -1,5 +1,5 @@
 .exercise-card-skeleton {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   padding: clamp(14px, 3vw, 18px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);

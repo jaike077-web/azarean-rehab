@@ -9,11 +9,11 @@
   gap: clamp(6px, 1.5vw, 10px);
   padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px);
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 10px;
   font-size: clamp(14px, 2vw, 16px);
   font-weight: 600;
-  color: #4a5568;
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: clamp(16px, 3vw, 24px);
@@ -22,8 +22,8 @@
 }
 
 .back-button:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
+  background: var(--color-bg);
+  border-color: var(--color-border-strong);
   transform: translateX(-4px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -97,7 +97,7 @@
    ===================================================== */
 
 .back-button:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

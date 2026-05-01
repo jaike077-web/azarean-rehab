@@ -10,7 +10,7 @@
 .content-tabs {
   display: flex;
   gap: 4px;
-  background: #f7fafc;
+  background: var(--color-bg);
   border-radius: 10px;
   padding: 4px;
   margin-bottom: 16px;
@@ -22,7 +22,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #718096;
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -33,13 +33,13 @@
 }
 
 .content-tab.active {
-  background: #fff;
-  color: #1a202c;
+  background: var(--color-surface);
+  color: var(--color-text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .content-tab:hover:not(.active) {
-  color: #1a202c;
+  color: var(--color-text);
 }
 
 .content-header {
@@ -51,7 +51,7 @@
 
 .content-header span {
   font-size: 13px;
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 /* Wide modal */

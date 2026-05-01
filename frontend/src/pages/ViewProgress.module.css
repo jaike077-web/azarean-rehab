@@ -9,12 +9,12 @@
 }
 
 .loading {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 24px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-size: clamp(14px, 2vw, 16px);
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-bottom: clamp(16px, 2vw, 24px);
 }
 
@@ -38,7 +38,7 @@
 }
 
 .progress-header {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(20px, 3vw, 32px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -89,7 +89,7 @@
   align-items: center;
   gap: 8px;
   font-size: clamp(13px, 2vw, 15px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .progress-stats {
@@ -99,7 +99,7 @@
 }
 
 .stat-card {
-  background: #f8fafc;
+  background: var(--color-bg);
   border-radius: 10px;
   padding: clamp(12px, 2vw, 16px);
   text-align: center;
@@ -114,7 +114,7 @@
 
 .stat-label {
   font-size: clamp(12px, 2vw, 14px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .sessions-container {
@@ -131,31 +131,31 @@
 }
 
 .session-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   padding: clamp(16px, 3vw, 20px) clamp(20px, 4vw, 24px);
 }
 
 .session-progress {
   padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
-  background: #f7fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .progress-text {
   font-size: clamp(13px, 2.5vw, 14px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
 .progress-text strong {
-  color: #2d3748;
+  color: var(--color-text);
   font-weight: 600;
 }
 
 .progress-bar {
   height: 12px;
-  background: #e2e8f0;
+  background: var(--color-border);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
@@ -163,7 +163,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success) 100%);
   border-radius: 999px;
   transition: width 0.5s ease;
   position: relative;
@@ -231,24 +231,24 @@
 }
 
 .session-table th {
-  background: #f7fafc;
+  background: var(--color-bg);
   padding: 12px;
   text-align: left;
   font-size: clamp(12px, 2.5vw, 13px);
   font-weight: 600;
-  color: #4a5568;
-  border-bottom: 2px solid #e2e8f0;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
 }
 
 .session-table td {
   padding: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
   font-size: clamp(13px, 2.5vw, 14px);
 }
 
 .exercise-name {
   font-weight: 500;
-  color: #2d3748;
+  color: var(--color-text);
 }
 
 .status-badge {
@@ -273,7 +273,7 @@
 
 .status-badge.not-attempted {
   background: #f3f4f6;
-  color: #6b7280;
+  color: var(--color-text-muted);
   border: 1px dashed #d1d5db;
 }
 
@@ -283,7 +283,7 @@
 }
 
 .skipped-exercise .exercise-name {
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 .pain-badge {
@@ -295,7 +295,7 @@
 }
 
 .pain-badge.pain-low {
-  background: #10b981;
+  background: var(--color-success);
   color: white;
 }
 
@@ -305,7 +305,7 @@
 }
 
 .pain-badge.pain-high {
-  background: #ef4444;
+  background: var(--color-danger);
   color: white;
 }
 
@@ -319,18 +319,18 @@
   justify-content: center;
   padding: 4px 8px;
   border-radius: 8px;
-  background: #edf2f7;
-  color: #2d3748;
+  background: var(--color-border);
+  color: var(--color-text);
   font-weight: 600;
   font-size: 13px;
 }
 
 .session-comment {
   padding: clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 24px);
-  background: #f7fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
   font-size: clamp(13px, 2.5vw, 14px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -341,7 +341,7 @@
 }
 
 .no-data {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
 }
 
 .exercise-name,
@@ -362,7 +362,7 @@
 }
 
 .exercise-progress-card {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 24px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -386,7 +386,7 @@
 .exercise-category {
   margin: 0;
   font-size: clamp(12px, 2vw, 14px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .completion-info {
@@ -417,19 +417,19 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-surface);
 }
 
 .pain-indicator.low {
-  background: #22c55e;
+  background: var(--color-success);
 }
 
 .pain-indicator.medium {
-  background: #f59e0b;
+  background: var(--color-warning);
 }
 
 .pain-indicator.high {
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .difficulty-history {
@@ -449,15 +449,15 @@
 }
 
 .comment-item {
-  background: #f8fafc;
+  background: var(--color-bg);
   border-radius: 8px;
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--color-info);
   padding: 12px;
 }
 
 .comment-date {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--color-text-muted);
   margin-bottom: 4px;
 }
 
@@ -469,7 +469,7 @@
 .empty-state {
   text-align: center;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -477,13 +477,13 @@
 .empty-state h3 {
   margin: 0 0 8px;
   font-size: clamp(18px, 3vw, 22px);
-  color: #374151;
+  color: var(--color-text);
 }
 
 .empty-state p {
   margin: 0;
   font-size: clamp(14px, 2vw, 16px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 /* Mobile responsive */

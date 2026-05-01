@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   padding: clamp(16px, 3vw, 20px);
 }
 
@@ -30,13 +30,13 @@
 .login-header h1 {
   font-size: clamp(26px, 5vw, 36px);
   margin: 0 0 clamp(8px, 2vw, 12px) 0;
-  color: #1a202c;
+  color: var(--color-text);
   font-weight: 700;
 }
 
 .login-header p {
   font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -55,12 +55,12 @@
 .form-group label {
   font-size: clamp(13px, 2vw, 15px);
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text);
 }
 
 .form-group input {
   padding: clamp(12px, 2vw, 16px);
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 10px;
   font-size: clamp(14px, 2vw, 16px);
   transition: all 0.2s;
@@ -71,17 +71,17 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
 .form-group input::placeholder {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
 }
 
 .btn-primary {
   padding: clamp(14px, 3vw, 18px) clamp(20px, 4vw, 28px);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -114,7 +114,7 @@
 .error-message {
   padding: clamp(12px, 2vw, 16px);
   background: #fed7d7;
-  color: #c53030;
+  color: var(--color-danger-hover);
   border-radius: 10px;
   font-size: clamp(13px, 2vw, 14px);
   text-align: center;
@@ -129,19 +129,19 @@
 
 .login-footer p {
   font-size: clamp(13px, 2vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
 .login-footer a {
-  color: #667eea;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s;
 }
 
 .login-footer a:hover {
-  color: #5568d3;
+  color: var(--color-primary-hover);
   text-decoration: underline;
 }
 
@@ -171,7 +171,7 @@
 }
 
 .form-group input:focus-visible {
-  outline: 2px solid #667eea;
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 

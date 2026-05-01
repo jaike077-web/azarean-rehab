@@ -3,7 +3,7 @@
 
 /* Required field asterisk */
 .patient-auth-required {
-  color: #E53E3E;
+  color: var(--color-danger);
   font-weight: 500;
 }
 
@@ -11,7 +11,7 @@
 .patient-auth-hint {
   margin: 6px 4px 0;
   font-size: 12px;
-  color: #718096;
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
@@ -31,7 +31,7 @@
 .patient-auth-password-strength {
   height: 4px;
   border-radius: 2px;
-  background-color: #E2E8F0;
+  background-color: var(--color-border);
   margin-top: 4px;
   overflow: hidden;
 }
@@ -44,22 +44,22 @@
 
 .patient-auth-password-strength-bar.weak {
   width: 33%;
-  background-color: #E53E3E;
+  background-color: var(--color-danger);
 }
 
 .patient-auth-password-strength-bar.medium {
   width: 66%;
-  background-color: #D69E2E;
+  background-color: var(--color-warning);
 }
 
 .patient-auth-password-strength-bar.strong {
   width: 100%;
-  background-color: #38A169;
+  background-color: var(--color-success);
 }
 
 .patient-auth-password-hint {
   font-size: 12px;
-  color: #718096;
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
@@ -90,9 +90,9 @@
 .patient-auth-consent-checkbox {
   width: 20px;
   height: 20px;
-  border: 2px solid #CBD5E0;
+  border: 2px solid var(--color-border-strong);
   border-radius: 4px;
-  background-color: #FFFFFF;
+  background-color: var(--color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,7 +103,7 @@
 .patient-auth-consent-checkbox-input:checked ~ .patient-auth-consent-checkbox {
   background: linear-gradient(135deg, #1A8A6A 0%, #2B7CB8 100%);
   border-color: transparent;
-  color: #FFFFFF;
+  color: var(--color-surface);
 }
 
 .patient-auth-consent-checkbox-input:disabled ~ .patient-auth-consent-checkbox {
@@ -113,7 +113,7 @@
 
 .patient-auth-consent-label {
   font-size: 13px;
-  color: #4A5568;
+  color: var(--color-text-muted);
   line-height: 1.4;
   cursor: pointer;
   user-select: none;

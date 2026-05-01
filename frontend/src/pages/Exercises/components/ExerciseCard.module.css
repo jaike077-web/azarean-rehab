@@ -28,7 +28,7 @@
   position: relative;
   width: 100%;
   padding-bottom: 56.25%; /* 16:9 */
-  background: #f7fafc;
+  background: var(--color-bg);
   overflow: hidden;
 }
 
@@ -160,7 +160,7 @@
 
 .exercises-page .btn-view {
   background: rgba(255, 255, 255, 0.95);
-  color: #374151;
+  color: var(--color-text);
 }
 
 .exercises-page .btn-view:hover {
@@ -186,7 +186,7 @@
 }
 
 .exercises-page .btn-card-action.btn-delete:hover {
-  background: #ef4444 !important;
+  background: var(--color-danger) !important;
   transform: scale(1.05);
 }
 
@@ -205,7 +205,7 @@
 .exercises-page .card-title {
   font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0;
   line-height: 1.4;
   display: -webkit-box;
@@ -223,7 +223,7 @@
   flex-wrap: wrap;
   gap: clamp(10px, 2vw, 14px);
   font-size: clamp(12px, 2vw, 13px);
-  color: #4a5568;
+  color: var(--color-text-muted);
 }
 
 .exercises-page .meta-item {
@@ -252,10 +252,10 @@
   align-items: center;
   gap: clamp(5px, 1vw, 7px);
   padding: clamp(5px, 1vw, 7px) clamp(10px, 2vw, 14px);
-  background: #f7fafc;
+  background: var(--color-bg);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 13px);
-  color: #2d3748;
+  color: var(--color-text);
   font-weight: 500;
   align-self: flex-start;
 }
@@ -302,9 +302,9 @@
 }
 
 .exercises-page .muscle-tag.more {
-  background: #edf2f7;
-  color: #4a5568;
-  border: 1px solid #cbd5e0;
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
 }
 
 /* =====================================================
@@ -328,19 +328,19 @@
 
 .exercises-page .phase-acute {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--color-danger-hover);
   border: 1px solid #fecaca;
 }
 
 .exercises-page .phase-subacute {
   background: #fffbeb;
-  color: #d97706;
+  color: var(--color-warning);
   border: 1px solid #fde68a;
 }
 
 .exercises-page .phase-chronic {
   background: #f0fdf4;
-  color: #16a34a;
+  color: var(--color-success);
   border: 1px solid #bbf7d0;
 }
 
@@ -348,9 +348,9 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  background: #edf2f7;
-  color: #4a5568;
-  border: 1px solid #cbd5e0;
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
@@ -362,23 +362,23 @@
 
 .exercises-page .card-footer {
   padding: clamp(10px, 2vw, 14px) clamp(14px, 3vw, 18px);
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f7fafc;
+  background: var(--color-bg);
   gap: clamp(8px, 2vw, 12px);
 }
 
 .exercises-page .card-date {
   font-size: clamp(11px, 2vw, 12px);
-  color: #a0aec0;
+  color: var(--color-text-subtle);
 }
 
 .exercises-page .unilateral-badge {
   display: inline-flex;
   align-items: center;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .exercises-page .unilateral-badge svg {

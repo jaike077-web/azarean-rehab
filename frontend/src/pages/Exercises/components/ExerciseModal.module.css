@@ -46,7 +46,7 @@
   .section-title {
     font-size: clamp(16px, 3vw, 20px);
     font-weight: 700;
-    color: #1a202c;
+    color: var(--color-text);
     margin: 0 0 clamp(6px, 1.5vw, 10px) 0;
     display: flex;
     align-items: center;
@@ -55,7 +55,7 @@
   
   .section-description {
     font-size: clamp(13px, 2vw, 14px);
-    color: #718096;
+    color: var(--color-text-muted);
     margin: 0 0 clamp(16px, 3vw, 24px) 0;
     line-height: 1.5;
   }
@@ -63,7 +63,7 @@
   .optional {
     font-size: clamp(13px, 2vw, 14px);
     font-weight: 400;
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   /* =====================================================
@@ -71,7 +71,7 @@
      ===================================================== */
   
   .required {
-    color: #e53e3e;
+    color: var(--color-danger);
     font-weight: 700;
     font-size: clamp(14px, 3vw, 16px);
   }
@@ -96,7 +96,7 @@
     display: block;
     font-size: clamp(13px, 2vw, 14px);
     font-weight: 600;
-    color: #2d3748;
+    color: var(--color-text);
     margin-bottom: clamp(6px, 1.5vw, 10px);
   }
   
@@ -125,7 +125,7 @@
   
   .form-group input.error,
   .form-group textarea.error {
-    border-color: #e53e3e;
+    border-color: var(--color-danger);
   }
   
   .form-group textarea {
@@ -140,7 +140,7 @@
   .error-message {
     display: block;
     font-size: clamp(12px, 2vw, 13px);
-    color: #e53e3e;
+    color: var(--color-danger);
     margin-top: clamp(5px, 1vw, 7px);
     font-weight: 500;
   }
@@ -149,7 +149,7 @@
     width: 100%;
     padding: 10px 16px;
     background: #fef2f2;
-    color: #dc2626;
+    color: var(--color-danger-hover);
     border-radius: 8px;
     font-size: 14px;
     margin-bottom: 12px;
@@ -178,7 +178,7 @@
     width: 100%;
     height: clamp(6px, 1.5vw, 8px);
     border-radius: 4px;
-    background: #e2e8f0;
+    background: var(--color-border);
     outline: none;
     -webkit-appearance: none;
   }
@@ -209,7 +209,7 @@
     justify-content: space-between;
     margin-top: clamp(6px, 1.5vw, 10px);
     font-size: clamp(11px, 2vw, 12px);
-    color: #718096;
+    color: var(--color-text-muted);
   }
   
   /* =====================================================
@@ -229,19 +229,19 @@
     gap: clamp(6px, 1.5vw, 10px);
     padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 16px);
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
     font-weight: 400;
     font-size: clamp(13px, 2vw, 14px);
-    color: #2d3748;
+    color: var(--color-text);
     min-height: 44px;
   }
   
   .checkbox-label:hover {
-    border-color: #cbd5e0;
-    background: #f7fafc;
+    border-color: var(--color-border-strong);
+    background: var(--color-bg);
   }
   
   .checkbox-label input[type="checkbox"] {
@@ -320,11 +320,11 @@
     width: 100%;
     padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 22px);
     background: white;
-    border: 2px solid #e2e8f0;
+    border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: clamp(14px, 2vw, 15px);
     font-weight: 600;
-    color: #2d3748;
+    color: var(--color-text);
     cursor: pointer;
     transition: all 0.2s;
     text-align: left;
@@ -335,8 +335,8 @@
   }
   
   .toggle-advanced-btn:hover {
-    border-color: #cbd5e0;
-    background: #f7fafc;
+    border-color: var(--color-border-strong);
+    background: var(--color-bg);
   }
   
   .advanced-fields {
@@ -373,7 +373,7 @@
     flex: 1;
     padding: 12px 24px;
     background: white;
-    color: #374151;
+    color: var(--color-text);
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font-size: 15px;
@@ -387,7 +387,7 @@
   }
   
   .btn-secondary:hover {
-    background: #f7fafc;
+    background: var(--color-bg);
     border-color: #6366f1;
     color: #6366f1;
   }
@@ -499,7 +499,7 @@
     height: 36px;
     border: none;
     background: #f3f4f6;
-    color: #374151;
+    color: var(--color-text);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
@@ -540,16 +540,16 @@
   }
   
   .modal-body::-webkit-scrollbar-track {
-    background: #f7fafc;
+    background: var(--color-bg);
   }
   
   .modal-body::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
+    background: var(--color-border-strong);
     border-radius: 4px;
   }
   
   .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
+    background: var(--color-text-subtle);
   }
   
   /* =====================================================
@@ -558,7 +558,7 @@
   
   .help-text {
     font-size: clamp(12px, 2vw, 13px);
-    color: #718096;
+    color: var(--color-text-muted);
     margin-top: clamp(5px, 1vw, 7px);
     line-height: 1.5;
   }

@@ -22,7 +22,7 @@
 }
 
 .patient-header {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(18px, 3vw, 28px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -55,7 +55,7 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: clamp(13px, 2vw, 15px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .patient-meta span {
@@ -71,11 +71,11 @@
 }
 
 .patient-meta-date {
-  color: #94a3b8;
+  color: var(--color-text-subtle);
 }
 
 .overall-stats {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(18px, 3vw, 28px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -100,7 +100,7 @@
 }
 
 .stat-card {
-  background: #f8fafc;
+  background: var(--color-bg);
   border-radius: 10px;
   padding: clamp(12px, 2vw, 18px);
   display: flex;
@@ -121,7 +121,7 @@
 
 .stat-icon.pain {
   background: #fee2e2;
-  color: #dc2626;
+  color: var(--color-danger-hover);
 }
 
 .stat-content {
@@ -138,7 +138,7 @@
 
 .stat-label {
   font-size: clamp(12px, 2vw, 14px);
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .stats-subgrid {
@@ -148,7 +148,7 @@
 }
 
 .stat-pill {
-  background: #f1f5f9;
+  background: var(--color-surface-2);
   border-radius: 10px;
   padding: clamp(10px, 2vw, 14px);
   display: flex;
@@ -176,7 +176,7 @@
 }
 
 .complex-card {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 20px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -262,7 +262,7 @@
 }
 
 .metric-label {
-  color: #64748b;
+  color: var(--color-text-muted);
 }
 
 .metric-value {
@@ -292,7 +292,7 @@
   padding: 2px 8px;
   border-radius: 8px;
   font-size: 12px;
-  background: #e2e8f0;
+  background: var(--color-border);
   color: #475569;
 }
 
@@ -341,12 +341,12 @@
 }
 
 .empty-state {
-  background: #ffffff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(20px, 4vw, 28px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-muted);
 }
 
 .empty-state h3 {

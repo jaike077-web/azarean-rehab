@@ -7,8 +7,8 @@
 }
 
 .admin-title-badge {
-  background: #edf2f7;
-  color: #718096;
+  background: var(--color-border);
+  color: var(--color-text-muted);
   padding: 2px 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -27,12 +27,12 @@
 .admin-filters select,
 .admin-filters input {
   padding: clamp(8px, 1vw, 10px) 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 13px;
-  color: #1a202c;
+  color: var(--color-text);
   outline: none;
-  background: #fff;
+  background: var(--color-surface);
   min-width: 140px;
   min-height: 44px;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -40,7 +40,7 @@
 
 .admin-filters select:focus,
 .admin-filters input:focus {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -53,24 +53,24 @@
   font-weight: 600;
 }
 
-.action-create { background: #dcfce7; color: #16a34a; }
+.action-create { background: #dcfce7; color: var(--color-success); }
 .action-update { background: #dbeafe; color: #2563eb; }
-.action-delete { background: #fef2f2; color: #dc2626; }
+.action-delete { background: #fef2f2; color: var(--color-danger-hover); }
 .action-login { background: #ede9fe; color: #7c3aed; }
-.action-logout { background: #f1f5f9; color: #718096; }
-.action-deactivate { background: #fef2f2; color: #dc2626; }
-.action-activate { background: #dcfce7; color: #16a34a; }
-.action-unlock { background: #fef3c7; color: #d97706; }
-.action-read { background: #f0f9ff; color: #0284c7; }
+.action-logout { background: var(--color-surface-2); color: var(--color-text-muted); }
+.action-deactivate { background: #fef2f2; color: var(--color-danger-hover); }
+.action-activate { background: #dcfce7; color: var(--color-success); }
+.action-unlock { background: #fef3c7; color: var(--color-warning); }
+.action-read { background: #f0f9ff; color: var(--color-info); }
 
 .td-id {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
   font-size: 12px;
   font-family: monospace;
 }
 
 .td-ip {
-  color: #a0aec0;
+  color: var(--color-text-subtle);
   font-size: 12px;
   font-family: monospace;
 }
@@ -88,19 +88,19 @@
 .admin-pagination button {
   min-width: 44px;
   min-height: 44px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--color-surface);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #718096;
+  color: var(--color-text-muted);
   transition: all 0.2s;
 }
 
 .admin-pagination button:hover:not(:disabled) {
-  background: #f7fafc;
+  background: var(--color-bg);
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -112,5 +112,5 @@
 
 .admin-pagination span {
   font-size: 13px;
-  color: #718096;
+  color: var(--color-text-muted);
 }

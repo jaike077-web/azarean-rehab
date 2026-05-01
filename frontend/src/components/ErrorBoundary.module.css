@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   padding: 20px;
 }
 
@@ -22,13 +22,13 @@
 }
 
 .error-boundary-content h1 {
-  color: #1a202c;
+  color: var(--color-text);
   font-size: 24px;
   margin-bottom: 12px;
 }
 
 .error-boundary-content p {
-  color: #4a5568;
+  color: var(--color-text-muted);
   font-size: 16px;
   margin-bottom: 24px;
   line-height: 1.5;
@@ -36,8 +36,8 @@
 
 .error-details {
   text-align: left;
-  background: #f7fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 24px;
@@ -45,14 +45,14 @@
 
 .error-details summary {
   cursor: pointer;
-  color: #718096;
+  color: var(--color-text-muted);
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .error-details pre {
   font-size: 12px;
-  color: #e53e3e;
+  color: var(--color-danger);
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -67,7 +67,7 @@
 }
 
 .btn-reload {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -85,8 +85,8 @@
 
 .btn-home {
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
   padding: 12px 24px;
   border-radius: 8px;
   font-size: 16px;
@@ -96,6 +96,6 @@
 }
 
 .btn-home:hover {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }

@@ -57,7 +57,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #dc2626;
+  color: var(--color-danger-hover);
   margin-bottom: 12px;
 }
 
@@ -124,7 +124,7 @@
   
   .exercise-breadcrumb {
     font-size: 13px;
-    color: #6b7280;
+    color: var(--color-text-muted);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -202,7 +202,7 @@
   .exercise-subtitle {
     margin: 6px 0 0;
     font-size: 14px;
-    color: #6b7280;
+    color: var(--color-text-muted);
   }
   
   .pill-row {
@@ -255,7 +255,7 @@
     align-items: center;
     gap: 12px;
     font-size: 13px;
-    color: #374151;
+    color: var(--color-text);
   }
   
   .difficulty-meter {
@@ -341,7 +341,7 @@
   
   .exercise-section {
     margin-top: 18px;
-    background: #ffffff;
+    background: var(--color-surface);
     border-radius: 16px;
     padding: 16px 16px 14px;
     border: 1px solid rgba(209, 213, 219, 0.8);
@@ -398,7 +398,7 @@
   }
   
   .info-label {
-    color: #6b7280;
+    color: var(--color-text-muted);
   }
   
   .info-value {
@@ -440,14 +440,14 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #6b7280;
+    color: var(--color-text-muted);
     margin-bottom: 4px;
   }
   
   .info-block-text {
     font-size: 13px;
     line-height: 1.5;
-    color: #374151;
+    color: var(--color-text);
     margin: 0;
   }
   

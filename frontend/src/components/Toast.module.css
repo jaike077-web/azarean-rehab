@@ -21,7 +21,7 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--color-surface);
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
   border: 1px solid rgba(226, 232, 240, 0.85);
   min-width: min(300px, 100%);
@@ -75,10 +75,10 @@
   border-radius: 0 2px 2px 0;
 }
 
-.toast-success::before { background: #22c55e; }
-.toast-error::before   { background: #ef4444; }
-.toast-warning::before { background: #f59e0b; }
-.toast-info::before    { background: #3b82f6; }
+.toast-success::before { background: var(--color-success); }
+.toast-error::before   { background: var(--color-danger); }
+.toast-warning::before { background: var(--color-warning); }
+.toast-info::before    { background: var(--color-info); }
 
 /* =====================================================
    ИКОНКА
@@ -100,9 +100,9 @@
   height: 20px;
 }
 
-.toast-success .toast-icon { color: #16a34a; background: rgba(34, 197, 94, 0.10); }
-.toast-error   .toast-icon { color: #dc2626; background: rgba(239, 68, 68, 0.10); }
-.toast-warning .toast-icon { color: #d97706; background: rgba(245, 158, 11, 0.10); }
+.toast-success .toast-icon { color: var(--color-success); background: rgba(34, 197, 94, 0.10); }
+.toast-error   .toast-icon { color: var(--color-danger-hover); background: rgba(239, 68, 68, 0.10); }
+.toast-warning .toast-icon { color: var(--color-warning); background: rgba(245, 158, 11, 0.10); }
 .toast-info    .toast-icon { color: #2563eb; background: rgba(59, 130, 246, 0.10); }
 
 /* =====================================================
@@ -141,7 +141,7 @@
 .toast-close {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--color-text-subtle);
   cursor: pointer;
   padding: 0;
   margin: 0;
@@ -186,19 +186,19 @@
 }
 
 .toast-success .toast-progress {
-  background: #22c55e;
+  background: var(--color-success);
 }
 
 .toast-error .toast-progress {
-  background: #ef4444;
+  background: var(--color-danger);
 }
 
 .toast-warning .toast-progress {
-  background: #f59e0b;
+  background: var(--color-warning);
 }
 
 .toast-info .toast-progress {
-  background: #3b82f6;
+  background: var(--color-info);
 }
 
 @keyframes toastProgress {
@@ -232,21 +232,21 @@
 }
 
 .toast-action-btn.primary {
-  background: #667eea;
+  background: var(--color-primary);
   color: white;
 }
 
 .toast-action-btn.primary:hover {
-  background: #5568d3;
+  background: var(--color-primary-hover);
 }
 
 .toast-action-btn.secondary {
-  background: #f1f5f9;
+  background: var(--color-surface-2);
   color: #475569;
 }
 
 .toast-action-btn.secondary:hover {
-  background: #e2e8f0;
+  background: var(--color-border);
 }
 
 /* =====================================================

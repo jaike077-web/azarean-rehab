@@ -6,7 +6,7 @@
 
 .dashboard-container {
   min-height: 100vh;
-  background: #f7fafc;
+  background: var(--color-bg);
   display: flex;
   flex-direction: column;
 }
@@ -17,7 +17,7 @@
 
 .dashboard-header {
   background: white;
-  border-bottom: 2px solid #e2e8f0;
+  border-bottom: 2px solid var(--color-border);
   padding: clamp(12px, 3vw, 16px) clamp(16px, 4vw, 32px);
   display: flex;
   justify-content: space-between;
@@ -39,7 +39,7 @@
 .header-left h1 {
   margin: 0;
   font-size: clamp(18px, 4vw, 24px);
-  color: #1a202c;
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -54,7 +54,7 @@
 
 .user-name {
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text);
   font-size: clamp(14px, 2vw, 16px);
   display: none; /* скрываем на узких экранах */
 }
@@ -68,16 +68,16 @@
 
 .user-role {
   font-size: clamp(11px, 2vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
   padding: 4px clamp(8px, 1.5vw, 12px);
-  background: #edf2f7;
+  background: var(--color-border);
   border-radius: 12px;
   white-space: nowrap;
 }
 
 .btn-logout {
   padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 16px);
-  background: #1a202c;
+  background: var(--color-text);
   color: white;
   border: none;
   border-radius: 6px;
@@ -98,7 +98,7 @@
 
 .nav-divider {
   height: 1px;
-  background: #e2e8f0;
+  background: var(--color-border);
   margin: 8px 16px;
 }
 
@@ -142,7 +142,7 @@
 .burger-icon span {
   display: block;
   height: 3px;
-  background: #1a202c;
+  background: var(--color-text);
   border-radius: 2px;
   transition: all 0.3s;
 }
@@ -215,15 +215,15 @@
   background: transparent;
   text-align: left;
   font-size: clamp(14px, 2vw, 18px);
-  color: #4a5568;
+  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.2s;
   border-left: 3px solid transparent;
 }
 
 .nav-item:hover {
-  background: #f7fafc;
-  color: #2d3748;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .nav-item.active {
@@ -299,7 +299,7 @@
 
 .welcome-section > p {
   font-size: clamp(14px, 2vw, 16px);
-  color: #718096;
+  color: var(--color-text-muted);
   margin: 0 0 clamp(24px, 4vw, 32px) 0;
 }
 
@@ -350,7 +350,7 @@
 
 .stat-icon svg {
   stroke-width: 1.8;
-  color: #667eea;
+  color: var(--color-primary);
 }
 
 .stat-info {
@@ -361,14 +361,14 @@
 .stat-value {
   font-size: clamp(22px, 4vw, 28px);
   font-weight: 700;
-  color: #1a202c;
+  color: var(--color-text);
   line-height: 1;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: clamp(12px, 2vw, 14px);
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 /* =====================================================
@@ -381,7 +381,7 @@
 
 .quick-actions h3 {
   font-size: clamp(18px, 3vw, 20px);
-  color: #1a202c;
+  color: var(--color-text);
   margin: 0 0 clamp(12px, 2vw, 16px) 0;
 }
 
@@ -393,7 +393,7 @@
 
 .action-card {
   background: white;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 24px);
   display: flex;
@@ -407,7 +407,7 @@
 }
 
 .action-card:hover {
-  border-color: #667eea;
+  border-color: var(--color-primary);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
@@ -421,7 +421,7 @@
 .action-text {
   font-size: clamp(14px, 2vw, 16px);
   font-weight: 600;
-  color: #2d3748;
+  color: var(--color-text);
   text-align: center;
 }
 
@@ -450,12 +450,12 @@
 .app-brand-title {
   font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
-  color: #1a202c;
+  color: var(--color-text);
 }
 
 .app-brand-subtitle {
   font-size: clamp(10px, 1.5vw, 12px);
-  color: #718096;
+  color: var(--color-text-muted);
 }
 
 /* Скрываем текст логотипа на очень узких экранах */

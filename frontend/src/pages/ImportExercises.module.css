@@ -29,7 +29,7 @@
   padding: 0.75rem 1rem;
   border-radius: 10px;
   border: 1px solid #e2e6ec;
-  background: #fff;
+  background: var(--color-surface);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
@@ -65,7 +65,7 @@
 
 .btn-primary {
   background: #4a7bff;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .btn-secondary {
@@ -75,7 +75,7 @@
 
 .btn-success {
   background: #24a66b;
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .btn-primary:disabled,
@@ -95,7 +95,7 @@
 .video-card {
   border-radius: 12px;
   border: 1px solid #e2e6ec;
-  background: #fff;
+  background: var(--color-surface);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -176,7 +176,7 @@
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 8px;
   padding: 0.3rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -185,7 +185,7 @@
 .import-results {
   margin-top: clamp(1rem, 1.5vw, 1.5rem);
   padding: 1rem 1.2rem;
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   border: 1px solid #e2e6ec;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -232,7 +232,7 @@
 }
 
 .csv-instructions {
-  background: #fff;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 1rem 1.2rem;
   border: 1px solid #e2e6ec;
