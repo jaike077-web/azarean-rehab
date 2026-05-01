@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PatientSplash from './components/PatientSplash';
 import PatientDashboardSkeleton from './pages/PatientDashboard/PatientDashboardSkeleton';
@@ -292,19 +293,21 @@ function AppRoutes() {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <ToastProvider>
-          <Router>
-            {/* Skip link для accessibility - появляется при нажатии Tab */}
-            <a href="#main-content" className="skip-link">
-              Перейти к содержимому
-            </a>
-            <main id="main-content">
-              <AppRoutes />
-            </main>
-          </Router>
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <Router>
+              {/* Skip link для accessibility - появляется при нажатии Tab */}
+              <a href="#main-content" className="skip-link">
+                Перейти к содержимому
+              </a>
+              <main id="main-content">
+                <AppRoutes />
+              </main>
+            </Router>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

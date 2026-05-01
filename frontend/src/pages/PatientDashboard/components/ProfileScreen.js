@@ -31,6 +31,7 @@ import {
   MESSENGER_KEYS,
 } from './ui';
 import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
+import ThemeToggle from '../../../components/ThemeToggle';
 import './ProfileScreen.css';
 
 // Tab id для Contact (см. NAV в PatientDashboard.js)
@@ -851,6 +852,18 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* ===== Внешний вид (тема) ===== */}
+            <div className="pd-profile-section">
+              <div className="pd-profile-section-label">Внешний вид</div>
+              <div
+                className="pd-profile-section-card"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}
+              >
+                <span style={{ fontSize: 14, color: 'var(--pd-text)' }}>Тема</span>
+                <ThemeToggle compact />
               </div>
             </div>
 

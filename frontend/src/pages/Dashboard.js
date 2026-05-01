@@ -34,6 +34,7 @@ import AdminUsers from './Admin/AdminUsers';
 import AdminAuditLogs from './Admin/AdminAuditLogs';
 import AdminContent from './Admin/AdminContent';
 import AdminSystem from './Admin/AdminSystem';
+import ThemeToggle from '../components/ThemeToggle';
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -241,6 +242,7 @@ function Dashboard() {
         </div>
 
         <div className={s.headerRight}>
+          <ThemeToggle compact />
           <span className={s.userName}>{user?.full_name}</span>
           <span className={s.userRole}>
             {user?.role === 'admin' ? 'Администратор' : 'Инструктор'}

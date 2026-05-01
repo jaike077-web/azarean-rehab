@@ -1,0 +1,57 @@
+/* =====================================================
+   ThemeToggle — компактный сегмент с тремя кнопками
+   (Светлая / Системная / Тёмная). Используется в
+   ProfileScreen (пациент) и Dashboard (инструктор).
+   ===================================================== */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.theme-btn:hover {
+  color: var(--color-text);
+}
+
+.theme-btn-active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-btn-active:hover {
+  color: var(--color-text);
+}
+
+.theme-btn span {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .theme-btn span {
+    display: inline;
+  }
+}

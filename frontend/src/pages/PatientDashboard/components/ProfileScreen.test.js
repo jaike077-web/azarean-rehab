@@ -360,7 +360,7 @@ describe('ProfileScreen overlay (v12)', () => {
     it('active radio corresponds to current preferred_messenger', () => {
       setup();
       fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
-      const group = screen.getByRole('radiogroup');
+      const group = screen.getByRole('radiogroup', { name: /Выбор канала связи/ });
       const radios = within(group).getAllByRole('radio');
       // telegram — первый в MESSENGER_KEYS
       expect(radios[0]).toHaveAttribute('aria-checked', 'true');
@@ -371,7 +371,7 @@ describe('ProfileScreen overlay (v12)', () => {
     it('tap on current messenger is no-op (no API call)', () => {
       setup();
       fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
-      const group = screen.getByRole('radiogroup');
+      const group = screen.getByRole('radiogroup', { name: /Выбор канала связи/ });
       const activeRadio = within(group).getAllByRole('radio')[0];
       fireEvent.click(activeRadio);
       expect(mockUpdatePatient).not.toHaveBeenCalled();
@@ -382,7 +382,7 @@ describe('ProfileScreen overlay (v12)', () => {
 
       setup();
       fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
-      const group = screen.getByRole('radiogroup');
+      const group = screen.getByRole('radiogroup', { name: /Выбор канала связи/ });
       const waRadio = within(group).getAllByRole('radio')[1]; // WhatsApp
       fireEvent.click(waRadio);
 
@@ -398,7 +398,7 @@ describe('ProfileScreen overlay (v12)', () => {
 
       setup();
       fireEvent.click(screen.getByRole('button', { name: 'Основной канал связи' }));
-      const initialRadios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+      const initialRadios = within(screen.getByRole('radiogroup', { name: /Выбор канала связи/ })).getAllByRole('radio');
       fireEvent.click(initialRadios[2]); // MAX
 
       // API-вызов был сделан
@@ -410,7 +410,7 @@ describe('ProfileScreen overlay (v12)', () => {
       // Промежуточное optimistic-состояние в jsdom/React18 batch не всегда
       // фиксируется, поэтому проверяем только конечный rollback.
       await waitFor(() => {
-        const radios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
+        const radios = within(screen.getByRole('radiogroup', { name: /Выбор канала связи/ })).getAllByRole('radio');
         expect(radios[0]).toHaveAttribute('aria-checked', 'true');
         expect(radios[2]).toHaveAttribute('aria-checked', 'false');
       });
