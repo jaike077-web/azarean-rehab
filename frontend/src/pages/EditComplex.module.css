@@ -44,7 +44,7 @@
 }
 
 .formSection {
-  background: white;
+  background: var(--color-surface);
   padding: clamp(16px, 3vw, 24px);
   border-radius: clamp(12px, 2vw, 16px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -103,7 +103,7 @@
   align-items: center;
   gap: clamp(8px, 2vw, 16px);
   padding: clamp(12px, 2vw, 16px);
-  background: white;
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: 12px;
   position: relative;
@@ -304,7 +304,7 @@
 }
 
 .exerciseCardSmall {
-  background: white;
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: clamp(12px, 2vw, 16px);
@@ -400,7 +400,7 @@
   gap: clamp(12px, 2vw, 16px);
   justify-content: flex-end;
   padding: clamp(16px, 3vw, 24px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: sticky;
@@ -466,7 +466,7 @@
   margin: 100px auto;
   text-align: center;
   padding: clamp(20px, 4vw, 40px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }

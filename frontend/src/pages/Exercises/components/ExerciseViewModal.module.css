@@ -15,7 +15,7 @@
 }
 
 .exerciseViewModal {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 18px);
   width: 100%;
   max-width: min(920px, 96vw);
@@ -153,7 +153,7 @@
 .tab.active {
   color: #6366f1;
   border-bottom-color: #6366f1;
-  background: white;
+  background: var(--color-surface);
 }
 
 /* =====================================================
@@ -360,7 +360,7 @@
 
 .muscleCategory li {
   padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 6px;
   margin-bottom: clamp(5px, 1vw, 7px);
   color: var(--color-text);
@@ -429,7 +429,7 @@
 
 .tag {
   padding: clamp(5px, 1vw, 7px) clamp(10px, 2vw, 14px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   font-size: clamp(11px, 2vw, 12px);
   color: var(--color-text-muted);
@@ -491,7 +491,7 @@
 
 .presetParams span {
   padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 13px);
   color: var(--color-text);
@@ -577,7 +577,7 @@
 }
 
 .btnSecondary {
-  background: white;
+  background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid #6366f1;
 }

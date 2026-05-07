@@ -1,41 +1,40 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import s from './ThemeToggle.module.css';
 
-const OPTIONS = [
-  { value: 'light', label: 'Светлая', Icon: Sun },
-  { value: 'system', label: 'Системная', Icon: Monitor },
-  { value: 'dark', label: 'Тёмная', Icon: Moon },
-];
+// Простой toggle: Light ↔ Dark (без 'system'). Иконка показывает противоположную
+// тему — то на что кликом переключишь. Pattern из X-UI / других admin-панелей.
+function ThemeToggle({ hideOnMobile = false }) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
-function ThemeToggle({ compact = false }) {
-  const { theme, setTheme } = useTheme();
+  const handleToggle = () => {
+    setTheme(isDark ? 'light' : 'dark');
+  };
+
+  const wrapperClass = `${s.themeToggle} ${hideOnMobile ? s.themeToggleHeader : ''}`;
 
   return (
-    <div className={s.themeToggle} role="radiogroup" aria-label="Тема оформления">
-      {OPTIONS.map(({ value, label, Icon }) => (
-        <button
-          key={value}
-          type="button"
-          role="radio"
-          aria-checked={theme === value}
-          aria-label={label}
-          title={label}
-          className={`${s.themeBtn} ${theme === value ? s.themeBtnActive : ''}`}
-          onClick={() => setTheme(value)}
-        >
-          <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
-          {!compact && <span>{label}</span>}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className={wrapperClass}
+      onClick={handleToggle}
+      aria-label={isDark ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
+      title={isDark ? 'Светлая тема' : 'Тёмная тема'}
+    >
+      {isDark ? (
+        <Sun size={18} strokeWidth={1.8} aria-hidden="true" />
+      ) : (
+        <Moon size={18} strokeWidth={1.8} aria-hidden="true" />
+      )}
+    </button>
   );
 }
 
 ThemeToggle.propTypes = {
-  compact: PropTypes.bool,
+  hideOnMobile: PropTypes.bool,
 };
 
 export default ThemeToggle;

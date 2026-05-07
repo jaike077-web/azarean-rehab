@@ -111,7 +111,7 @@
   align-items: center;
   gap: clamp(12px, 2vw, 18px);
   padding: clamp(16px, 3vw, 22px);
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -123,7 +123,7 @@
 
 /* Карточка упражнения */
 .skeletonExerciseCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -147,7 +147,7 @@
 
 /* Карточка комплекса */
 .skeletonComplexCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   padding: clamp(16px, 3vw, 22px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -215,7 +215,7 @@
 
 .skeletonTable {
   width: 100%;
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(10px, 2vw, 14px);
   overflow: hidden;
 }
@@ -311,7 +311,7 @@
    ===================================================== */
 
 .skeletonForm {
-  background: white;
+  background: var(--color-surface);
   padding: clamp(18px, 4vw, 26px);
   border-radius: clamp(10px, 2vw, 14px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);

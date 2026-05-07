@@ -113,7 +113,7 @@
   font-size: clamp(14px, 2vw, 15px);
   transition: all 0.2s;
   box-sizing: border-box;
-  background: white;
+  background: var(--color-surface);
   color: var(--color-text);
   min-height: 48px;
 }
@@ -168,7 +168,7 @@
   border: 1px solid #667eea66;
   border-radius: 12px;
   font-size: clamp(13px, 2vw, 16px);
-  background: white;
+  background: var(--color-surface);
   cursor: pointer;
   transition: all 0.2s;
   color: var(--color-text);
@@ -202,7 +202,7 @@
   min-height: 48px;
   padding: 0;
   border: 1px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -239,7 +239,7 @@
    ===================================================== */
 
 .patientCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s;
@@ -292,7 +292,7 @@
 .patientName {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--color-text);
   margin: 0;
   background: none;
   padding: 0;
@@ -356,7 +356,7 @@
   gap: 8px;
   width: 100%;
   padding: 12px 20px;
-  background: white;
+  background: var(--color-surface);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   color: var(--color-text);
@@ -378,10 +378,10 @@
   justify-content: center;
   width: 100%;
   padding: 12px 20px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger);
   border-radius: 8px;
-  color: var(--color-danger-hover);
+  color: var(--color-danger);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -389,8 +389,9 @@
 }
 
 .patientActions .btnDelete:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: var(--color-danger);
+  border-color: var(--color-danger-hover);
+  color: #ffffff;
 }
 
 
@@ -417,7 +418,7 @@
   border: 1px solid rgba(102, 126, 234, 0.2);
   padding: 16px;
   border-radius: 12px;
-  background: white;
+  background: var(--color-surface);
   box-shadow: 0 2px 6px rgba(102, 126, 234, 0.1);
   transition: all 0.2s;
 }
@@ -460,7 +461,7 @@
 
 /* ТАБЛИЦА (оставлена для совместимости) */
 .patientsTableContainer {
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 14px;
   overflow: hidden;
@@ -619,7 +620,7 @@
 }
 
 .modalContent {
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   padding: clamp(24px, 5vw, 32px);
   max-width: min(55%, 95vw) !important; /* УВЕЛИЧЕНО С 540px */
@@ -713,7 +714,7 @@
   box-sizing: border-box;
   font-family: inherit;
   color: var(--color-text);
-  background: white;
+  background: var(--color-surface);
   min-height: 48px;
 }
 
@@ -771,7 +772,7 @@
 
 .btnSecondary,
 .btnCancel {
-  background: white;
+  background: var(--color-surface);
   color: var(--color-text);
   border: solid 1px var(--color-primary);
 }
@@ -917,7 +918,7 @@
   border: 1px solid rgb(102 124 232 / 55%);
   padding: 1%;
   border-radius: 12px;
-  background: white;
+  background: var(--color-surface);
 }
 
 /* =====================================================

@@ -10,7 +10,7 @@
   gap: clamp(6px, 1.5vw, 10px);
   margin-bottom: clamp(20px, 4vw, 28px);
   padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
-  background: white;
+  background: var(--color-surface);
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-size: clamp(14px, 2vw, 16px);

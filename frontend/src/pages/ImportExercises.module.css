@@ -11,7 +11,7 @@
 }
 
 .importHeader .subtitle {
-  color: #5b6470;
+  color: var(--color-text-muted);
   font-size: clamp(0.95rem, 1.5vw, 1.05rem);
 }
 
@@ -28,8 +28,9 @@
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
@@ -37,8 +38,8 @@
 }
 
 .importTabs .tab.active {
-  border-color: #4a7bff;
-  color: #4a7bff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .importActions {
@@ -69,8 +70,8 @@
 }
 
 .btnSecondary {
-  background: #f2f4f8;
-  color: #2c3340;
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .btnSuccess {
@@ -94,7 +95,7 @@
 
 .videoCard {
   border-radius: 12px;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--color-border);
   background: var(--color-surface);
   overflow: hidden;
   display: flex;
@@ -109,7 +110,7 @@
 }
 
 .videoCard.selected {
-  border-color: #4a7bff;
+  border-color: var(--color-primary);
   box-shadow: 0 8px 20px rgba(74, 123, 255, 0.2);
 }
 
@@ -119,7 +120,7 @@
 }
 
 .videoThumbnail {
-  background: #f5f6fa;
+  background: var(--color-bg);
   height: clamp(120px, 20vw, 160px);
   display: flex;
   align-items: center;
@@ -147,7 +148,7 @@
 .videoInfo h4 {
   margin: 0;
   font-size: 1rem;
-  color: #1d2430;
+  color: var(--color-text);
 }
 
 .videoMeta {
@@ -155,7 +156,7 @@
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   font-size: 0.85rem;
-  color: #5b6470;
+  color: var(--color-text-muted);
 }
 
 .videoDuration {
@@ -187,7 +188,7 @@
   padding: 1rem 1.2rem;
   background: var(--color-surface);
   border-radius: 12px;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--color-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
@@ -204,9 +205,9 @@
   gap: 0.5rem;
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
-  background: #f7f9fc;
+  background: var(--color-surface-2);
   font-weight: 600;
-  color: #2c3340;
+  color: var(--color-text);
 }
 
 .resultsStats .stat.success {
@@ -235,14 +236,14 @@
   background: var(--color-surface);
   border-radius: 12px;
   padding: 1rem 1.2rem;
-  border: 1px solid #e2e6ec;
+  border: 1px solid var(--color-border);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .csvInstructions ol {
   padding-left: 1.2rem;
   margin: 0.6rem 0 1rem;
-  color: #5b6470;
+  color: var(--color-text-muted);
 }
 
 .csvUpload {
@@ -261,11 +262,11 @@
   gap: 0.6rem;
   padding: 0.9rem 1rem;
   border-radius: 10px;
-  border: 1px dashed #c5ccd6;
+  border: 1px dashed var(--color-border);
   cursor: pointer;
-  background: #f7f9fc;
+  background: var(--color-surface-2);
   font-weight: 600;
-  color: #2c3340;
+  color: var(--color-text);
 }
 
 @media (max-width: 768px) {

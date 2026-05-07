@@ -35,8 +35,8 @@
   width: clamp(54px, 8vw, 64px);
   height: clamp(54px, 8vw, 64px);
   border-radius: 12px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +46,7 @@
 .patientInfo h1 {
   margin: 0 0 6px;
   font-size: clamp(22px, 4vw, 32px);
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .patientMeta {
@@ -67,7 +67,7 @@
 .patientMeta span + span::before {
   content: '•';
   margin-right: 6px;
-  color: #cbd5f5;
+  color: var(--color-text-subtle);
 }
 
 .patientMetaDate {
@@ -90,7 +90,7 @@
   align-items: center;
   gap: 10px;
   font-size: clamp(18px, 3vw, 22px);
-  color: #111827;
+  color: var(--color-text);
 }
 
 .statsGrid {
@@ -112,15 +112,15 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: #e0e7ff;
-  color: #4f46e5;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .statIcon.pain {
-  background: #fee2e2;
+  background: var(--color-danger-bg);
   color: var(--color-danger-hover);
 }
 
@@ -133,7 +133,7 @@
 .statValue {
   font-size: clamp(18px, 3vw, 24px);
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .statLabel {
@@ -155,11 +155,11 @@
   align-items: center;
   justify-content: space-between;
   font-size: clamp(13px, 2vw, 14px);
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .statPill strong {
-  color: #111827;
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -207,7 +207,7 @@
 .complexTitle h3 {
   margin: 0;
   font-size: clamp(16px, 2.5vw, 18px);
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .statusBadge {
@@ -219,13 +219,13 @@
 }
 
 .statusBadge.active {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .statusBadge.completed {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .complexStats {
@@ -233,7 +233,7 @@
   grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 8px;
   font-size: clamp(13px, 2vw, 14px);
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .complexStat {
@@ -244,7 +244,7 @@
 
 .complexStat .value {
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
 }
 
 .complexMetrics {
@@ -267,22 +267,22 @@
 
 .metricValue {
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
 .metricValue.pain.low {
-  color: #15803d;
+  color: var(--color-success);
 }
 
 .metricValue.pain.medium {
-  color: #b45309;
+  color: var(--color-warning);
 }
 
 .metricValue.pain.high {
-  color: #b91c1c;
+  color: var(--color-danger);
 }
 
 .trendBadge {
@@ -293,27 +293,27 @@
   border-radius: 8px;
   font-size: 12px;
   background: var(--color-border);
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .trendBadge.excellent {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .trendBadge.good {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .trendBadge.medium {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .trendBadge.high {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .complexFooter {
@@ -323,8 +323,8 @@
 
 .btnDetails {
   border: none;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   border-radius: 10px;
   padding: 8px 12px;
   font-size: clamp(12px, 2vw, 14px);
@@ -337,7 +337,7 @@
 }
 
 .btnDetails:hover {
-  background: #e0e7ff;
+  background: var(--color-primary-bg);
 }
 
 .emptyState {
@@ -351,7 +351,7 @@
 
 .emptyState h3 {
   margin: 12px 0 6px;
-  color: #111827;
+  color: var(--color-text);
   font-size: clamp(18px, 3vw, 22px);
 }
 
@@ -365,8 +365,8 @@
   height: 56px;
   margin: 0 auto;
   border-radius: 12px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;

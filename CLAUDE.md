@@ -28,15 +28,20 @@
 - **Phase 2a phone normalizer (2026-04-27):** `backend/utils/phone.js` приводит к E.164 (+CCXXXX). routes/patients.js POST/PUT и patientAuth.js POST /register + PUT /me нормализуют перед записью. Миграция `20260427_normalize_patient_phones.sql` бэкфилла существующих записей. Фундамент для phone-match при OAuth.
 - **Phase 2b/c Telegram OIDC через прокси (2026-04-28):** `BotFather → Login Widget → Switch to OpenID Connect Login` для @az_zari_bot. Backend через `openid-client@6` с `customFetch` (X-Proxy-Secret header) ходит на **финский reverse-proxy** `https://tg-proxy.azarean.ru` (поднят JARVIS-Director'ом на 78.17.1.70, IP-allowlist только 185.93.109.234). Прокси whitelist'ит /.well-known/* и POST /token, переписывает endpoints в discovery JSON. Match-flow в callback'е: `provider_id` → silent autolink по phone → `/patient-register` с pre-fill. Миграции `20260427_oauth_pkce_nonce.sql`. Подробности — [memory/telegram_oidc_proxy.md](.claude/projects/.../memory/telegram_oidc_proxy.md).
 - **Phase 2d Yandex OAuth 2.0 (2026-04-29, в проде):** [backend/services/yandexOauth.js](backend/services/yandexOauth.js) — Authorization Code Flow + PKCE S256. **БЕЗ OIDC** (Yandex не публикует `/.well-known/openid-configuration` → 404), **БЕЗ прокси** (oauth.yandex.ru и login.yandex.ru доступны с rehab-VDS напрямую). Чистый fetch на `oauth.yandex.ru/token`, userinfo через `GET login.yandex.ru/info` с `Authorization: OAuth <token>`. Scopes из Yandex Cabinet: `login:info login:email login:avatar login:default_phone` (последний критичен для phone-autolink). Match-flow идентичен Telegram'у. Все 3 сценария (returning / phone-autolink / unknown→register) проверены в проде. Коммит `7b19e9d`. Подробности — [memory/yandex_oauth_v2.md](.claude/projects/.../memory/yandex_oauth_v2.md).
+- **CSS Modules миграция (2026-05-04, в проде с commit `c8834b5`):** 71 `.css` → `.module.css` через 8 push'ей (Push 1-8). Удалён `frontend/src/styles/common.css` (308-строчный «Duplicate Class Report» отчёт + 80+ дублей классов). Каждая страница и компонент scoped — class-имена hashed, нет cross-file конфликтов. **LOCKED НЕ ТРОНУТЫ:** ExerciseRunner (`.pd-runner` + `--az-*` iOS-палитра), все `pd-*` стили PatientDashboard. **Грабли (важно для будущих миграций):** CRA по умолчанию **НЕ конвертирует** dash-case в camelCase. Class в module.css `.foo-bar` доступен через `s['foo-bar']`, но **НЕ через `s.fooBar`**. Тесты с CSS Modules моками через Proxy (`(_, prop) => String(prop)`) НЕ ловят undefined — Proxy возвращает любой ключ. В реальном браузере `s.fooBar === undefined` → `className={undefined}` → класс не применяется → страница без стилей. Юзер увидел broken prod, фикс через переименование class definitions в 44 module.css из dash-case в camelCase (commit `c8834b5`). **Урок:** smoke в реальном браузере обязателен после CSS-миграций — не доверять только тестам и build OK. См. [memory/feedback_smoke_real_browser.md](.claude/projects/.../memory/feedback_smoke_real_browser.md).
+- **Design tokens + Dark theme (2026-05-04, частично — палитра в проде с `1979cee`, ThemeContext с `152314e`, дизайн-палитра архитектора локально, не запушено):** [frontend/src/styles/tokens.css](frontend/src/styles/tokens.css) с `--color-bg/surface/surface-2/surface-3/border/text/text-muted/text-subtle/primary/...`. Dark тема через `[data-theme='dark']` override + `@media (prefers-color-scheme: dark) :root:not([data-theme])` для system fallback. [ThemeContext](frontend/src/context/ThemeContext.js) с persist в localStorage `azarean_theme`. ThemeToggle — одна круглая кнопка Sun/Moon в headerRight Dashboard'а инструктора + sidebar bottom + ProfileScreen пациента. **Архитектор-ревью 2026-05-04:** первая версия dark theme (Push 9-11) была наивной инверсией → юзер видел white-on-white в hero/stat-cards. Применена правильная палитра slate-indigo (4 уровня глубины `#0a0e1a → #131a2c → #1c2540 → #283156`, текст `#e7eaf3`, primary `#818cf8` светлее indigo для контраста). Active nav item — full-fill `var(--color-primary)` + white text (XrayUI-паттерн). PatientProgress text contrast пофиксен.
 
 ### Планируется (не начато)
 - **Bot link-code login** как fallback к OAuth (когда oauth.telegram.org auto-redirect глючит — ~5-6 ч)
 - Non-root deploy user на VDS + sudoers whitelist
 - Healthcheck Telegram alerts
 - `/api/health` endpoint
-- CSS Modules вместо глобальных стилей
+- ~~CSS Modules вместо глобальных стилей~~ — **ЗАВЕРШЕНО** 2026-05-04
 - zod вместо express-validator
 - 2FA через Telegram
+- **Compliance legal position документ** (драфт под юриста, перед коммерческим маркетингом)
+- **Revoke секретов опубликованных в чате** (OPS_BOT_TOKEN, YANDEX_SMTP_PASSWORD) перед запуском с живыми пациентами
+- **Hardcoded «Татьяна» cleanup** — после того как `/api/rehab/my/dashboard` начнёт отдавать `instructor_name`
 
 ## Стек
 
@@ -244,7 +249,7 @@ Azarean_rehab/
         │   ├── dateUtils.js     # Утилиты дат, русская локаль (120 строк)
         │   └── exerciseConstants.js # Body regions, difficulty levels, equipment, phases (283 строки)
         ├── styles/
-        │   └── common.css       # Глобальные стили (80+ дублей классов!)
+        │   └── tokens.css       # Design tokens (--color-*, --shadow-*, --radius-*) + dark theme override (с 2026-05-04)
         ├── pages/
         │   ├── Dashboard.js     # Tab-навигация: Patients, Diagnoses, CreateComplex, MyComplexes, Trash
         │   ├── Login.js         # Авторизация инструктора
@@ -628,6 +633,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **Roadmap секция ниже — справочная.** Реализовывать ТОЛЬКО по явному запросу пользователя
 - Не добавлять фичи сверх запрошенного. Bug fix ≠ рефакторинг соседнего кода
 - **СХЕМА БД МЕНЯЕТСЯ ТОЛЬКО МИГРАЦИЕЙ.** Никаких ручных ALTER/CREATE через psql на dev БД — это привело к schema drift 2026-04-23→24 (fresh install на prod сломал /api/exercises, /api/diagnoses, Kinescope-импорт). Все миграции должны быть **идемпотентны** (IF NOT EXISTS, DO-блоки с проверкой колонок) и прогоняться тест-циклом: `createdb test → schema.sql → все миграции дважды подряд → drop` ДО коммита. См. `production_deployment.md` → "Schema drift recovery".
+- **CSS Modules — ИМЕНА КЛАССОВ В CAMELCASE**, не dash-case. CRA по умолчанию НЕ конвертирует автоматически. `.module.css` должен иметь `.fooBar { ... }`, JS обращается через `s.fooBar`. Если в CSS написано `.foo-bar`, в JS работает только `s['foo-bar']`, а `s.fooBar === undefined` → класс не применяется → страница без стилей. **Юнит-тесты НЕ ловят** эту проблему если CSS Modules мокается через `Proxy({}, { get: (_, prop) => String(prop) })` — Proxy возвращает любой ключ как строку. **Smoke в реальном браузере обязателен** после любой CSS Modules миграции. См. инцидент `c8834b5` 2026-05-04 + [memory/feedback_smoke_real_browser.md](.claude/projects/.../memory/feedback_smoke_real_browser.md).
+- **UI-изменения НЕ push'ить прямо в main без локального smoke.** CI/CD автодеплой превращает push'и без проверки в потенциально broken prod. Для крупных UI-рефакторингов (>5 файлов CSS, изменение токенов / структуры) — `npm start` локально + обход 5+ ключевых экранов в браузере с DevTools открытым перед push. Не доверять только `tests pass + build OK`. На любую серию push'ей >3 в час — пауза для smoke. См. [memory/feedback_no_direct_main_push_for_ui.md](.claude/projects/.../memory/feedback_no_direct_main_push_for_ui.md).
+- **НЕ миксовать миграцию + новую фичу в одной сессии.** Например, «CSS Modules + Dark theme в одну сессию» (2026-05-04) запутали баги двух задач. Сначала закрыть миграцию полностью (тесты + smoke + 24ч стабильности на проде или явное «всё ок» от юзера), потом стартовать фичу. См. [memory/feedback_one_change_per_session.md](.claude/projects/.../memory/feedback_one_change_per_session.md).
+- **Не делать P3 спонтанной инициативой.** Перед стартом задачи помеченной как «когда станет нужно / nice-to-have / отложено» — спросить «А кто это просил? Это сейчас правда нужно?». Для pilot-проекта с 0 пользователей выгода от P3-фичи ≈ 0, риск любого регресса = блокер запуска. См. [memory/feedback_no_p3_initiative.md](.claude/projects/.../memory/feedback_no_p3_initiative.md).
 
 ### Backend
 - **CommonJS модули:** `const { query } = require('../database/db');`
@@ -643,7 +652,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ### Frontend
 - **JavaScript, нет TypeScript** — PropTypes только в PatientDashboard
-- **Глобальные CSS** — НЕ CSS Modules. 80+ дублей классов (`btn-primary` в 5 файлах, `modal-overlay` в 7). PatientDashboard использует `pd-` prefix convention
+- **CSS Modules** (с 2026-05-04) — все стили в `*.module.css`, классы scoped через hash. JS импортирует `import s from './X.module.css'`, использует `className={s.camelCase}`. **Имена классов в CSS обязательно camelCase** (`.fooBar`, не `.foo-bar`) — иначе `s.fooBar === undefined`. PatientDashboard использует `pd-` prefix + свой [tokens.css](frontend/src/pages/PatientDashboard/tokens.css). ExerciseRunner LOCKED (`.pd-runner` + `--az-*`).
 - **Два Axios instance:** `api` (инструктор, Bearer), `patientApi` (пациент, httpOnly cookie)
 - **Unwrap interceptor:** оба instance разворачивают `{ data: <payload>, message?, total? }` → `response.data = <payload>`, `response.meta = { message, total, ... }`
 - **Auto-refresh:** interceptor на 403 + "истек" строка → refresh → retry queue
@@ -672,7 +681,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | ~~4~~ | ~~MEDIUM~~ | ~~templates.update не шлёт body~~ → **ЗАКРЫТО** (2026-04-22, `8747c7c`). |
 | ~~5~~ | ~~MEDIUM~~ | ~~EditComplex copy-paste «Ссылка скопирована!»~~ → **ЗАКРЫТО** (2026-04-22, `8747c7c`). |
 | ~~6~~ | ~~MEDIUM~~ | ~~**DiaryScreen** — структурированные данные сериализуются в текст `notes`~~ → **ЗАКРЫТО** (миграция 20260421_diary_structured_fields, v12 redesign) |
-| 7 | MEDIUM | **80+ дублей CSS-классов** — глобальные стили конфликтуют |
+| ~~7~~ | ~~MEDIUM~~ | ~~**80+ дублей CSS-классов**~~ → **ЗАКРЫТО** 2026-05-04 (CSS Modules миграция, commit `c8834b5`): 71 `.css` → `.module.css`, common.css удалён. |
 | ~~8~~ | ~~MEDIUM~~ | ~~GDPR аудит-логи на чтение данных пациентов~~ → **ЗАКРЫТО** (2026-04-22, `6b36bd2`): `backend/utils/audit.js` + logAudit на GET patients, GET patients/:id, GET progress/patient/:id, GET rehab/programs/:id/diary, GET rehab/programs/:id/messages. |
 | 9 | LOW | **ErrorBoundary не ловит** async ошибки из useEffect |
 | 10 | LOW | **messages.sender_id** — нет FK constraint (требует полиморфного split patient.id vs users.id) |
@@ -864,17 +873,26 @@ frontend/src/ (12 suites, 156 тестов)
 
 - **Repo:** https://github.com/jaike077-web/azarean-rehab.git
 - **100+ коммитов**, активная разработка через codex PRs
-- **Последние коммиты на main (Phase 1+2 — invite-code + Telegram + Yandex OAuth + RehabProgram UI):**
+- **Последние коммиты на main (CSS Modules + Dark theme — 2026-05-04):**
+  - `c8834b5` fix(css): переименовать dash-case → camelCase в 44 module.css (КРИТИЧНО — без этого `s.foo` undefined)
+  - `0584861` fix(sw): bump CACHE_NAME v2 → v3 (инвалидация кеша после CSS Modules миграции)
+  - `1979cee` refactor(theme): хардкод цветов → токены design tokens (43 module.css)
+  - `152314e` feat(theme): ThemeContext + переключатель в Profile/Dashboard
+  - `329a1ba` feat(theme): расширить tokens.css dark-палитрой + auto prefers-color-scheme
+  - `7705759` refactor(css): components + остатки + удаление common.css
+  - `670ef06` refactor(css): Exercises страница + 6 компонентов → CSS Modules
+  - `def1a1e` refactor(css): CreateComplex + EditComplex + EditTemplate (DnD-критично)
+  - `b619d94` refactor(css): Patients (834 строки) → CSS Modules
+  - `2b50615` refactor(css): MyComplexes + переезд .exercise-description
+  - `d7e4a95` refactor(css): Diagnoses + Trash → CSS Modules
+  - `2fdae91` refactor(css): Login + PatientAuth + Admin → CSS Modules
+  - `4e06a72` chore(css): удалить мёртвый ExercisesTemp.css
+  - `232cdc4` feat(css): добавить базовые design tokens (foundation)
+- **Предыдущие коммиты (Phase 1+2 — invite-code + Telegram + Yandex OAuth + RehabProgram UI):**
   - `e1fbaae` feat(rehab-programs): UI для создания RehabProgram из карточки пациента
-  - `7b19e9d` feat(oauth): Yandex OAuth 2.0 (без OIDC discovery, без прокси) — Phase 2d, в проде
-  - `897a82b` feat(patient-login): hint про auto-redirect issue Telegram OIDC
-  - `b29a661` fix(oauth): pg type-deduction для phone-autolink UPDATE (один $1 на VARCHAR+BIGINT нельзя)
-  - `a89ae5f` fix(oauth): убрать telegram:bot_access из обязательных scopes (toggle off → silent fail)
+  - `7b19e9d` feat(oauth): Yandex OAuth 2.0 — Phase 2d, в проде
   - `7cb4742` feat(oauth): Telegram OIDC через прокси-VDS в Финляндии
-  - `30e031f` feat(phone): нормализация телефонов в E.164 (фундамент под OAuth phone-match)
   - `e3970f6` feat(patient-auth): invite-code flow для регистрации пациентов
-  - `44cf3b8` docs(CLAUDE.md): итог smoke-test сессии 2026-04-24
   - `ec8ba2c` fix(toast): стабилизировать ссылку toast через useMemo
-  - `ac8f845` feat(pwa): авто-обновление при возврате в app после ≥60 сек отлучки
   - `d57b116` fix(patient-dashboard): убрать дубль аватара + хардкод «Татьяна · куратор»
-- **Незакоммичено:** CLAUDE.md (этот update — Phase 1+2 doc), deploy report markdown-файлы, `.claude/plans/`
+- **Незакоммичено (на 2026-05-04 вечер):** ~30 файлов с применённой спекой архитектора (slate-indigo палитра, simplified ThemeToggle, active nav primary-fill, PatientProgress contrast). Ждёт визуального smoke юзера в браузере перед push'ем — см. [SESSION_HANDOFF_2026-05-04.md](SESSION_HANDOFF_2026-05-04.md).

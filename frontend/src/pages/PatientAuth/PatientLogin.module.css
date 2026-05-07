@@ -1,6 +1,7 @@
 /* Patient Authentication - Login Page */
 
 .patientAuthContainer {
+  position: relative;
   min-height: 100vh;
   background-color: var(--color-bg);
   display: flex;
@@ -9,8 +10,15 @@
   padding: clamp(16px, 4vw, 24px);
 }
 
+.patientAuthThemeToggle {
+  position: absolute;
+  top: clamp(16px, 3vw, 24px);
+  right: clamp(16px, 3vw, 24px);
+  z-index: 10;
+}
+
 .patientAuthCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   width: 100%;
@@ -81,7 +89,7 @@
   border-radius: 12px;
   font-size: 16px;
   color: var(--color-text);
-  background: white;
+  background: var(--color-surface);
   min-height: 48px;
   transition: all 0.2s ease;
   box-sizing: border-box;
@@ -222,7 +230,7 @@
   padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  background: white;
+  background: var(--color-surface);
   min-height: 48px;
   display: flex;
   align-items: center;

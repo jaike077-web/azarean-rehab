@@ -168,7 +168,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
         ) : null}
         <div 
           className={s.cardThumbnailPlaceholder}
-          style={{ display: thumbnail ? s.none : s.flex }}
+          style={{ display: thumbnail ? 'none' : 'flex' }}
         >
           <span className={s.placeholderIcon}>
             {getBodyRegionIcon(exercise.body_region)}

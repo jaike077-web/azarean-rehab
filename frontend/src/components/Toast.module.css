@@ -120,7 +120,7 @@
 .toastTitle {
   font-weight: 700;
   font-size: 14px;
-  color: #0f172a;
+  color: var(--color-text);
   margin: 0;
   line-height: 1.35;
   letter-spacing: -0.005em;
@@ -128,7 +128,7 @@
 
 .toastMessage {
   font-size: 13px;
-  color: #475569;
+  color: var(--color-text-muted);
   margin: 2px 0 0;
   word-wrap: break-word;
   line-height: 1.45;
@@ -164,7 +164,7 @@
 
 .toastClose:hover {
   background: rgba(15, 23, 42, 0.06);
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .toastClose:active {
@@ -242,7 +242,7 @@
 
 .toastActionBtn.secondary {
   background: var(--color-surface-2);
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 .toastActionBtn.secondary:hover {

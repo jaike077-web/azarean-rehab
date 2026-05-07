@@ -863,7 +863,7 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px' }}
               >
                 <span style={{ fontSize: 14, color: 'var(--pd-text)' }}>Тема</span>
-                <ThemeToggle compact />
+                <ThemeToggle />
               </div>
             </div>
 

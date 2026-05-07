@@ -4,7 +4,7 @@
    ===================================================== */
 
 .deleteConfirmModal {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 18px);
   padding: clamp(24px, 5vw, 36px);
   max-width: min(480px, 92vw);

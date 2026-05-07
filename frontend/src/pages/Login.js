@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 import styles from './Login.module.css';
 
 function Login() {
@@ -29,6 +30,9 @@ function Login() {
 
   return (
     <div className={styles.loginContainer}>
+      <div className={styles.loginThemeToggle}>
+        <ThemeToggle />
+      </div>
       <div className={styles.loginBox}>
       <div className={styles.loginHeader}>
   <div className={styles.loginLogo}>

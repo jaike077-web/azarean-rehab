@@ -30,7 +30,7 @@ function ExerciseFilters({
     position: '',
     rehab_phase: '',
     sort_by: 'created_at',
-    sort_order: s.desc
+    sort_order: 'desc'
   });
 
   // Применяем фильтры с задержкой для поиска
@@ -59,7 +59,7 @@ function ExerciseFilters({
       position: '',
       rehab_phase: '',
       sort_by: 'created_at',
-      sort_order: s.desc
+      sort_order: 'desc'
     };
     setFilters(resetFilters);
   };

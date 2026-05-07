@@ -5,6 +5,7 @@
    ===================================================== */
 
 .loginContainer {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -13,8 +14,15 @@
   padding: clamp(16px, 3vw, 20px);
 }
 
+.loginThemeToggle {
+  position: absolute;
+  top: clamp(16px, 3vw, 24px);
+  right: clamp(16px, 3vw, 24px);
+  z-index: 10;
+}
+
 .loginBox {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   width: 100%;

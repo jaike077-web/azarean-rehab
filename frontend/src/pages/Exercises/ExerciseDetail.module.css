@@ -110,7 +110,7 @@
     cursor: pointer;
     font-size: 16px;
     font-weight: 500;
-    color: #0f172a;
+    color: var(--color-text);
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -141,7 +141,7 @@
   
   .crumbActive {
     font-weight: 600;
-    color: #111827;
+    color: var(--color-text);
   }
   
   /* ================================
@@ -196,7 +196,7 @@
     font-size: 22px;
     line-height: 1.2;
     margin: 0;
-    color: #111827;
+    color: var(--color-text);
   }
   
   .exerciseSubtitle {
@@ -229,7 +229,7 @@
   
   .pillType {
     background: rgba(15, 23, 42, 0.04);
-    color: #111827;
+    color: var(--color-text);
   }
   
 .pillIcon {
@@ -351,7 +351,7 @@
     font-size: 14px;
     font-weight: 600;
     margin: 0 0 8px;
-    color: #111827;
+    color: var(--color-text);
   }
   
   .sectionText {
@@ -383,7 +383,7 @@
     font-size: 14px;
     font-weight: 600;
     margin: 0 0 10px;
-    color: #111827;
+    color: var(--color-text);
   }
   
   /* Строки с label / value */
@@ -402,7 +402,7 @@
   }
   
   .infoValue {
-    color: #111827;
+    color: var(--color-text);
   }
   
   /* Чипы */

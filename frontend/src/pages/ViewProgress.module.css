@@ -74,7 +74,7 @@
 .progressHeaderText h1 {
   font-size: clamp(22px, 4vw, 32px);
   margin: 0 0 6px;
-  color: #1f2937;
+  color: var(--color-text);
   font-weight: 700;
 }
 
@@ -108,7 +108,7 @@
 .statValue {
   font-size: clamp(18px, 3vw, 24px);
   font-weight: 700;
-  color: #111827;
+  color: var(--color-text);
   margin-bottom: 4px;
 }
 
@@ -124,7 +124,7 @@
 }
 
 .sessionCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -301,7 +301,7 @@
 
 .painBadge.painMedium {
   background: #fbbf24;
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .painBadge.painHigh {
@@ -380,7 +380,7 @@
 .exerciseCardHeader h3 {
   margin: 0;
   font-size: clamp(16px, 2.5vw, 20px);
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .exerciseCategory {
@@ -399,7 +399,7 @@
 .commentsSection h4 {
   margin: 0 0 8px;
   font-size: clamp(14px, 2vw, 16px);
-  color: #111827;
+  color: var(--color-text);
 }
 
 .painHistory {
@@ -463,7 +463,7 @@
 
 .commentText {
   font-size: clamp(13px, 2vw, 15px);
-  color: #1f2937;
+  color: var(--color-text);
 }
 
 .emptyState {

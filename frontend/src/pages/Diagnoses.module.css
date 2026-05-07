@@ -102,7 +102,7 @@
     font-size: clamp(14px, 2vw, 15px);
     transition: all 0.2s;
     box-sizing: border-box;
-    background: white;
+    background: var(--color-surface);
     color: var(--color-text);
     min-height: 48px;
   }
@@ -171,7 +171,7 @@
      ===================================================== */
   
   .diagnosisCard {
-    background: white;
+    background: var(--color-surface);
     border: 1px solid rgba(102, 126, 234, 0.2);
     border-radius: 14px;
     padding: clamp(16px, 3vw, 20px);
@@ -223,7 +223,7 @@
     justify-content: center;
     gap: 6px;
     padding: 10px 16px;
-    background: white;
+    background: var(--color-surface);
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     color: var(--color-text);
@@ -319,7 +319,7 @@
   }
   
   .modalContent {
-    background: white;
+    background: var(--color-surface);
     border-radius: 16px;
     padding: clamp(24px, 5vw, 32px);
     max-width: min(720px, 95vw);
@@ -406,7 +406,7 @@
     box-sizing: border-box;
     font-family: inherit;
     color: var(--color-text);
-    background: white;
+    background: var(--color-surface);
   }
   
   .formGroup input:focus,
@@ -459,7 +459,7 @@
   
   .btnCancel,
   .btnCloseModal {
-    background: white;
+    background: var(--color-surface);
     color: var(--color-text);
     border: 1px solid var(--color-border);
   }

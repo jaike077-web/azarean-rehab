@@ -1,15 +1,12 @@
 /* =====================================================
    DESIGN TOKENS — Azarean Rehab
-   Foundation для CSS Modules + dark theme.
+   Палитра по спеке архитектора (2026-05-01).
 
    ВАЖНО:
-   - --az-* (ExerciseRunner, LOCKED) и --pd-* (PatientDashboard) живут
-     в своих файлах. PatientDashboard переключается на dark вместе с
-     инструкторской через [data-theme="dark"] override в этом файле
-     (см. блок «PatientDashboard dark overrides» внизу).
-   - ExerciseRunner НЕ переопределяется — iOS-палитра остаётся всегда
-     (дизайн-эталон 1:1, видео-тренировки в спортзале → светлая палитра
-     не зависит от темы UI).
+   - --az-* (ExerciseRunner LOCKED) и --pd-* (PatientDashboard) живут
+     в своих файлах. PatientDashboard в dark переопределяется частично
+     (только базовые --pd-bg/text/card — остальные brand-цвета остаются).
+   - ExerciseRunner НЕ переопределяется — iOS-палитра всегда (дизайн-эталон).
    ===================================================== */
 
 /* =====================================================
@@ -17,11 +14,15 @@
    ===================================================== */
 
 :root {
-  /* Поверхности */
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-2: #f1f5f9;
+  /* Иерархия глубины — 4 уровня */
+  --color-bg: #f8fafc;             /* фон страницы */
+  --color-surface: #ffffff;         /* карточки */
+  --color-surface-2: #f1f5f9;       /* поля ввода, hover */
+  --color-surface-3: #ffffff;       /* модалки, dropdown'ы (в light = surface) */
+
+  /* Границы */
   --color-border: #e2e8f0;
+  --color-border-subtle: #edf2f7;
   --color-border-strong: #cbd5e0;
 
   /* Текст */
@@ -29,7 +30,7 @@
   --color-text-muted: #64748b;
   --color-text-subtle: #94a3b8;
 
-  /* Primary (instructor brand) */
+  /* Brand purple — Indigo-500 */
   --color-primary: #667eea;
   --color-primary-hover: #5568d3;
   --color-primary-active: #4c5cc7;
@@ -47,11 +48,17 @@
   --color-info: #3b82f6;
   --color-info-bg: rgba(59, 130, 246, 0.1);
 
-  /* Тени */
+  /* Тени — мягкие в light */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.15);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  /* Градиенты — фирменные, не меняются по теме */
+  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 
   /* Радиусы */
   --radius-sm: 4px;
@@ -63,30 +70,34 @@
 }
 
 /* =====================================================
-   DARK theme — manual override через ThemeContext
+   DARK theme — slate-indigo сдвиг (по спеке архитектора)
    ===================================================== */
 
 [data-theme='dark'] {
-  /* Поверхности */
-  --color-bg: #0f172a;
-  --color-surface: #1e293b;
-  --color-surface-2: #334155;
-  --color-border: #475569;
-  --color-border-strong: #64748b;
+  /* Иерархия глубины — 4 уровня */
+  --color-bg: #0a0e1a;             /* самый глубокий — фон страницы */
+  --color-surface: #131a2c;         /* карточки на фоне */
+  --color-surface-2: #1c2540;       /* поля ввода, hover */
+  --color-surface-3: #283156;       /* модалки, dropdown'ы */
+
+  /* Границы */
+  --color-border: #2a3550;
+  --color-border-subtle: #1e2740;
+  --color-border-strong: #3a4565;
 
   /* Текст */
-  --color-text: #f1f5f9;
-  --color-text-muted: #94a3b8;
-  --color-text-subtle: #64748b;
+  --color-text: #e7eaf3;            /* основной — мягче чем чистый slate */
+  --color-text-muted: #9aa3bb;      /* подписи, метки */
+  --color-text-subtle: #6b7390;     /* tertiary, disabled */
 
-  /* Primary — slightly lighter для лучшей читаемости на dark surface */
+  /* Brand — на 1 тон светлее indigo-400 для контраста на тёмном */
   --color-primary: #818cf8;
   --color-primary-hover: #a5b4fc;
   --color-primary-active: #c7d2fe;
-  --color-primary-bg: rgba(129, 140, 248, 0.15);
+  --color-primary-bg: rgba(129, 140, 248, 0.12);
   --color-primary-bg-strong: rgba(129, 140, 248, 0.25);
 
-  /* Семантика — те же цвета, но bg усилен */
+  /* Семантика — Tailwind-400 шкала */
   --color-success: #34d399;
   --color-success-bg: rgba(52, 211, 153, 0.15);
   --color-warning: #fbbf24;
@@ -97,32 +108,40 @@
   --color-info: #60a5fa;
   --color-info-bg: rgba(96, 165, 250, 0.15);
 
-  /* Тени — глубже на тёмном фоне */
+  /* Тени — глубже в dark, дают глубину через темноту */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+
+  /* Градиенты — те же brand purple (фирменная identity не меняется) */
+  --gradient-hero: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
 /* =====================================================
-   AUTO dark — prefers-color-scheme
-   Применяется только если ThemeContext не задал явно (нет data-theme).
+   AUTO dark — prefers-color-scheme, только если ThemeContext
+   не задал явное data-theme на <html>
    ===================================================== */
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --color-bg: #0f172a;
-    --color-surface: #1e293b;
-    --color-surface-2: #334155;
-    --color-border: #475569;
-    --color-border-strong: #64748b;
-    --color-text: #f1f5f9;
-    --color-text-muted: #94a3b8;
-    --color-text-subtle: #64748b;
+    --color-bg: #0a0e1a;
+    --color-surface: #131a2c;
+    --color-surface-2: #1c2540;
+    --color-surface-3: #283156;
+    --color-border: #2a3550;
+    --color-border-subtle: #1e2740;
+    --color-border-strong: #3a4565;
+    --color-text: #e7eaf3;
+    --color-text-muted: #9aa3bb;
+    --color-text-subtle: #6b7390;
     --color-primary: #818cf8;
     --color-primary-hover: #a5b4fc;
     --color-primary-active: #c7d2fe;
-    --color-primary-bg: rgba(129, 140, 248, 0.15);
+    --color-primary-bg: rgba(129, 140, 248, 0.12);
     --color-primary-bg-strong: rgba(129, 140, 248, 0.25);
     --color-success: #34d399;
     --color-success-bg: rgba(52, 211, 153, 0.15);
@@ -134,45 +153,42 @@
     --color-info: #60a5fa;
     --color-info-bg: rgba(96, 165, 250, 0.15);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.5);
     --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+    --gradient-hero: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   }
 }
 
 /* =====================================================
-   PatientDashboard dark overrides
-   --pd-* переменные определены в pages/PatientDashboard/tokens.css.
-   Здесь — только dark-overrides для них (через [data-theme="dark"]
-   префикс), чтобы PatientDashboard переключался синхронно с
-   инструкторской частью.
+   PatientDashboard dark overrides (--pd-* tokens).
+   Только базовые; brand-зелёный/pain palette остаются как есть
+   (используются на нейтральных поверхностях с достаточным контрастом).
    ===================================================== */
 
 [data-theme='dark'] {
-  /* Patient Dashboard — поверхности */
-  --pd-bg: #0f172a;
-  --pd-bg2: #1e293b;
-  --pd-card: #1e293b;
-  --pd-border: #334155;
-
-  /* Patient Dashboard — текст */
-  --pd-text: #f1f5f9;
-  --pd-text2: #94a3b8;
-  --pd-text3: #64748b;
-
-  /* Цвета акцента — оставляем зелёный/синий, но смягчаем для dark */
+  --pd-bg: #0a0e1a;
+  --pd-bg2: #131a2c;
+  --pd-card: #131a2c;
+  --pd-border: #2a3550;
+  --pd-text: #e7eaf3;
+  --pd-text2: #9aa3bb;
+  --pd-text3: #6b7390;
   --pd-accent-bg: rgba(26, 138, 106, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --pd-bg: #0f172a;
-    --pd-bg2: #1e293b;
-    --pd-card: #1e293b;
-    --pd-border: #334155;
-    --pd-text: #f1f5f9;
-    --pd-text2: #94a3b8;
-    --pd-text3: #64748b;
+    --pd-bg: #0a0e1a;
+    --pd-bg2: #131a2c;
+    --pd-card: #131a2c;
+    --pd-border: #2a3550;
+    --pd-text: #e7eaf3;
+    --pd-text2: #9aa3bb;
+    --pd-text3: #6b7390;
     --pd-accent-bg: rgba(26, 138, 106, 0.15);
   }
 }

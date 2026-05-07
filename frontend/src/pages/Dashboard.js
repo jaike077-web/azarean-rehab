@@ -242,7 +242,7 @@ function Dashboard() {
         </div>
 
         <div className={s.headerRight}>
-          <ThemeToggle compact />
+          <ThemeToggle hideOnMobile />
           <span className={s.userName}>{user?.full_name}</span>
           <span className={s.userRole}>
             {user?.role === 'admin' ? 'Администратор' : 'Инструктор'}
@@ -359,6 +359,13 @@ function Dashboard() {
               </button>
             </>
           )}
+
+          {/* Тема (видна на mobile/tablet, где ThemeToggle в header'е скрыт) */}
+          <div className={s.navDivider} />
+          <div className={s.navThemeBlock}>
+            <span className={s.navThemeLabel}>Тема</span>
+            <ThemeToggle />
+          </div>
         </nav>
 
         <main className={s.dashboardMain}>{renderContent()}</main>

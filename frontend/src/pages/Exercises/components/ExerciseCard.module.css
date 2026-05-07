@@ -3,8 +3,8 @@
    Fluid/Responsive дизайн
    ===================================================== */
 
-.exercisesPage .exerciseCard {
-  background: white;
+.exerciseCard {
+  background: var(--color-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -15,7 +15,7 @@
   height: 100%;
 }
 
-.exercisesPage .exerciseCard:hover {
+.exerciseCard:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
 }
@@ -24,7 +24,7 @@
    THUMBNAIL
    ===================================================== */
 
-.exercisesPage .cardThumbnail {
+.cardThumbnail {
   position: relative;
   width: 100%;
   padding-bottom: 56.25%; /* 16:9 */
@@ -32,7 +32,7 @@
   overflow: hidden;
 }
 
-.exercisesPage .cardThumbnail img {
+.cardThumbnail img {
   position: absolute;
   top: 0;
   left: 0;
@@ -42,11 +42,11 @@
   transition: transform 0.3s ease;
 }
 
-.exercisesPage .exerciseCard:hover .cardThumbnail img {
+.exerciseCard:hover .cardThumbnail img {
   transform: scale(1.05);
 }
 
-.exercisesPage .cardThumbnailPlaceholder {
+.cardThumbnailPlaceholder {
   position: absolute;
   top: 0;
   left: 0;
@@ -58,7 +58,7 @@
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
-.exercisesPage .placeholderIcon {
+.placeholderIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -66,7 +66,7 @@
   opacity: 0.9;
 }
 
-.exercisesPage .placeholderIcon svg {
+.placeholderIcon svg {
   width: clamp(52px, 10vw, 68px);
   height: clamp(52px, 10vw, 68px);
 }
@@ -75,7 +75,7 @@
    DIFFICULTY BADGE
    ===================================================== */
 
-.exercisesPage .difficultyBadge {
+.difficultyBadge {
   position: absolute;
   top: clamp(10px, 2vw, 14px);
   right: clamp(10px, 2vw, 14px);
@@ -89,27 +89,27 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.exercisesPage .difficultyEasy {
+.difficultyEasy {
   background: #dbeafe;
   color: #1e40af;
 }
 
-.exercisesPage .difficultyModerate {
+.difficultyModerate {
   background: #e9d5ff;
   color: #7c3aed;
 }
 
-.exercisesPage .difficultyMedium {
+.difficultyMedium {
   background: #fef3c7;
   color: #b45309;
 }
 
-.exercisesPage .difficultyHard {
+.difficultyHard {
   background: #fed7aa;
   color: #c2410c;
 }
 
-.exercisesPage .difficultyVeryHard {
+.difficultyVeryHard {
   background: #fee2e2;
   color: #b91c1c;
 }
@@ -118,7 +118,7 @@
    OVERLAY
    ===================================================== */
 
-.exercisesPage .cardOverlay {
+.cardOverlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -133,11 +133,11 @@
   transition: opacity 0.3s ease;
 }
 
-.exercisesPage .exerciseCard:hover .cardOverlay {
+.exerciseCard:hover .cardOverlay {
   opacity: 1;
 }
 
-.exercisesPage .btnCardAction {
+.btnCardAction {
   width: 40px;
   height: 40px;
   border: none;
@@ -152,40 +152,40 @@
 }
 
 /* SVG иконки в кнопках действий */
-.exercisesPage .btnCardAction svg {
+.btnCardAction svg {
   width: 20px !important;
   height: 20px !important;
   flex-shrink: 0;
 }
 
-.exercisesPage .btnView {
+.btnView {
   background: rgba(255, 255, 255, 0.95);
   color: var(--color-text);
 }
 
-.exercisesPage .btnView:hover {
-  background: white;
+.btnView:hover {
+  background: var(--color-surface);
   transform: scale(1.05);
 }
 
-.exercisesPage .btnEdit {
+.btnEdit {
   background: rgba(99, 102, 241, 0.9);
   color: white;
 }
 
-.exercisesPage .btnEdit:hover {
+.btnEdit:hover {
   background: #6366f1;
   transform: scale(1.05);
 }
 
-.exercisesPage .btnCardAction.btnDelete {
+.btnCardAction.btnDelete {
   background: rgba(239, 68, 68, 0.9) !important;
   color: white !important;
   width: 40px !important;
   border: none !important;
 }
 
-.exercisesPage .btnCardAction.btnDelete:hover {
+.btnCardAction.btnDelete:hover {
   background: var(--color-danger) !important;
   transform: scale(1.05);
 }
@@ -194,7 +194,7 @@
    CONTENT
    ===================================================== */
 
-.exercisesPage .cardContent {
+.cardContent {
   padding: clamp(14px, 3vw, 18px);
   flex: 1;
   display: flex;
@@ -202,7 +202,7 @@
   gap: clamp(10px, 2vw, 14px);
 }
 
-.exercisesPage .cardTitle {
+.cardTitle {
   font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
   color: var(--color-text);
@@ -218,7 +218,7 @@
    METADATA
    ===================================================== */
 
-.exercisesPage .cardMeta {
+.cardMeta {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(10px, 2vw, 14px);
@@ -226,19 +226,19 @@
   color: var(--color-text-muted);
 }
 
-.exercisesPage .metaItem {
+.metaItem {
   display: flex;
   align-items: center;
   gap: clamp(3px, 0.5vw, 5px);
 }
 
-.exercisesPage .metaIcon {
+.metaIcon {
   display: inline-flex;
   align-items: center;
   color: #6366f1;
 }
 
-.exercisesPage .metaIcon svg {
+.metaIcon svg {
   width: 16px;
   height: 16px;
 }
@@ -247,7 +247,7 @@
    EQUIPMENT
    ===================================================== */
 
-.exercisesPage .cardEquipment {
+.cardEquipment {
   display: inline-flex;
   align-items: center;
   gap: clamp(5px, 1vw, 7px);
@@ -260,13 +260,13 @@
   align-self: flex-start;
 }
 
-.exercisesPage .equipmentIcon {
+.equipmentIcon {
   display: inline-flex;
   align-items: center;
   color: #6366f1;
 }
 
-.exercisesPage .equipmentIcon svg {
+.equipmentIcon svg {
   width: 14px;
   height: 14px;
 }
@@ -275,13 +275,13 @@
    MUSCLES
    ===================================================== */
 
-.exercisesPage .cardMuscles {
+.cardMuscles {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.exercisesPage .muscleTag {
+.muscleTag {
   padding: clamp(4px, 0.5vw, 5px) clamp(8px, 2vw, 12px);
   border-radius: 4px;
   font-size: clamp(11px, 2vw, 12px);
@@ -289,19 +289,19 @@
   white-space: nowrap;
 }
 
-.exercisesPage .muscleTag.primary {
+.muscleTag.primary {
   background: #e6fffa;
   color: #234e52;
   border: 1px solid #81e6d9;
 }
 
-.exercisesPage .muscleTag.secondary {
+.muscleTag.secondary {
   background: #fef5e7;
   color: #78350f;
   border: 1px solid #fad390;
 }
 
-.exercisesPage .muscleTag.more {
+.muscleTag.more {
   background: var(--color-border);
   color: var(--color-text-muted);
   border: 1px solid var(--color-border-strong);
@@ -311,13 +311,13 @@
    PHASES
    ===================================================== */
 
-.exercisesPage .cardPhases {
+.cardPhases {
   display: flex;
   flex-wrap: wrap;
   gap: clamp(5px, 1vw, 7px);
 }
 
-.exercisesPage .rehabBadge {
+.rehabBadge {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
@@ -326,25 +326,25 @@
   font-weight: 600;
 }
 
-.exercisesPage .phaseAcute {
+.phaseAcute {
   background: #fef2f2;
   color: var(--color-danger-hover);
   border: 1px solid #fecaca;
 }
 
-.exercisesPage .phaseSubacute {
+.phaseSubacute {
   background: #fffbeb;
   color: var(--color-warning);
   border: 1px solid #fde68a;
 }
 
-.exercisesPage .phaseChronic {
+.phaseChronic {
   background: #f0fdf4;
   color: var(--color-success);
   border: 1px solid #bbf7d0;
 }
 
-.exercisesPage .phaseTag.more {
+.phaseTag.more {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
@@ -360,7 +360,7 @@
    FOOTER
    ===================================================== */
 
-.exercisesPage .cardFooter {
+.cardFooter {
   padding: clamp(10px, 2vw, 14px) clamp(14px, 3vw, 18px);
   border-top: 1px solid var(--color-border);
   display: flex;
@@ -370,18 +370,18 @@
   gap: clamp(8px, 2vw, 12px);
 }
 
-.exercisesPage .cardDate {
+.cardDate {
   font-size: clamp(11px, 2vw, 12px);
   color: var(--color-text-subtle);
 }
 
-.exercisesPage .unilateralBadge {
+.unilateralBadge {
   display: inline-flex;
   align-items: center;
   color: var(--color-text-muted);
 }
 
-.exercisesPage .unilateralBadge svg {
+.unilateralBadge svg {
   width: 16px;
   height: 16px;
 }
@@ -391,12 +391,12 @@
    ===================================================== */
 
 @media (max-width: 767px) {
-  .exercisesPage .cardThumbnail {
+  .cardThumbnail {
     padding-bottom: 0;
     height: 180px;
   }
 
-  .exercisesPage .cardOverlay {
+  .cardOverlay {
     opacity: 1;
     top: auto;
     right: 12px;
@@ -407,15 +407,15 @@
     gap: 8px;
   }
 
-  .exercisesPage .exerciseCard:hover .cardOverlay {
+  .exerciseCard:hover .cardOverlay {
     opacity: 1;
   }
 
-  .exercisesPage .cardTitle {
+  .cardTitle {
     font-size: clamp(15px, 4vw, 18px);
   }
 
-  .exercisesPage .btnCardAction {
+  .btnCardAction {
     width: 36px;
     height: 36px;
     font-size: 16px;

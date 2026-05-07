@@ -4,7 +4,7 @@
    ===================================================== */
 
 .exerciseFilters {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(10px, 2vw, 14px);
   padding: clamp(16px, 3vw, 24px);
   margin-bottom: clamp(18px, 4vw, 28px);
@@ -53,6 +53,8 @@
   transition: all 0.2s;
   min-height: 48px;
   box-sizing: border-box;
+  background: var(--color-surface-2);
+  color: var(--color-text);
 }
 
 .searchInput:focus {
@@ -110,7 +112,8 @@
   border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
-  background: white;
+  background: var(--color-surface-2);
+  color: var(--color-text);
   cursor: pointer;
   transition: all 0.2s;
   min-width: clamp(130px, 28vw, 160px);
@@ -146,7 +149,7 @@
 .btnExpand {
   padding: clamp(9px, 2vw, 11px) clamp(12px, 2vw, 18px);
   border: 2px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   border-radius: 8px;
   font-size: clamp(13px, 2vw, 14px);
   font-weight: 600;
@@ -292,7 +295,7 @@
   align-items: center;
   gap: clamp(5px, 1vw, 7px);
   padding: clamp(5px, 1vw, 7px) clamp(8px, 2vw, 12px);
-  background: white;
+  background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 13px);

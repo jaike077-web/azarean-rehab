@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
 import { patientAuth } from '../../services/api';
 import PatientSplash from '../../components/PatientSplash';
+import ThemeToggle from '../../components/ThemeToggle';
 import s from './PatientLogin.module.css';
 
 const PatientLogin = () => {
@@ -91,6 +92,9 @@ const PatientLogin = () => {
 
   return (
     <div className={s.patientAuthContainer}>
+      <div className={s.patientAuthThemeToggle}>
+        <ThemeToggle />
+      </div>
       <div className={s.patientAuthCard}>
         {/* Logo */}
         <div className={s.patientAuthLogo}>

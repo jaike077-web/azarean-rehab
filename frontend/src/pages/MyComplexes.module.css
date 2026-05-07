@@ -69,7 +69,7 @@
    ===================================================== */
 
 .emptyState {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: clamp(40px, 8vw, 60px) clamp(20px, 4vw, 40px);
   text-align: center;
@@ -142,7 +142,7 @@
   border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: clamp(12px, 2vw, 14px);
-  background: white;
+  background: var(--color-surface);
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -166,7 +166,7 @@
 }
 
 .statCard {
-  background: white;
+  background: var(--color-surface);
   padding: clamp(14px, 3vw, 20px);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -216,7 +216,7 @@
 }
 
 .complexCard {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 14px);
   padding: clamp(16px, 3vw, 20px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -377,7 +377,7 @@
 .pagination button {
   padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
   border: 2px solid var(--color-border);
-  background: white;
+  background: var(--color-surface);
   border-radius: 6px;
   font-size: clamp(12px, 2vw, 14px);
   cursor: pointer;
@@ -420,7 +420,7 @@
 }
 
 .modalContent {
-  background: white;
+  background: var(--color-surface);
   border-radius: clamp(12px, 2vw, 16px);
   padding: clamp(20px, 4vw, 24px);
   max-width: min(400px, 90vw);
@@ -620,7 +620,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    background: white;
+    background: var(--color-surface);
     border: 2px solid var(--color-border);
     border-radius: 8px;
     font-size: 14px;
@@ -738,7 +738,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: white;
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: 10px;
   font-size: 15px;
@@ -831,7 +831,7 @@
   border: 2px solid var(--color-border);
   border-radius: 10px;
   font-size: 14px;
-  background: white;
+  background: var(--color-surface);
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -860,7 +860,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
@@ -908,7 +908,7 @@
 }
 
 .templateCard {
-  background: white;
+  background: var(--color-surface);
   border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: clamp(16px, 3vw, 20px);
