@@ -22,7 +22,7 @@ import PropTypes from 'prop-types';
 import {
   Shield, Sprout, Dumbbell, Activity, Zap, Trophy,
   Target, Ban, CheckCircle2, Snowflake, Check, ChevronDown,
-  Info, AlertTriangle,
+  Info, AlertTriangle, Clock,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import './RoadmapScreen.css';
@@ -331,10 +331,17 @@ const formatWeekRange = (phase) => {
 };
 
 // --- Главный компонент ---
-export default function RoadmapScreen({ dashboardData, patient, onOpenProfile }) {
+// Wave 0 commit 06 — добавлен goTo для навигации на ContactScreen с pre-filled
+// сообщением при нажатии CTA в баннере застревания. goTo уже передаётся через
+// screenProps в PatientDashboard.js, не требует нового prop'а.
+export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, goTo }) {
   const [phases, setPhases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedFutureId, setExpandedFutureId] = useState(null);
+  // Wave 0 commit 06 — застрял ли пациент на текущей фазе.
+  // null до загрузки, потом объект из endpoint'а или { is_stuck: false }
+  // при ошибке/отсутствии программы.
+  const [stuckStatus, setStuckStatus] = useState(null);
 
 
   // Загрузка фаз
@@ -353,6 +360,32 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
+
+  // Wave 0 commit 06 — статус застревания. Ошибка глушится: если бэкенд
+  // недоступен, баннер просто не показывается, остальной экран рендерится.
+  useEffect(() => {
+    let alive = true;
+    rehab.getStuckStatus()
+      .then((res) => {
+        if (!alive) return;
+        setStuckStatus(res?.data || { is_stuck: false });
+      })
+      .catch(() => {
+        if (alive) setStuckStatus({ is_stuck: false });
+      });
+    return () => { alive = false; };
+  }, []);
+
+  const handleContactCurator = useCallback(() => {
+    if (typeof goTo !== 'function' || !stuckStatus) return;
+    const weeks = Math.round(stuckStatus.actual_weeks || 0);
+    const phaseLabel = stuckStatus.phase_title
+      ? `«${stuckStatus.phase_title}»`
+      : '';
+    const msg = `Здравствуйте! Я на фазе ${stuckStatus.current_phase} ${phaseLabel} уже ${weeks} недель. Хочу обсудить прогресс.`.replace(/\s+/g, ' ').trim();
+    // tab 3 = ContactScreen в маппинге PatientDashboard.js
+    goTo(3, { prefilledMessage: msg });
+  }, [goTo, stuckStatus]);
 
   const currentPhaseNumber = dashboardData?.program?.current_phase || 1;
   const currentPhase = useMemo(
@@ -399,6 +432,74 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile })
           {subtitle && <div className="pd-rm-subtitle-top">{subtitle}</div>}
         </div>
       </header>
+
+      {/* Wave 0 commit 06 — баннер застревания на фазе.
+          Не агрессивный (жёлтый info-tone), CTA → переход на Связь
+          с pre-filled сообщением. Inline-стили: RoadmapScreen.css
+          в uncommitted dark-theme правках, не миксуем коммиты. */}
+      {stuckStatus?.is_stuck && (
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            gap: 12,
+            padding: '14px 16px',
+            margin: '0 0 16px 0',
+            borderRadius: 12,
+            background: 'rgba(251, 191, 36, 0.10)',
+            border: '1px solid rgba(251, 191, 36, 0.32)',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: '#fbbf24',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Clock size={18} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: '0.9rem', fontWeight: 600,
+              color: 'var(--pd-n800, #1c1917)', marginBottom: 4,
+            }}>
+              Ты на этой фазе уже {Math.round(stuckStatus.actual_weeks)} недель
+            </div>
+            <div style={{
+              fontSize: '0.8rem', lineHeight: 1.45,
+              color: 'var(--pd-n600, #57534e)', marginBottom: 10,
+            }}>
+              Это нормально, у разных людей сроки разные.
+              Если беспокоит — обсуди прогресс с куратором.
+            </div>
+            <button
+              type="button"
+              onClick={handleContactCurator}
+              style={{
+                background: 'transparent',
+                border: '1.5px solid var(--pd-color-primary, #0d9488)',
+                color: 'var(--pd-color-primary, #0d9488)',
+                padding: '7px 14px',
+                borderRadius: 8,
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                minHeight: 36,
+              }}
+            >
+              Связаться с куратором
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Timeline */}
       <div className="pd-rm-timeline">
@@ -453,8 +554,10 @@ RoadmapScreen.propTypes = {
     avatar_url: PropTypes.string,
   }),
   onOpenProfile: PropTypes.func,
+  goTo: PropTypes.func,
 };
 
 RoadmapScreen.defaultProps = {
   onOpenProfile: () => {},
+  goTo: undefined,
 };

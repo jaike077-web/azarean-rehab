@@ -8,6 +8,7 @@ import { mockDashboardData, mockPhases } from '../../../test-utils/mockData';
 jest.mock('../../../services/api', () => ({
   rehab: {
     getPhases: jest.fn(),
+    getStuckStatus: jest.fn(),
   },
 }));
 
@@ -35,6 +36,8 @@ describe('RoadmapScreen v12', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     rehab.getPhases.mockResolvedValue({ data: mockPhases });
+    // Default: не застрял (большинство тестов).
+    rehab.getStuckStatus.mockResolvedValue({ data: { is_stuck: false } });
   });
 
   describe('loading state', () => {
@@ -289,6 +292,66 @@ describe('RoadmapScreen v12', () => {
         expect(screen.getByText('Путь восстановления')).toBeInTheDocument();
       });
       expect(screen.getByText('Фазы реабилитации недоступны')).toBeInTheDocument();
+    });
+  });
+
+  // Wave 0 commit 06 — stuck banner.
+  describe('Stuck banner', () => {
+    it('не показывает баннер если is_stuck=false (default)', async () => {
+      renderScreen();
+      await waitFor(() => screen.getByText('Путь восстановления'));
+      expect(screen.queryByText(/Ты на этой фазе/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Связаться с куратором/i })).not.toBeInTheDocument();
+    });
+
+    it('показывает баннер с числом недель если is_stuck=true', async () => {
+      rehab.getStuckStatus.mockResolvedValue({
+        data: {
+          is_stuck: true,
+          current_phase: 3,
+          phase_title: 'Восстановление мобильности',
+          actual_weeks: 8.4,
+          expected_weeks: 4,
+          phase_started_at: '2026-03-12',
+        },
+      });
+      renderScreen();
+      await waitFor(() => {
+        expect(screen.getByText(/Ты на этой фазе уже 8 недель/i)).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /Связаться с куратором/i })).toBeInTheDocument();
+    });
+
+    it('CTA вызывает goTo(3) с pre-filled сообщением', async () => {
+      rehab.getStuckStatus.mockResolvedValue({
+        data: {
+          is_stuck: true,
+          current_phase: 3,
+          phase_title: 'Восстановление мобильности',
+          actual_weeks: 8,
+          expected_weeks: 4,
+          phase_started_at: '2026-03-12',
+        },
+      });
+      const goToMock = jest.fn();
+      renderScreen({ goTo: goToMock });
+
+      const cta = await screen.findByRole('button', { name: /Связаться с куратором/i });
+      fireEvent.click(cta);
+
+      expect(goToMock).toHaveBeenCalledTimes(1);
+      const [tabId, params] = goToMock.mock.calls[0];
+      expect(tabId).toBe(3);
+      expect(params.prefilledMessage).toContain('фазе 3');
+      expect(params.prefilledMessage).toContain('Восстановление мобильности');
+      expect(params.prefilledMessage).toContain('8 недель');
+    });
+
+    it('graceful: при ошибке getStuckStatus экран не падает, баннер не рендерится', async () => {
+      rehab.getStuckStatus.mockRejectedValue(new Error('Network down'));
+      renderScreen();
+      await waitFor(() => screen.getByText('Путь восстановления'));
+      expect(screen.queryByText(/Ты на этой фазе/i)).not.toBeInTheDocument();
     });
   });
 });

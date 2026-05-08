@@ -337,6 +337,95 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
   }
 });
 
+/**
+ * Парсер rehab_phases.duration_weeks (хранится как VARCHAR-диапазон):
+ *   "0-2"  → 2  (верхняя граница диапазона)
+ *   "12-20"→ 20
+ *   "36+"  → null (открытая фаза — финальное «поддержание», никогда не stuck)
+ *   "12"   → 12 (одиночное число)
+ *   null/мусор → null (без threshold → не stuck)
+ */
+function parseDurationWeeksUpper(value) {
+  if (value == null) return null;
+  if (typeof value === 'number') return value;
+  const s = String(value).trim();
+  if (/^\d+\+$/.test(s)) return null; // open-ended
+  const range = s.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
+  if (range) return parseInt(range[2], 10);
+  const single = s.match(/^(\d+)$/);
+  if (single) return parseInt(single[1], 10);
+  return null;
+}
+
+/**
+ * GET /api/rehab/my/stuck-status
+ * Wave 0 commit 06: статус застревания пациента на текущей фазе.
+ * is_stuck = NOW() > phase_started_at + duration_weeks_upper × 1.5.
+ * Если нет программы / нет фазы / open-ended фаза («36+») — { is_stuck: false }.
+ * Fallback: phase_started_at NULL → берём rehab_programs.created_at.
+ */
+router.get('/my/stuck-status', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+
+    const programResult = await query(
+      `SELECT id, current_phase, phase_started_at, created_at
+       FROM rehab_programs
+       WHERE patient_id = $1 AND status = 'active' AND is_active = true
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [patientId]
+    );
+
+    if (programResult.rows.length === 0) {
+      return res.json({ data: { is_stuck: false } });
+    }
+
+    const program = programResult.rows[0];
+
+    // Wave 1 заменит хардкод 'acl' на program.program_type из справочника.
+    const phaseResult = await query(
+      `SELECT title, duration_weeks
+       FROM rehab_phases
+       WHERE program_type = 'acl' AND phase_number = $1 AND is_active = true
+       LIMIT 1`,
+      [program.current_phase]
+    );
+
+    if (phaseResult.rows.length === 0) {
+      return res.json({ data: { is_stuck: false } });
+    }
+
+    const phase = phaseResult.rows[0];
+    const durationWeeksUpper = parseDurationWeeksUpper(phase.duration_weeks);
+
+    const phaseStartedAt = program.phase_started_at || program.created_at;
+    const phaseStartDate = new Date(phaseStartedAt);
+    const now = new Date();
+    const daysOnPhase = Math.floor((now - phaseStartDate) / (1000 * 60 * 60 * 24));
+    const actualWeeks = +(daysOnPhase / 7).toFixed(1);
+
+    // Open-ended («36+») или unparseable → не считаем застрявшим
+    const isStuck = durationWeeksUpper !== null
+      ? daysOnPhase > (durationWeeksUpper * 7 * 1.5)
+      : false;
+
+    return res.json({
+      data: {
+        is_stuck: isStuck,
+        current_phase: program.current_phase,
+        phase_title: phase.title,
+        actual_weeks: actualWeeks,
+        expected_weeks: phase.duration_weeks, // отдаём оригинал ("0-2", "36+") для UI
+        phase_started_at: phaseStartDate.toISOString().split('T')[0],
+      },
+    });
+  } catch (error) {
+    console.error('Ошибка получения stuck-status:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения статуса фазы' });
+  }
+});
+
 // =====================================================
 // ПАЦИЕНТ: Дневник
 // =====================================================
