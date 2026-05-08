@@ -174,6 +174,31 @@ describe('HomeScreen v12', () => {
     });
   });
 
+  // Wave 0 commit 04 — разблок повторного захода в комплекс.
+  describe('Hero card — secondary CTA «Начать ещё раз» (allDone=true)', () => {
+    it('показывает secondary кнопку «Начать ещё раз» только при exercisesDoneToday=true', () => {
+      setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });
+      expect(screen.getByRole('button', { name: /Начать ещё раз/i })).toBeInTheDocument();
+    });
+
+    it('не показывает secondary кнопку до завершения упражнений', () => {
+      setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: false } });
+      expect(screen.queryByRole('button', { name: /Начать ещё раз/i })).not.toBeInTheDocument();
+    });
+
+    it('тап по «Начать ещё раз» → goTo(4) (ExercisesScreen)', () => {
+      const { props } = setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });
+      fireEvent.click(screen.getByRole('button', { name: /Начать ещё раз/i }));
+      expect(props.goTo).toHaveBeenCalledWith(4);
+    });
+
+    it('обе кнопки сосуществуют: «Заполнить дневник» (primary) + «Начать ещё раз» (secondary)', () => {
+      setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });
+      expect(screen.getByRole('button', { name: /Заполнить дневник/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Начать ещё раз/i })).toBeInTheDocument();
+    });
+  });
+
   // Specialist chip «Татьяна · куратор» удалён 2026-04-24 — хардкод
   // вводил пациентов в заблуждение (реального куратора в данных нет).
   // Вернуть тест, когда /api/rehab/my/dashboard начнёт отдавать

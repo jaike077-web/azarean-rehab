@@ -21,7 +21,7 @@ import PropTypes from 'prop-types';
 import {
   Check, ChevronRight, Play, Target, Calendar, Info, Lightbulb,
   Smile, Meh, Frown, ClipboardList, Shield, RefreshCw, Dumbbell,
-  Activity, Zap, Trophy, AlertCircle,
+  Activity, Zap, Trophy, AlertCircle, RotateCcw,
 } from 'lucide-react';
 import { IllKnee } from './ui';
 import { rehab } from '../../../services/api';
@@ -213,6 +213,43 @@ export default function HomeScreen({
               >
                 Заполнить дневник
                 <ChevronRight size={14} color="#fff" aria-hidden="true" />
+              </button>
+              {/* Wave 0 commit 04: secondary CTA «Начать ещё раз».
+                  Разблок повторного захода для quad-set 5×/день, pendulum 3×/день
+                  и других программ с frequency_per_day > 1. Полная поддержка
+                  counter «N/M» — Волна 3. Здесь — просто разблокировка кнопки.
+                  Inline-стили: outline в hero (тёмный фон), без заливки —
+                  визуально secondary к primary «Заполнить дневник». */}
+              <button
+                type="button"
+                onClick={() => goTo(4)}
+                style={{
+                  marginTop: 10,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  padding: '9px 16px',
+                  background: 'transparent',
+                  border: '1.5px solid rgba(255, 255, 255, 0.55)',
+                  color: '#fff',
+                  borderRadius: 10,
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'background 150ms, border-color 150ms',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.85)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)';
+                }}
+              >
+                <RotateCcw size={13} aria-hidden="true" />
+                <span>Начать ещё раз</span>
               </button>
             </>
           )}
