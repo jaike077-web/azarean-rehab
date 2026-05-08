@@ -4,6 +4,7 @@ const { query } = require('../database/db');
 const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
 const { progressValidator } = require('../middleware/validators');
 const { logAudit } = require('../utils/audit');
+const { updateStreak } = require('../utils/streaks');
 
 // Отметить выполнение упражнения (JWT инструктора или JWT пациента через cookie/Bearer)
 router.post('/', authenticatePatientOrInstructor, progressValidator, async (req, res) => {
@@ -80,6 +81,23 @@ router.post('/', authenticatePatientOrInstructor, progressValidator, async (req,
         completed ? new Date() : null
       ]
     );
+
+    // Стрик: только для пациента (инструктор отмечает выполнение из админки —
+    // это не активность пациента). Не блокируем основной flow при ошибке.
+    if (req.authType === 'patient' && completed) {
+      try {
+        const programResult = await query(
+          `SELECT id FROM rehab_programs
+            WHERE patient_id = $1 AND status = 'active' AND is_active = true
+            ORDER BY created_at DESC LIMIT 1`,
+          [req.patient.id]
+        );
+        const programId = programResult.rows[0]?.id || null;
+        await updateStreak(req.patient.id, programId, 'progress');
+      } catch (streakErr) {
+        console.error('Failed to update streak from progress:', streakErr.message);
+      }
+    }
 
     res.status(201).json({
       data: result.rows[0],

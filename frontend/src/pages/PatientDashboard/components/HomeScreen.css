@@ -476,6 +476,28 @@
   line-height: 1;
 }
 
+/* Warning при пропуске вчерашнего дня — отдельная плашка под карточкой
+   прогресса. Нейтральный жёлтый, не паникёрский, стрик не обнуляется. */
+.pd-home-streak-warn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background: var(--pd-color-warn-bg, #fef3c7);
+  color: var(--pd-color-warn-text, #92400e);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.pd-home-streak-warn-icon {
+  flex-shrink: 0;
+  color: var(--pd-color-warn, #d97706);
+}
+
 /* ===== 6. Tip row ===== */
 .pd-home-tip {
   display: flex;

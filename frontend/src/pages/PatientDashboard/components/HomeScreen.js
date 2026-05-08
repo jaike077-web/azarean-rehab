@@ -21,7 +21,7 @@ import PropTypes from 'prop-types';
 import {
   Check, ChevronRight, Play, Target, Calendar, Info, Lightbulb,
   Smile, Meh, Frown, ClipboardList, Shield, RefreshCw, Dumbbell,
-  Activity, Zap, Trophy,
+  Activity, Zap, Trophy, AlertCircle,
 } from 'lucide-react';
 import { IllKnee } from './ui';
 import { rehab } from '../../../services/api';
@@ -332,6 +332,20 @@ export default function HomeScreen({
           </div>
         </div>
       </div>
+
+      {/* Warning при пропуске вчерашнего дня — отдельной плашкой под прогрессом,
+          чтобы не ломать flex-layout карточки. Стрик не обнуляется, тон
+          мягкий-жёлтый. */}
+      {streak?.missed_yesterday && (
+        <div className="pd-home-streak-warn" role="status">
+          <AlertCircle
+            size={14}
+            className="pd-home-streak-warn-icon"
+            aria-hidden="true"
+          />
+          <span>Ты пропустил вчера — давай вернёмся к занятиям сегодня!</span>
+        </div>
+      )}
 
       {/* 6. Daily tip row */}
       {tip && (

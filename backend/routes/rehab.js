@@ -17,6 +17,7 @@ const { authenticatePatient } = require('../middleware/patientAuth');
 const { authenticateToken } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
+const { updateStreak, getStreakSummary } = require('../utils/streaks');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -248,22 +249,21 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
       }
     }
 
-    // 3. Стрик
-    const streakResult = await query(
-      `SELECT current_streak, longest_streak, total_days, last_activity_date
-       FROM streaks
-       WHERE patient_id = $1
-       ORDER BY current_streak DESC LIMIT 1`,
-      [patientId]
-    );
-    const rawStreak = streakResult.rows[0] || { current_streak: 0, longest_streak: 0, total_days: 0 };
-    // Трансформация: фронтенд ожидает current, best, atRisk
+    // 3. Стрик — getStreakSummary возвращает поля для UI:
+    // current_streak, longest_streak, total_days, last_activity_date,
+    // days_since_last_activity, missed_yesterday.
+    const summary = await getStreakSummary(patientId);
     const streak = {
-      current: rawStreak.current_streak,
-      best: rawStreak.longest_streak,
-      atRisk: rawStreak.last_activity_date
-        ? (Date.now() - new Date(rawStreak.last_activity_date).getTime()) > 48 * 3600 * 1000
-        : false,
+      current: summary.current_streak,
+      best: summary.longest_streak,
+      total_days: summary.total_days,
+      last_activity_date: summary.last_activity_date,
+      days_since_last_activity: summary.days_since_last_activity,
+      missed_yesterday: summary.missed_yesterday,
+      // atRisk оставляем для обратной совместимости с компонентами,
+      // которые могут на него смотреть (>48ч с последней активности).
+      atRisk: summary.days_since_last_activity !== null
+        && summary.days_since_last_activity >= 2,
     };
 
     // 4. Последняя запись дневника
@@ -560,10 +560,11 @@ router.post('/my/diary', authenticatePatient, async (req, res) => {
       ]
     );
 
-    // Обновляем стрик если упражнения выполнены
-    if (exercises_done) {
-      await updateStreak(patientId, programId, date);
-    }
+    // Любое сохранение дневника считается активностью пациента в этот день.
+    // Старое условие `if (exercises_done)` мёртвое: в v12-DiaryScreen чекбокс
+    // «упражнения сделаны» удалён, флаг всегда false → стрик не рос. Регресс
+    // закрыт переходом на streak_days (Wave 0 commit 01).
+    await updateStreak(patientId, programId, 'diary');
 
     res.status(201).json({ message: 'Запись сохранена', data: result.rows[0] });
   } catch (error) {
@@ -779,29 +780,24 @@ router.delete('/my/diary/:entry_id/photos/:photo_id', authenticatePatient, async
 router.get('/my/streak', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
+    const summary = await getStreakSummary(patientId);
 
-    const result = await query(
+    // Дополнительно: список стриков по всем программам — оставляем для
+    // совместимости со старыми клиентами (раньше эндпоинт возвращал programs[]).
+    const programsResult = await query(
       `SELECT s.*, rp.title as program_title
-       FROM streaks s
-       LEFT JOIN rehab_programs rp ON s.program_id = rp.id
-       WHERE s.patient_id = $1
-       ORDER BY s.current_streak DESC`,
+         FROM streaks s
+         LEFT JOIN rehab_programs rp ON s.program_id = rp.id
+        WHERE s.patient_id = $1
+        ORDER BY s.current_streak DESC`,
       [patientId]
     );
 
-    // Агрегированный стрик
-    const totalDays = result.rows.reduce((sum, s) => sum + (s.total_days || 0), 0);
-    const bestStreak = Math.max(0, ...result.rows.map((s) => s.longest_streak || 0));
-    const currentStreak = result.rows[0]?.current_streak || 0;
-
     res.json({
       data: {
-        current_streak: currentStreak,
-        longest_streak: bestStreak,
-        total_days: totalDays,
-        last_activity_date: result.rows[0]?.last_activity_date || null,
-        programs: result.rows,
-      }
+        ...summary,
+        programs: programsResult.rows,
+      },
     });
   } catch (error) {
     console.error('Ошибка получения стрика:', error.message);
@@ -1384,70 +1380,6 @@ function safeJsonParse(value) {
     return Array.isArray(parsed) ? parsed : [parsed];
   } catch {
     return [value];
-  }
-}
-
-/**
- * Обновить стрик пациента
- */
-async function updateStreak(patientId, programId, dateStr) {
-  try {
-    const today = new Date(dateStr);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    // Получаем текущий стрик
-    const streakResult = await query(
-      `SELECT * FROM streaks WHERE patient_id = $1 AND program_id = $2`,
-      [patientId, programId]
-    );
-
-    if (streakResult.rows.length === 0) {
-      // Создаём новый стрик
-      await query(
-        `INSERT INTO streaks (patient_id, program_id, current_streak, longest_streak, total_days, last_activity_date)
-         VALUES ($1, $2, 1, 1, 1, $3)
-         ON CONFLICT (patient_id, program_id) DO NOTHING`,
-        [patientId, programId, dateStr]
-      );
-      return;
-    }
-
-    const streak = streakResult.rows[0];
-    const lastDate = streak.last_activity_date
-      ? new Date(streak.last_activity_date).toISOString().split('T')[0]
-      : null;
-
-    // Если уже отмечали сегодня — не обновляем
-    if (lastDate === dateStr) return;
-
-    let newCurrent = streak.current_streak || 0;
-
-    if (lastDate === yesterdayStr) {
-      // Продолжаем серию
-      newCurrent += 1;
-    } else {
-      // Серия прервана — начинаем заново
-      newCurrent = 1;
-    }
-
-    const newLongest = Math.max(streak.longest_streak || 0, newCurrent);
-    const newTotal = (streak.total_days || 0) + 1;
-
-    await query(
-      `UPDATE streaks SET
-        current_streak = $1,
-        longest_streak = $2,
-        total_days = $3,
-        last_activity_date = $4,
-        updated_at = NOW()
-       WHERE patient_id = $5 AND program_id = $6`,
-      [newCurrent, newLongest, newTotal, dateStr, patientId, programId]
-    );
-  } catch (error) {
-    console.error('Ошибка обновления стрика:', error.message);
-    // Не бросаем ошибку — стрик не критичен
   }
 }
 

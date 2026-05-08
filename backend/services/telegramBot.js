@@ -4,6 +4,7 @@
 // =====================================================
 
 const { query } = require('../database/db');
+const { updateStreak } = require('../utils/streaks');
 
 let bot = null;
 
@@ -524,7 +525,7 @@ async function saveDiary(chatId, state) {
     );
 
     // Обновляем стрик
-    await updateStreak(state.patientId, programId);
+    await updateStreak(state.patientId, programId, 'diary');
 
     diaryState.set(chatId, { ...state, step: 'done' });
 
@@ -538,57 +539,6 @@ async function saveDiary(chatId, state) {
     await sendMessage(chatId, '⚠️ Не удалось сохранить дневник. Попробуйте позже.');
   } finally {
     diaryState.delete(chatId);
-  }
-}
-
-// =====================================================
-// ОБНОВИТЬ СТРИК (копия логики из rehab.js)
-// =====================================================
-async function updateStreak(patientId, programId) {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-
-    const streakResult = await query(
-      `SELECT id, current_streak, longest_streak, total_days, last_activity_date
-       FROM streaks WHERE patient_id = $1 AND program_id = $2`,
-      [patientId, programId]
-    );
-
-    if (streakResult.rows.length === 0) {
-      await query(
-        `INSERT INTO streaks (patient_id, program_id, current_streak, longest_streak, total_days, last_activity_date)
-         VALUES ($1, $2, 1, 1, 1, $3)
-         ON CONFLICT (patient_id, program_id) DO UPDATE SET
-           current_streak = 1, longest_streak = GREATEST(streaks.longest_streak, 1),
-           total_days = streaks.total_days + 1, last_activity_date = $3`,
-        [patientId, programId, today]
-      );
-      return;
-    }
-
-    const streak = streakResult.rows[0];
-    const lastDate = streak.last_activity_date
-      ? new Date(streak.last_activity_date).toISOString().split('T')[0]
-      : null;
-
-    if (lastDate === today) return; // Уже обновлено сегодня
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    const isConsecutive = lastDate === yesterdayStr;
-    const newStreak = isConsecutive ? streak.current_streak + 1 : 1;
-    const newLongest = Math.max(streak.longest_streak, newStreak);
-
-    await query(
-      `UPDATE streaks SET current_streak = $1, longest_streak = $2,
-       total_days = total_days + 1, last_activity_date = $3
-       WHERE id = $4`,
-      [newStreak, newLongest, today, streak.id]
-    );
-  } catch (error) {
-    console.error('Error updating streak from bot:', error);
   }
 }
 

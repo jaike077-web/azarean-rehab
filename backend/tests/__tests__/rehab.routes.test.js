@@ -765,6 +765,9 @@ describe('GET /api/rehab/my/streak', () => {
   });
 
   it('should return streak data', async () => {
+    // 1. getStreakSummary query
+    query.mockResolvedValueOnce({ rows: [fixtures.mockStreakRow] });
+    // 2. programs query (для совместимости со старыми клиентами)
     query.mockResolvedValueOnce({ rows: [fixtures.mockStreakRow] });
 
     const response = await request(app)
@@ -781,7 +784,8 @@ describe('GET /api/rehab/my/streak', () => {
   });
 
   it('should return zero streak when no data', async () => {
-    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [] }); // summary
+    query.mockResolvedValueOnce({ rows: [] }); // programs
 
     const response = await request(app)
       .get('/api/rehab/my/streak')
