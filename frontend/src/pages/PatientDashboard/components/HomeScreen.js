@@ -4,7 +4,7 @@
 // Blocks:
 //  1. Greeting row (приветствие + имя + AvatarBtn справа)
 //  2. Hero card — gradient, specialist chip, IllKnee, CTA по allDone:
-//       !allDone: «Сегодня · ПКС Фаза N» + «Начать» → Упражнения
+//       !allDone: «Сегодня» badge + «{program_label} — Фаза N» title + «Начать»
 //        allDone: «Готово · Комплекс завершён» + «Заполнить дневник» → Дневник
 //     + week goal row (tap → Roadmap)
 //  3. PGIC card («Как вы сейчас?» — 3 кнопки, state поднят в PatientDashboard)
@@ -180,7 +180,9 @@ export default function HomeScreen({
             <>
               <span className="pd-home-hero-badge pd-home-hero-badge--today">Сегодня</span>
               <h2 className="pd-home-hero-title">
-                {program.diagnosis ? `${program.diagnosis} — Фаза ${currentPhase}` : `Фаза ${currentPhase}`}
+                {program.program_label
+                  ? `${program.program_label} — Фаза ${currentPhase}`
+                  : `Фаза ${currentPhase}`}
               </h2>
               <p className="pd-home-hero-sub">
                 {phase?.name || 'Продолжайте по плану'} · ~15 мин

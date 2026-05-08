@@ -7,6 +7,7 @@ export const mockDashboardData = {
     id: 1,
     title: 'ACL Rehab',
     diagnosis: 'Разрыв ПКС',
+    program_label: 'ПКС',
     current_phase: 1,
     phase_started_at: '2026-01-15',
     surgery_date: '2026-01-01',
