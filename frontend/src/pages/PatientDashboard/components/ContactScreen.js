@@ -19,7 +19,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   Phone, MapPin, ChevronRight, MessageSquare, HelpCircle,
-  AlertCircle, Calendar, Camera, Bot, Activity,
+  AlertCircle, Calendar, Camera, Bot, Activity, FileText,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { MessengerCTA } from './ui';
@@ -72,12 +72,16 @@ const ZARI_SCHEDULE = [
   { key: 'phase',    label: 'Смена фазы', time: '—' },
 ];
 
-export default function ContactScreen({ patient, dashboardData, onOpenProfile }) {
+export default function ContactScreen({ patient, dashboardData, onOpenProfile, goTo }) {
   const [lastFeedback, setLastFeedback] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [tgConnected, setTgConnected] = useState(false);
   const [tgStatusLoading, setTgStatusLoading] = useState(true);
+  // Wave 0 commit 03 — последний отчёт пациента (message_kind='diary_report').
+  // Показываем как карточку под feedback'ом инструктора, чтобы пациент видел
+  // что отчёт реально ушёл в систему. Кнопка «Открыть запись» ведёт на Дневник.
+  const [lastSentReport, setLastSentReport] = useState(null);
 
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
   const programId = dashboardData?.program?.id;
@@ -95,6 +99,13 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
         const fromInstructor = msgs.filter((m) => m.sender_type === 'instructor');
         setLastFeedback(fromInstructor[0] || null);
         setUnreadCount(fromInstructor.filter((m) => !m.is_read).length);
+
+        // Последний diary_report от пациента — для карточки «отправлен отчёт».
+        // Backend сортирует по created_at DESC, берём первый match.
+        const sentReport = msgs.find(
+          (m) => m.sender_type === 'patient' && m.message_kind === 'diary_report'
+        );
+        setLastSentReport(sentReport || null);
       })
       .catch(() => { /* заглушка — рендерим «нет сообщений» */ })
       .finally(() => { if (alive) setFeedbackLoading(false); });
@@ -183,6 +194,69 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile })
           />
         )}
       </div>
+
+      {/* Wave 0 commit 03 — карточка последнего отправленного отчёта.
+          Показывает дату, превью pain_level и кнопку «Открыть запись» →
+          переключение на Дневник. Полная инструкторская карточка с
+          ответом куратора будет в Волне 2. */}
+      {lastSentReport && (
+        <div
+          style={{
+            background: 'var(--pd-color-white)',
+            borderRadius: 12,
+            padding: '14px 16px',
+            marginBottom: 16,
+            border: '1px solid var(--pd-color-border, var(--pd-n200))',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: '0.85rem', color: 'var(--pd-n600)', fontWeight: 600,
+          }}>
+            <FileText size={14} color="var(--pd-color-primary)" aria-hidden="true" />
+            <span>
+              Отчёт по дневнику
+              {lastSentReport.linked_diary?.entry_date
+                ? ` · ${formatEntryDate(lastSentReport.linked_diary.entry_date)}`
+                : ''}
+            </span>
+          </div>
+          <div style={{
+            fontSize: '0.78rem', color: 'var(--pd-n500)',
+            whiteSpace: 'pre-line',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            lineHeight: 1.4,
+          }}>
+            {lastSentReport.body}
+          </div>
+          <button
+            type="button"
+            onClick={() => goTo && goTo(2)}
+            style={{
+              alignSelf: 'flex-start',
+              background: 'transparent',
+              border: 'none',
+              padding: '4px 0',
+              color: 'var(--pd-color-primary)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Открыть запись
+            <ChevronRight size={12} aria-hidden="true" />
+          </button>
+        </div>
+      )}
 
       {/* 3. Studio location — тап открывает Яндекс.Карты по адресу.
             На десктопе — новая вкладка, на мобильном iOS/Android ОС
@@ -317,10 +391,12 @@ ContactScreen.propTypes = {
   patient: PropTypes.object,
   dashboardData: PropTypes.object,
   onOpenProfile: PropTypes.func,
+  goTo: PropTypes.func,
 };
 
 ContactScreen.defaultProps = {
   patient: null,
   dashboardData: null,
   onOpenProfile: () => {},
+  goTo: undefined,
 };

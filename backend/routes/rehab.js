@@ -833,16 +833,29 @@ router.get('/my/messages', authenticatePatient, async (req, res) => {
       }
     }
 
-    // m.* включает linked_diary_id и channel (миграция 20260421).
+    // m.* включает message_kind, linked_diary_id, channel.
     // JOIN на diary_entries возвращает entry_date как text, чтобы избежать
     // проблем с часовым поясом в JSON-сериализации (правило проекта —
     // PostgreSQL DATE → text когда отдаём клиенту).
+    //
+    // linked_diary_date — flat-поле для обратной совместимости (есть тесты).
+    // linked_diary — hydrated объект для рендера карточки diary_report
+    // в ContactScreen (Wave 0 commit 03).
     let sql = `SELECT m.*,
                 CASE
                   WHEN m.sender_type = 'patient' THEN p.full_name
                   WHEN m.sender_type = 'instructor' THEN u.full_name
                 END as sender_name,
-                de.entry_date::text AS linked_diary_date
+                de.entry_date::text AS linked_diary_date,
+                CASE
+                  WHEN m.linked_diary_id IS NOT NULL AND de.id IS NOT NULL THEN
+                    json_build_object(
+                      'id', de.id,
+                      'entry_date', de.entry_date::text,
+                      'pain_level', de.pain_level
+                    )
+                  ELSE NULL
+                END AS linked_diary
                FROM messages m
                LEFT JOIN patients p ON m.sender_type = 'patient' AND m.sender_id = p.id
                LEFT JOIN users u ON m.sender_type = 'instructor' AND m.sender_id = u.id
@@ -888,7 +901,12 @@ router.get('/my/messages', authenticatePatient, async (req, res) => {
 router.post('/my/messages', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
-    const { program_id, body } = req.body;
+    const {
+      program_id,
+      body,
+      message_kind = 'text',
+      linked_diary_id = null,
+    } = req.body;
 
     if (!program_id || !body || !body.trim()) {
       return res.status(400).json({ error: 'Validation Error', message: 'Программа и текст сообщения обязательны' });
@@ -898,7 +916,42 @@ router.post('/my/messages', authenticatePatient, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: 'Сообщение слишком длинное (макс. 5000 символов)' });
     }
 
-    // Проверяем доступ
+    // Whitelist message_kind. session_report зарезервирован для Волны 3,
+    // патиентский endpoint в Волне 0 принимает только text и diary_report.
+    const allowedKinds = ['text', 'diary_report'];
+    if (!allowedKinds.includes(message_kind)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'message_kind должен быть один из: ' + allowedKinds.join(', '),
+      });
+    }
+
+    // Для diary_report linked_diary_id обязателен и должен принадлежать
+    // этому пациенту (ownership check) — иначе можно «прицепить» отчёт
+    // к чужой записи дневника.
+    let linkedDiaryId = null;
+    if (message_kind === 'diary_report') {
+      if (!linked_diary_id || !Number.isInteger(linked_diary_id)) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'для diary_report обязателен linked_diary_id',
+        });
+      }
+
+      const ownership = await query(
+        `SELECT id FROM diary_entries WHERE id = $1 AND patient_id = $2`,
+        [linked_diary_id, patientId]
+      );
+      if (ownership.rows.length === 0) {
+        return res.status(404).json({
+          error: 'Not Found',
+          message: 'запись дневника не найдена',
+        });
+      }
+      linkedDiaryId = linked_diary_id;
+    }
+
+    // Проверяем доступ к программе
     const checkResult = await query(
       `SELECT id FROM rehab_programs WHERE id = $1 AND patient_id = $2`,
       [program_id, patientId]
@@ -908,10 +961,10 @@ router.post('/my/messages', authenticatePatient, async (req, res) => {
     }
 
     const result = await query(
-      `INSERT INTO messages (program_id, sender_type, sender_id, body)
-       VALUES ($1, 'patient', $2, $3)
+      `INSERT INTO messages (program_id, sender_type, sender_id, body, message_kind, linked_diary_id)
+       VALUES ($1, 'patient', $2, $3, $4, $5)
        RETURNING *`,
-      [program_id, patientId, body.trim()]
+      [program_id, patientId, body.trim(), message_kind, linkedDiaryId]
     );
 
     res.status(201).json({ message: 'Сообщение отправлено', data: result.rows[0] });
