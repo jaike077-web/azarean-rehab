@@ -89,6 +89,11 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
   // переходе, чтобы пациент мог сразу вставить в Telegram/WhatsApp/Max.
   const prefilledMessage = screenParams?.prefilledMessage;
   const [copyConfirmed, setCopyConfirmed] = useState(false);
+  // Wave 0 commit 06 — flash-подтверждение прямо на кнопке копирования.
+  // Toast в этом приложении показывается внизу страницы, на мобильном не
+  // виден без скролла. Inline-feedback гарантирует что пациент видит
+  // что копирование сработало, не глядя в toast. Длится 1.5 сек.
+  const [copyFlash, setCopyFlash] = useState(false);
 
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
   const programId = dashboardData?.program?.id;
@@ -107,20 +112,22 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
     return () => { cancelled = true; };
   }, [prefilledMessage, toast]);
 
-  // Кнопка «Скопировать ещё раз». Показываем toast независимо от исхода
-  // clipboard API: в Chrome повторный writeText изредка reject'ит без явной
-  // причины (race условие со сборщиком); если упало — error toast вместо
-  // тишины. Это чинит сценарий 3 smoke коммита 06.
-  const handleCopyPrefilled = useCallback(async () => {
+  // Кнопка «Скопировать ещё раз». Показываем toast синхронно ДО clipboard
+  // API: в Chrome writeText может зависнуть (без resolve и без reject)
+  // если document потерял focus, и юзер не получает feedback'а. Toast
+  // первым — чтобы fix не зависел от поведения clipboard.
+  const handleCopyPrefilled = useCallback(() => {
     if (!prefilledMessage) return;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(prefilledMessage);
-      }
-      setCopyConfirmed(true);
-      toast.success('Скопировано', 'Вставь в чат куратору');
-    } catch {
-      toast.error('Не удалось скопировать', 'Скопируй текст вручную');
+    setCopyConfirmed(true);
+    setCopyFlash(true);
+    setTimeout(() => setCopyFlash(false), 1500);
+    toast.success('Скопировано', 'Вставь в чат куратору');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(prefilledMessage).catch(() => {
+        // Если clipboard действительно упал — отдельный error toast;
+        // визуальный flash на кнопке уже показан, ничего не откатываем.
+        toast.error('Не удалось скопировать', 'Скопируй текст вручную');
+      });
     }
   }, [prefilledMessage, toast]);
 
@@ -209,22 +216,32 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6,
-              padding: '6px 12px',
-              background: copyConfirmed
+              padding: '8px 14px',
+              background: copyFlash
                 ? 'var(--pd-color-ok, #10b981)'
-                : 'var(--pd-color-primary, #0d9488)',
+                : copyConfirmed
+                  ? 'var(--pd-color-ok, #10b981)'
+                  : 'var(--pd-color-primary, #0d9488)',
               border: 'none',
               color: '#fff',
               borderRadius: 8,
-              fontSize: '0.78rem',
-              fontWeight: 500,
+              fontSize: '0.82rem',
+              fontWeight: 600,
               cursor: 'pointer',
+              transform: copyFlash ? 'scale(1.04)' : 'scale(1)',
+              transition: 'transform 200ms ease, background 200ms',
+              boxShadow: copyFlash ? '0 4px 12px rgba(16, 185, 129, 0.4)' : 'none',
             }}
           >
-            {copyConfirmed ? (
+            {copyFlash ? (
+              <>
+                <Check size={14} aria-hidden="true" strokeWidth={3} />
+                Скопировано!
+              </>
+            ) : copyConfirmed ? (
               <>
                 <Check size={12} aria-hidden="true" />
-                Скопировано
+                Скопировано · нажми ещё раз
               </>
             ) : (
               <>
@@ -235,9 +252,14 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
           </button>
           <div style={{
             fontSize: '0.72rem', color: 'var(--pd-n500)',
+            marginBottom: 6,
           }}>
-            Выбери ниже мессенджер и вставь сообщение (Ctrl+V) в чат с куратором.
+            Выбери мессенджер ниже и вставь сообщение (Ctrl+V) в чат с куратором.
           </div>
+          <MessengerCTA
+            primary={primaryMessenger}
+            label="Открыть"
+          />
         </div>
       )}
 
