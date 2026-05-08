@@ -95,22 +95,33 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
 
   useEffect(() => {
     if (!prefilledMessage) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prefilledMessage)
-        .then(() => {
-          setCopyConfirmed(true);
-          toast.success('Сообщение в буфере', 'Вставь в чат с куратором (Ctrl+V)');
-        })
-        .catch(() => { /* clipboard заблокирован — карточка с кнопкой Copy всё равно покажется */ });
-    }
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+    let cancelled = false;
+    navigator.clipboard.writeText(prefilledMessage)
+      .then(() => {
+        if (cancelled) return;
+        setCopyConfirmed(true);
+        toast.success('Сообщение в буфере', 'Вставь в чат с куратором (Ctrl+V)');
+      })
+      .catch(() => { /* clipboard заблокирован — карточка с кнопкой Copy всё равно покажется */ });
+    return () => { cancelled = true; };
   }, [prefilledMessage, toast]);
 
-  const handleCopyPrefilled = useCallback(() => {
-    if (!prefilledMessage || !navigator.clipboard) return;
-    navigator.clipboard.writeText(prefilledMessage).then(() => {
+  // Кнопка «Скопировать ещё раз». Показываем toast независимо от исхода
+  // clipboard API: в Chrome повторный writeText изредка reject'ит без явной
+  // причины (race условие со сборщиком); если упало — error toast вместо
+  // тишины. Это чинит сценарий 3 smoke коммита 06.
+  const handleCopyPrefilled = useCallback(async () => {
+    if (!prefilledMessage) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(prefilledMessage);
+      }
       setCopyConfirmed(true);
       toast.success('Скопировано', 'Вставь в чат куратору');
-    });
+    } catch {
+      toast.error('Не удалось скопировать', 'Скопируй текст вручную');
+    }
   }, [prefilledMessage, toast]);
 
   // Последнее сообщение от инструктора + общее число непрочитанных.
