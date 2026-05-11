@@ -237,4 +237,37 @@ describe('HomeScreen v12', () => {
       expect(screen.queryByText('Совет дня')).not.toBeInTheDocument();
     });
   });
+
+  // Wave 0 commit 01 — закрытие регресса v12 со стриком.
+  describe('Streak warning (missed_yesterday)', () => {
+    it('shows warning when streak.missed_yesterday=true', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          streak: { current: 5, best: 7, missed_yesterday: true, days_since_last_activity: 1 },
+        },
+      });
+      expect(screen.getByText(/пропустил вчера/i)).toBeInTheDocument();
+    });
+
+    it('does NOT show warning when missed_yesterday=false (активность сегодня)', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          streak: { current: 5, best: 7, missed_yesterday: false, days_since_last_activity: 0 },
+        },
+      });
+      expect(screen.queryByText(/пропустил вчера/i)).not.toBeInTheDocument();
+    });
+
+    it('does NOT show warning when streak undefined (нет программы / нет стрика)', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          streak: { current: 0, best: 0 },
+        },
+      });
+      expect(screen.queryByText(/пропустил вчера/i)).not.toBeInTheDocument();
+    });
+  });
 });
