@@ -493,6 +493,9 @@ export const rehab = {
   // Стрик
   getMyStreak: () => patientApi.get('/rehab/my/streak'),
 
+  // Wave 0 commit 06: статус «застрял ли пациент на фазе»
+  getStuckStatus: () => patientApi.get('/rehab/my/stuck-status'),
+
   // Сообщения
   getMyMessages: (params = {}) => {
     const query = new URLSearchParams(params).toString();

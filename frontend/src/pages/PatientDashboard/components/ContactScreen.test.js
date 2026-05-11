@@ -20,6 +20,12 @@ jest.mock('../../../services/api', () => ({
   patientAuth: {},
 }));
 
+// Wave 0 commit 06 — ContactScreen теперь использует useToast (для уведомлений
+// при auto-copy pre-filled сообщения). Mock'аем чтобы тест не требовал ToastProvider.
+jest.mock('../../../context/ToastContext', () => ({
+  useToast: () => ({ success: jest.fn(), error: jest.fn(), info: jest.fn() }),
+}));
+
 const { rehab } = require('../../../services/api');
 
 const mockPatient = {

@@ -1062,6 +1062,132 @@ describe('POST /api/rehab/my/messages — diary_report flow', () => {
   });
 });
 
+// Wave 0 commit 06 — статус застревания пациента на текущей фазе.
+// is_stuck = NOW() > phase_started_at + duration_weeks × 1.5.
+describe('GET /api/rehab/my/stuck-status', () => {
+  it('возвращает 401 без токена', async () => {
+    const res = await request(app).get('/api/rehab/my/stuck-status');
+    expect(res.status).toBe(401);
+  });
+
+  it('возвращает is_stuck=false если активной программы нет', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // нет программы
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ is_stuck: false });
+  });
+
+  it('возвращает is_stuck=false если фазы нет в каталоге rehab_phases', async () => {
+    // 1. программа есть
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        current_phase: 99,
+        phase_started_at: new Date('2026-01-01'),
+        created_at: new Date('2026-01-01'),
+      }],
+    });
+    // 2. но фазы 99 нет в каталоге
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ is_stuck: false });
+  });
+
+  it('возвращает is_stuck=true если пациент на фазе дольше 1.5×duration_weeks', async () => {
+    // phase_started_at = 12 недель назад, duration_weeks = 4 → threshold = 6 недель
+    const twelveWeeksAgo = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000);
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        current_phase: 2,
+        phase_started_at: twelveWeeksAgo,
+        created_at: twelveWeeksAgo,
+      }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ title: 'Ранняя мобилизация', duration_weeks: 4 }],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_stuck).toBe(true);
+    expect(res.body.data.current_phase).toBe(2);
+    expect(res.body.data.phase_title).toBe('Ранняя мобилизация');
+    expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(11);
+    expect(res.body.data.expected_weeks).toBe(4);
+  });
+
+  it('возвращает is_stuck=false если пациент в пределах нормы', async () => {
+    // 2 недели назад, duration_weeks = 4 → threshold = 6 недель → норм
+    const twoWeeksAgo = new Date(Date.now() - 2 * 7 * 24 * 60 * 60 * 1000);
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        current_phase: 2,
+        phase_started_at: twoWeeksAgo,
+        created_at: twoWeeksAgo,
+      }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ title: 'Ранняя мобилизация', duration_weeks: 4 }],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_stuck).toBe(false);
+    expect(res.body.data.actual_weeks).toBeLessThan(4);
+  });
+
+  it('использует created_at как fallback если phase_started_at = NULL', async () => {
+    const tenWeeksAgo = new Date(Date.now() - 10 * 7 * 24 * 60 * 60 * 1000);
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        current_phase: 1,
+        phase_started_at: null,
+        created_at: tenWeeksAgo,
+      }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ title: 'Защита', duration_weeks: 4 }],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_stuck).toBe(true);
+    expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(9);
+  });
+
+  it('возвращает 500 при ошибке БД', async () => {
+    query.mockRejectedValueOnce(new Error('Database error'));
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Server Error');
+  });
+});
+
 describe('GET /api/rehab/my/messages — hydrated linked_diary', () => {
   it('возвращает linked_diary объект {id, entry_date, pain_level} для diary_report', async () => {
     query.mockResolvedValueOnce({
