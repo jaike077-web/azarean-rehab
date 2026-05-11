@@ -103,6 +103,55 @@ describe('HomeScreen v12', () => {
     });
   });
 
+  // Wave 0 commit 02 — динамический program_label вместо сырого diagnosis.
+  describe('Hero title — program_label', () => {
+    it('renders «{program_label} — Фаза N» when program_label provided', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          program: { ...mockDashboardData.program, program_label: 'Плечо', current_phase: 3 },
+        },
+      });
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Плечо — Фаза 3');
+      expect(screen.queryByText(/ПКС/)).not.toBeInTheDocument();
+    });
+
+    it('renders «Фаза N» without prefix when program_label is null', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          program: {
+            ...mockDashboardData.program,
+            program_label: null,
+            diagnosis: 'нечто экзотическое',
+            current_phase: 2,
+          },
+        },
+      });
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Фаза 2');
+      expect(screen.queryByText(/ПКС/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/нечто экзотическое/)).not.toBeInTheDocument();
+    });
+
+    it('does NOT show raw diagnosis even when program_label absent', () => {
+      // Защита от регресса: даже если backend вдруг не отдал program_label,
+      // фронт не должен рендерить длинную мед. формулировку из diagnosis.
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          program: {
+            ...mockDashboardData.program,
+            program_label: undefined,
+            diagnosis: 'Разрыв передней крестообразной связки, BPTB',
+            current_phase: 1,
+          },
+        },
+      });
+      expect(screen.queryByText(/BPTB/)).not.toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Фаза 1');
+    });
+  });
+
   describe('Hero card — allDone=true branch', () => {
     it('shows «Готово» badge + «Заполнить дневник» button (exercisesDoneToday)', () => {
       setup({ dashboardData: { ...mockDashboardData, exercisesDoneToday: true } });

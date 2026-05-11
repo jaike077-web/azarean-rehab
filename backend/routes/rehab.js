@@ -18,6 +18,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
+const { deriveProgramLabel } = require('../utils/programLabels');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -227,8 +228,11 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     const program = programResult.rows[0] || null;
 
     // Добавляем имя пациента из JWT (фронтенд ожидает program.patient_name)
+    // и нормализованный program_label (короткое название для UI вместо
+    // сырого diagnosis — Wave 0 commit 02, временно до Волны 1).
     if (program) {
       program.patient_name = req.patient.full_name;
+      program.program_label = deriveProgramLabel(program.diagnosis);
     }
 
     // 2. Текущая фаза (если есть программа)
