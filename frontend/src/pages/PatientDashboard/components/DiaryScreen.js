@@ -25,7 +25,7 @@ import PropTypes from 'prop-types';
 import {
   Check, Info, Activity, Droplet, Target, Camera, Sparkles, MessageSquare,
   Sunrise, Sun, Moon, Dumbbell, Footprints, Plus, X,
-  ArrowDown, Minus, ArrowUp, TrendingDown, ChevronRight, Zap,
+  ArrowDown, Minus, ArrowUp, TrendingDown, ChevronRight, Zap, Send,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
@@ -140,8 +140,15 @@ export default function DiaryScreen({
   const [pgicFromDb, setPgicFromDb] = useState(null);
   const effectivePgic = pgicFeel || pgicFromDb;
   const [history, setHistory] = useState([]);
+  // Wave 0 commit 03 — отправка отчёта через POST /my/messages.
+  // reportSent = true если для текущего entryId уже есть message с
+  // message_kind='diary_report'. Определяется при загрузке и после успешной
+  // отправки. reportSending — на время запроса (UX блокировка двойного клика).
+  const [reportSending, setReportSending] = useState(false);
+  const [reportSent, setReportSent] = useState(false);
 
   const primaryMessenger = patient?.preferred_messenger || 'telegram';
+  const programId = dashboardData?.program?.id;
   const romProfile = useMemo(
     () => detectRomProfile(dashboardData?.program?.diagnosis || ''),
     [dashboardData?.program?.diagnosis],
@@ -178,6 +185,27 @@ export default function DiaryScreen({
 
     return () => { alive = false; };
   }, []);
+
+  // Wave 0 commit 03 — при загрузке проверяем не отправлен ли отчёт
+  // для текущей записи дневника. Если есть message_kind='diary_report'
+  // с linked_diary_id=entryId — кнопка сразу показывает «✓ Отправлено».
+  // Идёт отдельным запросом после установки entryId; ошибка глушится
+  // (UX не должен страдать от временного 500 на /messages).
+  useEffect(() => {
+    if (!entryId || !programId) return undefined;
+    let alive = true;
+    rehab.getMyMessages({ program_id: programId, limit: 50 })
+      .then((res) => {
+        if (!alive) return;
+        const msgs = Array.isArray(res.data) ? res.data : [];
+        const hasReport = msgs.some(
+          (m) => m.message_kind === 'diary_report' && m.linked_diary_id === entryId
+        );
+        if (hasReport) setReportSent(true);
+      })
+      .catch(() => { /* глушим — не критично для UX */ });
+    return () => { alive = false; };
+  }, [entryId, programId]);
 
   // Saved-флэш на 1.5 сек после любого ручного сохранения
   const triggerSavedFlash = useCallback(() => {
@@ -305,10 +333,10 @@ export default function DiaryScreen({
     setBetter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
   };
 
-  // Отправка отчёта куратору. MessengerCTA сам открывает мессенджер,
-  // мы дополнительно формируем текстовый отчёт и кладём его в буфер —
-  // пациент вставит в чат одним Ctrl+V. Toast объясняет что сделано.
-  const handleReportCopy = useCallback(async () => {
+  // Wave 0 commit 03 — формирование текста отчёта вынесено отдельно,
+  // используется и для основной отправки (POST в БД), и для опционального
+  // дублирования в Telegram через MessengerCTA.
+  const formatReportText = useCallback(() => {
     const painWhenLabel = PAIN_WHEN.find((o) => o.v === painWhen)?.label || '';
     const swellingLabel = SWELLING_OPTS.find((o) => o.v === swelling)?.label || '';
     const betterLabels = better
@@ -316,28 +344,62 @@ export default function DiaryScreen({
       .filter(Boolean)
       .join(', ');
     const dateStr = new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    const lines = [
+    return [
       `Дневник за ${dateStr}`,
       `Боль: ${pain}/10 (${PAIN_LABELS[pain]})${painWhenLabel ? ` · ${painWhenLabel}` : ''}`,
       swellingLabel && `Отёк: ${swellingLabel}`,
       `Сгибание: ${rom}°`,
       betterLabels && `Улучшилось: ${betterLabels}`,
       notes.trim() && `Заметка: ${notes.trim()}`,
-    ].filter(Boolean);
-    const text = lines.join('\n');
+    ].filter(Boolean).join('\n');
+  }, [pain, painWhen, swelling, rom, better, notes]);
 
+  // Основной flow: отправить отчёт через POST /my/messages с привязкой
+  // к записи дневника. Куратор увидит сообщение в инструкторском UI с
+  // карточкой message_kind='diary_report' (полная карточка — Волна 2).
+  const handleReportSend = useCallback(async () => {
+    if (!entryId) {
+      toast.error('Подождите', 'Сначала запись должна сохраниться (~1 секунда)');
+      return;
+    }
+    if (!programId) {
+      toast.error('Нет программы', 'Свяжитесь с куратором — программа реабилитации не назначена');
+      return;
+    }
+    setReportSending(true);
+    try {
+      await rehab.sendMessage({
+        program_id: programId,
+        body: formatReportText(),
+        message_kind: 'diary_report',
+        linked_diary_id: entryId,
+      });
+      setReportSent(true);
+      toast.success('Отчёт отправлен куратору');
+    } catch (err) {
+      toast.error('Не удалось отправить', err?.response?.data?.message || 'Попробуйте ещё раз');
+    } finally {
+      setReportSending(false);
+    }
+  }, [entryId, programId, formatReportText, toast]);
+
+  // Опциональное дублирование в Telegram/WhatsApp/Max — onSend на старой
+  // MessengerCTA: копирует текст в буфер и отдаёт <a href> мессенджеру.
+  // Активно только после reportSent — секция показывается под основной
+  // кнопкой как secondary CTA.
+  const handleReportCopy = useCallback(async () => {
+    const text = formatReportText();
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(text);
-        toast.success('Отчёт скопирован', 'Вставьте в чат куратору (Ctrl+V)');
+        toast.success('Текст в буфере', 'Вставьте в чат (Ctrl+V)');
       } else {
-        // Fallback для старых браузеров / http (не-secure context)
-        toast.info('Отчёт готов', 'Напишите куратору сами — clipboard API недоступен');
+        toast.info('Скопируйте вручную', 'Clipboard API недоступен');
       }
     } catch {
       toast.error('Не удалось скопировать', 'Напишите отчёт вручную');
     }
-  }, [pain, painWhen, swelling, rom, better, notes, toast]);
+  }, [formatReportText, toast]);
 
   // Sparkline points
   const sparkline = useMemo(() => {
@@ -611,14 +673,73 @@ export default function DiaryScreen({
         </div>
       </section>
 
-      {/* 10. MessengerCTA — onSend копирует отчёт в буфер, потом <a href>
-            открывает мессенджер: пациент в 2 тапа отправляет полный отчёт. */}
-      <MessengerCTA
-        primary={primaryMessenger}
-        label="Отправить отчёт"
-        onSend={handleReportCopy}
-        className="pd-diary-cta"
-      />
+      {/* 10. Отправка отчёта (Wave 0 commit 03):
+            Primary — кнопка POST /my/messages с message_kind=diary_report.
+            После успешной отправки появляется secondary MessengerCTA для
+            опционального дублирования в Telegram/WhatsApp/Max. Старый flow
+            «copy-to-clipboard сразу» убран — отчёт теперь сохраняется в БД
+            и виден куратору в инструкторском UI. */}
+      <div className="pd-diary-cta">
+        {/* Inline-стили — DiaryScreen.css в uncommitted dark-theme правках,
+            не миксуем коммиты. Обычные tokens + transitions. */}
+        <button
+          type="button"
+          onClick={handleReportSend}
+          disabled={reportSending || reportSent || !entryId}
+          style={{
+            width: '100%',
+            padding: '14px 20px',
+            background: reportSent ? 'var(--pd-color-ok)' : 'var(--pd-color-primary)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 12,
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            cursor: reportSending || reportSent || !entryId ? 'default' : 'pointer',
+            opacity: (reportSending || (!entryId && !reportSent)) ? 0.6 : 1,
+            transition: 'background 200ms, opacity 200ms',
+          }}
+        >
+          {reportSending ? (
+            <span>Отправляем…</span>
+          ) : reportSent ? (
+            <>
+              <Check size={16} aria-hidden="true" />
+              <span>Отправлено куратору</span>
+            </>
+          ) : (
+            <>
+              <Send size={16} aria-hidden="true" />
+              <span>Отправить отчёт</span>
+            </>
+          )}
+        </button>
+
+        {reportSent && (
+          <>
+            <div
+              style={{
+                fontSize: '0.78rem',
+                color: 'var(--pd-n500)',
+                textAlign: 'center',
+                marginTop: 12,
+                marginBottom: 8,
+              }}
+            >
+              Также можно продублировать в мессенджер
+            </div>
+            <MessengerCTA
+              primary={primaryMessenger}
+              label="Продублировать"
+              onSend={handleReportCopy}
+            />
+          </>
+        )}
+      </div>
 
       {/* 11. Sparkline trend */}
       {trend.length > 0 && (

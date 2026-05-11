@@ -21,6 +21,8 @@ jest.mock('../../../services/api', () => ({
     uploadDiaryPhoto: jest.fn(),
     deleteDiaryPhoto: jest.fn(),
     fetchDiaryPhotoBlob: jest.fn(() => Promise.resolve({ data: null })),
+    getMyMessages: jest.fn(() => Promise.resolve({ data: [] })),
+    sendMessage: jest.fn(() => Promise.resolve({ data: { id: 1 } })),
   },
   patientAuth: {},
 }));
@@ -70,6 +72,8 @@ describe('DiaryScreen v12', () => {
     rehab.getDiaryTrend.mockResolvedValue({ data: [] });
     rehab.createDiaryEntry.mockResolvedValue({ data: { id: 42 } });
     rehab.fetchDiaryPhotoBlob.mockResolvedValue({ data: null });
+    rehab.getMyMessages.mockResolvedValue({ data: [] });
+    rehab.sendMessage.mockResolvedValue({ data: { id: 1 } });
   });
 
   describe('Header', () => {
@@ -295,11 +299,100 @@ describe('DiaryScreen v12', () => {
     });
   });
 
-  describe('MessengerCTA', () => {
-    it('renders «Отправить отчёт» with preferred_messenger', async () => {
-      setup({ patient: { ...mockPatient, preferred_messenger: 'whatsapp' } });
+  // Wave 0 commit 03 — отчёт через POST /my/messages вместо clipboard.
+  // Старая MessengerCTA с label="Отправить отчёт" заменена на обычную
+  // primary кнопку POST'а; MessengerCTA остаётся только как secondary
+  // «Продублировать» после успешной отправки.
+  describe('Report send (POST /my/messages, не clipboard)', () => {
+    const dashboardWithProgram = {
+      program: { id: 7, diagnosis: 'ПКС левого колена', current_phase: 1 },
+    };
+    const todayEntry = {
+      id: 42, pain_level: 3, pain_when: null, swelling: null, rom_degrees: 135,
+      better_list: [], notes: '', photos: [],
+    };
+
+    it('кликает «Отправить отчёт» → sendMessage с правильными параметрами', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({ data: todayEntry });
+      setup({ dashboardData: dashboardWithProgram });
       await waitForLoaded();
-      expect(screen.getByRole('link', { name: /Отправить отчёт · WhatsApp/ })).toBeInTheDocument();
+
+      const sendBtn = await screen.findByRole('button', { name: /Отправить отчёт/i });
+      fireEvent.click(sendBtn);
+
+      await waitFor(() => {
+        expect(rehab.sendMessage).toHaveBeenCalledWith({
+          program_id: 7,
+          body: expect.stringContaining('Дневник за'),
+          message_kind: 'diary_report',
+          linked_diary_id: 42,
+        });
+      });
+    });
+
+    it('после успеха кнопка показывает «Отправлено куратору»', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({ data: todayEntry });
+      setup({ dashboardData: dashboardWithProgram });
+      await waitForLoaded();
+
+      fireEvent.click(await screen.findByRole('button', { name: /Отправить отчёт/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Отправлено куратору/i })).toBeInTheDocument();
+      });
+    });
+
+    it('после успеха появляется secondary MessengerCTA «Продублировать»', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({ data: todayEntry });
+      setup({
+        dashboardData: dashboardWithProgram,
+        patient: { ...mockPatient, preferred_messenger: 'whatsapp' },
+      });
+      await waitForLoaded();
+
+      // До отправки — нет «Продублировать»
+      expect(screen.queryByRole('link', { name: /Продублировать/i })).not.toBeInTheDocument();
+
+      fireEvent.click(await screen.findByRole('button', { name: /Отправить отчёт/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('link', { name: /Продублировать.*WhatsApp/i })).toBeInTheDocument();
+      });
+    });
+
+    it('кнопка сразу «Отправлено» если getMyMessages вернул diary_report для этого entry', async () => {
+      rehab.getDiaryEntry.mockResolvedValue({ data: todayEntry });
+      rehab.getMyMessages.mockResolvedValue({
+        data: [
+          {
+            id: 99,
+            sender_type: 'patient',
+            message_kind: 'diary_report',
+            linked_diary_id: 42,
+            body: 'Прошлый отчёт',
+            created_at: '2026-05-08T10:00:00Z',
+          },
+        ],
+      });
+      setup({ dashboardData: dashboardWithProgram });
+
+      // ждём отдельного useEffect[entryId,programId] на проверку отправки
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Отправлено куратору/i })).toBeInTheDocument();
+      });
+
+      // Повторно sendMessage не дёргался
+      expect(rehab.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('кнопка disabled если нет entryId (запись не сохранена)', async () => {
+      // getDiaryEntry → null + createDiaryEntry не дёргался → entryId=null
+      rehab.getDiaryEntry.mockResolvedValue({ data: null });
+      setup({ dashboardData: dashboardWithProgram });
+      await waitForLoaded();
+
+      const sendBtn = await screen.findByRole('button', { name: /Отправить отчёт/i });
+      expect(sendBtn).toBeDisabled();
     });
   });
 });

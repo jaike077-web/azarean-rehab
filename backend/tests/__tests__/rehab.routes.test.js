@@ -939,6 +939,194 @@ describe('POST /api/rehab/my/messages', () => {
   });
 });
 
+// Wave 0 commit 03 — message_kind + linked_diary_id (diary_report flow).
+// Patient kicks off отчёт через POST /my/messages с message_kind='diary_report'
+// и linked_diary_id, ownership check на diary_entries обязателен.
+describe('POST /api/rehab/my/messages — diary_report flow', () => {
+  it('создаёт diary_report при валидном linked_diary_id (ownership ok)', async () => {
+    // 1. diary_entries ownership check → пациент владеет diary_id=42
+    query.mockResolvedValueOnce({ rows: [{ id: 42 }] });
+    // 2. rehab_programs ownership check
+    query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+    // 3. INSERT возвращает row с новыми полями
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 99,
+        body: 'Дневник за 8 мая\nБоль: 3/10',
+        message_kind: 'diary_report',
+        linked_diary_id: 42,
+        sender_type: 'patient',
+        sender_id: 14,
+        program_id: 1,
+        created_at: '2026-05-08T10:30:00Z',
+      }],
+    });
+
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        program_id: 1,
+        body: 'Дневник за 8 мая\nБоль: 3/10',
+        message_kind: 'diary_report',
+        linked_diary_id: 42,
+      })
+      .expect(201);
+
+    expect(response.body.data.message_kind).toBe('diary_report');
+    expect(response.body.data.linked_diary_id).toBe(42);
+  });
+
+  it('возвращает 400 если message_kind=diary_report но нет linked_diary_id', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        program_id: 1,
+        body: 'отчёт',
+        message_kind: 'diary_report',
+      })
+      .expect(400);
+
+    expect(response.body.message).toContain('linked_diary_id');
+  });
+
+  it('возвращает 400 если linked_diary_id не целое число', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        program_id: 1,
+        body: 'отчёт',
+        message_kind: 'diary_report',
+        linked_diary_id: 'not-a-number',
+      })
+      .expect(400);
+
+    expect(response.body.message).toContain('linked_diary_id');
+  });
+
+  it('возвращает 404 если linked_diary принадлежит чужому пациенту', async () => {
+    // diary_entries ownership check возвращает пустой результат
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        program_id: 1,
+        body: 'отчёт',
+        message_kind: 'diary_report',
+        linked_diary_id: 999,
+      })
+      .expect(404);
+
+    expect(response.body.error).toBe('Not Found');
+    expect(response.body.message).toContain('запись дневника');
+  });
+
+  it('возвращает 400 для невалидного message_kind', async () => {
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({
+        program_id: 1,
+        body: 'test',
+        message_kind: 'session_report', // зарезервирован для Волны 3
+      })
+      .expect(400);
+
+    expect(response.body.message).toContain('message_kind');
+  });
+
+  it('обычное text-сообщение по-прежнему создаётся без linked_diary_id', async () => {
+    // Без message_kind = text default → diary_entries check пропускается
+    query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // rehab_programs
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 100,
+        body: 'Привет',
+        message_kind: 'text',
+        linked_diary_id: null,
+      }],
+    });
+
+    const response = await request(app)
+      .post('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`)
+      .send({ program_id: 1, body: 'Привет' })
+      .expect(201);
+
+    expect(response.body.data.message_kind).toBe('text');
+    expect(response.body.data.linked_diary_id).toBeNull();
+  });
+});
+
+describe('GET /api/rehab/my/messages — hydrated linked_diary', () => {
+  it('возвращает linked_diary объект {id, entry_date, pain_level} для diary_report', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 99,
+          program_id: 1,
+          sender_type: 'patient',
+          sender_id: 14,
+          body: 'Дневник за 8 мая',
+          is_read: false,
+          message_kind: 'diary_report',
+          linked_diary_id: 42,
+          channel: null,
+          created_at: '2026-05-08T10:30:00Z',
+          sender_name: 'Вадим',
+          linked_diary_date: '2026-05-08',
+          linked_diary: { id: 42, entry_date: '2026-05-08', pain_level: 3 },
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0]).toHaveProperty('linked_diary');
+    expect(res.body.data[0].linked_diary).toEqual({
+      id: 42,
+      entry_date: '2026-05-08',
+      pain_level: 3,
+    });
+    expect(res.body.data[0].message_kind).toBe('diary_report');
+  });
+
+  it('linked_diary = null для обычных text-сообщений', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 100,
+          program_id: 1,
+          sender_type: 'instructor',
+          sender_id: 7,
+          body: 'Хорошо',
+          message_kind: 'text',
+          linked_diary_id: null,
+          channel: null,
+          created_at: '2026-05-08T11:00:00Z',
+          sender_name: 'Татьяна',
+          linked_diary_date: null,
+          linked_diary: null,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/messages')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].linked_diary).toBeNull();
+  });
+});
+
 // =====================================================
 // AUTHENTICATED ENDPOINTS - Notifications
 // =====================================================
