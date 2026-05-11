@@ -1485,8 +1485,12 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
                     'difficulty_level', e.difficulty_level,
                     'equipment', e.equipment,
                     'instructions', e.instructions,
+                    'cues', e.cues,
+                    'tips', e.tips,
                     'contraindications', e.contraindications,
-                    'tips', e.tips
+                    'absolute_contraindications', e.absolute_contraindications,
+                    'red_flags', e.red_flags,
+                    'safe_with_inflammation', e.safe_with_inflammation
                   )
                 ) ORDER BY ce.order_number
               ) as exercises

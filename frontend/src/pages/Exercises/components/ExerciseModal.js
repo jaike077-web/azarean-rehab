@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Info } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi } from '../../../services/api';
 import s from './ExerciseModal.module.css';
+
+// Wave 0 commit 05 — hint-метки рядом с полями, видимые инструктору.
+// Помогают понять где в пациентском UI отрисуется значение поля,
+// не оставляет cues/tips/red_flags как «dead» в БД. Inline-стили потому
+// что s.fieldHint в module.css не определён (existing inconsistency).
+const PatientHint = ({ children }) => (
+  <span style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 8,
+    fontSize: 11,
+    fontWeight: 400,
+    color: 'var(--color-text-muted, #6b7280)',
+  }}>
+    <Info size={11} aria-hidden="true" style={{ opacity: 0.7 }} />
+    {children}
+  </span>
+);
 
 const ExerciseModal = ({ exercise, onClose, onSave }) => {
   // ========================================
@@ -278,7 +297,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
               {/* Описание - MARKDOWN EDITOR */}
               <div className={s.formGroup}>
-                <label>Описание</label>
+                <label>
+                  Описание
+                  <PatientHint>Видно пациенту в секции «Описание»</PatientHint>
+                </label>
                 <p className={s.fieldHint}>
                   Поддерживает форматирование: **жирный**, *курсив*, списки, заголовки
                 </p>
@@ -539,7 +561,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                 <div className={s.advancedFields}>
                   {/* Инструкции */}
                   <div className={s.formGroup}>
-                    <label>Инструкции по выполнению</label>
+                    <label>
+                      Инструкции по выполнению
+                      <PatientHint>Видно пациенту в секции «Как делать»</PatientHint>
+                    </label>
                     <textarea
                       value={instructions}
                       onChange={(e) => setInstructions(e.target.value)}
@@ -550,7 +575,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
                   {/* Подсказки */}
                   <div className={s.formGroup}>
-                    <label>Вербальные подсказки (cues)</label>
+                    <label>
+                      Вербальные подсказки (cues)
+                      <PatientHint>Видно пациенту как «Подсказки во время выполнения»</PatientHint>
+                    </label>
                     <textarea
                       value={cues}
                       onChange={(e) => setCues(e.target.value)}
@@ -561,7 +589,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
                   {/* Советы */}
                   <div className={s.formGroup}>
-                    <label>Советы инструктору</label>
+                    <label>
+                      Полезно знать (tips)
+                      <PatientHint>Видно пациенту в секции «Полезно знать»</PatientHint>
+                    </label>
                     <textarea
                       value={tips}
                       onChange={(e) => setTips(e.target.value)}
@@ -572,7 +603,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
                   {/* Противопоказания */}
                   <div className={s.formGroup}>
-                    <label>Противопоказания</label>
+                    <label>
+                      Противопоказания
+                      <PatientHint>Видно пациенту в «Безопасность» → «С осторожностью при:»</PatientHint>
+                    </label>
                     <textarea
                       value={contraindications}
                       onChange={(e) => setContraindications(e.target.value)}

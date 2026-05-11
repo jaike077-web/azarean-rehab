@@ -205,17 +205,92 @@ const ExerciseRunner = ({
             )}
           </div>
 
-          {/* Details accordion */}
-          {(exercise.description || exercise.instructions || exercise.contraindications) && (
+          {/* Details accordion — Wave 0 commit 05: 4 секции вместо 3.
+              Description / Как делать (instructions+cues) / Полезно знать /
+              Безопасность (merged contraindications + absolute + red_flags) +
+              опциональный badge safe_with_inflammation. Toggle и обёртка
+              .details-toggle/.details-body — НЕ ТРОНУТЫ (LOCKED). Новые
+              классы добавлены рядом, не заменяют старые. */}
+          {(exercise.description || exercise.instructions || exercise.cues
+            || exercise.tips || exercise.contraindications
+            || exercise.absolute_contraindications || exercise.red_flags
+            || exercise.safe_with_inflammation) && (
             <div className="sec">
               <button type="button" onClick={() => setShowDetails(!showDetails)} className="details-toggle">
                 {showDetails ? '▼ Скрыть описание' : '▶ Описание и инструкции'}
               </button>
               {showDetails && (
                 <div className="details-body">
-                  {exercise.description && (<><div className="sec-t">Описание</div><p className="sec-body">{exercise.description}</p></>)}
-                  {exercise.instructions && (<><div className="sec-t">Инструкции</div><p className="sec-body">{exercise.instructions}</p></>)}
-                  {exercise.contraindications && (<><div className="sec-t sec-t--danger">Противопоказания</div><p className="sec-body">{exercise.contraindications}</p></>)}
+                  {/* 1. Описание */}
+                  {exercise.description && (
+                    <>
+                      <div className="sec-t">Описание</div>
+                      <p className="sec-body">{exercise.description}</p>
+                    </>
+                  )}
+
+                  {/* 2. Как делать (instructions + cues подзаголовком) */}
+                  {(exercise.instructions || exercise.cues) && (
+                    <>
+                      <div className="sec-t">Как делать</div>
+                      {exercise.instructions && (
+                        <p className="sec-body">{exercise.instructions}</p>
+                      )}
+                      {exercise.cues && (
+                        <div className="sec-cues">
+                          <div className="sec-subt">Подсказки во время выполнения</div>
+                          <p className="sec-body">{exercise.cues}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* 3. Полезно знать (tips) */}
+                  {exercise.tips && (
+                    <>
+                      <div className="sec-t">Полезно знать</div>
+                      <p className="sec-body">{exercise.tips}</p>
+                    </>
+                  )}
+
+                  {/* 4. Безопасность (merged contraindications + absolute + red_flags).
+                      Градация: «нельзя» → «с осторожностью» → «прекрати и к врачу». */}
+                  {(exercise.contraindications
+                    || exercise.absolute_contraindications
+                    || exercise.red_flags) && (
+                    <>
+                      <div className="sec-t sec-t--danger">Безопасность</div>
+
+                      {exercise.absolute_contraindications && (
+                        <div className="sec-block sec-block-strong">
+                          <div className="sec-subt">Нельзя выполнять при:</div>
+                          <p className="sec-body">{exercise.absolute_contraindications}</p>
+                        </div>
+                      )}
+
+                      {exercise.contraindications && (
+                        <div className="sec-block">
+                          <div className="sec-subt">С осторожностью при:</div>
+                          <p className="sec-body">{exercise.contraindications}</p>
+                        </div>
+                      )}
+
+                      {exercise.red_flags && (
+                        <div className="sec-block sec-block-stop">
+                          <div className="sec-subt">Прекрати и обратись к врачу при:</div>
+                          <p className="sec-body">{exercise.red_flags}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* 5. Бейдж safe_with_inflammation */}
+                  {exercise.safe_with_inflammation && (
+                    <div className="sec-badge sec-badge-safe">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+                      <span>Безопасно при активном воспалении</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

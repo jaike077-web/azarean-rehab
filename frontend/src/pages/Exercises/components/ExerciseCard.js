@@ -10,6 +10,7 @@ import {
   Move,
   Pencil,
   Scale,
+  Shield,
   Target,
   Trash2,
   User,
@@ -286,6 +287,29 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
         <span className={s.cardDate}>
           {exercise.created_at ? formatDateNumeric(exercise.created_at) : ''}
         </span>
+        {/* Wave 0 commit 05 — индикатор «безопасно при воспалении».
+            Inline-стиль (s.safeBadge не определён в module.css). Видно
+            инструктору при выборе упражнений для острой фазы. */}
+        {exercise.safe_with_inflammation && (
+          <span
+            title="Безопасно при активном воспалении"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '2px 8px',
+              fontSize: 11,
+              fontWeight: 500,
+              borderRadius: 6,
+              background: 'rgba(52, 199, 89, 0.14)',
+              color: '#1f8a3d',
+              marginLeft: 'auto',
+            }}
+          >
+            <Shield size={11} aria-hidden="true" />
+            При воспалении
+          </span>
+        )}
         {exercise.is_unilateral && (
           <span className={s.unilateralBadge} title="Одностороннее">
             <Scale size={16} />

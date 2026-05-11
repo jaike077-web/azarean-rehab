@@ -2295,6 +2295,20 @@
 /* Details toggle */
 .pd-runner .details-toggle{background:none;border:none;padding:14px 0 8px;font-size:13px;font-weight:600;color:var(--az-blue);cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .pd-runner .details-body{padding-bottom:6px;}
+/* Wave 0 commit 05 — расширенный accordion: cues, tips, merged safety,
+   safe_with_inflammation badge. Не трогаем .details-toggle/.details-body
+   и .sec-t/.sec-body — добавляем новые классы рядом. */
+.pd-runner .sec-subt{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;color:var(--az-tertiary);padding:8px 0 4px;}
+.pd-runner .sec-cues{margin-top:6px;padding-top:8px;border-top:0.5px dashed var(--az-separator);}
+.pd-runner .sec-block{margin:6px 0 10px 0;}
+.pd-runner .sec-block:last-child{margin-bottom:4px;}
+.pd-runner .sec-block-strong .sec-body{font-weight:500;}
+.pd-runner .sec-block-stop{background:rgba(255,59,48,0.08);border-left:3px solid var(--az-red);padding:6px 10px;border-radius:6px;}
+.pd-runner .sec-block-stop .sec-subt{color:var(--az-red);}
+.pd-runner .sec-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;font-weight:500;border-radius:8px;margin-top:8px;}
+.pd-runner .sec-badge-safe{background:rgba(52,199,89,0.12);color:#1f8a3d;}
+[data-theme='dark'] .pd-runner .sec-block-stop{background:rgba(255,59,48,0.18);}
+[data-theme='dark'] .pd-runner .sec-badge-safe{background:rgba(52,199,89,0.22);color:#4cd964;}
 /* Video */
 .pd-runner .vid{position:relative;width:100%;padding-bottom:56.25%;overflow:hidden;background:#000;} .pd-runner .vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;} .pd-runner .vid--ph{background:var(--az-bg);display:flex;align-items:center;justify-content:center;} .pd-runner .vid--ph span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:48px;}
 /* Timer */

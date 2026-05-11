@@ -71,7 +71,7 @@ router.get('/', authenticateToken, async (req, res) => {
     } = req.query;
 
     let queryText = `
-      SELECT 
+      SELECT
         id,
         title,
         short_title,
@@ -84,6 +84,7 @@ router.get('/', authenticateToken, async (req, res) => {
         equipment,        -- JSONB массив
         position,         -- JSONB массив
         rehab_phases,     -- JSONB массив
+        safe_with_inflammation,  -- Wave 0 commit 05: бейдж в ExerciseCard
         is_active,
         created_at
       FROM exercises
