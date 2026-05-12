@@ -40,11 +40,14 @@ export default function usePatientAvatarBlob(avatarUrl) {
       })
       .catch((err) => {
         if (!cancelled) setSrc(null);
-        // Диагностика: пропадает ли аватарка из-за 401 / 404 / 503 / network.
+        const status = err?.response?.status;
+        // 404 — ожидаемый сценарий: avatar_url в БД есть, но файла на диске нет
+        // (перенос VDS, очистка /uploads, миграция). Это не баг, не шумим в ops-bot.
+        if (status === 404) return;
+        // Диагностика: пропадает ли аватарка из-за 401 / 503 / network.
         // Временный лог — снять когда поймём корневую причину.
         try {
           const apiUrl = process.env.REACT_APP_API_URL || '';
-          const status = err?.response?.status;
           const standalone = window.matchMedia
             && window.matchMedia('(display-mode: standalone)').matches;
           fetch(`${apiUrl}/api/log-error`, {
