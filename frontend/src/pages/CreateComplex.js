@@ -680,14 +680,10 @@ function CreateComplex() {
           <p>Упражнений: <strong>{selectedExercises.length}</strong></p>
 
           {!selectedPatient?.is_registered && (
-            <div className={s.infoHint} style={{
-              marginTop: 16, padding: 12,
-              background: '#F0F7FF', border: '1px solid #D4E5F7',
-              borderRadius: 8, fontSize: 13, color: '#2d3748', textAlign: 'left'
-            }}>
+            <div className={s.infoHint}>
               <strong>Пациент ещё не зарегистрирован</strong><br/>
               Передайте ему ссылку для регистрации:<br/>
-              <code style={{ userSelect: 'all', wordBreak: 'break-all' }}>
+              <code className={s.infoHintCode}>
                 {window.location.origin}/patient-register
               </code><br/>
               При регистрации он должен указать email <strong>{selectedPatient?.email || '—'}</strong>

@@ -491,8 +491,8 @@
 }
 
 .errorMessage {
-  background: #fff5f5;
-  border: 2px solid #feb2b2;
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger);
   border-radius: 12px;
   padding: clamp(12px, 2vw, 16px) clamp(16px, 3vw, 20px);
   color: var(--color-danger-hover);
@@ -509,4 +509,44 @@
   .backButtonWrapper {
     display: none !important;
   }
+}
+
+/* =====================================================
+   FORM INPUTS — token-based для dark/light themes
+   2026-05-12 fix B3: input'ы без стилей показывали
+   браузерный белый дефолт на тёмном фоне.
+   ===================================================== */
+.exerciseParams input,
+.searchBox input,
+.editComplexPage textarea,
+.editComplexPage input[type="text"],
+.editComplexPage input[type="number"],
+.editComplexPage input[type="search"],
+.editComplexPage select {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+  font-size: clamp(13px, 2vw, 14px);
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.exerciseParams input::placeholder,
+.searchBox input::placeholder,
+.editComplexPage textarea::placeholder,
+.editComplexPage input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.exerciseParams input:focus,
+.searchBox input:focus,
+.editComplexPage textarea:focus,
+.editComplexPage input:focus,
+.editComplexPage select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
 }

@@ -34,13 +34,14 @@
   .formSection {
     margin-bottom: clamp(24px, 5vw, 36px);
     padding: clamp(18px, 4vw, 28px);
-    background: #f9fafb;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     border-radius: clamp(10px, 2vw, 14px);
   }
-  
+
   .formSection.requiredSection {
-    background: #fef3c7;
-    border: 1px solid #fde68a;
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning);
   }
   
   .sectionTitle {
@@ -148,7 +149,7 @@
   .formErrorMessage {
     width: 100%;
     padding: 10px 16px;
-    background: #fef2f2;
+    background: var(--color-danger-bg);
     color: var(--color-danger-hover);
     border-radius: 8px;
     font-size: 14px;
@@ -258,8 +259,8 @@
   }
   
   .checkboxLabel:has(input:checked) {
-    border-color: #6366f1;
-    background: #eef2ff;
+    border-color: var(--color-primary);
+    background: var(--color-info-bg);
   }
   
   /* =====================================================
@@ -517,7 +518,7 @@
   }
   
   .closeBtn:hover {
-    background: #e5e7eb;
+    background: var(--color-border);
   }
   
   /* =====================================================

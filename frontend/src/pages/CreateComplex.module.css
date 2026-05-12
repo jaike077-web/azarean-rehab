@@ -72,8 +72,8 @@
    ===================================================== */
 
 .errorMessage {
-  background: #fff5f5;
-  border: 2px solid #feb2b2;
+  background: var(--color-danger-bg);
+  border: 2px solid var(--color-danger);
   border-radius: 12px;
   padding: clamp(12px, 2vw, 14px) clamp(14px, 2vw, 18px);
   color: var(--color-danger-hover);
@@ -212,7 +212,7 @@
 
 .patientItem.selected {
   border-color: var(--color-primary);
-  background: #eef2ff;
+  background: var(--color-info-bg);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -881,8 +881,8 @@
   
   /* Секция комплекса */
   .selectedSection {
-    background: #eef2ff;
-    border: 2px dashed #c7d2fe;
+    background: var(--color-info-bg);
+    border: 2px dashed var(--color-primary);
   }
   
   .emptyComplex {
@@ -1089,7 +1089,7 @@
   
   .templateItem:hover {
     border-color: var(--color-primary);
-    background: #eef2ff;
+    background: var(--color-info-bg);
   }
   
   .templateInfo {
@@ -1229,4 +1229,82 @@
   .selectedExercisesList {
     gap: 8px;
   }
+}
+
+/* =====================================================
+   FORM INPUTS — token-based (для dark/light themes)
+   Эти селекторы добавлены 2026-05-12 — раньше input'ы
+   не имели стилей и браузер показывал дефолтные
+   белые на тёмном фоне (B3 prod-smoke fix).
+   ===================================================== */
+.formGroup input[type="text"],
+.formGroup input[type="number"],
+.formGroup input[type="date"],
+.formGroup input[type="time"],
+.formGroup input[type="email"],
+.formGroup input[type="search"],
+.formGroup textarea,
+.formGroup select,
+.diagnosisCard input[type="text"],
+.diagnosisCard textarea,
+.diagnosisCard select,
+.searchBox input[type="text"],
+.searchBox input[type="search"] {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px) clamp(12px, 2vw, 14px);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: clamp(14px, 2vw, 15px);
+  font-family: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder,
+.diagnosisCard input::placeholder,
+.diagnosisCard textarea::placeholder,
+.searchBox input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus,
+.formGroup select:focus,
+.diagnosisCard input:focus,
+.diagnosisCard textarea:focus,
+.diagnosisCard select:focus,
+.searchBox input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.formGroup textarea,
+.diagnosisCard textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.infoHint {
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.infoHintCode {
+  user-select: all;
+  word-break: break-all;
+  background: var(--color-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-primary);
+  font-family: monospace;
 }

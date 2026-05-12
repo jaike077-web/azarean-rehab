@@ -22,15 +22,26 @@
 
 .editTemplatePage .formField input,
 .editTemplatePage .formField select,
-.editTemplatePage .formField textarea {
+.editTemplatePage .formField textarea,
+.editTemplatePage .exerciseParams input,
+.editTemplatePage .notesInput,
+.editTemplatePage .searchBox input {
   width: 100%;
   padding: clamp(10px, 2vw, 12px);
+  background: var(--color-surface-2);
+  color: var(--color-text);
   border: 2px solid var(--color-border);
   border-radius: 10px;
   font-size: clamp(14px, 2vw, 15px);
   font-family: inherit;
   transition: all 0.2s;
   box-sizing: border-box;
+}
+
+.editTemplatePage input::placeholder,
+.editTemplatePage textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
 }
 
 .editTemplatePage .formField textarea {
