@@ -97,6 +97,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260427_oauth_
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_create_migrations_table.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_telegram_chat_id_numeric.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260508_streak_days.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260512_program_types.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -112,6 +113,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260508_streak
 **20260508_streak_days:** новая таблица `streak_days` (id, patient_id FK, program_id FK, activity_date DATE, source CHECK IN ('progress','diary','mini','manual'), UNIQUE patient/date/program). Закрытие регресса v12: `current_streak` теперь = total активных дней, не consecutive. Бэкфилл из существующих `streaks.last_activity_date` за 90 дней. Идемпотентна (DO-блок проверяет наличие таблицы). Wave 0 commit 01.
 
 **20260429_patient_deletion_queue:** новая таблица для очереди soft → hard delete (152-ФЗ ст.21 / GDPR Art.17). При запросе DELETE /me — `is_active=false` сразу + INSERT в очередь со `scheduled_for=NOW()+30d`. Cron в scheduler.js в 03:30 МСК берёт due-записи и делает hard DELETE patient (CASCADE через FK подчищает complexes/diary/progress). Partial UNIQUE индекс по `patient_id WHERE executed_at IS NULL AND cancelled_at IS NULL` — один активный запрос на пациента.
+
+**20260512_program_types:** справочник `program_types` (code PK, label, joint, body_side_relevant, surgery_required, position) + поле `rehab_programs.program_type VARCHAR(50) NOT NULL DEFAULT 'acl'` с FK на program_types.code. Минимальный seed: `acl` / `knee_general` / `shoulder_general`. Backfill для существующих программ — regex по diagnosis на маркеры плеча (плеч/shoulder/манжет/надостн/cuff/frozen) → `shoulder_general`, остальное остаётся `acl` (90% knee по статистике). Wave 1 коммит 1.01 — фундамент multi-protocol. Использование `program_type` в backend/UI/telegramBot — в коммитах 1.02-1.04. Полностью идемпотентна.
 
 ### 2. Переменные окружения
 
