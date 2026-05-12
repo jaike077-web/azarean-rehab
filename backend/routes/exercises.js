@@ -81,12 +81,20 @@ router.get('/', authenticateToken, async (req, res) => {
         exercise_type,
         body_region,
         difficulty_level,
+        duration_seconds,
         equipment,        -- JSONB массив
         position,         -- JSONB массив
         rehab_phases,     -- JSONB массив
+        instructions,
+        cues,
+        tips,
+        contraindications,
+        absolute_contraindications,
+        red_flags,
         safe_with_inflammation,  -- Wave 0 commit 05: бейдж в ExerciseCard
         is_active,
-        created_at
+        created_at,
+        updated_at
       FROM exercises
       WHERE is_active = true
     `;
