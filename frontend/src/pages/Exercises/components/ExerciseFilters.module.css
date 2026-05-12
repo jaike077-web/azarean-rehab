@@ -59,7 +59,7 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -126,7 +126,7 @@
 
 .filterSelect:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -175,8 +175,8 @@
 
 .btnExpand.active {
   background: var(--color-border);
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .filterBadge {

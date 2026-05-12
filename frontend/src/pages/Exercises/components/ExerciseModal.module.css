@@ -103,25 +103,34 @@
   
   .formGroup input[type="text"],
   .formGroup input[type="url"],
+  .formGroup input[type="number"],
   .formGroup textarea,
   .formGroup select {
     width: 100%;
     padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     font-size: clamp(13px, 2vw, 14px);
     transition: all 0.2s;
     background: var(--color-surface);
+    color: var(--color-text);
     min-height: 44px;
     box-sizing: border-box;
+    font-family: inherit;
   }
-  
+
+  .formGroup input::placeholder,
+  .formGroup textarea::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.7;
+  }
+
   .formGroup input:focus,
   .formGroup textarea:focus,
   .formGroup select:focus {
     outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-bg);
   }
   
   .formGroup input.error,
@@ -499,7 +508,7 @@
     width: 36px;
     height: 36px;
     border: none;
-    background: #f3f4f6;
+    background: var(--color-surface-2);
     color: var(--color-text);
     border-radius: 8px;
     cursor: pointer;
