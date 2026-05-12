@@ -20,7 +20,7 @@ router.get('/', authenticateToken, async (req, res) => {
               p.diagnosis, p.notes, p.is_active, p.avatar_url,
               p.last_login_at, p.telegram_chat_id,
               p.created_at, p.updated_at,
-              (p.password_hash IS NOT NULL) as is_registered,
+              (p.password_hash IS NOT NULL OR p.last_login_at IS NOT NULL) as is_registered,
               COUNT(DISTINCT c.id) as complexes_count
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id AND c.is_active = true
@@ -57,7 +57,7 @@ router.get('/trash', authenticateToken, async (req, res) => {
               p.diagnosis, p.notes, p.is_active, p.avatar_url,
               p.last_login_at, p.telegram_chat_id,
               p.created_at, p.updated_at,
-              (p.password_hash IS NOT NULL) as is_registered,
+              (p.password_hash IS NOT NULL OR p.last_login_at IS NOT NULL) as is_registered,
               COUNT(DISTINCT c.id) as complexes_count
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id
@@ -144,7 +144,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       `SELECT id, full_name, email, phone, birth_date, diagnosis, notes,
               is_active, avatar_url, last_login_at, telegram_chat_id,
               created_at, updated_at,
-              (password_hash IS NOT NULL) as is_registered
+              (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered
        FROM patients
        WHERE id = $1 AND created_by = $2 AND is_active = true`,
       [id, req.user.id]
@@ -229,7 +229,7 @@ router.post('/', authenticateToken, patientValidator, async (req, res) => {
        RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
                  is_active, avatar_url, last_login_at, telegram_chat_id,
                  created_at, updated_at,
-                 (password_hash IS NOT NULL) as is_registered`,
+                 (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered`,
       [full_name.trim(), emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, req.user.id]
     );
 
@@ -287,7 +287,7 @@ router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
        RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
                  is_active, avatar_url, last_login_at, telegram_chat_id,
                  created_at, updated_at,
-                 (password_hash IS NOT NULL) as is_registered`,
+                 (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered`,
       [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, id, req.user.id]
     );
 
