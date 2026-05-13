@@ -462,6 +462,13 @@ export const rehab = {
   // Caller обязан передать program_type из активной программы пациента.
   getPhases: (type) => api.get(`/rehab/phases?type=${encodeURIComponent(type)}`),
   getProgramTypes: () => api.get('/rehab/program-types'),
+  // Шаблоны программ (Wave 1 #1.06 + #1.08b) — публичные endpoints для wizard'а
+  // RehabProgramModal. AdminContent CRUD остаётся через admin.*.
+  getProgramTemplates: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return api.get(qs ? `/rehab/program-templates?${qs}` : '/rehab/program-templates');
+  },
+  getProgramTemplatePhases: (id) => api.get(`/rehab/program-templates/${id}/phases`),
   getPhase: (id) => api.get(`/rehab/phases/${id}`),
   getTips: (params = {}) => {
     const query = new URLSearchParams(params).toString();
