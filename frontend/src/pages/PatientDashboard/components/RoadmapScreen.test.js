@@ -354,4 +354,49 @@ describe('RoadmapScreen v12', () => {
       expect(screen.queryByText(/Ты на этой фазе/i)).not.toBeInTheDocument();
     });
   });
+
+  // Wave 1 #1.04 — динамический program_type вместо хардкода 'acl'.
+  describe('Multi-protocol (program_type)', () => {
+    it('запрашивает фазы по program_type из dashboardData (acl)', async () => {
+      renderScreen();
+      await waitFor(() => {
+        expect(rehab.getPhases).toHaveBeenCalledWith('acl');
+      });
+    });
+
+    it('запрашивает фазы по shoulder_general если такой program_type у пациента', async () => {
+      renderScreen({
+        dashboardData: {
+          ...mockDashboardData,
+          program: { ...mockDashboardData.program, program_type: 'shoulder_general' },
+        },
+      });
+      await waitFor(() => {
+        expect(rehab.getPhases).toHaveBeenCalledWith('shoulder_general');
+      });
+    });
+
+    it('показывает empty state и не запрашивает фазы если program=null', async () => {
+      renderScreen({
+        dashboardData: { ...mockDashboardData, program: null },
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/нет активной программы/i)).toBeInTheDocument();
+      });
+      expect(rehab.getPhases).not.toHaveBeenCalled();
+    });
+
+    it('показывает empty state если program_type отсутствует у программы', async () => {
+      renderScreen({
+        dashboardData: {
+          ...mockDashboardData,
+          program: { ...mockDashboardData.program, program_type: null },
+        },
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/нет активной программы/i)).toBeInTheDocument();
+      });
+      expect(rehab.getPhases).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -458,8 +458,10 @@ export const rehab = {
   getMyProgram: () => patientApi.get('/rehab/my/program'),
   getMyExercises: () => patientApi.get('/rehab/my/exercises'),
 
-  // Фазы (публичные)
-  getPhases: (type = 'acl') => api.get(`/rehab/phases?type=${type}`),
+  // Фазы (публичные). Wave 1 #1.04: тип обязателен, дефолт 'acl' убран.
+  // Caller обязан передать program_type из активной программы пациента.
+  getPhases: (type) => api.get(`/rehab/phases?type=${encodeURIComponent(type)}`),
+  getProgramTypes: () => api.get('/rehab/program-types'),
   getPhase: (id) => api.get(`/rehab/phases/${id}`),
   getTips: (params = {}) => {
     const query = new URLSearchParams(params).toString();

@@ -344,11 +344,21 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
   const [stuckStatus, setStuckStatus] = useState(null);
 
 
-  // Загрузка фаз
+  // Wave 1 #1.04: program_type приходит из активной программы (JOIN с program_types в backend).
+  // Если у пациента нет программы → programType = undefined, фазы не запрашиваем,
+  // рендерим empty state (см. ниже).
+  const programType = dashboardData?.program?.program_type || null;
+
+  // Загрузка фаз — параметр обязателен (Wave 1 #1.04, дефолт 'acl' убран из api.js)
   useEffect(() => {
+    if (!programType) {
+      setPhases([]);
+      setLoading(false);
+      return undefined;
+    }
     let alive = true;
     setLoading(true);
-    rehab.getPhases()
+    rehab.getPhases(programType)
       .then((res) => {
         if (!alive) return;
         const list = Array.isArray(res?.data) ? res.data : [];
@@ -359,7 +369,7 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
       .catch(() => { if (alive) setPhases([]); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, []);
+  }, [programType]);
 
   // Wave 0 commit 06 — статус застревания. Ошибка глушится: если бэкенд
   // недоступен, баннер просто не показывается, остальной экран рендерится.
@@ -419,6 +429,18 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
       <div className="pd-rm">
         <div className="pd-skeleton" style={{ height: 72, borderRadius: 12, marginBottom: 14 }} />
         <div className="pd-skeleton" style={{ height: 320, borderRadius: 12 }} />
+      </div>
+    );
+  }
+
+  // Wave 1 #1.04: пациент без активной программы — пустой state вместо фаз ACL по дефолту
+  if (!programType) {
+    return (
+      <div className="pd-rm pd-roadmap-screen">
+        <header className="pd-rm-header">
+          <h1 className="pd-rm-title">Программа реабилитации</h1>
+          <p className="pd-rm-sub">У вас пока нет активной программы. Куратор скоро её составит.</p>
+        </header>
       </div>
     );
   }

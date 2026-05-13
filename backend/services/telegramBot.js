@@ -168,7 +168,7 @@ async function handleStatus(msg) {
       `SELECT rp.title, rp.current_phase, rp.surgery_date,
               ph.title as phase_title, ph.subtitle as phase_subtitle
        FROM rehab_programs rp
-       LEFT JOIN rehab_phases ph ON ph.phase_number = rp.current_phase AND ph.program_type = 'acl'
+       LEFT JOIN rehab_phases ph ON ph.phase_number = rp.current_phase AND ph.program_type = rp.program_type
        WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
        LIMIT 1`,
       [patient.id]

@@ -100,22 +100,33 @@ describe('api.js - Patient JWT API', () => {
       expect(result.data).toEqual(mockExercises);
     });
 
-    it('getPhases calls get on /rehab/phases with type', async () => {
+    it('getPhases calls get on /rehab/phases with type (acl)', async () => {
       const m = getMocks();
       m.get.mockResolvedValueOnce({ data: [{ id: 1, name: 'Phase 1' }] });
 
-      const result = await rehab.getPhases('acl');
+      await rehab.getPhases('acl');
 
       expect(m.get).toHaveBeenCalledWith('/rehab/phases?type=acl');
     });
 
-    it('getPhases uses default type parameter', async () => {
+    // Wave 1 #1.04: дефолт 'acl' убран. Caller обязан передать program_type из
+    // активной программы пациента, чтобы поддержать multi-protocol.
+    it('getPhases encodes program_type как URI-параметр (multi-protocol)', async () => {
       const m = getMocks();
       m.get.mockResolvedValueOnce({ data: [] });
 
-      await rehab.getPhases();
+      await rehab.getPhases('shoulder_general');
 
-      expect(m.get).toHaveBeenCalledWith('/rehab/phases?type=acl');
+      expect(m.get).toHaveBeenCalledWith('/rehab/phases?type=shoulder_general');
+    });
+
+    it('getProgramTypes calls get on /rehab/program-types (Wave 1 #1.02 endpoint)', async () => {
+      const m = getMocks();
+      m.get.mockResolvedValueOnce({ data: [], total: 0 });
+
+      await rehab.getProgramTypes();
+
+      expect(m.get).toHaveBeenCalledWith('/rehab/program-types');
     });
 
     it('createDiaryEntry calls post with data', async () => {
