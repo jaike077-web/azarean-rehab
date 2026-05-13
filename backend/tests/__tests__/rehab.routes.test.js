@@ -1391,3 +1391,266 @@ describe('PUT /api/rehab/my/notifications', () => {
     expect(response.body).toHaveProperty('error', 'Server Error');
   });
 });
+
+// =====================================================
+// Wave 1 #1.06: program_templates endpoints + POST /programs extension
+// =====================================================
+
+describe('GET /api/rehab/program-templates', () => {
+  it('возвращает только активные шаблоны', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1, code: 'acl_bptb', program_type: 'acl', title: 'ПКС BPTB',
+          description: null, surgery_required: true, default_phase_count: 6,
+          variant_of: null, position: 1, is_active: true,
+          program_type_label: 'ПКС реабилитация', program_joint: 'knee',
+        },
+      ],
+    });
+
+    const res = await request(app).get('/api/rehab/program-templates').expect(200);
+
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.total).toBe(1);
+    expect(res.body.data[0].code).toBe('acl_bptb');
+    expect(res.body.data[0].program_type_label).toBe('ПКС реабилитация');
+  });
+
+  it('фильтрует SQL по ?program_type=', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/rehab/program-templates?program_type=acl').expect(200);
+
+    const sql = query.mock.calls[0][0];
+    const params = query.mock.calls[0][1];
+    expect(sql).toMatch(/AND pt\.program_type = \$1/);
+    expect(params).toEqual(['acl']);
+  });
+
+  it('возвращает пустой массив если нет шаблонов', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get('/api/rehab/program-templates').expect(200);
+
+    expect(res.body.data).toEqual([]);
+    expect(res.body.total).toBe(0);
+  });
+
+  it('endpoint публичный (без auth)', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app).get('/api/rehab/program-templates').expect(200);
+  });
+});
+
+describe('GET /api/rehab/program-templates/:id/phases', () => {
+  it('возвращает template + phases + recommended_complex', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{ id: 5, code: 'acl_bptb', program_type: 'acl', title: 'ПКС BPTB' }],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          { phase_number: 1, title: 'Защита', subtitle: '0-2 нед', duration_weeks: '2', description: null, goals: null, restrictions: null },
+          { phase_number: 2, title: 'Мобильность', subtitle: '2-6 нед', duration_weeks: '4', description: null, goals: null, restrictions: null },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            phase_number: 1, complex_template_id: 42, is_recommended: true, notes: null,
+            template_id: 42, template_name: 'ПКС фаза 1 — базовый', template_description: 'Изометрика',
+          },
+        ],
+      });
+
+    const res = await request(app).get('/api/rehab/program-templates/5/phases').expect(200);
+
+    expect(res.body.data.template.code).toBe('acl_bptb');
+    expect(res.body.data.phases).toHaveLength(2);
+    expect(res.body.data.phases[0].recommended_complex).toEqual({
+      template_id: 42,
+      name: 'ПКС фаза 1 — базовый',
+      description: 'Изометрика',
+      notes: null,
+    });
+    expect(res.body.data.phases[1].recommended_complex).toBeNull();
+  });
+
+  it('404 если шаблон не найден или деактивирован', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app).get('/api/rehab/program-templates/999/phases').expect(404);
+
+    expect(res.body.message).toMatch(/не найден/i);
+  });
+
+  it('400 на невалидный id (не число)', async () => {
+    const res = await request(app).get('/api/rehab/program-templates/abc/phases').expect(400);
+
+    expect(res.body.message).toMatch(/невалидный/i);
+  });
+
+  it('возвращает phases с recommended_complex=null если junction пустой', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 5, code: 'knee_general_v1', program_type: 'knee_general' }] })
+      .mockResolvedValueOnce({ rows: [{ phase_number: 1, title: 'Phase 1' }] })
+      .mockResolvedValueOnce({ rows: [] }); // junction empty
+
+    const res = await request(app).get('/api/rehab/program-templates/5/phases').expect(200);
+
+    expect(res.body.data.phases[0].recommended_complex).toBeNull();
+  });
+});
+
+describe('POST /api/rehab/programs — program_template_id support', () => {
+  let instructorToken;
+
+  beforeEach(() => {
+    instructorToken = jwt.sign(
+      { id: 1, email: 'instructor@test.com', role: 'instructor' },
+      process.env.JWT_SECRET,
+      { algorithm: 'HS256', expiresIn: '1h' }
+    );
+  });
+
+  it('сохраняет program_template_id и резолвит program_type из шаблона', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // auth middleware is_active check
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })          // patientCheck
+      .mockResolvedValueOnce({ rows: [{ id: 7, program_type: 'shoulder_general' }] }) // tplCheck
+      .mockResolvedValueOnce({                                   // INSERT
+        rows: [{
+          id: 100, patient_id: 14, title: 'Реаб плеча', program_type: 'shoulder_general',
+          program_template_id: 7, current_phase: 1, status: 'active',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // streak insert
+
+    const res = await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        patient_id: 14,
+        title: 'Реаб плеча',
+        program_template_id: 7,
+        current_phase: 1,
+      })
+      .expect(201);
+
+    expect(res.body.data.program_template_id).toBe(7);
+    expect(res.body.data.program_type).toBe('shoulder_general');
+  });
+
+  it('400 если program_template_id ссылается на несуществующий шаблон', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // auth
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })          // patientCheck
+      .mockResolvedValueOnce({ rows: [] });                   // tplCheck — empty
+
+    const res = await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        patient_id: 14,
+        title: 'Реаб',
+        program_template_id: 99999,
+      })
+      .expect(400);
+
+    expect(res.body.message).toMatch(/шаблон.*не найден/i);
+  });
+
+  it('явный program_type перекрывает program_type шаблона', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 7, program_type: 'shoulder_general' }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 100, program_type: 'knee_general', program_template_id: 7 }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        patient_id: 14,
+        title: 'Mixed',
+        program_template_id: 7,
+        program_type: 'knee_general', // явно
+      })
+      .expect(201);
+
+    // Проверяем что в INSERT попал именно явный program_type
+    const insertCall = query.mock.calls[3]; // 4-й call — INSERT
+    expect(insertCall[1]).toContain('knee_general');
+  });
+
+  it('работает без program_template_id (backwards compat)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })
+      .mockResolvedValueOnce({
+        rows: [{ id: 100, program_type: 'acl', program_template_id: null }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ patient_id: 14, title: 'Без шаблона' })
+      .expect(201);
+
+    expect(res.body.data.program_template_id).toBeNull();
+  });
+});
+
+// Sanity-тесты структуры миграции 20260513_program_templates.sql
+// (паттерн как в program_types.migration.test.js — без реальной БД)
+describe('20260513_program_templates migration — структура SQL', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const MIGRATION = fs.readFileSync(
+    path.join(__dirname, '../../database/migrations/20260513_program_templates.sql'),
+    'utf8'
+  );
+
+  it('создаёт program_templates через IF NOT EXISTS', () => {
+    expect(MIGRATION).toMatch(/CREATE TABLE IF NOT EXISTS program_templates/i);
+  });
+
+  it('создаёт program_template_phase_complexes через IF NOT EXISTS', () => {
+    expect(MIGRATION).toMatch(/CREATE TABLE IF NOT EXISTS program_template_phase_complexes/i);
+  });
+
+  it('program_templates.program_type FK на program_types(code) ON UPDATE CASCADE', () => {
+    expect(MIGRATION).toMatch(/program_type VARCHAR\(50\) NOT NULL REFERENCES program_types\(code\)/i);
+    expect(MIGRATION).toMatch(/ON UPDATE CASCADE/);
+  });
+
+  it('junction UNIQUE (program_template_id, phase_number)', () => {
+    expect(MIGRATION).toMatch(/UNIQUE \(program_template_id, phase_number\)/);
+  });
+
+  it('rehab_programs.program_template_id добавляется через DO-блок с column_exists', () => {
+    expect(MIGRATION).toMatch(/information_schema\.columns[\s\S]*column_name = 'program_template_id'/);
+    expect(MIGRATION).toMatch(/ADD COLUMN program_template_id INTEGER REFERENCES program_templates\(id\) ON DELETE SET NULL/);
+  });
+
+  it('templates.program_type добавляется через DO-блок (FK на program_types)', () => {
+    expect(MIGRATION).toMatch(/information_schema\.columns[\s\S]*column_name = 'program_type'/);
+    expect(MIGRATION).toMatch(/ALTER TABLE templates[\s\S]*ADD COLUMN program_type VARCHAR\(50\) REFERENCES program_types\(code\)/i);
+  });
+
+  it('обёрнута в транзакцию BEGIN/COMMIT', () => {
+    expect(MIGRATION).toMatch(/^BEGIN;/m);
+    expect(MIGRATION).toMatch(/^COMMIT;/m);
+  });
+
+  it('создаёт 4+ индекса для нового справочника и поля', () => {
+    const indexCount = (MIGRATION.match(/CREATE INDEX IF NOT EXISTS/g) || []).length;
+    expect(indexCount).toBeGreaterThanOrEqual(4);
+  });
+});
