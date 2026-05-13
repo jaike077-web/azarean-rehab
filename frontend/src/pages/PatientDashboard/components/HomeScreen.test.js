@@ -104,6 +104,9 @@ describe('HomeScreen v12', () => {
   });
 
   // Wave 0 commit 02 — динамический program_label вместо сырого diagnosis.
+  // Wave 1 #1.03 — program_label теперь приходит из JOIN с program_types
+  // (backend `routes/rehab.js` + миграция `20260512_program_types`).
+  // Регекс-fallback `deriveProgramLabel` удалён, метки идут из справочника.
   describe('Hero title — program_label', () => {
     it('renders «{program_label} — Фаза N» when program_label provided', () => {
       setup({
@@ -113,6 +116,41 @@ describe('HomeScreen v12', () => {
         },
       });
       expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Плечо — Фаза 3');
+      expect(screen.queryByText(/ПКС/)).not.toBeInTheDocument();
+    });
+
+    it('Wave 1 #1.03: рендерит полное имя из справочника program_types («ПКС реабилитация»)', () => {
+      // После Wave 1 1.02 backend отдаёт program_label напрямую из program_types.label,
+      // которое для acl-кода = «ПКС реабилитация» (не короткое «ПКС» как было в Wave 0 regex).
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          program: {
+            ...mockDashboardData.program,
+            program_type: 'acl',
+            program_label: 'ПКС реабилитация',
+            program_joint: 'knee',
+            current_phase: 2,
+          },
+        },
+      });
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('ПКС реабилитация — Фаза 2');
+    });
+
+    it('Wave 1 #1.03: рендерит «Реабилитация плеча» для shoulder_general (multi-protocol)', () => {
+      setup({
+        dashboardData: {
+          ...mockDashboardData,
+          program: {
+            ...mockDashboardData.program,
+            program_type: 'shoulder_general',
+            program_label: 'Реабилитация плеча',
+            program_joint: 'shoulder',
+            current_phase: 1,
+          },
+        },
+      });
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Реабилитация плеча — Фаза 1');
       expect(screen.queryByText(/ПКС/)).not.toBeInTheDocument();
     });
 

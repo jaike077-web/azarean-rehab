@@ -18,7 +18,6 @@ const { authenticateToken } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
-const { deriveProgramLabel } = require('../utils/programLabels');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -258,12 +257,9 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
 
     if (program) {
       program.patient_name = req.patient.full_name;
-      // program_label приходит из JOIN с program_types (миграция 20260512).
-      // Fallback на deriveProgramLabel (Wave 0 commit 02) если JOIN вернул NULL —
-      // теоретически невозможно из-за FK, но защита от inconsistency.
-      if (!program.program_label) {
-        program.program_label = deriveProgramLabel(program.diagnosis);
-      }
+      // program_label приходит из JOIN с program_types (Wave 1 #1.02).
+      // Если NULL (теоретически невозможно из-за FK), фронт сам показывает
+      // «Фаза N» без префикса label — HomeScreen.js уже имеет этот fallback.
     }
 
     // 2. Текущая фаза (если есть программа)
