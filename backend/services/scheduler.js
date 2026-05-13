@@ -5,6 +5,7 @@
 
 const { query } = require('../database/db');
 const { sendTelegramMessage } = require('./telegramBot');
+const { checkStuckPhases } = require('./stuckDetection');
 
 let cronJobs = [];
 
@@ -66,8 +67,20 @@ function initScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
-  cronJobs = [exerciseJob, diaryJob, tipJob, cleanupJob, deletionJob];
-  console.log('⏰ Scheduler запущен (5 задач)');
+  // Понедельник 09:00 МСК — stuck-detection (Wave 1 #1.09).
+  // Создаёт phase_stuck_alerts для yellow/red превышений, шлёт opsAlert на red.
+  // Дедуп через UNIQUE — повторный прогон не дублирует.
+  const stuckCheckJob = cron.schedule('0 9 * * 1', async () => {
+    try {
+      const stats = await checkStuckPhases();
+      console.log(`🚦 Stuck-check: проверено ${stats.checked}, yellow ${stats.yellow}, red ${stats.red}, notified ${stats.notified}`);
+    } catch (error) {
+      console.error('Scheduler error (stuck-check):', error.message);
+    }
+  }, { timezone: 'Europe/Moscow' });
+
+  cronJobs = [exerciseJob, diaryJob, tipJob, cleanupJob, deletionJob, stuckCheckJob];
+  console.log('⏰ Scheduler запущен (6 задач)');
 }
 
 // =====================================================
@@ -238,4 +251,5 @@ module.exports = {
   sendDailyTip,
   cleanupExpiredTokens,
   processPatientDeletionQueue,
+  checkStuckPhases,
 };

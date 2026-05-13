@@ -18,6 +18,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
+const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -458,26 +459,6 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения дашборда' });
   }
 });
-
-/**
- * Парсер rehab_phases.duration_weeks (хранится как VARCHAR-диапазон):
- *   "0-2"  → 2  (верхняя граница диапазона)
- *   "12-20"→ 20
- *   "36+"  → null (открытая фаза — финальное «поддержание», никогда не stuck)
- *   "12"   → 12 (одиночное число)
- *   null/мусор → null (без threshold → не stuck)
- */
-function parseDurationWeeksUpper(value) {
-  if (value == null) return null;
-  if (typeof value === 'number') return value;
-  const s = String(value).trim();
-  if (/^\d+\+$/.test(s)) return null; // open-ended
-  const range = s.match(/^(\d+)\s*[-–—]\s*(\d+)$/);
-  if (range) return parseInt(range[2], 10);
-  const single = s.match(/^(\d+)$/);
-  if (single) return parseInt(single[1], 10);
-  return null;
-}
 
 /**
  * GET /api/rehab/my/stuck-status
@@ -1508,6 +1489,42 @@ router.delete('/programs/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Ошибка удаления программы:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления программы' });
+  }
+});
+
+/**
+ * GET /api/rehab/programs/:id/stuck-status
+ * Wave 1 #1.09: инструкторская сторона stuck detection.
+ * yellow=true при > 1.3×duration_weeks_upper, red=true при > 1.7×.
+ * Open-ended фазы («36+») → { yellow: false, red: false }.
+ * Только для программ, созданных текущим инструктором (created_by check).
+ */
+router.get('/programs/:id/stuck-status', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'ValidationError', message: 'Некорректный id программы' });
+    }
+
+    // Ownership check + берём program_type из самой записи (Wave 1 #1.01)
+    const programResult = await query(
+      `SELECT id, program_type, current_phase, phase_started_at, created_at
+       FROM rehab_programs
+       WHERE id = $1 AND created_by = $2 AND is_active = true`,
+      [id, req.user.id]
+    );
+
+    if (programResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
+    }
+
+    const { computeStuckStatus } = require('../services/stuckDetection');
+    const status = await computeStuckStatus(programResult.rows[0]);
+
+    res.json({ data: status });
+  } catch (error) {
+    console.error('Ошибка получения stuck-status (instructor):', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения статуса фазы' });
   }
 });
 

@@ -506,12 +506,20 @@ function Patients() {
                     }
                   >
                     <div className={s.patientHeader}>
-                      
+
                       <div className={s.patientInfo}>
                         <h3 className={s.patientName}>
                           {patient.full_name || 'Без имени'}
                         </h3>
-                        
+                        {patient.is_stuck_on_phase && (
+                          <span
+                            className={s.stuckBadge}
+                            title="Пациент превысил норму времени на текущей фазе — обрати внимание"
+                          >
+                            <AlertTriangle size={12} aria-hidden="true" />
+                            <span>застрял на фазе</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 

@@ -21,8 +21,8 @@
 | 1.06 | ⏸ заморожен | `8223b60` | 2026-05-13 | ⏳ ждёт юзера | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id. Backend 378/378 (+20). Idempotency cycle ✓ |
 | 1.07 | ⏸ заморожен | `77f2e7e` | 2026-05-13 | ⏳ ждёт юзера | — | AdminContent ProgramTemplatesTab + 7 endpoints + PhaseComplexEditor (inline). Backend 397/397 (+19), frontend 243/243 |
 | 1.08a | ⏸ заморожен | `6d68a87` | 2026-05-13 | ⏳ ждёт юзера | — | derived_title computed field в 4 endpoints `routes/complexes.js`. Backend 405/405 (+8). Smoke ✓ |
-| 1.08b | 🔵 в работе | — | 2026-05-13 | — | — | RehabProgramModal → директория (router + CreateWizard 3-step + EditForm 1-step + ComplexSelector shared) |
-| 1.09 | ⏳ ждёт | — | — | — | — | — |
+| 1.08b | ⏸ заморожен | `28623f8` | 2026-05-13 | ⏳ ждёт юзера | — | RehabProgramModal → директория (router + CreateWizard + EditForm + ComplexSelector). Frontend 249/249 (+6). **Bug #13 закрыт** |
+| 1.09 | ⏸ заморожен | (ждёт коммита) | 2026-05-13 | ⏳ ждёт юзера | — | phase_stuck_alerts таблица + stuckDetection.js (yellow 1.3× / red 1.7×) + weekly cron Mon 09:00 МСК + opsAlert red push + GET /programs/:id/stuck-status + is_stuck_on_phase в GET /patients + yellow badge в Patients.js. Backend 423/423 (+18), frontend 252/252 (+3). **Блок B + Wave 1 завершены** |
 
 ---
 

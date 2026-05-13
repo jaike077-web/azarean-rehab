@@ -15,13 +15,24 @@ const INVITE_CODE_TTL_MS = 24 * 60 * 60 * 1000;
 // Получить всех своих пациентов
 router.get('/', authenticateToken, async (req, res) => {
   try {
+    // is_stuck_on_phase — Wave 1 #1.09: TRUE если есть unresolved yellow/red
+    // alert на активной программе пациента. Cron checkStuckPhases() заполняет
+    // phase_stuck_alerts раз в неделю; alert живёт до resolved_at (NULL пока
+    // инструктор не пометит resolved, UI для resolve — backlog).
     const result = await query(
       `SELECT p.id, p.full_name, p.email, p.phone, p.birth_date,
               p.diagnosis, p.notes, p.is_active, p.avatar_url,
               p.last_login_at, p.telegram_chat_id,
               p.created_at, p.updated_at,
               (p.password_hash IS NOT NULL OR p.last_login_at IS NOT NULL) as is_registered,
-              COUNT(DISTINCT c.id) as complexes_count
+              COUNT(DISTINCT c.id) as complexes_count,
+              EXISTS (
+                SELECT 1 FROM phase_stuck_alerts psa
+                JOIN rehab_programs rp ON rp.id = psa.program_id
+                WHERE rp.patient_id = p.id
+                  AND rp.is_active = true AND rp.status = 'active'
+                  AND psa.resolved_at IS NULL
+              ) as is_stuck_on_phase
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id AND c.is_active = true
        WHERE p.created_by = $1 AND p.is_active = true
