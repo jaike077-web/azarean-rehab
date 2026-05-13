@@ -152,7 +152,24 @@ router.get('/', authenticateToken, async (req, res) => {
               p.full_name as patient_name,
               d.name as diagnosis_name,
               COUNT(DISTINCT ce.id) as exercises_count,
-              COUNT(DISTINCT pl.id) FILTER (WHERE pl.completed = true) as completions_count
+              COUNT(DISTINCT pl.id) FILTER (WHERE pl.completed = true) as completions_count,
+              -- Wave 1 #1.08a: derived_title для UI fallback (Bug #13).
+              -- Если title есть и непустой — он. Иначе первые 2 упражнения joined ' · '.
+              -- Если ни того, ни другого — NULL (фронт сам показывает «Комплекс #N»).
+              COALESCE(
+                NULLIF(c.title, ''),
+                (
+                  SELECT string_agg(ex.title, ' · ' ORDER BY sub.order_number)
+                  FROM (
+                    SELECT ce2.exercise_id, ce2.order_number
+                    FROM complex_exercises ce2
+                    WHERE ce2.complex_id = c.id
+                    ORDER BY ce2.order_number
+                    LIMIT 2
+                  ) sub
+                  JOIN exercises ex ON ex.id = sub.exercise_id
+                )
+              ) AS derived_title
        FROM complexes c
        JOIN patients p ON c.patient_id = p.id
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
@@ -185,7 +202,21 @@ router.get('/trash/list', authenticateToken, async (req, res) => {
       `SELECT c.*,
               p.full_name as patient_name,
               d.name as diagnosis_name,
-              COUNT(DISTINCT ce.id) as exercises_count
+              COUNT(DISTINCT ce.id) as exercises_count,
+              COALESCE(
+                NULLIF(c.title, ''),
+                (
+                  SELECT string_agg(ex.title, ' · ' ORDER BY sub.order_number)
+                  FROM (
+                    SELECT ce2.exercise_id, ce2.order_number
+                    FROM complex_exercises ce2
+                    WHERE ce2.complex_id = c.id
+                    ORDER BY ce2.order_number
+                    LIMIT 2
+                  ) sub
+                  JOIN exercises ex ON ex.id = sub.exercise_id
+                )
+              ) AS derived_title
        FROM complexes c
        JOIN patients p ON c.patient_id = p.id
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
@@ -251,6 +282,20 @@ router.get('/:id', authenticateToken, async (req, res) => {
               d.recommendations as diagnosis_recommendations,
               d.warnings as diagnosis_warnings,
               u.full_name as instructor_name,
+              COALESCE(
+                NULLIF(c.title, ''),
+                (
+                  SELECT string_agg(ex.title, ' · ' ORDER BY sub.order_number)
+                  FROM (
+                    SELECT ce2.exercise_id, ce2.order_number
+                    FROM complex_exercises ce2
+                    WHERE ce2.complex_id = c.id
+                    ORDER BY ce2.order_number
+                    LIMIT 2
+                  ) sub
+                  JOIN exercises ex ON ex.id = sub.exercise_id
+                )
+              ) AS derived_title,
               json_agg(
                 json_build_object(
                   'id', ce.id,
@@ -395,7 +440,21 @@ router.get('/patient/:patient_id', authenticateToken, async (req, res) => {
     const result = await query(
       `SELECT c.*,
               d.name as diagnosis_name,
-              COUNT(ce.id) as exercises_count
+              COUNT(ce.id) as exercises_count,
+              COALESCE(
+                NULLIF(c.title, ''),
+                (
+                  SELECT string_agg(ex.title, ' · ' ORDER BY sub.order_number)
+                  FROM (
+                    SELECT ce2.exercise_id, ce2.order_number
+                    FROM complex_exercises ce2
+                    WHERE ce2.complex_id = c.id
+                    ORDER BY ce2.order_number
+                    LIMIT 2
+                  ) sub
+                  JOIN exercises ex ON ex.id = sub.exercise_id
+                )
+              ) AS derived_title
        FROM complexes c
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN complex_exercises ce ON c.id = ce.complex_id
