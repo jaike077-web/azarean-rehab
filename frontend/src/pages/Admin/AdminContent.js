@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { admin } from '../../services/api';
+import { admin, templates as complexTemplatesApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight } from 'lucide-react';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
@@ -466,6 +466,478 @@ function ProgramTypeForm({ initial, onSave, onClose }) {
 }
 
 // =====================================================
+// Суб-таб: Шаблоны программ (Wave 1 #1.07)
+// =====================================================
+function ProgramTemplatesTab() {
+  const [items, setItems] = useState([]);
+  const [programTypes, setProgramTypes] = useState([]);
+  const [complexTemplates, setComplexTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deactivateItem, setDeactivateItem] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Загружаем три источника параллельно: сами шаблоны, справочник типов
+      // (для select в форме + filter), список complex templates (для select
+      // в PhaseComplexEditor).
+      const [templatesRes, ptRes, complexRes] = await Promise.all([
+        admin.getProgramTemplates(),
+        admin.getProgramTypes(),
+        complexTemplatesApi.getAll(),
+      ]);
+      setItems(templatesRes.data || []);
+      setProgramTypes(ptRes.data || []);
+      setComplexTemplates(complexRes.data || []);
+    } catch {
+      toast.error('Ошибка загрузки шаблонов программ');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (form) => {
+    try {
+      if (editing) {
+        const { code, ...patch } = form;
+        await admin.updateProgramTemplate(editing.id, patch);
+        toast.success('Шаблон программы обновлён');
+      } else {
+        await admin.createProgramTemplate(form);
+        toast.success('Шаблон программы создан');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deactivateItem) return;
+    try {
+      await admin.deleteProgramTemplate(deactivateItem.id);
+      toast.success('Шаблон программы деактивирован');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка деактивации');
+    }
+    setDeactivateItem(null);
+  };
+
+  if (loading) return <TableSkeleton rows={4} columns={7} />;
+
+  return (
+    <div>
+      <div className={s.contentHeader}>
+        <span>{items.length} шаблонов</span>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Создать
+        </button>
+      </div>
+      {items.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><Layers size={48} strokeWidth={1.8} /></div>
+            <h3>Нет шаблонов программ</h3>
+            <p>Создайте первый шаблон (например, «ПКС BPTB-графт»)</p>
+          </div>
+        </div>
+      )}
+      {items.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr><th></th><th>Код</th><th>Название</th><th>Тип</th><th>Хирургия</th><th>Используется</th><th>Активен</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+              {items.map((pt) => (
+                <React.Fragment key={pt.id}>
+                  <tr className={!pt.is_active ? s.rowInactive : ''}>
+                    <td>
+                      <button
+                        className={s.adminActionBtn}
+                        onClick={() => setExpandedId(expandedId === pt.id ? null : pt.id)}
+                        title={expandedId === pt.id ? 'Свернуть' : 'Развернуть фазы'}
+                      >
+                        {expandedId === pt.id
+                          ? <ChevronDown size={14} strokeWidth={1.8} />
+                          : <ChevronRight size={14} strokeWidth={1.8} />}
+                      </button>
+                    </td>
+                    <td className={s.tdId}><code>{pt.code}</code></td>
+                    <td className={s.tdName}>{pt.title}</td>
+                    <td>{pt.program_type_label || pt.program_type}</td>
+                    <td>{pt.surgery_required ? '✅' : '—'}</td>
+                    <td>{pt.active_programs_count > 0 ? `${pt.active_programs_count} прогр.` : '—'}</td>
+                    <td>{pt.is_active ? '✅' : '❌'}</td>
+                    <td className={s.tdActions}>
+                      <button className={s.adminActionBtn} onClick={() => setEditing(pt)} title="Редактировать">
+                        <Pencil size={14} strokeWidth={1.8} />
+                      </button>
+                      {pt.is_active && (
+                        <button
+                          className={`${s.adminActionBtn} ${s.btnDanger}`}
+                          onClick={() => setDeactivateItem(pt)}
+                          title="Деактивировать"
+                        >
+                          <Trash2 size={14} strokeWidth={1.8} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  {expandedId === pt.id && (
+                    <tr>
+                      <td colSpan={8} style={{ background: 'var(--color-surface-2, #f5f7fb)', padding: 12 }}>
+                        <PhaseComplexEditor
+                          template={pt}
+                          complexTemplates={complexTemplates}
+                          onChange={load}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(editing || creating) && (
+        <ProgramTemplateForm
+          initial={editing}
+          programTypes={programTypes}
+          allTemplates={items}
+          onSave={handleSave}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deactivateItem}
+        onClose={() => setDeactivateItem(null)}
+        onConfirm={confirmDeactivate}
+        title="Деактивация шаблона программы"
+        message={`Деактивировать шаблон "${deactivateItem?.title}"? Заблокируется если он используется в активных программах.`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+function ProgramTemplateForm({ initial, programTypes = [], allTemplates = [], onSave, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
+  const [form, setForm] = useState({
+    code: '',
+    program_type: programTypes[0]?.code || 'acl',
+    title: '',
+    description: '',
+    surgery_required: false,
+    default_phase_count: '',
+    variant_of: '',
+    position: 0,
+    is_active: true,
+  });
+
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        code: initial.code || '',
+        program_type: initial.program_type || 'acl',
+        title: initial.title || '',
+        description: initial.description || '',
+        surgery_required: !!initial.surgery_required,
+        default_phase_count: initial.default_phase_count ?? '',
+        variant_of: initial.variant_of ?? '',
+        position: initial.position ?? 0,
+        is_active: !!initial.is_active,
+      });
+    }
+  }, [initial]);
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  return (
+    <div className={s.adminModalOverlay} onClick={onClose}>
+      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+        <div className={s.adminModalHeader}>
+          <h3>{isEdit ? 'Редактировать шаблон' : 'Создать шаблон программы'}</h3>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+        </div>
+        <div className={s.adminModalForm}>
+          <div className={s.adminFormGroup}>
+            <label>Код (a-z, 0-9, _)</label>
+            <input
+              value={form.code}
+              onChange={(e) => set('code', e.target.value)}
+              placeholder="acl_bptb"
+              disabled={isEdit}
+            />
+            {isEdit && <small>Код менять нельзя — на него ссылаются программы.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Тип программы</label>
+            <select value={form.program_type} onChange={(e) => set('program_type', e.target.value)}>
+              {programTypes.filter((pt) => pt.is_active).map((pt) => (
+                <option key={pt.code} value={pt.code}>{pt.label} ({pt.code})</option>
+              ))}
+            </select>
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Название</label>
+            <input
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="ПКС BPTB-графт"
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Описание</label>
+            <textarea
+              rows="2"
+              value={form.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="Шаблон для пациентов после пластики ПКС BPTB"
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.surgery_required}
+                onChange={(e) => set('surgery_required', e.target.checked)}
+              />{' '}
+              После операции
+            </label>
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Кол-во фаз (опционально, для подсказки)</label>
+            <input
+              type="number"
+              value={form.default_phase_count}
+              onChange={(e) => set('default_phase_count', e.target.value ? parseInt(e.target.value, 10) : '')}
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Вариант шаблона (опционально)</label>
+            <select
+              value={form.variant_of || ''}
+              onChange={(e) => set('variant_of', e.target.value ? parseInt(e.target.value, 10) : '')}
+            >
+              <option value="">— Нет —</option>
+              {allTemplates
+                .filter((t) => !isEdit || t.id !== initial.id)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>{t.title} ({t.code})</option>
+                ))}
+            </select>
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Позиция (для сортировки)</label>
+            <input
+              type="number"
+              value={form.position}
+              onChange={(e) => set('position', parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+          {isEdit && (
+            <div className={s.adminFormGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => set('is_active', e.target.checked)}
+                />{' '}
+                Активен
+              </label>
+            </div>
+          )}
+          <div className={s.adminModalActions}>
+            <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
+            <button
+              className={s.adminBtnPrimary}
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  const payload = { ...form };
+                  if (payload.default_phase_count === '') payload.default_phase_count = null;
+                  if (payload.variant_of === '') payload.variant_of = null;
+                  await onSave(payload);
+                } finally { setSaving(false); }
+              }}
+            >
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// PhaseComplexEditor — на каждой фазе шаблона select рекомендованного complex_template + notes.
+// Загружает фазы из rehab_phases (admin.getPhases с filter по program_type) и
+// существующий junction (admin.getPhaseComplexes).
+function PhaseComplexEditor({ template, complexTemplates, onChange }) {
+  const [phases, setPhases] = useState([]);
+  const [complexes, setComplexes] = useState([]); // junction rows
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [phasesRes, complexesRes] = await Promise.all([
+        admin.getPhases({ program_type: template.program_type }),
+        admin.getPhaseComplexes(template.id),
+      ]);
+      setPhases(phasesRes.data || []);
+      setComplexes(complexesRes.data || []);
+    } catch {
+      toast.error('Ошибка загрузки фаз шаблона');
+    } finally {
+      setLoading(false);
+    }
+  }, [template.id, template.program_type, toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const getRowFor = (phaseNumber) =>
+    complexes.find((c) => c.phase_number === phaseNumber) || {
+      complex_template_id: null,
+      notes: '',
+    };
+
+  const handleSave = async (phaseNumber, fields) => {
+    try {
+      await admin.upsertPhaseComplex(template.id, phaseNumber, fields);
+      toast.success(`Фаза ${phaseNumber} сохранена`);
+      load();
+      onChange?.();
+    } catch {
+      toast.error('Ошибка сохранения phase-complex');
+    }
+  };
+
+  const handleDelete = async (phaseNumber) => {
+    try {
+      await admin.deletePhaseComplex(template.id, phaseNumber);
+      toast.success(`Phase-complex фазы ${phaseNumber} удалён`);
+      load();
+      onChange?.();
+    } catch (err) {
+      if (err?.response?.status !== 404) toast.error('Ошибка удаления');
+    }
+  };
+
+  if (loading) return <p style={{ padding: 8 }}>Загрузка фаз…</p>;
+
+  if (phases.length === 0) {
+    return (
+      <p style={{ padding: 8 }}>
+        Для program_type <code>{template.program_type}</code> ещё нет фаз — создайте их во вкладке «Фазы».
+      </p>
+    );
+  }
+
+  // complexes_filtered: для select только complex templates с подходящим program_type
+  // (или без program_type — universal). Это уменьшает шум в селекте.
+  const eligibleComplexes = complexTemplates.filter(
+    (t) => !t.program_type || t.program_type === template.program_type
+  );
+
+  return (
+    <div>
+      <h4 style={{ margin: '0 0 10px' }}>Рекомендованные комплексы по фазам</h4>
+      <table className={s.adminTable} style={{ background: 'transparent' }}>
+        <thead>
+          <tr><th>Фаза</th><th>Название фазы</th><th>Рекомендованный комплекс</th><th>Заметка для куратора</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+          {phases.map((phase) => {
+            const row = getRowFor(phase.phase_number);
+            return (
+              <PhaseComplexRow
+                key={phase.phase_number}
+                phase={phase}
+                row={row}
+                eligibleComplexes={eligibleComplexes}
+                onSave={(fields) => handleSave(phase.phase_number, fields)}
+                onDelete={() => handleDelete(phase.phase_number)}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PhaseComplexRow({ phase, row, eligibleComplexes, onSave, onDelete }) {
+  const [complexId, setComplexId] = useState(row.complex_template_id ?? '');
+  const [notes, setNotes] = useState(row.notes ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setComplexId(row.complex_template_id ?? '');
+    setNotes(row.notes ?? '');
+  }, [row.complex_template_id, row.notes]);
+
+  const dirty = (complexId || '') !== (row.complex_template_id ?? '') || notes !== (row.notes ?? '');
+
+  return (
+    <tr>
+      <td>{phase.phase_number}</td>
+      <td>{phase.title}</td>
+      <td>
+        <select value={complexId || ''} onChange={(e) => setComplexId(e.target.value ? parseInt(e.target.value, 10) : '')}>
+          <option value="">— Не выбран —</option>
+          {eligibleComplexes.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Например: «начать с разминки»" />
+      </td>
+      <td className={s.tdActions}>
+        <button
+          className={s.adminBtnPrimary}
+          disabled={!dirty || saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              await onSave({ complex_template_id: complexId || null, notes: notes || null });
+            } finally { setSaving(false); }
+          }}
+        >
+          {saving ? '…' : 'Сохранить'}
+        </button>
+        {row.complex_template_id && (
+          <button
+            className={`${s.adminActionBtn} ${s.btnDanger}`}
+            onClick={onDelete}
+            title="Удалить связь"
+          >
+            <Trash2 size={14} strokeWidth={1.8} />
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+// =====================================================
 // Суб-таб: Советы
 // =====================================================
 function TipsTab() {
@@ -752,12 +1224,14 @@ function AdminContent() {
 
       <div className={s.contentTabs}>
         <button className={`${s.contentTab} ${tab === 'program-types' ? s.active : ''}`} onClick={() => setTab('program-types')}>Типы программ</button>
+        <button className={`${s.contentTab} ${tab === 'program-templates' ? s.active : ''}`} onClick={() => setTab('program-templates')}>Шаблоны программ</button>
         <button className={`${s.contentTab} ${tab === 'phases' ? s.active : ''}`} onClick={() => setTab('phases')}>Фазы</button>
         <button className={`${s.contentTab} ${tab === 'tips' ? s.active : ''}`} onClick={() => setTab('tips')}>Советы</button>
         <button className={`${s.contentTab} ${tab === 'videos' ? s.active : ''}`} onClick={() => setTab('videos')}>Видео</button>
       </div>
 
       {tab === 'program-types' && <ProgramTypesTab />}
+      {tab === 'program-templates' && <ProgramTemplatesTab />}
       {tab === 'phases' && <PhasesTab />}
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}

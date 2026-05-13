@@ -679,3 +679,253 @@ describe('POST /api/admin/phases — program_type validation', () => {
     expect(res.body.data.program_type).toBe('acl');
   });
 });
+
+// =====================================================
+// Wave 1 #1.07: program_templates CRUD + phase_complexes junction
+// =====================================================
+
+describe('GET /api/admin/program-templates', () => {
+  it('returns list with active_programs_count + JOIN program_type label/joint', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1, code: 'acl_bptb', program_type: 'acl', title: 'ПКС BPTB',
+          description: null, surgery_required: true, default_phase_count: 6,
+          variant_of: null, is_active: true, position: 1,
+          program_type_label: 'ПКС реабилитация', program_joint: 'knee',
+          active_programs_count: 2,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].active_programs_count).toBe(2);
+  });
+
+  it('blocks instructor', async () => {
+    const res = await request(app)
+      .get('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${instructorToken}`);
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('POST /api/admin/program-templates', () => {
+  it('creates new template', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'acl' }] }) // ptCheck
+      .mockResolvedValueOnce({
+        rows: [{ id: 5, code: 'acl_bptb', program_type: 'acl', title: 'ПКС BPTB' }],
+      }) // INSERT
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // logAudit
+
+    const res = await request(app)
+      .post('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'acl_bptb', program_type: 'acl', title: 'ПКС BPTB' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.code).toBe('acl_bptb');
+  });
+
+  it('400 when missing required fields', async () => {
+    const res = await request(app)
+      .post('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'x' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/обязательны/);
+  });
+
+  it('400 when code format invalid', async () => {
+    const res = await request(app)
+      .post('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'Bad Code!', program_type: 'acl', title: 'X' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/lowercase|a-z0-9/i);
+  });
+
+  it('400 when program_type not in справочнике', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // ptCheck — empty
+
+    const res = await request(app)
+      .post('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'x_test', program_type: 'fake', title: 'X' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/program_type.*не найден/i);
+  });
+
+  it('409 on duplicate code', async () => {
+    const dupErr = new Error('dup');
+    dupErr.code = '23505';
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'acl' }] })
+      .mockRejectedValueOnce(dupErr);
+
+    const res = await request(app)
+      .post('/api/admin/program-templates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'dup', program_type: 'acl', title: 'Dup' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('PUT /api/admin/program-templates/:id', () => {
+  it('updates title and is_active', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{ id: 5, title: 'New title', is_active: false }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .put('/api/admin/program-templates/5')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ title: 'New title', is_active: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.title).toBe('New title');
+  });
+
+  it('400 on invalid id', async () => {
+    const res = await request(app)
+      .put('/api/admin/program-templates/abc')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ title: 'X' });
+    expect(res.status).toBe(400);
+  });
+
+  it('400 if no fields to update', async () => {
+    const res = await request(app)
+      .put('/api/admin/program-templates/5')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    expect(res.status).toBe(400);
+  });
+
+  it('404 if template not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/program-templates/999999')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ title: 'X' });
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/admin/program-templates/:id', () => {
+  it('soft-deletes if no active programs', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ c: 0 }] }) // usage check
+      .mockResolvedValueOnce({ rows: [{ id: 5, code: 'temp' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .delete('/api/admin/program-templates/5')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.deactivated).toBe(true);
+  });
+
+  it('409 if active programs exist', async () => {
+    query.mockResolvedValueOnce({ rows: [{ c: 3 }] });
+
+    const res = await request(app)
+      .delete('/api/admin/program-templates/5')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/3.*активных программах/);
+  });
+});
+
+describe('GET /api/admin/program-templates/:id/phase-complexes', () => {
+  it('returns junction rows joined with templates', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1, phase_number: 1, complex_template_id: 42, is_recommended: true,
+          notes: 'Note', template_name: 'Complex tpl', template_description: null,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/program-templates/5/phase-complexes')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].template_name).toBe('Complex tpl');
+  });
+
+  it('400 on invalid id', async () => {
+    const res = await request(app)
+      .get('/api/admin/program-templates/abc/phase-complexes')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('PUT /api/admin/program-templates/:id/phase-complexes/:phase (upsert)', () => {
+  it('upserts row via INSERT ON CONFLICT DO UPDATE', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{ id: 1, program_template_id: 5, phase_number: 1, complex_template_id: 42, notes: 'N1' }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .put('/api/admin/program-templates/5/phase-complexes/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ complex_template_id: 42, notes: 'N1' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.complex_template_id).toBe(42);
+
+    const sql = query.mock.calls[1][0];
+    expect(sql).toMatch(/ON CONFLICT[\s\S]*?DO UPDATE/i);
+  });
+
+  it('400 on invalid phase number', async () => {
+    const res = await request(app)
+      .put('/api/admin/program-templates/5/phase-complexes/abc')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ complex_template_id: 42 });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('DELETE /api/admin/program-templates/:id/phase-complexes/:phase', () => {
+  it('deletes junction row', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .delete('/api/admin/program-templates/5/phase-complexes/1')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.deleted).toBe(true);
+  });
+
+  it('404 if junction row not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/admin/program-templates/5/phase-complexes/99')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(404);
+  });
+});
