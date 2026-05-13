@@ -514,6 +514,17 @@ router.post('/phases', async (req, res) => {
       });
     }
 
+    // Wave 1 #1.05: program_type должен существовать в справочнике.
+    // FK на rehab_phases.program_type → program_types.code отсутствует,
+    // поэтому валидируем на уровне приложения.
+    const ptCheck = await query('SELECT code FROM program_types WHERE code = $1', [program_type]);
+    if (ptCheck.rows.length === 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: `Тип программы "${program_type}" не найден в справочнике program_types`,
+      });
+    }
+
     const result = await query(
       `INSERT INTO rehab_phases (program_type, phase_number, title, subtitle, duration_weeks,
         description, goals, restrictions, criteria_next, icon, color, color_bg,
@@ -628,6 +639,143 @@ router.delete('/phases/:id', async (req, res) => {
   } catch (error) {
     console.error('Admin delete phase error:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления фазы' });
+  }
+});
+
+// =====================================================
+// КОНТЕНТ: ТИПЫ ПРОГРАММ (PROGRAM_TYPES) — Wave 1 #1.05
+// =====================================================
+
+// GET /api/admin/program-types — список всех (включая is_active=false)
+router.get('/program-types', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT code, label, joint, body_side_relevant, surgery_required,
+              is_active, position, created_at, updated_at
+       FROM program_types
+       ORDER BY position ASC, code ASC`
+    );
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get program_types error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения типов программ' });
+  }
+});
+
+// POST /api/admin/program-types — создать новый тип
+router.post('/program-types', async (req, res) => {
+  try {
+    const { code, label, joint, body_side_relevant, surgery_required, position } = req.body;
+
+    if (!code || !label) {
+      return res.status(400).json({ error: 'Validation Error', message: 'code и label обязательны' });
+    }
+    if (!/^[a-z0-9_]{1,50}$/.test(code)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'code должен быть lowercase a-z0-9_ длиной 1-50',
+      });
+    }
+
+    const result = await query(
+      `INSERT INTO program_types (code, label, joint, body_side_relevant, surgery_required, position)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        code,
+        label,
+        joint || null,
+        body_side_relevant === undefined ? true : !!body_side_relevant,
+        surgery_required === undefined ? false : !!surgery_required,
+        position === undefined ? 0 : parseInt(position, 10) || 0,
+      ]
+    );
+
+    await logAudit(req, 'CREATE', 'program_type', null, { code, label });
+    res.status(201).json({ data: result.rows[0], message: 'Тип программы создан' });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Conflict', message: 'Тип с таким кодом уже существует' });
+    }
+    console.error('Admin create program_type error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания типа программы' });
+  }
+});
+
+// PUT /api/admin/program-types/:code — обновить (label/joint/flags/position/is_active)
+// Сам code менять нельзя — на него ссылаются rehab_programs.program_type через FK
+router.put('/program-types/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const fields = ['label', 'joint', 'body_side_relevant', 'surgery_required', 'position', 'is_active'];
+    const updates = [];
+    const params = [code];
+    let p = 2;
+
+    for (const field of fields) {
+      if (req.body[field] !== undefined) {
+        updates.push(`${field} = $${p++}`);
+        params.push(req.body[field]);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Нет полей для обновления' });
+    }
+    updates.push('updated_at = NOW()');
+
+    const result = await query(
+      `UPDATE program_types SET ${updates.join(', ')} WHERE code = $1 RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Тип программы не найден' });
+    }
+
+    await logAudit(req, 'UPDATE', 'program_type', null, { code, changes: req.body });
+    res.json({ data: result.rows[0], message: 'Тип программы обновлён' });
+  } catch (error) {
+    console.error('Admin update program_type error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления типа программы' });
+  }
+});
+
+// DELETE /api/admin/program-types/:code — soft delete (is_active=false).
+// Блокируется если есть активные программы с этим типом — пациентов надо
+// сначала перевести на другой тип. Физически НЕ удаляем — на code могут
+// ссылаться исторические rehab_programs (soft-deleted) и rehab_phases.
+router.delete('/program-types/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+
+    const usage = await query(
+      `SELECT COUNT(*)::int AS active_programs FROM rehab_programs
+       WHERE program_type = $1 AND is_active = true AND status = 'active'`,
+      [code]
+    );
+    if (usage.rows[0].active_programs > 0) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `Тип используется в ${usage.rows[0].active_programs} активных программах. Сначала переведите пациентов на другой тип.`,
+      });
+    }
+
+    const result = await query(
+      `UPDATE program_types SET is_active = false, updated_at = NOW()
+       WHERE code = $1 RETURNING code, label`,
+      [code]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Тип программы не найден' });
+    }
+
+    await logAudit(req, 'DEACTIVATE', 'program_type', null, { code });
+    res.json({ data: { code: result.rows[0].code, deactivated: true }, message: 'Тип программы деактивирован' });
+  } catch (error) {
+    console.error('Admin delete program_type error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка деактивации типа программы' });
   }
 });
 

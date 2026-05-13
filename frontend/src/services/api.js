@@ -541,6 +541,14 @@ export const admin = {
   updatePhase: (id, data) => api.put(`/admin/phases/${id}`, data),
   deletePhase: (id) => api.delete(`/admin/phases/${id}`),
 
+  // Типы программ (Wave 1 #1.05) — CRUD справочника program_types.
+  // GET admin/program-types отдаёт всё (включая is_active=false);
+  // публичный /rehab/program-types (rehab.getProgramTypes) — только active.
+  getProgramTypes: () => api.get('/admin/program-types'),
+  createProgramType: (data) => api.post('/admin/program-types', data),
+  updateProgramType: (code, data) => api.put(`/admin/program-types/${code}`, data),
+  deleteProgramType: (code) => api.delete(`/admin/program-types/${code}`),
+
   // Советы
   getTips: (params = {}) => api.get('/admin/tips', { params }),
   createTip: (data) => api.post('/admin/tips', data),

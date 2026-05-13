@@ -328,6 +328,8 @@ describe('Phase CRUD', () => {
   });
 
   it('POST /api/admin/phases should create phase', async () => {
+    // Wave 1 #1.05: добавлена валидация program_type — первый mock на ptCheck
+    query.mockResolvedValueOnce({ rows: [{ code: 'acl' }] }); // ptCheck
     query.mockResolvedValueOnce({ rows: [{ ...fixtures.mockPhaseRow, id: 10 }] });
     query.mockResolvedValueOnce({ rows: [] }); // audit
 
@@ -484,5 +486,196 @@ describe('GET /api/admin/system', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.db_connected).toBe(false);
+  });
+});
+
+// =====================================================
+// Wave 1 #1.05: program_types CRUD
+// =====================================================
+
+describe('GET /api/admin/program-types', () => {
+  it('returns list including inactive', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { code: 'acl', label: 'ПКС', joint: 'knee', is_active: true, position: 1, surgery_required: true, body_side_relevant: true },
+        { code: 'old_one', label: 'Старый', joint: null, is_active: false, position: 99, surgery_required: false, body_side_relevant: true },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/program-types')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.total).toBe(2);
+    expect(res.body.data.map((p) => p.code)).toEqual(['acl', 'old_one']);
+  });
+
+  it('blocks instructor (requireAdmin)', async () => {
+    const res = await request(app)
+      .get('/api/admin/program-types')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('POST /api/admin/program-types', () => {
+  it('creates new program_type', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{ code: 'meniscus_partial', label: 'Частичная меннисэктомия', joint: 'knee', surgery_required: true, position: 4 }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // logAudit
+
+    const res = await request(app)
+      .post('/api/admin/program-types')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'meniscus_partial', label: 'Частичная меннисэктомия', joint: 'knee', surgery_required: true });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.code).toBe('meniscus_partial');
+  });
+
+  it('rejects 400 when code missing', async () => {
+    const res = await request(app)
+      .post('/api/admin/program-types')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'No code' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/code.*обязательны/i);
+  });
+
+  it('validates code format (only a-z0-9_)', async () => {
+    const res = await request(app)
+      .post('/api/admin/program-types')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'Wrong Code!', label: 'X' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/lowercase|a-z0-9/i);
+  });
+
+  it('returns 409 on duplicate code (PG 23505)', async () => {
+    const dupErr = new Error('duplicate key');
+    dupErr.code = '23505';
+    query.mockRejectedValueOnce(dupErr);
+
+    const res = await request(app)
+      .post('/api/admin/program-types')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'acl', label: 'Дубль' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('PUT /api/admin/program-types/:code', () => {
+  it('updates label and position', async () => {
+    query
+      .mockResolvedValueOnce({
+        rows: [{ code: 'knee_general', label: 'Реабилитация колена (общая)', position: 5, is_active: true }],
+      })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // logAudit
+
+    const res = await request(app)
+      .put('/api/admin/program-types/knee_general')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'Реабилитация колена (общая)', position: 5 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.label).toBe('Реабилитация колена (общая)');
+  });
+
+  it('returns 400 when no fields to update', async () => {
+    const res = await request(app)
+      .put('/api/admin/program-types/acl')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/нет полей/i);
+  });
+
+  it('returns 404 when code not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/program-types/nonexistent')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'X' });
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('DELETE /api/admin/program-types/:code', () => {
+  it('soft-deletes if no active programs', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ active_programs: 0 }] }) // usage check
+      .mockResolvedValueOnce({ rows: [{ code: 'temp_test', label: 'Test' }] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // logAudit
+
+    const res = await request(app)
+      .delete('/api/admin/program-types/temp_test')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.deactivated).toBe(true);
+  });
+
+  it('returns 409 if active programs exist', async () => {
+    query.mockResolvedValueOnce({ rows: [{ active_programs: 3 }] });
+
+    const res = await request(app)
+      .delete('/api/admin/program-types/acl')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/3.*активных программах/);
+  });
+
+  it('returns 404 if code not found (after usage check)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ active_programs: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/admin/program-types/nonexistent')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+  });
+});
+
+// Wave 1 #1.05: POST /api/admin/phases теперь валидирует program_type в справочнике
+describe('POST /api/admin/phases — program_type validation', () => {
+  it('returns 400 if program_type not in program_types', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // ptCheck
+
+    const res = await request(app)
+      .post('/api/admin/phases')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ program_type: 'nonexistent', phase_number: 1, title: 'Test' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/не найден в справочнике/);
+  });
+
+  it('succeeds if program_type exists in program_types', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'acl' }] }) // ptCheck
+      .mockResolvedValueOnce({ rows: [{ id: 99, title: 'New phase', program_type: 'acl' }] }) // INSERT
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // logAudit
+
+    const res = await request(app)
+      .post('/api/admin/phases')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ program_type: 'acl', phase_number: 99, title: 'New phase' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.program_type).toBe('acl');
   });
 });

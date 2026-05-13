@@ -11,19 +11,37 @@ import s from './AdminContent.module.css';
 // =====================================================
 function PhasesTab() {
   const [phases, setPhases] = useState([]);
+  const [programTypes, setProgramTypes] = useState([]);
+  const [filterType, setFilterType] = useState(''); // '' = все
   const [loading, setLoading] = useState(true);
   const [editPhase, setEditPhase] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
   const toast = useToast();
 
+  // Wave 1 #1.05: загружаем фазы и справочник program_types параллельно.
+  // program_types нужны и для filter dropdown, и для select в PhaseForm.
   const loadPhases = useCallback(async () => {
-    try { setLoading(true); const res = await admin.getPhases(); setPhases(res.data || []); }
-    catch { toast.error('Ошибка загрузки фаз'); }
-    finally { setLoading(false); }
+    try {
+      setLoading(true);
+      const [phasesRes, ptRes] = await Promise.all([
+        admin.getPhases(),
+        admin.getProgramTypes(),
+      ]);
+      setPhases(phasesRes.data || []);
+      setProgramTypes(ptRes.data || []);
+    } catch {
+      toast.error('Ошибка загрузки фаз');
+    } finally {
+      setLoading(false);
+    }
   }, [toast]);
 
   useEffect(() => { loadPhases(); }, [loadPhases]);
+
+  const visiblePhases = filterType
+    ? phases.filter((p) => p.program_type === filterType)
+    : phases;
 
   const handleSave = async (form) => {
     try {
@@ -67,24 +85,31 @@ function PhasesTab() {
   return (
     <div>
       <div className={s.contentHeader}>
-        <span>{phases.length} фаз</span>
+        <span>{filterType ? `${visiblePhases.length} из ${phases.length} фаз` : `${phases.length} фаз`}</span>
+        {/* Wave 1 #1.05: filter by program_type */}
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ marginLeft: 'auto', marginRight: 8 }}>
+          <option value="">Все типы</option>
+          {programTypes.map((pt) => (
+            <option key={pt.code} value={pt.code}>{pt.label} ({pt.code})</option>
+          ))}
+        </select>
         <button className={s.adminBtnPrimary} onClick={openCreate}><Plus size={14} strokeWidth={1.8} /> Создать</button>
       </div>
-      {phases.length === 0 && (
+      {visiblePhases.length === 0 && (
         <div className={s.adminEmptyState}>
           <div className={s.emptyStateContent}>
             <div className={s.emptyStateIcon}><BookOpen size={48} strokeWidth={1.8} /></div>
-            <h3>Нет фаз</h3>
-            <p>Создайте первую фазу реабилитации</p>
+            <h3>{filterType ? `Нет фаз для типа ${filterType}` : 'Нет фаз'}</h3>
+            <p>{filterType ? 'Создайте первую фазу для этого типа программы' : 'Создайте первую фазу реабилитации'}</p>
           </div>
         </div>
       )}
-      {phases.length > 0 && (
+      {visiblePhases.length > 0 && (
         <div className={s.adminTableWrap}>
           <table className={s.adminTable}>
             <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Название</th><th>Длительность</th><th>Активна</th><th>Действия</th></tr></thead>
             <tbody>
-              {phases.map(p => (
+              {visiblePhases.map(p => (
                 <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
                   <td className={s.tdId}>{p.id}</td>
                   <td>{p.program_type}</td>
@@ -102,7 +127,7 @@ function PhasesTab() {
           </table>
         </div>
       )}
-      {showForm && <PhaseForm phase={editPhase} onSave={handleSave} onClose={() => { setShowForm(false); setEditPhase(null); }} />}
+      {showForm && <PhaseForm phase={editPhase} programTypes={programTypes} onSave={handleSave} onClose={() => { setShowForm(false); setEditPhase(null); }} />}
       <ConfirmModal
         isOpen={!!deleteItem}
         onClose={() => setDeleteItem(null)}
@@ -117,7 +142,7 @@ function PhasesTab() {
   );
 }
 
-function PhaseForm({ phase, onSave, onClose }) {
+function PhaseForm({ phase, programTypes = [], onSave, onClose }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     program_type: 'acl', phase_number: '', title: '', subtitle: '', duration_weeks: '',
@@ -156,7 +181,19 @@ function PhaseForm({ phase, onSave, onClose }) {
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
         <div className={`${s.adminModalForm} ${s.contentFormGrid}`}>
-          <div className={s.adminFormGroup}><label>Тип</label><input value={form.program_type} onChange={e => set('program_type', e.target.value)} /></div>
+          <div className={s.adminFormGroup}>
+            <label>Тип</label>
+            {/* Wave 1 #1.05: select из справочника program_types вместо free input.
+                Защищает от опечаток и FK violation. При editPhase программа-тип может быть
+                деактивированной — фильтруем только при создании, при редактировании показываем всё. */}
+            <select value={form.program_type} onChange={e => set('program_type', e.target.value)}>
+              {programTypes
+                .filter((pt) => pt.is_active || pt.code === form.program_type)
+                .map((pt) => (
+                  <option key={pt.code} value={pt.code}>{pt.label} ({pt.code})</option>
+                ))}
+            </select>
+          </div>
           <div className={s.adminFormGroup}><label>Номер</label><input type="number" value={form.phase_number} onChange={e => set('phase_number', e.target.value)} /></div>
           <div className={`${s.adminFormGroup} ${s.fullWidth}`}><label>Название</label><input value={form.title} onChange={e => set('title', e.target.value)} /></div>
           <div className={s.adminFormGroup}><label>Подзаголовок</label><input value={form.subtitle} onChange={e => set('subtitle', e.target.value)} /></div>
@@ -169,6 +206,258 @@ function PhaseForm({ phase, onSave, onClose }) {
           <div className={s.adminModalActions}>
             <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
             <button className={s.adminBtnPrimary} disabled={saving} onClick={async () => { setSaving(true); try { await onSave(form); } finally { setSaving(false); } }}>{saving ? 'Сохранение...' : 'Сохранить'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
+// Суб-таб: Типы программ (Wave 1 #1.05)
+// =====================================================
+function ProgramTypesTab() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deactivateItem, setDeactivateItem] = useState(null);
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await admin.getProgramTypes();
+      setItems(res.data || []);
+    } catch {
+      toast.error('Ошибка загрузки типов программ');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (form) => {
+    try {
+      if (editing) {
+        const { code, ...patch } = form;
+        await admin.updateProgramType(editing.code, patch);
+        toast.success('Тип программы обновлён');
+      } else {
+        await admin.createProgramType(form);
+        toast.success('Тип программы создан');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDeactivate = async () => {
+    if (!deactivateItem) return;
+    try {
+      await admin.deleteProgramType(deactivateItem.code);
+      toast.success('Тип программы деактивирован');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка деактивации');
+    }
+    setDeactivateItem(null);
+  };
+
+  if (loading) return <TableSkeleton rows={3} columns={7} />;
+
+  return (
+    <div>
+      <div className={s.contentHeader}>
+        <span>{items.length} типов</span>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Создать
+        </button>
+      </div>
+      {items.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><BookOpen size={48} strokeWidth={1.8} /></div>
+            <h3>Нет типов программ</h3>
+            <p>Создайте первый тип реабилитационной программы</p>
+          </div>
+        </div>
+      )}
+      {items.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr><th>Код</th><th>Название</th><th>Сустав</th><th>Хирургия</th><th>Позиция</th><th>Активен</th><th>Действия</th></tr>
+            </thead>
+            <tbody>
+              {items.map((pt) => (
+                <tr key={pt.code} className={!pt.is_active ? s.rowInactive : ''}>
+                  <td className={s.tdId}><code>{pt.code}</code></td>
+                  <td className={s.tdName}>{pt.label}</td>
+                  <td>{pt.joint || '—'}</td>
+                  <td>{pt.surgery_required ? '✅' : '—'}</td>
+                  <td>{pt.position}</td>
+                  <td>{pt.is_active ? '✅' : '❌'}</td>
+                  <td className={s.tdActions}>
+                    <button className={s.adminActionBtn} onClick={() => setEditing(pt)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    {pt.is_active && (
+                      <button
+                        className={`${s.adminActionBtn} ${s.btnDanger}`}
+                        onClick={() => setDeactivateItem(pt)}
+                        title="Деактивировать"
+                      >
+                        <Trash2 size={14} strokeWidth={1.8} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(editing || creating) && (
+        <ProgramTypeForm
+          initial={editing}
+          onSave={handleSave}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deactivateItem}
+        onClose={() => setDeactivateItem(null)}
+        onConfirm={confirmDeactivate}
+        title="Деактивация типа программы"
+        message={`Деактивировать тип "${deactivateItem?.label}" (${deactivateItem?.code})? Заблокируется если есть активные программы с этим типом.`}
+        confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+function ProgramTypeForm({ initial, onSave, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
+  const [form, setForm] = useState({
+    code: '',
+    label: '',
+    joint: '',
+    body_side_relevant: true,
+    surgery_required: false,
+    position: 0,
+    is_active: true,
+  });
+
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        code: initial.code || '',
+        label: initial.label || '',
+        joint: initial.joint || '',
+        body_side_relevant: !!initial.body_side_relevant,
+        surgery_required: !!initial.surgery_required,
+        position: initial.position ?? 0,
+        is_active: !!initial.is_active,
+      });
+    }
+  }, [initial]);
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  return (
+    <div className={s.adminModalOverlay} onClick={onClose}>
+      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+        <div className={s.adminModalHeader}>
+          <h3>{isEdit ? 'Редактировать тип программы' : 'Создать тип программы'}</h3>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+        </div>
+        <div className={s.adminModalForm}>
+          <div className={s.adminFormGroup}>
+            <label>Код (a-z, 0-9, _)</label>
+            <input
+              value={form.code}
+              onChange={(e) => set('code', e.target.value)}
+              placeholder="meniscus_partial"
+              disabled={isEdit}
+            />
+            {isEdit && <small>Код менять нельзя — на него ссылаются программы.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Название</label>
+            <input
+              value={form.label}
+              onChange={(e) => set('label', e.target.value)}
+              placeholder="Частичная меннисэктомия"
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Сустав</label>
+            <input
+              value={form.joint}
+              onChange={(e) => set('joint', e.target.value)}
+              placeholder="knee / shoulder / hip / ankle / spine"
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.surgery_required}
+                onChange={(e) => set('surgery_required', e.target.checked)}
+              />{' '}
+              После операции
+            </label>
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.body_side_relevant}
+                onChange={(e) => set('body_side_relevant', e.target.checked)}
+              />{' '}
+              Сторона тела важна (лев/прав)
+            </label>
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Позиция (для сортировки)</label>
+            <input
+              type="number"
+              value={form.position}
+              onChange={(e) => set('position', parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+          {isEdit && (
+            <div className={s.adminFormGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => set('is_active', e.target.checked)}
+                />{' '}
+                Активен
+              </label>
+            </div>
+          )}
+          <div className={s.adminModalActions}>
+            <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
+            <button
+              className={s.adminBtnPrimary}
+              disabled={saving}
+              onClick={async () => {
+                setSaving(true);
+                try { await onSave(form); } finally { setSaving(false); }
+              }}
+            >
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
           </div>
         </div>
       </div>
@@ -462,11 +751,13 @@ function AdminContent() {
       </h2>
 
       <div className={s.contentTabs}>
+        <button className={`${s.contentTab} ${tab === 'program-types' ? s.active : ''}`} onClick={() => setTab('program-types')}>Типы программ</button>
         <button className={`${s.contentTab} ${tab === 'phases' ? s.active : ''}`} onClick={() => setTab('phases')}>Фазы</button>
         <button className={`${s.contentTab} ${tab === 'tips' ? s.active : ''}`} onClick={() => setTab('tips')}>Советы</button>
         <button className={`${s.contentTab} ${tab === 'videos' ? s.active : ''}`} onClick={() => setTab('videos')}>Видео</button>
       </div>
 
+      {tab === 'program-types' && <ProgramTypesTab />}
       {tab === 'phases' && <PhasesTab />}
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}
