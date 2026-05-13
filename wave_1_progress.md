@@ -8,8 +8,8 @@
 
 | # | Статус | Commit SHA | Дата | Smoke | PR | Заметки |
 |---|---|---|---|---|---|---|
-| 1.01 | 🔵 в работе | — | 2026-05-12 | — | — | Миграция program_types + поле rehab_programs.program_type |
-| 1.02 | ⏳ ждёт | — | — | — | — | — |
+| 1.01 | ⏸ заморожен | `a3dfff7` | 2026-05-12 | ⏳ ждёт юзера | — | Миграция program_types + поле rehab_programs.program_type. Backend 350/350 (+12). Idempotency cycle ✓ |
+| 1.02 | 🔵 в работе | — | 2026-05-13 | — | — | `/program-types` endpoint + JOIN program_types в `/my/dashboard` |
 | 1.03 | ⏳ ждёт | — | — | — | — | — |
 | 1.04 | ⏳ ждёт | — | — | — | — | — |
 | 1.05 | ⏳ ждёт | — | — | — | — | — |
