@@ -110,6 +110,31 @@ router.get('/phases/:id', async (req, res) => {
 });
 
 /**
+ * GET /api/rehab/program-types
+ * Справочник активных типов реабилитационных программ (Wave 1 commit 1.02).
+ * Публичный — по образцу /phases/:id и /tips, не содержит чувствительных данных.
+ * Используется в RehabProgramModal wizard (1.08) и AdminContent (1.05).
+ */
+router.get('/program-types', async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT code, label, joint, body_side_relevant, surgery_required, position
+       FROM program_types
+       WHERE is_active = true
+       ORDER BY position ASC, code ASC`
+    );
+
+    res.json({
+      data: result.rows,
+      total: result.rows.length,
+    });
+  } catch (error) {
+    console.error('Ошибка получения program_types:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения справочника программ' });
+  }
+});
+
+/**
  * GET /api/rehab/tips?type=acl&phase=1&category=motivation
  * Получить советы (с фильтрацией)
  */
@@ -215,11 +240,15 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
 
-    // 1. Активная программа
+    // 1. Активная программа + JOIN с program_types для получения label/joint/surgery_required
     const programResult = await query(
       `SELECT rp.id, rp.title, rp.diagnosis, rp.current_phase, rp.phase_started_at,
-              rp.surgery_date, rp.status
+              rp.surgery_date, rp.status, rp.program_type,
+              pt.label AS program_label,
+              pt.joint AS program_joint,
+              pt.surgery_required AS program_surgery_required
        FROM rehab_programs rp
+       LEFT JOIN program_types pt ON pt.code = rp.program_type
        WHERE rp.patient_id = $1 AND rp.is_active = true AND rp.status = 'active'
        ORDER BY rp.created_at DESC LIMIT 1`,
       [patientId]
@@ -227,12 +256,14 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
 
     const program = programResult.rows[0] || null;
 
-    // Добавляем имя пациента из JWT (фронтенд ожидает program.patient_name)
-    // и нормализованный program_label (короткое название для UI вместо
-    // сырого diagnosis — Wave 0 commit 02, временно до Волны 1).
     if (program) {
       program.patient_name = req.patient.full_name;
-      program.program_label = deriveProgramLabel(program.diagnosis);
+      // program_label приходит из JOIN с program_types (миграция 20260512).
+      // Fallback на deriveProgramLabel (Wave 0 commit 02) если JOIN вернул NULL —
+      // теоретически невозможно из-за FK, но защита от inconsistency.
+      if (!program.program_label) {
+        program.program_label = deriveProgramLabel(program.diagnosis);
+      }
     }
 
     // 2. Текущая фаза (если есть программа)

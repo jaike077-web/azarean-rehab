@@ -564,7 +564,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/rehab/programs/:id/diary | JWT | Дневник пациента (для инструктора) |
 | GET | /api/rehab/programs/:id/messages | JWT | Сообщения пациента (для инструктора) |
 | GET | /api/rehab/my/program | PatientJWT | Моя программа |
-| GET | /api/rehab/my/dashboard | PatientJWT | Мой дашборд |
+| GET | /api/rehab/my/dashboard | PatientJWT | Мой дашборд (program.program_type/program_label/joint/surgery_required через JOIN с program_types, Wave 1 #1.02) |
 | GET | /api/rehab/my/exercises | PatientJWT | Мои упражнения |
 | POST | /api/rehab/my/diary | PatientJWT | Сохранить дневник (+ pgic_feel, rom_degrees, better_list, pain_when) |
 | GET | /api/rehab/my/diary | PatientJWT | Дневник (с историей и photos[]) |
@@ -580,6 +580,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | PUT | /api/rehab/my/notifications | PatientJWT | Обновить настройки уведомлений |
 | GET | /api/rehab/phases/:type | **Нет** | Фазы реабилитации |
 | GET | /api/rehab/phases/:id | **Нет** | Конкретная фаза |
+| GET | /api/rehab/program-types | **Нет** | Справочник типов программ (Wave 1 #1.02) |
 | GET | /api/rehab/tips | **Нет** | Советы |
 
 ### Диагнозы

@@ -265,7 +265,9 @@ describe('GET /api/rehab/my/dashboard', () => {
   });
 
   it('should return dashboard data with program', async () => {
-    // Mock 6 sequential queries for dashboard with program
+    // Mock 6 sequential queries for dashboard with program.
+    // Wave 1 #1.02: SELECT теперь содержит JOIN с program_types —
+    // программа приходит уже с program_type/program_label/joint/surgery_required.
     const programData = {
       id: 1,
       title: 'ACL Rehab',
@@ -273,7 +275,11 @@ describe('GET /api/rehab/my/dashboard', () => {
       current_phase: 1,
       phase_started_at: '2026-01-15',
       surgery_date: '2026-01-01',
-      status: 'active'
+      status: 'active',
+      program_type: 'acl',
+      program_label: 'ПКС реабилитация',
+      program_joint: 'knee',
+      program_surgery_required: true,
     };
     const phaseData = {
       id: 1,
@@ -305,6 +311,11 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data.program).not.toBeNull();
     expect(response.body.data.program.id).toBe(1);
     expect(response.body.data.program).toHaveProperty('patient_name', 'Test Patient');
+    // Wave 1 #1.02: program_type + label/joint/surgery_required из JOIN с program_types
+    expect(response.body.data.program.program_type).toBe('acl');
+    expect(response.body.data.program.program_label).toBe('ПКС реабилитация');
+    expect(response.body.data.program.program_joint).toBe('knee');
+    expect(response.body.data.program.program_surgery_required).toBe(true);
 
     expect(response.body.data).toHaveProperty('phase');
     expect(response.body.data.phase).not.toBeNull();
@@ -325,6 +336,46 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data).toHaveProperty('tip');
     expect(response.body.data).toHaveProperty('diaryFilledToday', false);
     expect(response.body.data).toHaveProperty('exercisesDoneToday', false);
+  });
+
+  it('Wave 1 #1.02: program_label fallback на deriveProgramLabel если JOIN вернул NULL', async () => {
+    // Защита от inconsistency: если program_type отсутствует в справочнике
+    // (теоретически невозможно из-за FK), program_label остаётся через
+    // deriveProgramLabel из Wave 0 commit 02.
+    const programData = {
+      id: 2,
+      title: 'Some Rehab',
+      diagnosis: 'Разрыв ПКС левого колена',
+      current_phase: 1,
+      phase_started_at: '2026-01-15',
+      surgery_date: '2026-01-01',
+      status: 'active',
+      program_type: 'acl',
+      program_label: null,
+      program_joint: null,
+      program_surgery_required: null,
+    };
+    const phaseData = {
+      id: 1, phase_number: 1, title: 'Phase 1', subtitle: '',
+      duration_weeks: '6', description: '', icon: '', color: '', color_bg: '',
+    };
+
+    query.mockResolvedValueOnce({ rows: [programData] });
+    query.mockResolvedValueOnce({ rows: [phaseData] });
+    query.mockResolvedValueOnce({ rows: [{ current_streak: 0, longest_streak: 0, total_days: 0, last_activity_date: null }] });
+    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] });
+    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const response = await request(app)
+      .get('/api/rehab/my/dashboard')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    // deriveProgramLabel должен вернуть «ПКС» для diagnosis «Разрыв ПКС левого колена»
+    expect(response.body.data.program.program_label).toBeTruthy();
+    expect(response.body.data.program.program_type).toBe('acl');
   });
 
   it('should return null program when no program exists', async () => {
