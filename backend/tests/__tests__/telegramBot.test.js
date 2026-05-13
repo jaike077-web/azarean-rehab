@@ -246,6 +246,23 @@ describe('Bot command handlers', () => {
         expect.any(Object)
       );
     });
+
+    // Wave 1 #1.04 — multi-protocol: фаза подтягивается JOIN'ом по rp.program_type,
+    // не хардкоду 'acl'. Проверяем SQL программы.
+    it('Wave 1 #1.04: SQL фаз использует rp.program_type, не хардкод acl', async () => {
+      query.mockResolvedValueOnce({ rows: [{ id: 1, full_name: 'Тест', email: 'a@b.com' }] });
+      query.mockResolvedValueOnce({ rows: [{ title: 'Shoulder Rehab', current_phase: 1, phase_title: 'Защита', phase_subtitle: 'нед 0-2', surgery_date: null }] });
+      query.mockResolvedValueOnce({ rows: [{ current_streak: 0, longest_streak: 0, total_days: 0 }] });
+      query.mockResolvedValueOnce({ rows: [] }); // no diary today
+
+      const msg = { chat: { id: 222 } };
+      await handlers.status(msg);
+
+      // Найти SQL программы среди вызовов (2-й вызов после getPatientByChatId)
+      const programSql = query.mock.calls[1][0];
+      expect(programSql).toMatch(/ph\.program_type\s*=\s*rp\.program_type/);
+      expect(programSql).not.toMatch(/program_type\s*=\s*'acl'/);
+    });
   });
 
   describe('/tip', () => {
