@@ -9,8 +9,8 @@
 | # | Статус | Commit SHA | Дата | Smoke | PR | Заметки |
 |---|---|---|---|---|---|---|
 | 1.01 | ⏸ заморожен | `a3dfff7` | 2026-05-12 | ⏳ ждёт юзера | — | Миграция program_types + поле rehab_programs.program_type. Backend 350/350 (+12). Idempotency cycle ✓ |
-| 1.02 | 🔵 в работе | — | 2026-05-13 | — | — | `/program-types` endpoint + JOIN program_types в `/my/dashboard` |
-| 1.03 | ⏳ ждёт | — | — | — | — | — |
+| 1.02 | ⏸ заморожен | `b0170f1` | 2026-05-13 | ⏳ ждёт юзера | — | `/program-types` endpoint + JOIN program_types в `/my/dashboard`. Backend 359/359 (+9). Smoke ✓ |
+| 1.03 | 🔵 в работе | — | 2026-05-13 | — | — | Закрытие regex-маппинга `deriveProgramLabel` (HomeScreen уже корректен) |
 | 1.04 | ⏳ ждёт | — | — | — | — | — |
 | 1.05 | ⏳ ждёт | — | — | — | — | — |
 

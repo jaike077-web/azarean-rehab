@@ -338,10 +338,9 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data).toHaveProperty('exercisesDoneToday', false);
   });
 
-  it('Wave 1 #1.02: program_label fallback на deriveProgramLabel если JOIN вернул NULL', async () => {
-    // Защита от inconsistency: если program_type отсутствует в справочнике
-    // (теоретически невозможно из-за FK), program_label остаётся через
-    // deriveProgramLabel из Wave 0 commit 02.
+  it('Wave 1 #1.03: program_label остаётся NULL если JOIN вернул NULL (фронт сам fallback на «Фаза N»)', async () => {
+    // После 1.03 backend больше НЕ ставит fallback через regex-маппинг —
+    // HomeScreen.js самостоятельно показывает «Фаза N» без префикса label.
     const programData = {
       id: 2,
       title: 'Some Rehab',
@@ -373,8 +372,7 @@ describe('GET /api/rehab/my/dashboard', () => {
       .set('Authorization', `Bearer ${validToken}`)
       .expect(200);
 
-    // deriveProgramLabel должен вернуть «ПКС» для diagnosis «Разрыв ПКС левого колена»
-    expect(response.body.data.program.program_label).toBeTruthy();
+    expect(response.body.data.program.program_label).toBeNull();
     expect(response.body.data.program.program_type).toBe('acl');
   });
 
