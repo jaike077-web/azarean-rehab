@@ -21,6 +21,7 @@ function InviteCodeModal({ patient, onClose }) {
   const [expiresAt, setExpiresAt] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
 
   const requestCode = async () => {
     setLoading(true);
@@ -48,12 +49,33 @@ function InviteCodeModal({ patient, onClose }) {
     }
   };
 
+  // Wave 1 hot-fix #4 (2026-05-15): полное готовое сообщение для отправки
+  // через любой канал (WhatsApp/SMS/Telegram/email). pre-fill code в URL.
+  const shareMessage = code
+    ? `Регистрация в Azarean Rehab.\n` +
+      `Перейдите по ссылке — код приглашения уже подставлен:\n` +
+      `https://my.azarean.ru/patient-register?code=${code}`
+    : null;
+
+  const handleCopyShareMessage = async () => {
+    if (!shareMessage) return;
+    try {
+      await navigator.clipboard.writeText(shareMessage);
+      setCopiedMessage(true);
+      setTimeout(() => setCopiedMessage(false), 2000);
+    } catch (_err) {
+      toast.error('Не удалось скопировать');
+    }
+  };
+
+  // Wave 1 hot-fix #4: URL включает ?code= → пациент по клику получает
+  // pre-filled form. Текст без дубля кода и без trailing colon.
   const telegramShareUrl = code
     ? `https://t.me/share/url?url=${encodeURIComponent(
-        'https://my.azarean.ru/patient-register'
+        `https://my.azarean.ru/patient-register?code=${code}`
       )}&text=${encodeURIComponent(
-        `Ваш код приглашения для регистрации в Azarean: ${code}\n` +
-        `Перейдите по ссылке и введите код:`
+        `Регистрация в Azarean Rehab.\n` +
+        `Перейдите по ссылке — код приглашения уже подставлен:`
       )}`
     : null;
 
@@ -115,6 +137,15 @@ function InviteCodeModal({ patient, onClose }) {
               </p>
 
               <div className={s.inviteCodeActions}>
+                <button
+                  type="button"
+                  className={`${s.btnPrimary} ${s.inviteCodeShareBtn}`}
+                  onClick={handleCopyShareMessage}
+                  title="Скопировать готовое сообщение с ссылкой"
+                >
+                  {copiedMessage ? <Check size={16} /> : <Copy size={16} />}
+                  <span>{copiedMessage ? 'Скопировано' : 'Скопировать ссылку для пациента'}</span>
+                </button>
                 <a
                   href={telegramShareUrl}
                   target="_blank"
