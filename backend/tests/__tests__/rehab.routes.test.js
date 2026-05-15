@@ -1654,3 +1654,69 @@ describe('20260513_program_templates migration — структура SQL', () =
     expect(indexCount).toBeGreaterThanOrEqual(4);
   });
 });
+
+// Wave 1 #1.09 — instructor stuck-status endpoint.
+// computeStuckStatus уже покрыт в stuckDetection.test.js — здесь проверяем
+// только HTTP-обёртку: auth, ownership, валидация id.
+describe('GET /api/rehab/programs/:id/stuck-status (instructor)', () => {
+  let instructorToken;
+
+  beforeEach(() => {
+    instructorToken = jwt.sign(
+      { id: 1, email: 'instructor@test.com', role: 'instructor' },
+      process.env.JWT_SECRET,
+      { algorithm: 'HS256', expiresIn: '1h' }
+    );
+  });
+
+  it('возвращает 401 без токена', async () => {
+    const res = await request(app).get('/api/rehab/programs/1/stuck-status');
+    expect(res.status).toBe(401);
+  });
+
+  it('возвращает 400 если id не число', async () => {
+    query.mockResolvedValueOnce({ rows: [{ is_active: true }] }); // auth is_active check
+    const res = await request(app)
+      .get('/api/rehab/programs/abc/stuck-status')
+      .set('Authorization', `Bearer ${instructorToken}`);
+    expect(res.status).toBe(400);
+  });
+
+  it('возвращает 404 если программы нет / не принадлежит инструктору', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // auth
+      .mockResolvedValueOnce({ rows: [] });                    // program ownership
+
+    const res = await request(app)
+      .get('/api/rehab/programs/99/stuck-status')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('возвращает yellow/red status для активной программы', async () => {
+    const fiveWeeksAgo = new Date(Date.now() - 5 * 7 * 24 * 60 * 60 * 1000);
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })   // auth
+      .mockResolvedValueOnce({                                   // program
+        rows: [{
+          id: 1, program_type: 'acl', current_phase: 1,
+          phase_started_at: fiveWeeksAgo, created_at: fiveWeeksAgo,
+        }],
+      })
+      .mockResolvedValueOnce({                                   // phase lookup (computeStuckStatus)
+        rows: [{ title: 'Защита', duration_weeks: '0-2' }],
+      });
+
+    const res = await request(app)
+      .get('/api/rehab/programs/1/stuck-status')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(200);
+    // 5 нед при duration "0-2" (upper=2): 5 > 2.6 (yellow) и > 3.4 (red)
+    expect(res.body.data.yellow).toBe(true);
+    expect(res.body.data.red).toBe(true);
+    expect(res.body.data.current_phase).toBe(1);
+    expect(res.body.data.phase_title).toBe('Защита');
+  });
+});

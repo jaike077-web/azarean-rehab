@@ -5,6 +5,31 @@
 
 ## Текущее состояние (апрель 2026)
 
+### 🚧 Wave 1 в работе (2026-05-12..13) — 10 коммитов на feature-ветках, не запушены
+
+Multi-protocol foundation + program_templates + 3-step wizard для RehabProgramModal + stuck-detection инструктора.
+
+| # | SHA | Что | Bug |
+|---|---|---|---|
+| 1.01 | `a3dfff7` | Миграция `program_types` + FK | — |
+| 1.02 | `b0170f1` | `/api/rehab/program-types` + dashboard JOIN | — |
+| 1.03 | `fa177b4` | Удалён regex-маппинг `deriveProgramLabel` | — |
+| 1.04 | `ceb32aa` | Динамический program_type (RoadmapScreen + telegramBot) | #12 ✅ |
+| 1.05 | `8c420b2` | AdminContent CRUD program_types + select PhaseForm | — |
+| 1.06 | `8223b60` | Миграция `program_templates` + endpoints + POST /programs принимает template_id | — |
+| 1.07 | `77f2e7e` | AdminContent ProgramTemplatesTab + 7 endpoints + PhaseComplexEditor | — |
+| 1.08a | `6d68a87` | `derived_title` computed field в /api/complexes | #13 (backend) |
+| 1.08b | `28623f8` | RehabProgramModal → директория (CreateWizard + EditForm + ComplexSelector) | #13 ✅ |
+| **1.09** | — | **Stuck detection инструктор** (yellow badge + opsAlert red push + weekly cron) | — |
+
+**Состояние:** ветка `wave-1/09-stuck-detection-instructor` (HEAD). Backend 423/423 (+18), frontend 252/252 (+3). Все коммиты идут цепочкой от `main` → ничего не запушено. **7 premise drift'ов** в `memory/architect_premise_drift_2026-05-13.md`.
+
+**Dirty файлы (НЕ ТРОГАТЬ):** 4 файла dark-theme от 2026-05-04. Все 10 коммитов прошли мимо — продолжаем эту изоляцию.
+
+**Следующий шаг:** финальный отчёт архитектору → batch merge всей волны (10 PR #45..#54) → 24ч стабильности → Wave 2 (клинический дневник).
+
+**Точка входа в новый чат:** [`SESSION_HANDOFF_2026-05-13_WAVE1_PRE_109.md`](SESSION_HANDOFF_2026-05-13_WAVE1_PRE_109.md). Memory: [`wave_1_block_b_progress.md`](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/wave_1_block_b_progress.md).
+
 ### В production (задеплоено 2026-04-23)
 - **URL:** https://my.azarean.ru (VDS 185.93.109.234, shared с JARVIS)
 - **CI/CD:** GitHub Actions (`.github/workflows/deploy.yml`) — push на main → Test → Build → Deploy (SSH)
@@ -54,7 +79,7 @@
 - **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары), sharp 0.34 (сжатие изображений)
 - **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly access+refresh cookies)
 - **Security:** helmet 8.1 (headers), express-rate-limit 8.2 (5 req/15 min auth, general in production)
-- **Тесты:** Jest 30.2 + Supertest 7.2 (269 backend + 209 frontend = 478 тестов)
+- **Тесты:** Jest 30.2 + Supertest 7.2 (423 backend + 252 frontend = 675 тестов)
 - **Observability:** Telegram ops-bot (utils/opsAlert.js, /api/log-error endpoint) → @vadim_azarenkov. Sentry SDK подключён в noop без DSN (sentry.io ingest заблокирован для русских IP)
 - **Runtime:** Node.js >= 20, nodemon 3.1 (dev)
 
@@ -99,6 +124,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_telegr
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260508_streak_days.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260512_program_types.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_program_templates.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_phase_stuck_alerts.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -118,6 +144,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_progra
 **20260512_program_types:** справочник `program_types` (code PK, label, joint, body_side_relevant, surgery_required, position) + поле `rehab_programs.program_type VARCHAR(50) NOT NULL DEFAULT 'acl'` с FK на program_types.code. Минимальный seed: `acl` / `knee_general` / `shoulder_general`. Backfill для существующих программ — regex по diagnosis на маркеры плеча (плеч/shoulder/манжет/надостн/cuff/frozen) → `shoulder_general`, остальное остаётся `acl` (90% knee по статистике). Wave 1 коммит 1.01 — фундамент multi-protocol. Использование `program_type` в backend/UI/telegramBot — в коммитах 1.02-1.04. Полностью идемпотентна.
 
 **20260513_program_templates:** шаблоны программ + связи. Новые таблицы `program_templates` (id, code UNIQUE, program_type FK→program_types(code), title, description, surgery_required, default_phase_count, variant_of self-FK, is_active, position) и `program_template_phase_complexes` (id, program_template_id FK CASCADE, phase_number, complex_template_id FK→templates(id) ON DELETE SET NULL, is_recommended, notes, UNIQUE по program_template_id+phase_number). + ALTER `rehab_programs ADD program_template_id INTEGER REFERENCES program_templates(id) ON DELETE SET NULL` для tracking. + ALTER `templates ADD program_type VARCHAR(50) REFERENCES program_types(code)` для фильтрации комплексов. **Без seed** — Vadim наполняет через AdminContent (1.07). Wave 1 коммит 1.06 — фундамент блока B. Полностью идемпотентна.
+
+**20260513_phase_stuck_alerts:** новая таблица `phase_stuck_alerts` (id, program_id FK CASCADE, phase_number SMALLINT, threshold_level CHECK IN ('yellow','red'), detected_at, resolved_at, notified_instructor BOOLEAN, notified_at, UNIQUE(program_id, phase_number, threshold_level)). Дедуп alerts cron-задачи `checkStuckPhases()`. Партиал-индекс по `program_id WHERE resolved_at IS NULL` для EXISTS-агрегата в `/api/patients`. Wave 1 коммит 1.09 — инструкторская сторона stuck detection. Полностью идемпотентна.
 
 ### 2. Переменные окружения
 
@@ -232,7 +260,8 @@ Azarean_rehab/
 │   │   ├── telegramBot.js       # Telegram бот: /start, /status, /diary (6-step wizard), /tip, /help (631 строк)
 │   │   ├── telegramOidc.js      # OIDC service для Telegram Login: openid-client v6 + customFetch через финский прокси (X-Proxy-Secret)
 │   │   ├── yandexOauth.js       # Plain OAuth 2.0 для Yandex Login: PKCE S256, без OIDC discovery, без прокси (oauth.yandex.ru доступен с rehab-VDS напрямую)
-│   │   ├── scheduler.js         # Cron: exercise reminders (per-user tz), diary (21:00), tips (12:00), token cleanup (03:00) (179 строк)
+│   │   ├── scheduler.js         # Cron: exercise reminders (per-user tz), diary (21:00), tips (12:00), token cleanup (03:00), patient deletion (03:30), stuck-check (Mon 09:00 МСК)
+│   │   ├── stuckDetection.js    # Wave 1 #1.09: computeStuckStatus + checkStuckPhases (yellow 1.3× / red 1.7× threshold)
 │   │   ├── kinescopeService.js  # Kinescope API client (152 строки)
 │   │   └── csvImportService.js  # CSV парсер (56 строк)
 │   ├── utils/
@@ -240,6 +269,7 @@ Azarean_rehab/
 │   │   ├── inviteCode.js        # 8-символьные коды приглашения (alphabet без 0/O/1/I/l), normalize, validate format
 │   │   ├── phone.js             # normalizePhone(raw) → E.164, phonesEqual(a,b). 17 unit-тестов
 │   │   ├── audit.js             # logAudit() для GDPR-аудита действий инструктора над данными пациентов
+│   │   ├── phaseDuration.js     # parseDurationWeeksUpper() — VARCHAR-диапазон "0-2"/"36+" → upper bound (shared между пациентским и инструкторским stuck check)
 │   │   └── email.js             # Email stub (console.log в dev, готов к Nodemailer/SendGrid)
 │   └── tests/                   # Jest + Supertest
 │       └── __tests__/           # 9 тест-файлов (2908 строк суммарно)
@@ -446,6 +476,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Остальные таблицы
 - **tips** — советы по фазам реабилитации
 - **phase_videos** — видео для фаз (FK → rehab_phases)
+- **phase_stuck_alerts** — Wave 1 #1.09: alerts от cron checkStuckPhases() для дедупликации yellow/red push'ей. `UNIQUE(program_id, phase_number, threshold_level)` гарантирует один alert на (программа, фаза, уровень). `notified_instructor=TRUE` помечает что red-push уже отправлен. `resolved_at` — backlog (UI для resolve пока нет).
 - **messages** — чат пациент↔инструктор (sender_id без FK!). С миграции 20260421 добавлены `linked_diary_id INT REFERENCES diary_entries(id) ON DELETE SET NULL` (привязка ответа куратора к конкретной записи дневника) и `channel VARCHAR(20) CHECK ('telegram'|'whatsapp'|'max'|'in_app' OR NULL)`.
 - **notification_settings** — настройки уведомлений пациента (UNIQUE patient_id)
 - **telegram_link_codes** — одноразовые коды привязки Telegram
@@ -564,6 +595,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/rehab/programs | JWT | Список программ |
 | PUT | /api/rehab/programs/:id | JWT | Обновить программу |
 | DELETE | /api/rehab/programs/:id | JWT | Удалить программу |
+| GET | /api/rehab/programs/:id/stuck-status | JWT | Stuck-статус активной программы (yellow 1.3× / red 1.7×). Wave 1 #1.09 |
 | GET | /api/rehab/programs/:id/diary | JWT | Дневник пациента (для инструктора) |
 | GET | /api/rehab/programs/:id/messages | JWT | Сообщения пациента (для инструктора) |
 | GET | /api/rehab/my/program | PatientJWT | Моя программа |
@@ -832,7 +864,7 @@ frontend/src/ (12 suites, 156 тестов)
 - **Библиотека:** `node-telegram-bot-api` 0.67 (НЕ Telegraf)
 - **Команды:** /start (привязка по коду), /status (прогресс), /diary (6-шаговый wizard), /tip (совет дня), /help
 - **Diary wizard:** pain → swelling → mobility → mood → sleep → notes (in-memory state, 10 min timeout)
-- **Cron:** exercise reminders (каждую минуту), diary reminders (21:00), daily tips (12:00) — Europe/Moscow
+- **Cron:** exercise reminders (каждую минуту), diary reminders (21:00), daily tips (12:00), token cleanup (03:00), patient deletion queue (03:30), stuck-detection (понедельник 09:00) — Europe/Moscow
 - **Привязка:** пациент генерирует код на сайте → вводит в бот → telegram_chat_id записывается в patients
 
 ## Kinescope интеграция
