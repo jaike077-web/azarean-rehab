@@ -22,13 +22,16 @@ function PatientRegister() {
   const prefillPhone = queryParams.get('phone') || '';
   const prefillFullName = queryParams.get('full_name') || '';
   const prefillEmail = queryParams.get('email') || '';
+  // Wave 1 hot-fix #4: код приглашения может прийти из share-link
+  // (/patient-register?code=ABCDEFGH). Pre-fill для 1-click flow.
+  const prefillCode = queryParams.get('code') || '';
 
   const [full_name, setFullName] = useState(prefillFullName);
   const [email, setEmail] = useState(prefillEmail);
   const [phone, setPhone] = useState(prefillPhone);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(prefillCode);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -42,6 +45,14 @@ function PatientRegister() {
       setError('');
     }
   }, [oauthProvider]);
+
+  // Wave 1 hot-fix #4: показать info-toast если код подставлен из ссылки
+  useEffect(() => {
+    if (prefillCode) {
+      toast.info('Код приглашения подставлен из ссылки', null, 3000);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillCode]);
 
   const getPasswordStrength = () => {
     if (password.length === 0) return null;
