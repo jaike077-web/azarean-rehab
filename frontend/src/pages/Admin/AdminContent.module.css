@@ -77,3 +77,353 @@
 .tdUrl {
   font-size: 12px;
 }
+
+.adminSectionTitle {
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* =====================================================
+   Wave 1 retrospective hot-fix #1 (2026-05-15) —
+   копия из AdminUsers.module.css, потому что CSS Modules миграция
+   2026-05-04 (commit c8834b5) не доперенесла эти классы.
+   Backlog (Wave 2/3): вынести в shared Admin.shared.module.css через composes.
+   ===================================================== */
+
+/* Table */
+.adminTableWrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--color-surface);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(12px, 1.3vw, 14px);
+}
+
+.adminTable th {
+  background: var(--color-bg);
+  padding: clamp(10px, 1.2vw, 14px);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.adminTable td {
+  padding: clamp(10px, 1.2vw, 14px);
+  border-bottom: 1px solid var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.adminTable tbody tr {
+  transition: background 0.15s;
+}
+
+.adminTable tbody tr:hover {
+  background: var(--color-bg);
+}
+
+.rowInactive {
+  opacity: 0.55;
+}
+
+.tdName {
+  font-weight: 500;
+}
+
+.tdId {
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, 'Courier New', monospace;
+}
+
+.tdActions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Badges */
+.adminBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badgeInstructor {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+/* Action buttons */
+.adminActionBtn {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+}
+
+.adminActionBtn:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.adminActionBtn.btnDanger:hover {
+  background: #fef2f2;
+  color: var(--color-danger-hover);
+  border-color: #fecaca;
+}
+
+.adminActionBtn.btnSuccess:hover {
+  background: #dcfce7;
+  color: var(--color-success);
+  border-color: #bbf7d0;
+}
+
+.adminActionBtn.btnWarning:hover {
+  background: #fef3c7;
+  color: var(--color-warning);
+  border-color: #fde68a;
+}
+
+/* Primary/Secondary/Danger buttons */
+.adminBtnPrimary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: clamp(10px, 1.5vw, 12px) clamp(16px, 2vw, 24px);
+  background: linear-gradient(135deg, var(--color-primary) 0%, #764ba2 100%);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+  min-height: 44px;
+}
+
+.adminBtnPrimary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+
+.adminBtnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.adminBtnSecondary {
+  padding: clamp(10px, 1.5vw, 12px) clamp(16px, 2vw, 24px);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+}
+
+.adminBtnSecondary:hover {
+  background: var(--color-border);
+  border-color: var(--color-border-strong);
+}
+
+.adminBtnDanger {
+  padding: clamp(10px, 1.5vw, 12px) clamp(16px, 2vw, 24px);
+  background: var(--color-danger);
+  color: var(--color-surface);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+}
+
+.adminBtnDanger:hover {
+  background: var(--color-danger-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Modal */
+.adminModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.adminModal {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: clamp(20px, 3vw, 32px);
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.adminModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.adminModalHeader h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.adminModalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-subtle);
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.adminModalClose:hover {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+.adminModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.adminFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adminFormGroup label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.adminFormGroup input,
+.adminFormGroup select,
+.adminFormGroup textarea {
+  padding: clamp(8px, 1vw, 10px) 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 44px;
+}
+
+.adminFormGroup input:focus,
+.adminFormGroup select:focus,
+.adminFormGroup textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.adminFormError {
+  background: #fef2f2;
+  color: var(--color-danger-hover);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.adminModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Loading */
+.adminLoading {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+}
+
+/* Empty state */
+.adminEmptyState {
+  padding: 48px 24px !important;
+  text-align: center;
+}
+
+.emptyStateContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.emptyStateIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-subtle);
+  margin-bottom: 8px;
+}
+
+.emptyStateContent h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.emptyStateContent p {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+}
