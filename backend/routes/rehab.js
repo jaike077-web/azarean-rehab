@@ -472,7 +472,7 @@ router.get('/my/stuck-status', authenticatePatient, async (req, res) => {
     const patientId = req.patient.id;
 
     const programResult = await query(
-      `SELECT id, current_phase, phase_started_at, created_at
+      `SELECT id, program_type, current_phase, phase_started_at, created_at
        FROM rehab_programs
        WHERE patient_id = $1 AND status = 'active' AND is_active = true
        ORDER BY created_at DESC
@@ -486,13 +486,12 @@ router.get('/my/stuck-status', authenticatePatient, async (req, res) => {
 
     const program = programResult.rows[0];
 
-    // Wave 1 заменит хардкод 'acl' на program.program_type из справочника.
     const phaseResult = await query(
       `SELECT title, duration_weeks
        FROM rehab_phases
-       WHERE program_type = 'acl' AND phase_number = $1 AND is_active = true
+       WHERE program_type = $1 AND phase_number = $2 AND is_active = true
        LIMIT 1`,
-      [program.current_phase]
+      [program.program_type, program.current_phase]
     );
 
     if (phaseResult.rows.length === 0) {

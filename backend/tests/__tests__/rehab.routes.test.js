@@ -1135,6 +1135,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 99,
         phase_started_at: new Date('2026-01-01'),
         created_at: new Date('2026-01-01'),
@@ -1157,6 +1158,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 2,
         phase_started_at: twelveWeeksAgo,
         created_at: twelveWeeksAgo,
@@ -1176,6 +1178,9 @@ describe('GET /api/rehab/my/stuck-status', () => {
     expect(res.body.data.phase_title).toBe('Ранняя мобилизация');
     expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(11);
     expect(res.body.data.expected_weeks).toBe(4);
+    // anti-regression: SQL фазы использует $1 для program_type, не литерал 'acl'
+    expect(query.mock.calls[1][0]).toMatch(/program_type = \$1/);
+    expect(query.mock.calls[1][1]).toEqual(['acl', 2]);
   });
 
   it('возвращает is_stuck=false если пациент в пределах нормы', async () => {
@@ -1184,6 +1189,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 2,
         phase_started_at: twoWeeksAgo,
         created_at: twoWeeksAgo,
@@ -1207,6 +1213,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 1,
         phase_started_at: null,
         created_at: tenWeeksAgo,
@@ -1223,6 +1230,33 @@ describe('GET /api/rehab/my/stuck-status', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.is_stuck).toBe(true);
     expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(9);
+  });
+
+  it('возвращает is_stuck=true для shoulder_general программы (не acl) — multi-protocol', async () => {
+    // 8 недель назад, duration_weeks = "0-4" (upper=4) → threshold = 6 недель → застрял
+    const eightWeeksAgo = new Date(Date.now() - 8 * 7 * 24 * 60 * 60 * 1000);
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        program_type: 'shoulder_general',
+        current_phase: 2,
+        phase_started_at: eightWeeksAgo,
+        created_at: eightWeeksAgo,
+      }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ title: 'Иммобилизация', duration_weeks: '0-4' }],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_stuck).toBe(true);
+    expect(res.body.data.phase_title).toBe('Иммобилизация');
+    // anti-regression: phase lookup ушёл с правильным program_type, не 'acl'
+    expect(query.mock.calls[1][1]).toEqual(['shoulder_general', 2]);
   });
 
   it('возвращает 500 при ошибке БД', async () => {
