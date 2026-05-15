@@ -18,8 +18,8 @@
 
 | # | Статус | Commit SHA | Дата | Smoke | PR | Заметки |
 |---|---|---|---|---|---|---|
-| 1.06 | 🔵 в работе | — | 2026-05-13 | — | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id |
-| 1.07 | ⏳ ждёт | — | — | — | — | — |
+| 1.06 | ⏸ заморожен | `8223b60` | 2026-05-13 | ⏳ ждёт юзера | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id. Backend 378/378 (+20). Idempotency cycle ✓ |
+| 1.07 | 🔵 в работе | — | 2026-05-13 | — | — | AdminContent ProgramTemplatesTab + 7 endpoints CRUD + PhaseComplexEditor (inline) |
 | 1.08 | ⏳ ждёт | — | — | — | — | — |
 | 1.09 | ⏳ ждёт | — | — | — | — | — |
 

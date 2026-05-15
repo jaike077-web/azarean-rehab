@@ -780,6 +780,245 @@ router.delete('/program-types/:code', async (req, res) => {
 });
 
 // =====================================================
+// КОНТЕНТ: ШАБЛОНЫ ПРОГРАММ (PROGRAM_TEMPLATES) — Wave 1 #1.07
+// =====================================================
+
+// GET /api/admin/program-templates — список всех шаблонов с usage-count
+router.get('/program-templates', async (req, res) => {
+  try {
+    const result = await query(`
+      SELECT pt.id, pt.code, pt.program_type, pt.title, pt.description,
+             pt.surgery_required, pt.default_phase_count, pt.variant_of,
+             pt.is_active, pt.position, pt.created_at, pt.updated_at,
+             types.label AS program_type_label, types.joint AS program_joint,
+             (SELECT COUNT(*)::int FROM rehab_programs
+               WHERE program_template_id = pt.id AND is_active = true AND status = 'active') AS active_programs_count
+      FROM program_templates pt
+      LEFT JOIN program_types types ON types.code = pt.program_type
+      ORDER BY pt.position ASC, pt.title ASC
+    `);
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get program_templates error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения шаблонов программ' });
+  }
+});
+
+// POST /api/admin/program-templates
+router.post('/program-templates', async (req, res) => {
+  try {
+    const { code, program_type, title, description, surgery_required, default_phase_count, variant_of, position } = req.body;
+
+    if (!code || !program_type || !title) {
+      return res.status(400).json({ error: 'Validation Error', message: 'code, program_type и title обязательны' });
+    }
+    if (!/^[a-z0-9_]{1,50}$/.test(code)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'code должен быть lowercase a-z0-9_ длиной 1-50' });
+    }
+
+    // Валидация program_type существует и активен
+    const ptCheck = await query(
+      'SELECT code FROM program_types WHERE code = $1 AND is_active = true',
+      [program_type]
+    );
+    if (ptCheck.rows.length === 0) {
+      return res.status(400).json({ error: 'Validation Error', message: 'program_type не найден или деактивирован' });
+    }
+
+    const result = await query(
+      `INSERT INTO program_templates (code, program_type, title, description, surgery_required, default_phase_count, variant_of, position)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        code,
+        program_type,
+        title,
+        description || null,
+        surgery_required === undefined ? false : !!surgery_required,
+        default_phase_count || null,
+        variant_of || null,
+        position === undefined ? 0 : parseInt(position, 10) || 0,
+      ]
+    );
+
+    await logAudit(req, 'CREATE', 'program_template', result.rows[0].id, { code, title, program_type });
+    res.status(201).json({ data: result.rows[0], message: 'Шаблон программы создан' });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Conflict', message: 'Шаблон с таким кодом уже существует' });
+    }
+    console.error('Admin create program_template error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания шаблона программы' });
+  }
+});
+
+// PUT /api/admin/program-templates/:id
+router.put('/program-templates/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидный id' });
+    }
+
+    const fields = ['title', 'description', 'surgery_required', 'default_phase_count', 'variant_of', 'position', 'is_active', 'program_type'];
+    const updates = [];
+    const params = [id];
+    let p = 2;
+
+    for (const f of fields) {
+      if (req.body[f] !== undefined) {
+        updates.push(`${f} = $${p++}`);
+        params.push(req.body[f]);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Нет полей для обновления' });
+    }
+    updates.push('updated_at = NOW()');
+
+    const result = await query(
+      `UPDATE program_templates SET ${updates.join(', ')} WHERE id = $1 RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон программы не найден' });
+    }
+
+    await logAudit(req, 'UPDATE', 'program_template', id, { changes: req.body });
+    res.json({ data: result.rows[0], message: 'Шаблон программы обновлён' });
+  } catch (error) {
+    console.error('Admin update program_template error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления шаблона программы' });
+  }
+});
+
+// DELETE /api/admin/program-templates/:id — soft (is_active=false).
+// Блокируется 409 если есть активные программы, привязанные к шаблону.
+router.delete('/program-templates/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидный id' });
+    }
+
+    const usage = await query(
+      `SELECT COUNT(*)::int AS c FROM rehab_programs
+       WHERE program_template_id = $1 AND is_active = true AND status = 'active'`,
+      [id]
+    );
+    if (usage.rows[0].c > 0) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `Шаблон используется в ${usage.rows[0].c} активных программах. Сначала переведите пациентов на другой шаблон.`,
+      });
+    }
+
+    const result = await query(
+      `UPDATE program_templates SET is_active = false, updated_at = NOW()
+       WHERE id = $1 RETURNING id, code`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон программы не найден' });
+    }
+
+    await logAudit(req, 'DEACTIVATE', 'program_template', id, { code: result.rows[0].code });
+    res.json({ data: { id: result.rows[0].id, deactivated: true }, message: 'Шаблон программы деактивирован' });
+  } catch (error) {
+    console.error('Admin delete program_template error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка деактивации шаблона' });
+  }
+});
+
+// GET /api/admin/program-templates/:id/phase-complexes
+router.get('/program-templates/:id/phase-complexes', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидный id' });
+    }
+    const result = await query(
+      `SELECT pc.id, pc.phase_number, pc.complex_template_id, pc.is_recommended, pc.notes,
+              t.name AS template_name, t.description AS template_description
+       FROM program_template_phase_complexes pc
+       LEFT JOIN templates t ON t.id = pc.complex_template_id
+       WHERE pc.program_template_id = $1
+       ORDER BY pc.phase_number`,
+      [id]
+    );
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get phase_complexes error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения phase-complexes' });
+  }
+});
+
+// PUT /api/admin/program-templates/:id/phase-complexes/:phase — UPSERT
+router.put('/program-templates/:id/phase-complexes/:phase', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const phaseNumber = parseInt(req.params.phase, 10);
+    if (!Number.isFinite(id) || !Number.isFinite(phaseNumber)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидные id или phase_number' });
+    }
+    const { complex_template_id, is_recommended, notes } = req.body;
+
+    const result = await query(
+      `INSERT INTO program_template_phase_complexes (program_template_id, phase_number, complex_template_id, is_recommended, notes)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (program_template_id, phase_number)
+       DO UPDATE SET
+         complex_template_id = EXCLUDED.complex_template_id,
+         is_recommended = EXCLUDED.is_recommended,
+         notes = EXCLUDED.notes
+       RETURNING *`,
+      [
+        id,
+        phaseNumber,
+        complex_template_id || null,
+        is_recommended === undefined ? true : !!is_recommended,
+        notes || null,
+      ]
+    );
+
+    await logAudit(req, 'UPSERT', 'phase_complex', id, { phase_number: phaseNumber, complex_template_id });
+    res.json({ data: result.rows[0], message: 'Phase-complex сохранён' });
+  } catch (error) {
+    console.error('Admin upsert phase_complex error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка сохранения phase-complex' });
+  }
+});
+
+// DELETE /api/admin/program-templates/:id/phase-complexes/:phase
+router.delete('/program-templates/:id/phase-complexes/:phase', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const phaseNumber = parseInt(req.params.phase, 10);
+    if (!Number.isFinite(id) || !Number.isFinite(phaseNumber)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидные id или phase_number' });
+    }
+
+    const result = await query(
+      `DELETE FROM program_template_phase_complexes
+       WHERE program_template_id = $1 AND phase_number = $2 RETURNING id`,
+      [id, phaseNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Phase-complex не найден' });
+    }
+
+    await logAudit(req, 'DELETE', 'phase_complex', id, { phase_number: phaseNumber });
+    res.json({ data: { deleted: true }, message: 'Phase-complex удалён' });
+  } catch (error) {
+    console.error('Admin delete phase_complex error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления phase-complex' });
+  }
+});
+
+// =====================================================
 // КОНТЕНТ: СОВЕТЫ (TIPS)
 // =====================================================
 

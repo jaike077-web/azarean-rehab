@@ -549,6 +549,18 @@ export const admin = {
   updateProgramType: (code, data) => api.put(`/admin/program-types/${code}`, data),
   deleteProgramType: (code) => api.delete(`/admin/program-types/${code}`),
 
+  // Шаблоны программ (Wave 1 #1.07) — CRUD program_templates + junction phase_complexes.
+  // Используются wizard'ом в RehabProgramModal (1.08b).
+  getProgramTemplates: () => api.get('/admin/program-templates'),
+  createProgramTemplate: (data) => api.post('/admin/program-templates', data),
+  updateProgramTemplate: (id, data) => api.put(`/admin/program-templates/${id}`, data),
+  deleteProgramTemplate: (id) => api.delete(`/admin/program-templates/${id}`),
+  getPhaseComplexes: (templateId) => api.get(`/admin/program-templates/${templateId}/phase-complexes`),
+  upsertPhaseComplex: (templateId, phaseNumber, data) =>
+    api.put(`/admin/program-templates/${templateId}/phase-complexes/${phaseNumber}`, data),
+  deletePhaseComplex: (templateId, phaseNumber) =>
+    api.delete(`/admin/program-templates/${templateId}/phase-complexes/${phaseNumber}`),
+
   // Советы
   getTips: (params = {}) => api.get('/admin/tips', { params }),
   createTip: (data) => api.post('/admin/tips', data),

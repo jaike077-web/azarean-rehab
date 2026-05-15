@@ -632,6 +632,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/admin/audit-logs | JWT + Admin | Лог аудита |
 | GET/POST/PUT/DELETE | /api/admin/phases/* | JWT + Admin | CRUD фаз реабилитации (program_type валидируется по справочнику с Wave 1 #1.05) |
 | GET/POST/PUT/DELETE | /api/admin/program-types/* | JWT + Admin | CRUD справочника типов программ (Wave 1 #1.05). DELETE = soft (is_active=false), блокируется 409 если есть активные программы. PUT не меняет code |
+| GET/POST/PUT/DELETE | /api/admin/program-templates/* | JWT + Admin | CRUD шаблонов программ (Wave 1 #1.07). GET включает `active_programs_count`. DELETE = soft, блокируется 409 при активных программах. POST валидирует program_type в справочнике, 409 на дубль code |
+| GET/PUT/DELETE | /api/admin/program-templates/:id/phase-complexes/[:phase] | JWT + Admin | Junction шаблон↔complex_template по фазам (Wave 1 #1.07). PUT — UPSERT через ON CONFLICT DO UPDATE |
 | GET/POST/PUT/DELETE | /api/admin/tips/* | JWT + Admin | CRUD советов |
 | GET/POST/PUT/DELETE | /api/admin/videos/* | JWT + Admin | CRUD видео фаз |
 | GET | /api/admin/system | JWT + Admin | Информация о системе |
