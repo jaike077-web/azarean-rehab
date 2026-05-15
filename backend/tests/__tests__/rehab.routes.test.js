@@ -376,6 +376,88 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data.program.program_type).toBe('acl');
   });
 
+  it('Wave 1 retrospective 2026-05-15: phase lookup для shoulder_general — главный HomeScreen для не-ACL', async () => {
+    // Wave 1 #1.02 закрыл program_label через JOIN program_types, но
+    // phase lookup в том же endpoint'е остался хардкодом 'acl'. Этот тест
+    // защищает от регресса — phase для shoulder_general должен прилетать
+    // с правильным program_type.
+    const programData = {
+      id: 1, title: 'Shoulder Rehab', diagnosis: 'Разрыв манжеты ротаторов',
+      current_phase: 2, phase_started_at: '2026-01-15', surgery_date: null,
+      status: 'active', program_type: 'shoulder_general',
+      program_label: 'Реабилитация плеча', program_joint: 'shoulder',
+      program_surgery_required: false,
+    };
+    const phaseData = {
+      id: 12, phase_number: 2, title: 'Активные движения плеча',
+      subtitle: '6-12 weeks', duration_weeks: '6', description: 'Active ROM',
+      icon: 'move', color: '#3B82F6', color_bg: '#EFF6FF',
+    };
+
+    query.mockResolvedValueOnce({ rows: [programData] });        // program
+    query.mockResolvedValueOnce({ rows: [phaseData] });          // phase
+    query.mockResolvedValueOnce({ rows: [{ current_streak: 0, longest_streak: 0, total_days: 0, last_activity_date: null }] });
+    query.mockResolvedValueOnce({ rows: [] });                   // diary
+    query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
+    query.mockResolvedValueOnce({ rows: [] });                   // today diary
+    query.mockResolvedValueOnce({ rows: [] });                   // exercisesDoneToday
+
+    const response = await request(app)
+      .get('/api/rehab/my/dashboard')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(response.body.data.program.program_type).toBe('shoulder_general');
+    expect(response.body.data.phase).not.toBeNull();
+    expect(response.body.data.phase.title).toBe('Активные движения плеча');
+    expect(response.body.data.phase).toHaveProperty('color2', '#EFF6FF');
+    // anti-regression: phase SQL параметризован, params [shoulder_general, 2]
+    expect(query.mock.calls[1][0]).toMatch(/program_type = \$1/);
+    expect(query.mock.calls[1][0]).not.toMatch(/program_type = 'acl'/);
+    expect(query.mock.calls[1][1]).toEqual(['shoulder_general', 2]);
+  });
+
+  it('Wave 1 retrospective 2026-05-15: tips filter использует program.program_type + general sentinel', async () => {
+    // Архитектор подтвердил pattern: tips с program_type='general' остаются
+    // sentinel'ом для "общих" советов. В дев-БД 16 таких записей + 20 acl.
+    // Фильтр в /my/dashboard должен быть `program.program_type OR 'general'`,
+    // не хардкод `'acl' OR 'general'` (silent failure для shoulder/knee).
+    const programData = {
+      id: 1, title: 'Shoulder Rehab', diagnosis: 'Манжета',
+      current_phase: 2, phase_started_at: '2026-01-15', surgery_date: null,
+      status: 'active', program_type: 'shoulder_general',
+      program_label: 'Реабилитация плеча', program_joint: 'shoulder',
+      program_surgery_required: false,
+    };
+    const shoulderTip = {
+      id: 99, program_type: 'shoulder_general', phase_number: 2,
+      category: 'motivation', title: 'Совет для плеча', body: 'Body', icon: '🏋️',
+    };
+
+    query.mockResolvedValueOnce({ rows: [programData] });
+    query.mockResolvedValueOnce({ rows: [{ id: 5, phase_number: 2, title: 'Ph2', subtitle: '', duration_weeks: '6', description: '', icon: '', color: '', color_bg: '' }] });
+    query.mockResolvedValueOnce({ rows: [{ current_streak: 0, longest_streak: 0, total_days: 0, last_activity_date: null }] });
+    query.mockResolvedValueOnce({ rows: [] });           // diary
+    query.mockResolvedValueOnce({ rows: [shoulderTip] }); // tip
+    query.mockResolvedValueOnce({ rows: [] });           // today diary
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const response = await request(app)
+      .get('/api/rehab/my/dashboard')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(response.body.data.tip).not.toBeNull();
+    expect(response.body.data.tip.program_type).toBe('shoulder_general');
+
+    // anti-regression: tipSql использует program_type параметром + general sentinel
+    const tipCall = query.mock.calls[4]; // 0=program 1=phase 2=streak 3=diary 4=tip
+    expect(tipCall[0]).toMatch(/program_type = \$\d+ OR program_type = 'general'/);
+    expect(tipCall[0]).not.toMatch(/program_type = 'acl'/);
+    // Параметры включают program_type из программы
+    expect(tipCall[1]).toContain('shoulder_general');
+  });
+
   it('should return null program when no program exists', async () => {
     // Mock queries when no program (phase query is skipped)
     query.mockResolvedValueOnce({ rows: [] }); // program - empty
@@ -461,6 +543,27 @@ describe('GET /api/rehab/my/program', () => {
       .expect(500);
 
     expect(response.body).toHaveProperty('error', 'Server Error');
+  });
+
+  it('Wave 1 retrospective 2026-05-15: phase lookup использует program.program_type для shoulder_general', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ ...fixtures.mockProgramRow, program_type: 'shoulder_general', current_phase: 2 }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ ...fixtures.mockPhaseRow, program_type: 'shoulder_general', phase_number: 2, title: 'Иммобилизация плеча' }],
+    });
+
+    const response = await request(app)
+      .get('/api/rehab/my/program')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(response.body.data.phase).not.toBeNull();
+    expect(response.body.data.phase.title).toBe('Иммобилизация плеча');
+    // anti-regression: phase SQL — параметризован, не хардкод 'acl'
+    expect(query.mock.calls[1][0]).toMatch(/program_type = \$1/);
+    expect(query.mock.calls[1][0]).not.toMatch(/program_type = 'acl'/);
+    expect(query.mock.calls[1][1]).toEqual(['shoulder_general', 2]);
   });
 });
 
@@ -1135,6 +1238,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 99,
         phase_started_at: new Date('2026-01-01'),
         created_at: new Date('2026-01-01'),
@@ -1157,6 +1261,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 2,
         phase_started_at: twelveWeeksAgo,
         created_at: twelveWeeksAgo,
@@ -1176,6 +1281,9 @@ describe('GET /api/rehab/my/stuck-status', () => {
     expect(res.body.data.phase_title).toBe('Ранняя мобилизация');
     expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(11);
     expect(res.body.data.expected_weeks).toBe(4);
+    // anti-regression: SQL фазы использует $1 для program_type, не литерал 'acl'
+    expect(query.mock.calls[1][0]).toMatch(/program_type = \$1/);
+    expect(query.mock.calls[1][1]).toEqual(['acl', 2]);
   });
 
   it('возвращает is_stuck=false если пациент в пределах нормы', async () => {
@@ -1184,6 +1292,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 2,
         phase_started_at: twoWeeksAgo,
         created_at: twoWeeksAgo,
@@ -1207,6 +1316,7 @@ describe('GET /api/rehab/my/stuck-status', () => {
     query.mockResolvedValueOnce({
       rows: [{
         id: 1,
+        program_type: 'acl',
         current_phase: 1,
         phase_started_at: null,
         created_at: tenWeeksAgo,
@@ -1223,6 +1333,33 @@ describe('GET /api/rehab/my/stuck-status', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.is_stuck).toBe(true);
     expect(res.body.data.actual_weeks).toBeGreaterThanOrEqual(9);
+  });
+
+  it('возвращает is_stuck=true для shoulder_general программы (не acl) — multi-protocol', async () => {
+    // 8 недель назад, duration_weeks = "0-4" (upper=4) → threshold = 6 недель → застрял
+    const eightWeeksAgo = new Date(Date.now() - 8 * 7 * 24 * 60 * 60 * 1000);
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 1,
+        program_type: 'shoulder_general',
+        current_phase: 2,
+        phase_started_at: eightWeeksAgo,
+        created_at: eightWeeksAgo,
+      }],
+    });
+    query.mockResolvedValueOnce({
+      rows: [{ title: 'Иммобилизация', duration_weeks: '0-4' }],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/stuck-status')
+      .set('Authorization', `Bearer ${validToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.is_stuck).toBe(true);
+    expect(res.body.data.phase_title).toBe('Иммобилизация');
+    // anti-regression: phase lookup ушёл с правильным program_type, не 'acl'
+    expect(query.mock.calls[1][1]).toEqual(['shoulder_general', 2]);
   });
 
   it('возвращает 500 при ошибке БД', async () => {
@@ -1652,6 +1789,58 @@ describe('20260513_program_templates migration — структура SQL', () =
   it('создаёт 4+ индекса для нового справочника и поля', () => {
     const indexCount = (MIGRATION.match(/CREATE INDEX IF NOT EXISTS/g) || []).length;
     expect(indexCount).toBeGreaterThanOrEqual(4);
+  });
+});
+
+// Wave 1 retrospective 2026-05-15 — instructor /programs list JOIN.
+// Раньше JOIN с rehab_phases был хардкодом `ph.program_type = 'acl'` →
+// инструктор не видел phase_title/phase_color для shoulder программ.
+// Теперь JOIN использует `ph.program_type = rp.program_type`.
+describe('GET /api/rehab/programs (instructor list)', () => {
+  let instructorToken;
+
+  beforeEach(() => {
+    instructorToken = jwt.sign(
+      { id: 5, email: 'instructor@test.com', role: 'instructor' },
+      process.env.JWT_SECRET,
+      { algorithm: 'HS256', expiresIn: '1h' }
+    );
+  });
+
+  it('возвращает 401 без токена', async () => {
+    const res = await request(app).get('/api/rehab/programs');
+    expect(res.status).toBe(401);
+  });
+
+  it('JOIN с rehab_phases использует rp.program_type (не хардкод acl) для shoulder программ', async () => {
+    query.mockResolvedValueOnce({ rows: [{ is_active: true }] }); // auth is_active check
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 11, patient_id: 1, program_type: 'shoulder_general',
+          current_phase: 2, status: 'active', is_active: true,
+          patient_name: 'Иван', patient_email: 'ivan@example.com',
+          phase_title: 'Активные движения плеча',
+          phase_subtitle: '6-12 нед.',
+          phase_color: '#3B82F6',
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].program_type).toBe('shoulder_general');
+    expect(res.body.data[0].phase_title).toBe('Активные движения плеча');
+    expect(res.body.data[0].phase_color).toBe('#3B82F6');
+
+    // anti-regression: SQL JOIN использует rp.program_type, не литерал
+    const programsSql = query.mock.calls[1][0];
+    expect(programsSql).toMatch(/ph\.program_type\s*=\s*rp\.program_type/);
+    expect(programsSql).not.toMatch(/ph\.program_type\s*=\s*'acl'/);
   });
 });
 
