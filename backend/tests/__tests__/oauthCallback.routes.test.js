@@ -1,15 +1,20 @@
 // =====================================================
 // Boundary-тесты OAuth match-flow (Telegram OIDC + Yandex OAuth 2.0)
 //
-// Покрывают 8 веток match-flow в [routes/patientAuth.js]:
+// Покрывают ветки match-flow в [routes/patientAuth.js]:
 //   1) Returning login (provider_id уже привязан)
-//   2) Phone-autolink — single match, password_hash IS NULL
+//   2) Phone-autolink — single match → autolink
+//      (Wave 1 hot-fix #5: фильтр `password_hash IS NULL` убран, добавлен `is_active = true`)
 //   3) Phone-autolink — нет совпадений → редирект на /patient-register
-//   4) Phone-autolink — multi-match → НЕ автолинкует
-//   5) Phone-match с claimed account (password_hash IS NOT NULL) → не сматчит
+//   4) Phone-autolink — multi-match → НЕ автолинкует (anti-misroute через rows.length === 1)
+//   5) Phone-match с password-protected account → autolink (Wave 1 hot-fix #5
+//      инвертировал семантику: invite-flow допускает multi-auth, password_hash не затирается)
 //   6) State expired → fail с redirect на /patient-login
-//   7) Deactivated patient (provider match + is_active=false) → fail
+//   7) Deactivated patient (is_active=false) → отсёкся на SQL-уровне (Wave 1 hot-fix #5)
 //   8) Phone format normalization (legacy 8... → +7...)
+//   9) Email-autolink fallback (Yandex only — Telegram OIDC не возвращает email)
+//  10) Email-match multi → anti-misroute
+//  11) Anti-regression: SQL НЕ содержит password_hash IS NULL
 // =====================================================
 
 // === ENV для isTelegramLoginConfigured / isYandexLoginConfigured ДО require ===
@@ -174,7 +179,9 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     expect(lastLoginCalls.length).toBeGreaterThan(0);
   });
 
-  test('2) Phone-autolink: single match с password_hash IS NULL → autolink + audit OAUTH_AUTOLINK', async () => {
+  test('2) Phone-autolink: single match → autolink + audit OAUTH_AUTOLINK + НЕТ password_hash в SQL', async () => {
+    // Wave 1 hot-fix #5 (2026-05-15): фильтр `password_hash IS NULL` убран.
+    // Phone-match теперь срабатывает для local-registered пациентов тоже.
     const client = makeMockClient();
     wireStateClient(client, validStateRow());
     getClient.mockResolvedValue(client);
@@ -182,9 +189,11 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
 
     let updateCalled = false;
     let auditAction = null;
+    let auditDetails = null;
+    let updatePasswordHashCalled = false;
     routeQueries([
       [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, {
+      [/phone = \$1[\s\S]*AND is_active = true/i, {
         rows: [{
           id: 14,
           email: null,
@@ -195,8 +204,13 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
           is_active: true,
         }],
       }],
+      [/UPDATE patients\s+SET[\s\S]*password_hash/i, () => { updatePasswordHashCalled = true; return { rowCount: 1 }; }],
       [/UPDATE patients\s+SET auth_provider = 'telegram'/i, () => { updateCalled = true; return { rowCount: 1 }; }],
-      [/INSERT INTO audit_logs/i, (sql, params) => { auditAction = params[0]; return { rowCount: 1 }; }],
+      [/INSERT INTO audit_logs/i, (sql, params) => {
+        auditAction = params[0];
+        auditDetails = JSON.parse(params[5]);
+        return { rowCount: 1 };
+      }],
     ]);
 
     const res = await request(app)
@@ -207,6 +221,15 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     expect(res.headers.location).toBe('https://example.com/patient-dashboard');
     expect(updateCalled).toBe(true);
     expect(auditAction).toBe('OAUTH_AUTOLINK');
+    expect(auditDetails.link_type).toBe('phone_autolink');
+    // Anti-regression: password_hash НЕ обновляется в OAuth flow
+    expect(updatePasswordHashCalled).toBe(false);
+    // Anti-regression: SQL не содержит литерала password_hash IS NULL
+    const phoneSelectCall = query.mock.calls.find(([sql]) =>
+      /phone = \$1[\s\S]*AND is_active = true/i.test(sql)
+    );
+    expect(phoneSelectCall).toBeDefined();
+    expect(phoneSelectCall[0]).not.toMatch(/password_hash IS NULL/i);
   });
 
   test('3) Phone-autolink: нет совпадений → 302 на /patient-register с pre-fill', async () => {
@@ -217,7 +240,7 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
 
     routeQueries([
       [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, { rows: [] }],
+      [/phone = \$1[\s\S]*AND is_active = true/i, { rows: [] }],
     ]);
 
     const res = await request(app)
@@ -243,7 +266,7 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     routeQueries([
       [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
       // 2 пациента с одним телефоном (родитель + ребёнок) — single-match check падает
-      [/phone = \$1 AND password_hash IS NULL/i, {
+      [/phone = \$1[\s\S]*AND is_active = true/i, {
         rows: [
           { id: 10, email: null, full_name: 'Родитель', phone: '+79001234567', is_active: true },
           { id: 11, email: null, full_name: 'Ребёнок', phone: '+79001234567', is_active: true },
@@ -261,22 +284,35 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     expect(updateAuthProviderCalled).toBe(false); // НЕ должен autolink'нуть
   });
 
-  test('5) Claimed account: phone есть но password_hash NOT NULL → query вернёт 0 (фильтр), редирект на /patient-register', async () => {
+  test('5) Phone-match с password-protected account → autolink (Wave 1 invite-flow allows multi-auth, hot-fix #5)', async () => {
+    // Wave 1 hot-fix #5 инвертировал семантику этого кейса. До:
+    //   `password_hash IS NOT NULL` отсекался SQL-фильтром → redirect register.
+    // После:
+    //   Pаспределение auth methods — пациент может иметь и password (через
+    //   invite-flow registration), и OAuth — оба легитимны. password_hash
+    //   при OAuth-логине НЕ затирается → classical login остаётся работающим.
     const client = makeMockClient();
     wireStateClient(client, validStateRow());
     getClient.mockResolvedValue(client);
     setTelegramClaims();
 
-    // Этот тест проверяет что фильтр `password_hash IS NULL` в SQL-запросе
-    // действительно отсекает claimed-аккаунты. Если бы фильтра не было —
-    // мы бы получили rows=[claimed] и сделали бы misroute autolink.
-    let phoneQueryParams = null;
+    let auditAction = null;
+    let updatePasswordHashCalled = false;
     routeQueries([
       [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, (sql, params) => {
-        phoneQueryParams = params;
-        return { rows: [] }; // claimed account отсёкся фильтром в SQL
+      [/phone = \$1[\s\S]*AND is_active = true/i, {
+        rows: [{
+          id: 14,
+          email: 'patient@example.com',
+          full_name: 'Вадим (password-protected)',
+          phone: '+79001234567',
+          is_active: true,
+          // password_hash есть, но SELECT его не возвращает — нормально
+        }],
       }],
+      [/UPDATE patients\s+SET[\s\S]*password_hash/i, () => { updatePasswordHashCalled = true; return { rowCount: 1 }; }],
+      [/UPDATE patients/i, { rowCount: 1 }],
+      [/INSERT INTO audit_logs/i, (sql, params) => { auditAction = params[0]; return { rowCount: 1 }; }],
     ]);
 
     const res = await request(app)
@@ -284,14 +320,10 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
       .query({ state: 'fake-state', code: 'fake-code' });
 
     expect(res.status).toBe(302);
-    expect(res.headers.location).toContain('/patient-register');
-    // SQL в коде должен буквально содержать `password_hash IS NULL` —
-    // если кто-то этот фильтр уберёт в рефакторинге, тест падёт.
-    const phoneSelectCall = query.mock.calls.find(([sql]) =>
-      /phone = \$1 AND password_hash IS NULL/i.test(sql)
-    );
-    expect(phoneSelectCall).toBeDefined();
-    expect(phoneQueryParams[0]).toBe('+79001234567');
+    expect(res.headers.location).toBe('https://example.com/patient-dashboard');
+    expect(auditAction).toBe('OAUTH_AUTOLINK');
+    // КРИТИЧНО: password_hash НЕ должен быть затронут OAuth-флоу
+    expect(updatePasswordHashCalled).toBe(false);
   });
 
   test('6) State expired → 302 на /patient-login с oauth_error', async () => {
@@ -347,7 +379,7 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     let phoneQueryParam = null;
     routeQueries([
       [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, (sql, params) => {
+      [/phone = \$1[\s\S]*AND is_active = true/i, (sql, params) => {
         phoneQueryParam = params[0];
         return {
           rows: [{
@@ -401,6 +433,48 @@ describe('GET /api/patient-auth/oauth/telegram/callback', () => {
     expect(url.searchParams.get('oauth_error')).toContain('Не удалось проверить');
     // Внутренний `invalid signature` не попадает в URL — sanitization
     expect(res.headers.location).not.toContain('invalid signature');
+  });
+
+  test('NEW: Post-invite-flow Telegram phone-autolink (Wave 1 invite-code пациент)', async () => {
+    // Сценарий из реального flow: инструктор создал пациента → пациент
+    // зарегистрировался по invite-code (получил password_hash) → через
+    // неделю кликает «Войти через Telegram». До hot-fix #5 — тупик.
+    // После — autolink с сохранением password_hash.
+    const client = makeMockClient();
+    wireStateClient(client, validStateRow());
+    getClient.mockResolvedValue(client);
+    setTelegramClaims();
+
+    let auditAction = null;
+    let auditDetails = null;
+    routeQueries([
+      [/auth_provider = 'telegram' AND provider_id/i, { rows: [] }],
+      [/phone = \$1[\s\S]*AND is_active = true/i, {
+        rows: [{
+          id: 42,
+          email: 'invited@example.com',
+          full_name: 'Иван (через invite-code)',
+          phone: '+79001234567',
+          is_active: true,
+        }],
+      }],
+      [/UPDATE patients/i, { rowCount: 1 }],
+      [/INSERT INTO audit_logs/i, (sql, params) => {
+        auditAction = params[0];
+        auditDetails = JSON.parse(params[5]);
+        return { rowCount: 1 };
+      }],
+    ]);
+
+    const res = await request(app)
+      .get('/api/patient-auth/oauth/telegram/callback')
+      .query({ state: 'fake-state', code: 'fake-code' });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('https://example.com/patient-dashboard');
+    expect(auditAction).toBe('OAUTH_AUTOLINK');
+    expect(auditDetails.link_type).toBe('phone_autolink');
+    expect(auditDetails.has_phone).toBe(true);
   });
 
   test('extra: provider error (consent denied) → 302 с error message', async () => {
@@ -462,23 +536,30 @@ describe('GET /api/patient-auth/oauth/yandex/callback', () => {
     expect(res.headers.location).toBe('https://example.com/patient-dashboard');
   });
 
-  test('2) Yandex phone-autolink: silent linking single match', async () => {
+  test('2) Yandex phone-autolink: silent linking single match + НЕТ password_hash UPDATE', async () => {
     const client = makeMockClient();
     wireStateClient(client, validStateRow({ nonce: null }));
     getClient.mockResolvedValue(client);
     setYandexUserInfo();
 
     let auditAction = null;
+    let auditDetails = null;
+    let updatePasswordHashCalled = false;
     routeQueries([
       [/auth_provider = 'yandex' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, {
+      [/phone = \$1[\s\S]*AND is_active = true/i, {
         rows: [{
           id: 14, email: null, full_name: 'Вадим',
           phone: '+79001234567', is_active: true,
         }],
       }],
+      [/UPDATE patients\s+SET[\s\S]*password_hash/i, () => { updatePasswordHashCalled = true; return { rowCount: 1 }; }],
       [/UPDATE patients\s+SET auth_provider = 'yandex'/i, { rowCount: 1 }],
-      [/INSERT INTO audit_logs/i, (sql, params) => { auditAction = params[0]; return { rowCount: 1 }; }],
+      [/INSERT INTO audit_logs/i, (sql, params) => {
+        auditAction = params[0];
+        auditDetails = JSON.parse(params[5]);
+        return { rowCount: 1 };
+      }],
     ]);
 
     const res = await request(app)
@@ -488,6 +569,13 @@ describe('GET /api/patient-auth/oauth/yandex/callback', () => {
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe('https://example.com/patient-dashboard');
     expect(auditAction).toBe('OAUTH_AUTOLINK');
+    expect(auditDetails.link_type).toBe('phone_autolink');
+    expect(updatePasswordHashCalled).toBe(false);
+    // Anti-regression: SQL не содержит литерала password_hash IS NULL (Wave 1 hot-fix #5)
+    const phoneSelectCall = query.mock.calls.find(([sql]) =>
+      /phone = \$1[\s\S]*AND is_active = true/i.test(sql)
+    );
+    expect(phoneSelectCall[0]).not.toMatch(/password_hash IS NULL/i);
   });
 
   test('3) Yandex no-match: redirect на /patient-register с pre-fill (включая email — Yandex specific)', async () => {
@@ -503,7 +591,7 @@ describe('GET /api/patient-auth/oauth/yandex/callback', () => {
 
     routeQueries([
       [/auth_provider = 'yandex' AND provider_id/i, { rows: [] }],
-      [/phone = \$1 AND password_hash IS NULL/i, { rows: [] }],
+      [/phone = \$1[\s\S]*AND is_active = true/i, { rows: [] }],
     ]);
 
     const res = await request(app)
@@ -555,13 +643,138 @@ describe('GET /api/patient-auth/oauth/yandex/callback', () => {
     expect(claims.avatarUrl).toContain('avatar123');
   });
 
-  test('6) Yandex без default_phone → no phone-autolink, redirect без phone в URL', async () => {
+  test('6) Yandex без default_phone → email-fallback автолинк (если email совпал)', async () => {
+    // Wave 1 hot-fix #5: Yandex всегда возвращает email (scope login:email).
+    // Если phone не пришёл / не совпал — пробуем email-match как fallback.
     const client = makeMockClient();
     wireStateClient(client, validStateRow({ nonce: null }));
     getClient.mockResolvedValue(client);
     setYandexUserInfo({
       id: '999',
       default_phone: undefined, // юзер не дал phone scope
+      default_email: 'matched@example.com',
+    });
+
+    let auditAction = null;
+    let auditDetails = null;
+    routeQueries([
+      [/auth_provider = 'yandex' AND provider_id/i, { rows: [] }],
+      [/LOWER\(email\) = \$1[\s\S]*AND is_active = true/i, {
+        rows: [{
+          id: 20, email: 'matched@example.com', full_name: 'Иван',
+          phone: null, is_active: true,
+        }],
+      }],
+      [/UPDATE patients/i, { rowCount: 1 }],
+      [/INSERT INTO audit_logs/i, (sql, params) => {
+        auditAction = params[0];
+        auditDetails = JSON.parse(params[5]);
+        return { rowCount: 1 };
+      }],
+    ]);
+
+    const res = await request(app)
+      .get('/api/patient-auth/oauth/yandex/callback')
+      .query({ state: 'fake-state', code: 'fake-code' });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('https://example.com/patient-dashboard');
+    expect(auditAction).toBe('OAUTH_AUTOLINK');
+    expect(auditDetails.link_type).toBe('email_autolink');
+    // Phone-match не вызывался — phone отсутствовал
+    const phoneQueryCalls = query.mock.calls.filter(([sql]) =>
+      /phone = \$1[\s\S]*AND is_active = true/i.test(sql)
+    );
+    expect(phoneQueryCalls).toHaveLength(0);
+  });
+
+  test('NEW 7) Yandex email-match multi (2 пациента с одним email) → НЕ autolink (anti-misroute)', async () => {
+    // Email coincidence — два разных пациента с одинаковым email (legacy data,
+    // family share, ошибочно введённый email). Single-match check блокирует.
+    const client = makeMockClient();
+    wireStateClient(client, validStateRow({ nonce: null }));
+    getClient.mockResolvedValue(client);
+    setYandexUserInfo({
+      id: '888',
+      default_phone: undefined, // нет phone → попадём в email-fallback
+      default_email: 'shared@example.com',
+    });
+
+    let updateAuthProviderCalled = false;
+    routeQueries([
+      [/auth_provider = 'yandex' AND provider_id/i, { rows: [] }],
+      [/LOWER\(email\) = \$1[\s\S]*AND is_active = true/i, {
+        rows: [
+          { id: 50, email: 'shared@example.com', full_name: 'Папа', phone: '+71111111111', is_active: true },
+          { id: 51, email: 'shared@example.com', full_name: 'Сын', phone: '+72222222222', is_active: true },
+        ],
+      }],
+      [/UPDATE patients\s+SET auth_provider = 'yandex'/i, () => { updateAuthProviderCalled = true; return { rowCount: 1 }; }],
+    ]);
+
+    const res = await request(app)
+      .get('/api/patient-auth/oauth/yandex/callback')
+      .query({ state: 'fake-state', code: 'fake-code' });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain('/patient-register');
+    expect(updateAuthProviderCalled).toBe(false); // anti-misroute сработал
+  });
+
+  test('NEW 8) Yandex email-match для password-protected пациента → autolink + password_hash сохранён', async () => {
+    // Аналог Telegram test 5: пациент с password (через invite-flow) логинится
+    // через Yandex first time. phone в Yandex не совпал — email-fallback срабатывает.
+    const client = makeMockClient();
+    wireStateClient(client, validStateRow({ nonce: null }));
+    getClient.mockResolvedValue(client);
+    setYandexUserInfo({
+      id: '777',
+      default_phone: { id: 1, number: '+79007777777' }, // НЕ совпадает с пациентом
+      default_email: 'invited@example.com',
+    });
+
+    let auditAction = null;
+    let updatePasswordHashCalled = false;
+    routeQueries([
+      [/auth_provider = 'yandex' AND provider_id/i, { rows: [] }],
+      // Phone match — 0 rows (phone в Yandex не совпадает)
+      [/phone = \$1[\s\S]*AND is_active = true/i, { rows: [] }],
+      // Email match — single result (password-protected пациент)
+      [/LOWER\(email\) = \$1[\s\S]*AND is_active = true/i, {
+        rows: [{
+          id: 60,
+          email: 'invited@example.com',
+          full_name: 'Иван (invite-flow + password)',
+          phone: '+71234567890',
+          is_active: true,
+        }],
+      }],
+      [/UPDATE patients\s+SET[\s\S]*password_hash/i, () => { updatePasswordHashCalled = true; return { rowCount: 1 }; }],
+      [/UPDATE patients/i, { rowCount: 1 }],
+      [/INSERT INTO audit_logs/i, (sql, params) => { auditAction = params[0]; return { rowCount: 1 }; }],
+    ]);
+
+    const res = await request(app)
+      .get('/api/patient-auth/oauth/yandex/callback')
+      .query({ state: 'fake-state', code: 'fake-code' });
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('https://example.com/patient-dashboard');
+    expect(auditAction).toBe('OAUTH_AUTOLINK');
+    expect(updatePasswordHashCalled).toBe(false);
+  });
+
+  test('NEW 9) Yandex без phone И без email → redirect на /patient-register (нет fallback)', async () => {
+    // Edge case: scope login:email не gave (юзер отказал в email) и phone тоже нет.
+    // Не должно зацикливаться или 5xx — просто redirect.
+    const client = makeMockClient();
+    wireStateClient(client, validStateRow({ nonce: null }));
+    getClient.mockResolvedValue(client);
+    setYandexUserInfo({
+      id: '666',
+      default_phone: undefined,
+      default_email: null,
+      emails: [], // ни email
     });
 
     routeQueries([
@@ -576,11 +789,16 @@ describe('GET /api/patient-auth/oauth/yandex/callback', () => {
     const url = new URL(res.headers.location);
     expect(url.pathname).toBe('/patient-register');
     expect(url.searchParams.has('phone')).toBe(false);
-    // Phone-match запрос не должен был вызываться (phoneNormalized=null)
-    const phoneQueryCalls = query.mock.calls.filter(([sql]) =>
-      /phone = \$1 AND password_hash IS NULL/i.test(sql)
+    expect(url.searchParams.has('email')).toBe(false);
+    // Ни phone-query, ни email-query не должны выполняться
+    const phoneCalls = query.mock.calls.filter(([sql]) =>
+      /phone = \$1[\s\S]*AND is_active = true/i.test(sql)
     );
-    expect(phoneQueryCalls).toHaveLength(0);
+    const emailCalls = query.mock.calls.filter(([sql]) =>
+      /LOWER\(email\) = \$1[\s\S]*AND is_active = true/i.test(sql)
+    );
+    expect(phoneCalls).toHaveLength(0);
+    expect(emailCalls).toHaveLength(0);
   });
 });
 
