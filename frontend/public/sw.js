@@ -7,8 +7,13 @@
 // v3 (2026-05-01) — CSS Modules + dark theme миграция, hashed class names
 // в module.css изменили все JS bundle hash'и; старый кеш v2 подгружал stale
 // JS без соответствующих CSS chunks → страницы рендерились без стилей.
-const CACHE_NAME = 'azarean-v3';
-const API_CACHE = 'azarean-api-v3';
+// v4 (2026-05-15) — Wave 1 hot-fix batch (PR #61-#65): OAuth post-registration,
+// complex.title UI, AdminContent CSS Modules, invite-code share UX. Прод-smoke
+// показал что Telegram-share отдавал старый формат — это cache-first для JS
+// (новый bundle.<hash>.js не подгружался, old hash в кэше). Bump v4 → activate
+// очищает старый кеш → юзеры получают свежий index.html + новый bundle.
+const CACHE_NAME = 'azarean-v4';
+const API_CACHE = 'azarean-api-v4';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
