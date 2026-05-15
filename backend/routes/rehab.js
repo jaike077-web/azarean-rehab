@@ -276,7 +276,11 @@ router.get('/tips', async (req, res) => {
 
 /**
  * GET /api/rehab/my/program
- * Получить активную программу пациента
+ * @deprecated Wave 1 #1.02 заменил этот endpoint на GET /api/rehab/my/dashboard.
+ * Фронт не вызывает getMyProgram() из services/api.js (0 callsites после Wave 1).
+ * Endpoint оставлен на 2 версии для возможных прямых API-консьюмеров (скрипты,
+ * тесты). Триггер удаления — после Wave 3 в проде стабильно. См. memory/
+ * zombie_endpoint_my_program.md.
  */
 router.get('/my/program', authenticatePatient, async (req, res) => {
   try {
@@ -301,11 +305,11 @@ router.get('/my/program', authenticatePatient, async (req, res) => {
 
     const program = result.rows[0];
 
-    // Получаем инфо о текущей фазе
+    // Получаем инфо о текущей фазе (Wave 1 retrospective: program_type из rp.*, не хардкод)
     const phaseResult = await query(
       `SELECT * FROM rehab_phases
-       WHERE program_type = 'acl' AND phase_number = $1 AND is_active = true`,
-      [program.current_phase]
+       WHERE program_type = $1 AND phase_number = $2 AND is_active = true`,
+      [program.program_type, program.current_phase]
     );
 
     const phase = phaseResult.rows[0] || null;
@@ -359,13 +363,14 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     }
 
     // 2. Текущая фаза (если есть программа)
+    // Wave 1 retrospective 2026-05-15: program_type из rp.*, не хардкод 'acl'
     let phase = null;
     if (program) {
       const phaseResult = await query(
         `SELECT id, phase_number, title, subtitle, duration_weeks, description, icon, color, color_bg
          FROM rehab_phases
-         WHERE program_type = 'acl' AND phase_number = $1 AND is_active = true`,
-        [program.current_phase]
+         WHERE program_type = $1 AND phase_number = $2 AND is_active = true`,
+        [program.program_type, program.current_phase]
       );
       phase = phaseResult.rows[0] || null;
       // Трансформация: фронтенд ожидает name, color2, duration_weeks как число
@@ -411,7 +416,9 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     if (program) {
       tipParams.push(program.current_phase);
       tipSql += ` AND (phase_number = $${tipParams.length} OR phase_number IS NULL)`;
-      tipSql += ` AND (program_type = 'acl' OR program_type = 'general')`;
+      // Wave 1 retrospective 2026-05-15: program_type из program, 'general' остаётся sentinel.
+      tipParams.push(program.program_type);
+      tipSql += ` AND (program_type = $${tipParams.length} OR program_type = 'general')`;
     } else {
       tipSql += ` AND program_type = 'general'`;
     }
@@ -1290,7 +1297,7 @@ router.get('/programs', authenticateToken, async (req, res) => {
                       ph.color as phase_color
                FROM rehab_programs rp
                LEFT JOIN patients p ON rp.patient_id = p.id
-               LEFT JOIN rehab_phases ph ON ph.program_type = 'acl'
+               LEFT JOIN rehab_phases ph ON ph.program_type = rp.program_type
                  AND ph.phase_number = rp.current_phase
                WHERE rp.is_active = true`;
     const params = [];

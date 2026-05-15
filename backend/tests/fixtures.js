@@ -45,6 +45,7 @@ const mockProgramRow = {
   phase_started_at: '2026-01-15',
   surgery_date: '2026-01-01',
   status: 'active',
+  program_type: 'acl',
   is_active: true,
   created_by: 5,
   created_at: '2026-01-01T00:00:00.000Z',
