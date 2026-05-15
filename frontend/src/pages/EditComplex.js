@@ -127,6 +127,7 @@ function EditComplex() {
   
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState('');
+  const [complexTitle, setComplexTitle] = useState('');
   const [diagnosisId, setDiagnosisId] = useState('');
   const [recommendations, setRecommendations] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
@@ -173,6 +174,7 @@ function EditComplex() {
       const complexData = response.data;
 
       setPatientName(complexData.patient_name);
+      setComplexTitle(complexData.title || '');
       setDiagnosisId(complexData.diagnosis_id || '');
       setRecommendations(complexData.recommendations || '');
 
@@ -272,6 +274,7 @@ function EditComplex() {
 
     try {
       const updateData = {
+        title: complexTitle.trim() || null,
         diagnosis_id: diagnosisId || null,
         recommendations: recommendations || null,
         exercises: selectedExercises.map((ex, index) => ({
@@ -388,6 +391,24 @@ function EditComplex() {
       {error && <div className={s.errorMessage}>{error}</div>}
 
       <div className={s.complexForm}>
+        <div className={s.formSection}>
+          <h3>
+            <FileText size={20} />
+            <span>Название комплекса</span>
+          </h3>
+          <input
+            type="text"
+            value={complexTitle}
+            onChange={(e) => setComplexTitle(e.target.value)}
+            placeholder="Например: Утренний комплекс плеча"
+            maxLength={255}
+            autoComplete="off"
+          />
+          <small style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+            Если оставить пустым — название соберётся из первых двух упражнений.
+          </small>
+        </div>
+
         <div className={s.formSection}>
           <h3>
             <FileText size={20} />
