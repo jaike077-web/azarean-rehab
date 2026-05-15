@@ -324,3 +324,161 @@
     width: 100%;
   }
 }
+
+/* =====================================================
+   Wave 1 #1.08b — Create Wizard стили
+   Все имена классов camelCase (правило c8834b5).
+   ===================================================== */
+.stepIndicator {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.step {
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--color-surface-2);
+}
+
+.stepActive {
+  color: var(--color-bg);
+  background: var(--color-primary);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.stepDivider {
+  color: var(--color-text-subtle);
+}
+
+.wizardBody {
+  min-height: 320px;
+}
+
+.wizardSection h3 {
+  font-size: 18px;
+  margin: 0 0 8px;
+  color: var(--color-text);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+}
+
+.templateGroup {
+  margin-bottom: 20px;
+}
+
+.templateGroup h4 {
+  font-size: 14px;
+  margin: 0 0 8px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.templateCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.templateCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--color-text);
+}
+
+.templateCard:hover {
+  border-color: var(--color-primary);
+  background: var(--color-surface-3);
+}
+
+.templateCard strong {
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.templateCard p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.badgeSurgery {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-warning-bg, rgba(255, 165, 0, 0.15));
+  color: var(--color-warning, #c87000);
+}
+
+.emptyTemplates {
+  font-style: italic;
+  color: var(--color-text-muted);
+  padding: 16px;
+  text-align: center;
+  background: var(--color-surface-2);
+  border-radius: 12px;
+}
+
+.reviewList {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.reviewList dt {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.reviewList dd {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.templateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+@media (max-width: 480px) {
+  .templateCards {
+    grid-template-columns: 1fr;
+  }
+  .stepIndicator {
+    font-size: 12px;
+  }
+}
+

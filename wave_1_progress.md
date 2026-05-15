@@ -20,8 +20,8 @@
 |---|---|---|---|---|---|---|
 | 1.06 | ⏸ заморожен | `8223b60` | 2026-05-13 | ⏳ ждёт юзера | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id. Backend 378/378 (+20). Idempotency cycle ✓ |
 | 1.07 | ⏸ заморожен | `77f2e7e` | 2026-05-13 | ⏳ ждёт юзера | — | AdminContent ProgramTemplatesTab + 7 endpoints + PhaseComplexEditor (inline). Backend 397/397 (+19), frontend 243/243 |
-| 1.08a | 🔵 в работе | — | 2026-05-13 | — | — | derived_title computed field в 4 endpoints `routes/complexes.js` (Bug #13 fallback) |
-| 1.08b | ⏳ ждёт | — | — | — | — | RehabProgramModal wizard (директория + Step-компоненты) — после split TZ |
+| 1.08a | ⏸ заморожен | `6d68a87` | 2026-05-13 | ⏳ ждёт юзера | — | derived_title computed field в 4 endpoints `routes/complexes.js`. Backend 405/405 (+8). Smoke ✓ |
+| 1.08b | 🔵 в работе | — | 2026-05-13 | — | — | RehabProgramModal → директория (router + CreateWizard 3-step + EditForm 1-step + ComplexSelector shared) |
 | 1.09 | ⏳ ждёт | — | — | — | — | — |
 
 ---
