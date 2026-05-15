@@ -19,12 +19,13 @@
 | # | Статус | Commit SHA | Дата | Smoke | PR | Заметки |
 |---|---|---|---|---|---|---|
 | 1.06 | ⏸ заморожен | `8223b60` | 2026-05-13 | ⏳ ждёт юзера | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id. Backend 378/378 (+20). Idempotency cycle ✓ |
-| 1.07 | 🔵 в работе | — | 2026-05-13 | — | — | AdminContent ProgramTemplatesTab + 7 endpoints CRUD + PhaseComplexEditor (inline) |
-| 1.08 | ⏳ ждёт | — | — | — | — | — |
+| 1.07 | ⏸ заморожен | `77f2e7e` | 2026-05-13 | ⏳ ждёт юзера | — | AdminContent ProgramTemplatesTab + 7 endpoints + PhaseComplexEditor (inline). Backend 397/397 (+19), frontend 243/243 |
+| 1.08a | 🔵 в работе | — | 2026-05-13 | — | — | derived_title computed field в 4 endpoints `routes/complexes.js` (Bug #13 fallback) |
+| 1.08b | ⏳ ждёт | — | — | — | — | RehabProgramModal wizard (директория + Step-компоненты) — после split TZ |
 | 1.09 | ⏳ ждёт | — | — | — | — | — |
 
 ---
 
 **Статусы:** ⏳ ждёт · 🔵 в работе · 🟡 готов к smoke · ⏸ заморожен (PR висит, ждёт batch merge) · 🟢 в main · 🔴 откат
 
-**Batch merge policy:** все PR висят открытыми, мержим в порядке #01 → #09 одним пакетом в конце волны (правило `wave_0_batch_merge_policy.md`).
+**Batch merge policy:** все PR висят открытыми, мержим в порядке #01 → #09 (теперь 10 PR из-за split 1.08 → 1.08a + 1.08b — финальный порядок `#45..#54`) одним пакетом в конце волны (правило `wave_0_batch_merge_policy.md`).

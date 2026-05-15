@@ -542,8 +542,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ### Комплексы
 | Метод | Путь | Auth | Описание |
 |-------|------|------|----------|
-| GET | /api/complexes | JWT | Список комплексов инструктора |
-| GET | /api/complexes/:id | JWT | Комплекс с упражнениями |
+| GET | /api/complexes | JWT | Список комплексов инструктора. Wave 1 #1.08a: возвращает computed `derived_title` (COALESCE(title, first-2-exercises joined ' · ')) для UI fallback Bug #13 |
+| GET | /api/complexes/:id | JWT | Комплекс с упражнениями + `derived_title` (Wave 1 #1.08a) |
 | POST | /api/complexes | JWT | Создать комплекс (+ exercises array) |
 | PUT | /api/complexes/:id | JWT | Обновить |
 | DELETE | /api/complexes/:id | JWT | Soft delete |
