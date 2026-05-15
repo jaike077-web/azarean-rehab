@@ -1688,11 +1688,16 @@ router.get('/oauth/telegram/callback', async (req, res) => {
       patient = byProvider.rows[0];
       linkType = 'returning';
     } else if (phoneNormalized) {
-      // 2) Phone-match silent autolink (single match, password_hash IS NULL)
+      // 2) Phone-match silent autolink. Wave 1 hot-fix #5 (2026-05-15):
+      // убран фильтр `password_hash IS NULL`. До invite-flow он защищал от
+      // misroute, но теперь у пациента может быть и password (local-регистрация),
+      // и OAuth — оба легитимны. Multi-match anti-misroute сохранён через
+      // rows.length === 1. is_active = true отсеивает deactivated на уровне SQL.
       const byPhone = await query(
         `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
            FROM patients
-          WHERE phone = $1 AND password_hash IS NULL`,
+          WHERE phone = $1
+            AND is_active = true`,
         [phoneNormalized]
       );
 
@@ -1702,6 +1707,8 @@ router.get('/oauth/telegram/callback', async (req, res) => {
         // (provider_id VARCHAR vs telegram_chat_id BIGINT) — pg выдаст
         // "inconsistent types deduced for parameter". Передаём providerId
         // дважды как $1 и $2.
+        // NOTE: password_hash намеренно НЕ обновляется — local-login пациента
+        // остаётся рабочим, OAuth добавляется как secondary auth method.
         await query(
           `UPDATE patients
               SET auth_provider = 'telegram',
@@ -1717,6 +1724,11 @@ router.get('/oauth/telegram/callback', async (req, res) => {
         linkType = 'phone_autolink';
       }
     }
+
+    // Telegram OIDC обычно НЕ возвращает email (BotFather scope опциональный
+    // и юзеры редко его дают). Поэтому email-match fallback отсутствует
+    // здесь сознательно. Если в будущем Telegram-провайдер начнёт отдавать
+    // email — добавить блок аналогично Yandex callback'у.
 
     if (!patient) {
       // 3) Нет совпадений — редирект на регистрацию с pre-fill
@@ -1748,12 +1760,14 @@ router.get('/oauth/telegram/callback', async (req, res) => {
          (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
        VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
       [
-        linkType === 'phone_autolink' ? 'OAUTH_AUTOLINK' : 'OAUTH_LOGIN',
+        (linkType === 'phone_autolink' || linkType === 'email_autolink')
+          ? 'OAUTH_AUTOLINK'
+          : 'OAUTH_LOGIN',
         patient.id,
         patient.id,
         req.ip || null,
         req.headers['user-agent'] || null,
-        JSON.stringify({ provider: 'telegram', method: 'oidc', has_phone: !!phoneNormalized }),
+        JSON.stringify({ provider: 'telegram', method: 'oidc', link_type: linkType, has_phone: !!phoneNormalized }),
       ]
     ).catch((err) => console.warn('[audit] OAuth log failed:', err.message));
 
@@ -1895,11 +1909,13 @@ router.get('/oauth/yandex/callback', async (req, res) => {
       patient = byProvider.rows[0];
       linkType = 'returning';
     } else if (phoneNormalized) {
-      // 2) Phone-match silent autolink (single match, password_hash IS NULL)
+      // 2) Phone-match silent autolink. Wave 1 hot-fix #5 (2026-05-15):
+      // см. комментарий в Telegram-callback'е о semantic shift'е.
       const byPhone = await query(
         `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
            FROM patients
-          WHERE phone = $1 AND password_hash IS NULL`,
+          WHERE phone = $1
+            AND is_active = true`,
         [phoneNormalized]
       );
 
@@ -1907,6 +1923,7 @@ router.get('/oauth/yandex/callback', async (req, res) => {
         const candidate = byPhone.rows[0];
         // Здесь оба колонки одного типа (provider_id VARCHAR), поэтому
         // grабли с pg type-deduction как в Telegram-callback'е тут не действуют.
+        // NOTE: password_hash намеренно НЕ обновляется.
         await query(
           `UPDATE patients
               SET auth_provider = 'yandex',
@@ -1919,6 +1936,37 @@ router.get('/oauth/yandex/callback', async (req, res) => {
         );
         patient = { ...candidate, auth_provider: 'yandex' };
         linkType = 'phone_autolink';
+      }
+    }
+
+    // 2b) Email-match fallback. Wave 1 hot-fix #5: Yandex всегда возвращает
+    // email (scope login:email), поэтому это полноценная вторая попытка
+    // привязки если phone не совпал или его нет в Yandex-аккаунте.
+    // Anti-misroute: single match через rows.length === 1, is_active = true.
+    if (!patient && claims.email) {
+      const emailNormalized = String(claims.email).toLowerCase().trim();
+      const byEmail = await query(
+        `SELECT id, email, full_name, phone, birth_date, avatar_url, is_active
+           FROM patients
+          WHERE LOWER(email) = $1
+            AND is_active = true`,
+        [emailNormalized]
+      );
+
+      if (byEmail.rows.length === 1) {
+        const candidate = byEmail.rows[0];
+        await query(
+          `UPDATE patients
+              SET auth_provider = 'yandex',
+                  provider_id = $1,
+                  avatar_url = COALESCE(avatar_url, $2),
+                  email_verified = true,
+                  last_login_at = NOW()
+            WHERE id = $3`,
+          [providerId, claims.avatarUrl, candidate.id]
+        );
+        patient = { ...candidate, auth_provider: 'yandex' };
+        linkType = 'email_autolink';
       }
     }
 
@@ -1952,12 +2000,20 @@ router.get('/oauth/yandex/callback', async (req, res) => {
          (user_id, action, entity_type, entity_id, patient_id, ip_address, user_agent, details)
        VALUES (NULL, $1, 'patient', $2, $3, $4, $5, $6)`,
       [
-        linkType === 'phone_autolink' ? 'OAUTH_AUTOLINK' : 'OAUTH_LOGIN',
+        (linkType === 'phone_autolink' || linkType === 'email_autolink')
+          ? 'OAUTH_AUTOLINK'
+          : 'OAUTH_LOGIN',
         patient.id,
         patient.id,
         req.ip || null,
         req.headers['user-agent'] || null,
-        JSON.stringify({ provider: 'yandex', method: 'oauth2', has_phone: !!phoneNormalized }),
+        JSON.stringify({
+          provider: 'yandex',
+          method: 'oauth2',
+          link_type: linkType,
+          has_phone: !!phoneNormalized,
+          has_email: !!claims.email,
+        }),
       ]
     ).catch((err) => console.warn('[audit] OAuth log failed:', err.message));
 
