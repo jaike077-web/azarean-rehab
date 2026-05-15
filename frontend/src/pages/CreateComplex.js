@@ -145,6 +145,7 @@ function CreateComplex() {
   const [exercisesList, setExercisesList] = useState([]);
   
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [complexTitle, setComplexTitle] = useState('');
   const [selectedDiagnosis, setSelectedDiagnosis] = useState(null);
   const [diagnosisNote, setDiagnosisNote] = useState('');
   const [recommendations, setRecommendations] = useState('');
@@ -283,6 +284,7 @@ function CreateComplex() {
     try {
       const complexData = {
         patient_id: selectedPatient.id,
+        title: complexTitle.trim() || null,
         diagnosis_id: selectedDiagnosis?.id || null,
         diagnosis_note: diagnosisNote,
         recommendations: recommendations || 'Выполняйте упражнения регулярно 3-4 раза в неделю',
@@ -507,7 +509,23 @@ function CreateComplex() {
       {step === 2 && (
         <div className={s.stepContent}>
           <h2>Диагноз и рекомендации</h2>
-          
+
+          <div className={s.formGroup}>
+            <label htmlFor="complex-title-input">Название комплекса</label>
+            <input
+              id="complex-title-input"
+              type="text"
+              placeholder="Например: Утренний комплекс плеча"
+              value={complexTitle}
+              onChange={(e) => setComplexTitle(e.target.value)}
+              maxLength={255}
+              autoComplete="off"
+            />
+            <small style={{ color: 'var(--color-text-muted)', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+              Опционально. Если оставить пустым — название соберётся из первых двух упражнений.
+            </small>
+          </div>
+
           <div className={s.formGroup}>
             <label>Диагноз (опционально)</label>
             <select

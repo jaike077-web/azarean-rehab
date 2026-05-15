@@ -12,6 +12,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const {
       patient_id,
+      title,
       diagnosis_id,
       diagnosis_note,
       recommendations,
@@ -55,12 +56,14 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Создаем комплекс (access_token больше не генерируется — пациент получает
     // доступ только через личный кабинет, см. миграцию 20260409_complexes_access_token_nullable.sql)
+    // title опционален: NULL → derived_title fallback из первых 2 упражнений (Wave 1 #1.08a)
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
     const complexResult = await client.query(
       `INSERT INTO complexes
-       (patient_id, instructor_id, diagnosis_id, diagnosis_note, recommendations, warnings)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       (patient_id, instructor_id, title, diagnosis_id, diagnosis_note, recommendations, warnings)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [patient_id, req.user.id, diagnosis_id, diagnosis_note, recommendations, warnings]
+      [patient_id, req.user.id, normalizedTitle, diagnosis_id, diagnosis_note, recommendations, warnings]
     );
 
     const complex = complexResult.rows[0];
@@ -357,7 +360,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { diagnosis_id, recommendations, warnings, exercises } = req.body;
+    const { title, diagnosis_id, recommendations, warnings, exercises } = req.body;
 
     await client.query('BEGIN');
 
@@ -369,21 +372,23 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (complexCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Not Found',
-        message: 'Комплекс не найден' 
+        message: 'Комплекс не найден'
       });
     }
 
-    // Обновляем комплекс
+    // Обновляем комплекс. title опционален — пустая строка → NULL → derived_title fallback.
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
     await client.query(
-      `UPDATE complexes SET 
-         diagnosis_id = $1,
-         recommendations = $2,
-         warnings = $3,
+      `UPDATE complexes SET
+         title = $1,
+         diagnosis_id = $2,
+         recommendations = $3,
+         warnings = $4,
          updated_at = NOW()
-       WHERE id = $4`,
-      [diagnosis_id, recommendations, warnings, id]
+       WHERE id = $5`,
+      [normalizedTitle, diagnosis_id, recommendations, warnings, id]
     );
 
     // Удаляем старые упражнения

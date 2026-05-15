@@ -187,3 +187,140 @@ describe('GET /api/complexes/trash/list — derived_title', () => {
     expect(res.body.data[0].derived_title).toBe('Старый компл · Упр');
   });
 });
+
+// =====================================================
+// Hot-fix #2 (2026-05-15) — POST/PUT принимают title (Bug #13 root cause)
+// =====================================================
+const { getClient } = require('../../database/db');
+
+describe('POST /api/complexes — title в payload', () => {
+  function makeMockClient() {
+    return { query: jest.fn(), release: jest.fn() };
+  }
+
+  it('сохраняет title из body в INSERT', async () => {
+    const client = makeMockClient();
+    let insertedTitle = undefined;
+    client.query.mockImplementation((sql, params) => {
+      if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return Promise.resolve();
+      if (/SELECT id FROM patients/i.test(sql)) return Promise.resolve({ rows: [{ id: 14 }] });
+      if (/INSERT INTO complexes/i.test(sql)) {
+        // params[2] = title после patient_id, instructor_id
+        insertedTitle = params[2];
+        return Promise.resolve({ rows: [{ id: 100, title: params[2] }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    getClient.mockResolvedValueOnce(client);
+    // top-level `query` для fullComplexResult SELECT после INSERT
+    query.mockResolvedValueOnce({ rows: [{ id: 100, title: 'Утренний комплекс плеча' }] });
+
+    const res = await request(app)
+      .post('/api/complexes')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        patient_id: 14,
+        title: 'Утренний комплекс плеча',
+        exercises: [{ exercise_id: 1, order_number: 1, sets: 3, reps: 10 }],
+      });
+
+    expect(res.status).toBe(201);
+    expect(insertedTitle).toBe('Утренний комплекс плеча');
+    // INSERT SQL включает title в список колонок
+    const insertCall = client.query.mock.calls.find(([sql]) => /INSERT INTO complexes/i.test(sql));
+    expect(insertCall[0]).toMatch(/\btitle\b/i);
+  });
+
+  it('пустая строка title → NULL в БД (derived_title fallback продолжает работать)', async () => {
+    const client = makeMockClient();
+    let insertedTitle;
+    client.query.mockImplementation((sql, params) => {
+      if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return Promise.resolve();
+      if (/SELECT id FROM patients/i.test(sql)) return Promise.resolve({ rows: [{ id: 14 }] });
+      if (/INSERT INTO complexes/i.test(sql)) {
+        insertedTitle = params[2];
+        return Promise.resolve({ rows: [{ id: 100 }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    getClient.mockResolvedValueOnce(client);
+    query.mockResolvedValueOnce({ rows: [{ id: 100, title: null }] });
+
+    await request(app)
+      .post('/api/complexes')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        patient_id: 14,
+        title: '   ', // whitespace-only
+        exercises: [{ exercise_id: 1, order_number: 1, sets: 3, reps: 10 }],
+      });
+
+    expect(insertedTitle).toBeNull();
+  });
+});
+
+describe('PUT /api/complexes/:id — title в payload', () => {
+  function makeMockClient() {
+    return { query: jest.fn(), release: jest.fn() };
+  }
+
+  it('обновляет title через UPDATE', async () => {
+    const client = makeMockClient();
+    let updatedTitle = undefined;
+    client.query.mockImplementation((sql, params) => {
+      if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return Promise.resolve();
+      if (/SELECT id FROM complexes/i.test(sql)) return Promise.resolve({ rows: [{ id: 50 }] });
+      if (/UPDATE complexes/i.test(sql)) {
+        // params[0] = title после `SET title = $1`
+        updatedTitle = params[0];
+        return Promise.resolve({ rows: [] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    getClient.mockResolvedValueOnce(client);
+
+    const res = await request(app)
+      .put('/api/complexes/50')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        title: 'Обновлённое название',
+        diagnosis_id: 1,
+        recommendations: 'rec',
+        warnings: 'warn',
+        exercises: [{ exercise_id: 1, order_number: 1, sets: 3, reps: 10 }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(updatedTitle).toBe('Обновлённое название');
+    const updateCall = client.query.mock.calls.find(([sql]) => /UPDATE complexes/i.test(sql));
+    expect(updateCall[0]).toMatch(/\btitle\b/i);
+  });
+
+  it('пустой title → NULL в БД', async () => {
+    const client = makeMockClient();
+    let updatedTitle;
+    client.query.mockImplementation((sql, params) => {
+      if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return Promise.resolve();
+      if (/SELECT id FROM complexes/i.test(sql)) return Promise.resolve({ rows: [{ id: 50 }] });
+      if (/UPDATE complexes/i.test(sql)) {
+        updatedTitle = params[0];
+        return Promise.resolve({ rows: [] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    getClient.mockResolvedValueOnce(client);
+
+    await request(app)
+      .put('/api/complexes/50')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({
+        title: '',
+        diagnosis_id: null,
+        recommendations: null,
+        warnings: null,
+        exercises: [{ exercise_id: 1, order_number: 1, sets: 3, reps: 10 }],
+      });
+
+    expect(updatedTitle).toBeNull();
+  });
+});
