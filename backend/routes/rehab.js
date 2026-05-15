@@ -134,6 +134,101 @@ router.get('/program-types', async (req, res) => {
 });
 
 /**
+ * GET /api/rehab/program-templates — список активных шаблонов программ (Wave 1 #1.06)
+ * Публичный (как program-types). Опциональный фильтр ?program_type=acl.
+ * Используется в RehabProgramModal wizard (1.08b) и AdminContent (1.07).
+ */
+router.get('/program-templates', async (req, res) => {
+  try {
+    const { program_type } = req.query;
+    let sql = `
+      SELECT pt.id, pt.code, pt.program_type, pt.title, pt.description,
+             pt.surgery_required, pt.default_phase_count, pt.variant_of,
+             pt.position, pt.is_active,
+             types.label AS program_type_label,
+             types.joint AS program_joint
+      FROM program_templates pt
+      LEFT JOIN program_types types ON types.code = pt.program_type
+      WHERE pt.is_active = true
+    `;
+    const params = [];
+    if (program_type) {
+      params.push(program_type);
+      sql += ` AND pt.program_type = $${params.length}`;
+    }
+    sql += ' ORDER BY pt.position ASC, pt.title ASC';
+
+    const result = await query(sql, params);
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Ошибка получения program_templates:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения шаблонов программ' });
+  }
+});
+
+/**
+ * GET /api/rehab/program-templates/:id/phases — фазы шаблона + рекомендованные complex templates.
+ * Используется wizard'ом (1.08b) для показа preview «что войдёт в программу».
+ * Возвращает { template, phases: [{ phase_number, ..., recommended_complex }] }.
+ */
+router.get('/program-templates/:id/phases', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Невалидный id шаблона' });
+    }
+
+    const templateResult = await query(
+      'SELECT * FROM program_templates WHERE id = $1 AND is_active = true',
+      [id]
+    );
+    if (templateResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Шаблон программы не найден' });
+    }
+    const template = templateResult.rows[0];
+
+    // Фазы из rehab_phases по program_type шаблона
+    const phasesResult = await query(
+      `SELECT phase_number, title, subtitle, duration_weeks, description, goals, restrictions
+       FROM rehab_phases
+       WHERE program_type = $1 AND is_active = true
+       ORDER BY phase_number`,
+      [template.program_type]
+    );
+
+    // Рекомендованные complex templates на каждой фазе
+    const complexesResult = await query(
+      `SELECT pc.phase_number, pc.complex_template_id, pc.is_recommended, pc.notes,
+              t.id AS template_id, t.name AS template_name, t.description AS template_description
+       FROM program_template_phase_complexes pc
+       LEFT JOIN templates t ON t.id = pc.complex_template_id
+       WHERE pc.program_template_id = $1`,
+      [id]
+    );
+
+    const phasesWithComplexes = phasesResult.rows.map((phase) => {
+      const rec = complexesResult.rows.find((c) => c.phase_number === phase.phase_number);
+      return {
+        ...phase,
+        recommended_complex: rec
+          ? {
+              template_id: rec.template_id,
+              name: rec.template_name,
+              description: rec.template_description,
+              notes: rec.notes,
+            }
+          : null,
+      };
+    });
+
+    res.json({ data: { template, phases: phasesWithComplexes } });
+  } catch (error) {
+    console.error('Ошибка получения phases шаблона:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения фаз шаблона' });
+  }
+});
+
+/**
  * GET /api/rehab/tips?type=acl&phase=1&category=motivation
  * Получить советы (с фильтрацией)
  */
@@ -1257,7 +1352,9 @@ router.post('/programs', authenticateToken, async (req, res) => {
       diagnosis,
       surgery_date,
       current_phase,
-      notes
+      notes,
+      program_type,           // Wave 1 #1.01 — может прийти явно (приоритет) или резолвится из шаблона
+      program_template_id,    // Wave 1 #1.06 — tracking источника
     } = req.body;
 
     if (!patient_id || !title) {
@@ -1273,10 +1370,30 @@ router.post('/programs', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Forbidden', message: 'Нет доступа к этому пациенту' });
     }
 
+    // Wave 1 #1.06: если указан program_template_id — валидируем и резолвим program_type из шаблона.
+    // Явный program_type в body имеет приоритет (для edge cases).
+    let resolvedProgramType = program_type;
+    if (program_template_id) {
+      const tplCheck = await query(
+        'SELECT id, program_type FROM program_templates WHERE id = $1 AND is_active = true',
+        [program_template_id]
+      );
+      if (tplCheck.rows.length === 0) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Шаблон программы не найден или деактивирован',
+        });
+      }
+      if (!resolvedProgramType) {
+        resolvedProgramType = tplCheck.rows[0].program_type;
+      }
+    }
+
     const result = await query(
       `INSERT INTO rehab_programs
-       (patient_id, complex_id, title, diagnosis, surgery_date, current_phase, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       (patient_id, complex_id, title, diagnosis, surgery_date, current_phase, notes, created_by,
+        program_type, program_template_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'acl'), $10)
        RETURNING *`,
       [
         patient_id,
@@ -1286,7 +1403,9 @@ router.post('/programs', authenticateToken, async (req, res) => {
         surgery_date || null,
         current_phase || 1,
         notes || null,
-        req.user.id
+        req.user.id,
+        resolvedProgramType || null,
+        program_template_id || null,
       ]
     );
 

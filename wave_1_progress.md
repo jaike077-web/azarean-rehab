@@ -12,13 +12,13 @@
 | 1.02 | ⏸ заморожен | `b0170f1` | 2026-05-13 | ⏳ ждёт юзера | — | `/program-types` endpoint + JOIN program_types в `/my/dashboard`. Backend 359/359 (+9). Smoke ✓ |
 | 1.03 | ⏸ заморожен | `fa177b4` | 2026-05-13 | ⏳ ждёт юзера | — | Удалён regex-маппинг `deriveProgramLabel` (backend). HomeScreen уже корректен. Backend 343/343 (−16 удалённых), frontend 238/238 (+2 multi-protocol) |
 | 1.04 | ⏸ заморожен | `ceb32aa` | 2026-05-13 | ⏳ ждёт юзера | — | Дефолт 'acl' убран из api.js, RoadmapScreen reads program_type из dashboardData, telegramBot SQL по rp.program_type. Backend 344/344 (+1), frontend 243/243 (+5). **Bug #12 закрыт полностью** |
-| 1.05 | 🔵 в работе | — | 2026-05-13 | — | — | AdminContent: CRUD program_types + select в PhaseForm + filter в PhasesTab + ptCheck в POST /phases |
+| 1.05 | ⏸ заморожен | `8c420b2` | 2026-05-13 | ⏳ ждёт юзера | — | AdminContent CRUD program_types + select PhaseForm + filter PhasesTab. Backend 358/358 (+14). **Блок A завершён** |
 
 ## Блок B — Шаблоны программ + stuck
 
 | # | Статус | Commit SHA | Дата | Smoke | PR | Заметки |
 |---|---|---|---|---|---|---|
-| 1.06 | ⏳ ждёт | — | — | — | — | — |
+| 1.06 | 🔵 в работе | — | 2026-05-13 | — | — | Миграция program_templates + 2 endpoints + POST /programs принимает program_template_id |
 | 1.07 | ⏳ ждёт | — | — | — | — | — |
 | 1.08 | ⏳ ждёт | — | — | — | — | — |
 | 1.09 | ⏳ ждёт | — | — | — | — | — |

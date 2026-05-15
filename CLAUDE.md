@@ -98,6 +98,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_create
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260429_telegram_chat_id_numeric.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260508_streak_days.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260512_program_types.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_program_templates.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -115,6 +116,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260512_progra
 **20260429_patient_deletion_queue:** новая таблица для очереди soft → hard delete (152-ФЗ ст.21 / GDPR Art.17). При запросе DELETE /me — `is_active=false` сразу + INSERT в очередь со `scheduled_for=NOW()+30d`. Cron в scheduler.js в 03:30 МСК берёт due-записи и делает hard DELETE patient (CASCADE через FK подчищает complexes/diary/progress). Partial UNIQUE индекс по `patient_id WHERE executed_at IS NULL AND cancelled_at IS NULL` — один активный запрос на пациента.
 
 **20260512_program_types:** справочник `program_types` (code PK, label, joint, body_side_relevant, surgery_required, position) + поле `rehab_programs.program_type VARCHAR(50) NOT NULL DEFAULT 'acl'` с FK на program_types.code. Минимальный seed: `acl` / `knee_general` / `shoulder_general`. Backfill для существующих программ — regex по diagnosis на маркеры плеча (плеч/shoulder/манжет/надостн/cuff/frozen) → `shoulder_general`, остальное остаётся `acl` (90% knee по статистике). Wave 1 коммит 1.01 — фундамент multi-protocol. Использование `program_type` в backend/UI/telegramBot — в коммитах 1.02-1.04. Полностью идемпотентна.
+
+**20260513_program_templates:** шаблоны программ + связи. Новые таблицы `program_templates` (id, code UNIQUE, program_type FK→program_types(code), title, description, surgery_required, default_phase_count, variant_of self-FK, is_active, position) и `program_template_phase_complexes` (id, program_template_id FK CASCADE, phase_number, complex_template_id FK→templates(id) ON DELETE SET NULL, is_recommended, notes, UNIQUE по program_template_id+phase_number). + ALTER `rehab_programs ADD program_template_id INTEGER REFERENCES program_templates(id) ON DELETE SET NULL` для tracking. + ALTER `templates ADD program_type VARCHAR(50) REFERENCES program_types(code)` для фильтрации комплексов. **Без seed** — Vadim наполняет через AdminContent (1.07). Wave 1 коммит 1.06 — фундамент блока B. Полностью идемпотентна.
 
 ### 2. Переменные окружения
 
@@ -581,6 +584,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET | /api/rehab/phases/:type | **Нет** | Фазы реабилитации |
 | GET | /api/rehab/phases/:id | **Нет** | Конкретная фаза |
 | GET | /api/rehab/program-types | **Нет** | Справочник типов программ (Wave 1 #1.02) |
+| GET | /api/rehab/program-templates | **Нет** | Шаблоны программ (Wave 1 #1.06). Опциональный `?program_type=` фильтр |
+| GET | /api/rehab/program-templates/:id/phases | **Нет** | Фазы шаблона + рекомендованные complex templates (Wave 1 #1.06, для wizard'а в 1.08b) |
 | GET | /api/rehab/tips | **Нет** | Советы |
 
 ### Диагнозы
