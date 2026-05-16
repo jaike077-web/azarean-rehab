@@ -82,3 +82,37 @@ describe('Wave 2 schema migration — SQL sanity', () => {
     });
   });
 });
+
+describe('Wave 2 pain_locations seed (коммит 2.02)', () => {
+  const seedPath = path.join(__dirname, '../../database/migrations/20260517_pain_locations_seed.sql');
+  let sql;
+
+  beforeAll(() => {
+    sql = fs.readFileSync(seedPath, 'utf8');
+  });
+
+  it('16 INSERT строк (8 knee + 8 shoulder)', () => {
+    const valuesMatches = sql.match(/^\s*\('[a-z_]+',/gm) || [];
+    expect(valuesMatches.length).toBe(16);
+  });
+
+  it('содержит 2 red-flag локации', () => {
+    expect(sql).toMatch(/'calf_posterior'[\s\S]+?TRUE/);
+    expect(sql).toMatch(/'neck_lateral'[\s\S]+?TRUE/);
+  });
+
+  it('идемпотентность ON CONFLICT DO NOTHING для обоих INSERT блоков', () => {
+    const onConflictMatches = sql.match(/ON CONFLICT \(code\) DO NOTHING/g) || [];
+    expect(onConflictMatches.length).toBe(2);
+  });
+
+  it('транзакционность BEGIN/COMMIT', () => {
+    expect(sql.trim()).toMatch(/^BEGIN;/m);
+    expect(sql.trim()).toMatch(/COMMIT;\s*$/);
+  });
+
+  it('red-flag locations имеют клинически информативные red_flag_reason', () => {
+    expect(sql).toMatch(/'calf_posterior'[\s\S]+?'Возможный тромбоз/);
+    expect(sql).toMatch(/'neck_lateral'[\s\S]+?'Возможная цервикальная радикулопатия/);
+  });
+});

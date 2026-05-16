@@ -352,6 +352,7 @@
   border: 1px solid var(--color-border);
   border-radius: 8px;
   font-size: 14px;
+  background: var(--color-surface-2);
   color: var(--color-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -427,3 +428,34 @@
   color: var(--color-text-muted);
   margin: 0 0 16px;
 }
+
+/* === Wave 2 коммит 2.02 — Pain locations === */
+
+.painLocFilters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.painLocFilters select {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.redFlagBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+

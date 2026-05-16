@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { admin, templates as complexTemplatesApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight, AlertTriangle, MapPin } from 'lucide-react';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
@@ -1197,6 +1197,327 @@ function VideoForm({ video, phases, onSave, onClose }) {
 }
 
 // =====================================================
+// Суб-таб: Локации боли (Wave 2 коммит 2.02)
+// =====================================================
+function PainLocationsTab() {
+  const [items, setItems] = useState([]);
+  const [programTypes, setProgramTypes] = useState([]);
+  const [filterProgramType, setFilterProgramType] = useState('');
+  const [filterActive, setFilterActive] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (filterProgramType) params.program_type = filterProgramType;
+      if (filterActive !== '') params.is_active = filterActive;
+      const [locRes, ptRes] = await Promise.all([
+        admin.getPainLocations(params),
+        admin.getProgramTypes(),
+      ]);
+      setItems(locRes.data || []);
+      setProgramTypes(ptRes.data || []);
+    } catch {
+      toast.error('Ошибка загрузки локаций боли');
+    } finally {
+      setLoading(false);
+    }
+  }, [filterProgramType, filterActive, toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (form) => {
+    try {
+      if (editing) {
+        const { code, program_type, ...patch } = form;
+        await admin.updatePainLocation(editing.code, patch);
+        toast.success('Локация обновлена');
+      } else {
+        await admin.createPainLocation(form);
+        toast.success('Локация создана');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      await admin.deletePainLocation(deleteItem.code);
+      toast.success('Локация удалена');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления');
+    }
+    setDeleteItem(null);
+  };
+
+  if (loading) return <TableSkeleton rows={4} columns={7} />;
+
+  return (
+    <div>
+      <div className={s.contentHeader}>
+        <span>{items.length} локаций</span>
+        <div className={s.painLocFilters}>
+          <select
+            aria-label="Фильтр программа"
+            value={filterProgramType}
+            onChange={(e) => setFilterProgramType(e.target.value)}
+          >
+            <option value="">Все программы</option>
+            {programTypes.map((pt) => (
+              <option key={pt.code} value={pt.code}>{pt.label} ({pt.code})</option>
+            ))}
+          </select>
+          <select
+            aria-label="Фильтр статус"
+            value={filterActive}
+            onChange={(e) => setFilterActive(e.target.value)}
+          >
+            <option value="">Все</option>
+            <option value="true">Только активные</option>
+            <option value="false">Только архив</option>
+          </select>
+        </div>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Добавить локацию
+        </button>
+      </div>
+      {items.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><MapPin size={48} strokeWidth={1.8} /></div>
+            <h3>Нет локаций</h3>
+            <p>Создайте первую локацию боли или измените фильтр</p>
+          </div>
+        </div>
+      )}
+      {items.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th>Код</th>
+                <th>Название</th>
+                <th>Программа</th>
+                <th>Позиция</th>
+                <th>Red-flag</th>
+                <th>Активна</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((loc) => (
+                <tr key={loc.code} className={!loc.is_active ? s.rowInactive : ''}>
+                  <td className={s.tdId}><code>{loc.code}</code></td>
+                  <td className={s.tdName}>{loc.label}</td>
+                  <td>{loc.program_type_label || loc.program_type}</td>
+                  <td>{loc.position}</td>
+                  <td>
+                    {loc.is_red_flag ? (
+                      <span
+                        className={s.redFlagBadge}
+                        data-testid="red-flag-icon"
+                        title={loc.red_flag_reason}
+                      >
+                        <AlertTriangle size={14} strokeWidth={1.8} />
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td>{loc.is_active ? '✅' : '❌'}</td>
+                  <td className={s.tdActions}>
+                    <button className={s.adminActionBtn} onClick={() => setEditing(loc)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      className={`${s.adminActionBtn} ${s.btnDanger}`}
+                      onClick={() => setDeleteItem(loc)}
+                      title="Удалить"
+                    >
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(editing || creating) && (
+        <PainLocationForm
+          initial={editing}
+          programTypes={programTypes}
+          onSave={handleSave}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Удаление локации"
+        message={`Удалить локацию "${deleteItem?.label}" (${deleteItem?.code})? Заблокируется если есть ссылки из записей боли.`}
+        confirmText="Удалить"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+function PainLocationForm({ initial, programTypes, onSave, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
+  const [form, setForm] = useState({
+    code: '',
+    program_type: '',
+    label: '',
+    position: 0,
+    is_red_flag: false,
+    red_flag_reason: '',
+    is_active: true,
+  });
+
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        code: initial.code || '',
+        program_type: initial.program_type || '',
+        label: initial.label || '',
+        position: initial.position ?? 0,
+        is_red_flag: !!initial.is_red_flag,
+        red_flag_reason: initial.red_flag_reason || '',
+        is_active: !!initial.is_active,
+      });
+    }
+  }, [initial]);
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  const submit = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        red_flag_reason: form.is_red_flag ? form.red_flag_reason : null,
+      };
+      await onSave(payload);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={s.adminModalOverlay} onClick={onClose}>
+      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+        <div className={s.adminModalHeader}>
+          <h3>{isEdit ? 'Редактировать локацию боли' : 'Создать локацию боли'}</h3>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+        </div>
+        <div className={s.adminModalForm}>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="pain-loc-code">Код (a-z, _)</label>
+            <input
+              id="pain-loc-code"
+              value={form.code}
+              onChange={(e) => set('code', e.target.value)}
+              placeholder="knee_anterior"
+              disabled={isEdit}
+            />
+            {isEdit && <small>Код менять нельзя — на него ссылаются записи pain_entry_locations.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="pain-loc-program-type">Программа</label>
+            <select
+              id="pain-loc-program-type"
+              value={form.program_type}
+              onChange={(e) => set('program_type', e.target.value)}
+              disabled={isEdit}
+            >
+              <option value="">Выберите программу</option>
+              {programTypes.map((pt) => (
+                <option key={pt.code} value={pt.code}>{pt.label} ({pt.code})</option>
+              ))}
+            </select>
+            {isEdit && <small>Программу менять нельзя — для смены создайте новую локацию.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="pain-loc-label">Название (для пациента)</label>
+            <input
+              id="pain-loc-label"
+              value={form.label}
+              onChange={(e) => set('label', e.target.value)}
+              placeholder="Передняя поверхность колена"
+              maxLength={100}
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="pain-loc-position">Позиция (для сортировки)</label>
+            <input
+              id="pain-loc-position"
+              type="number"
+              value={form.position}
+              onChange={(e) => set('position', parseInt(e.target.value, 10) || 0)}
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>
+              <input
+                id="pain-loc-is-red-flag"
+                type="checkbox"
+                checked={form.is_red_flag}
+                onChange={(e) => set('is_red_flag', e.target.checked)}
+              />{' '}
+              Red-flag локация (требует немедленной реакции куратора)
+            </label>
+          </div>
+          {form.is_red_flag && (
+            <div className={s.adminFormGroup}>
+              <label htmlFor="pain-loc-red-flag-reason">Причина red-flag (для ops-alert)</label>
+              <textarea
+                id="pain-loc-red-flag-reason"
+                rows="2"
+                value={form.red_flag_reason}
+                onChange={(e) => set('red_flag_reason', e.target.value)}
+                placeholder="Возможный ТГВ. Срочно консультация куратора."
+                maxLength={255}
+              />
+            </div>
+          )}
+          {isEdit && (
+            <div className={s.adminFormGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => set('is_active', e.target.checked)}
+                />{' '}
+                Активна
+              </label>
+            </div>
+          )}
+          <div className={s.adminModalActions}>
+            <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
+            <button className={s.adminBtnPrimary} disabled={saving} onClick={submit}>
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
 // Хелперы
 // =====================================================
 function parseTextArray(text) {
@@ -1228,6 +1549,7 @@ function AdminContent() {
         <button className={`${s.contentTab} ${tab === 'phases' ? s.active : ''}`} onClick={() => setTab('phases')}>Фазы</button>
         <button className={`${s.contentTab} ${tab === 'tips' ? s.active : ''}`} onClick={() => setTab('tips')}>Советы</button>
         <button className={`${s.contentTab} ${tab === 'videos' ? s.active : ''}`} onClick={() => setTab('videos')}>Видео</button>
+        <button className={`${s.contentTab} ${tab === 'pain-locations' ? s.active : ''}`} onClick={() => setTab('pain-locations')}>Локации боли</button>
       </div>
 
       {tab === 'program-types' && <ProgramTypesTab />}
@@ -1235,6 +1557,7 @@ function AdminContent() {
       {tab === 'phases' && <PhasesTab />}
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}
+      {tab === 'pain-locations' && <PainLocationsTab />}
     </div>
   );
 }

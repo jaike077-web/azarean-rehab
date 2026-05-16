@@ -580,6 +580,15 @@ export const admin = {
   updateVideo: (id, data) => api.put(`/admin/videos/${id}`, data),
   deleteVideo: (id) => api.delete(`/admin/videos/${id}`),
 
+  // Локации боли (Wave 2 коммит 2.02) — справочник для DiaryScreen multi-select + Pain Event SOS.
+  // GET admin/pain-locations отдаёт все (включая is_active=false); фильтр через params.
+  // Public endpoint для пациента добавляется в 2.04.
+  getPainLocations: (params = {}) => api.get('/admin/pain-locations', { params }),
+  getPainLocation: (code) => api.get(`/admin/pain-locations/${encodeURIComponent(code)}`),
+  createPainLocation: (data) => api.post('/admin/pain-locations', data),
+  updatePainLocation: (code, data) => api.put(`/admin/pain-locations/${encodeURIComponent(code)}`, data),
+  deletePainLocation: (code) => api.delete(`/admin/pain-locations/${encodeURIComponent(code)}`),
+
   // Система
   getSystemInfo: () => api.get('/admin/system'),
 };
