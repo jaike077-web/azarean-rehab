@@ -207,6 +207,58 @@
   --pd-color-max: #FF0032;
 }
 
+/* ==========================================================================
+   Dark theme — override v12 semantic tokens
+   Базовые --pd-* (bg/card/text/border) уже переопределены в /styles/tokens.css.
+   Здесь — семантические алиасы (white, bg, primary-bg, warm-neutrals),
+   используемые компонентами Diary/Home/Profile/Contact.
+   ========================================================================== */
+:root[data-theme='dark'] .pd-container {
+  --pd-color-white: var(--pd-card);
+  --pd-color-bg: var(--pd-bg);
+  --pd-color-primary-bg: rgba(13, 148, 136, 0.15);
+
+  /* Warm neutrals — инверсия (light было n50→n900, dark светлеет с увеличением) */
+  --pd-color-warm-n50:  var(--pd-card);
+  --pd-color-warm-n100: var(--pd-bg2);
+  --pd-color-warm-n200: var(--pd-border);
+  --pd-color-warm-n300: #475569;
+  --pd-color-warm-n400: var(--pd-text3);
+  --pd-color-warm-n500: var(--pd-text2);
+  --pd-color-warm-n600: #c7cad6;
+  --pd-color-warm-n700: var(--pd-text);
+  --pd-color-warm-n800: var(--pd-text);
+  --pd-color-warm-n900: var(--pd-text);
+
+  /* Surface aliases (light: n100 = pale; dark: surface-2 для контраста с card) */
+  --pd-surface-primary: var(--pd-card);
+  --pd-surface-secondary: var(--pd-bg2);
+  --pd-surface-page: var(--pd-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .pd-container {
+    --pd-color-white: var(--pd-card);
+    --pd-color-bg: var(--pd-bg);
+    --pd-color-primary-bg: rgba(13, 148, 136, 0.15);
+
+    --pd-color-warm-n50:  var(--pd-card);
+    --pd-color-warm-n100: var(--pd-bg2);
+    --pd-color-warm-n200: var(--pd-border);
+    --pd-color-warm-n300: #475569;
+    --pd-color-warm-n400: var(--pd-text3);
+    --pd-color-warm-n500: var(--pd-text2);
+    --pd-color-warm-n600: #c7cad6;
+    --pd-color-warm-n700: var(--pd-text);
+    --pd-color-warm-n800: var(--pd-text);
+    --pd-color-warm-n900: var(--pd-text);
+
+    --pd-surface-primary: var(--pd-card);
+    --pd-surface-secondary: var(--pd-bg2);
+    --pd-surface-page: var(--pd-bg);
+  }
+}
+
 /* Staggered fade-in (ref: .fi class) */
 @keyframes pd-fi {
   from { opacity: 0; transform: translateY(8px); }

@@ -12,6 +12,7 @@ import ExercisesScreen from './components/ExercisesScreen';
 import ProfileScreen from './components/ProfileScreen';
 import { TabBar, AvatarBtn } from './components/ui';
 import usePatientAvatarBlob from './hooks/usePatientAvatarBlob';
+import ThemeToggle from '../../components/ThemeToggle';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -221,6 +222,7 @@ export default function PatientDashboard() {
               atRisk={dashboardData.streak.atRisk}
             />
           )}
+          <ThemeToggle />
           {/* Avatar в правом верхнем — единая точка входа в Profile overlay
               со всех экранов. AvatarBtn также появится в шапках каждого
               экрана при их редизайне (Checkpoints 4–7). */}
