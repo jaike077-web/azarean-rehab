@@ -353,6 +353,7 @@
   border-radius: 8px;
   font-size: 14px;
   color: var(--color-text);
+  background: var(--color-surface-2);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   min-height: 44px;
