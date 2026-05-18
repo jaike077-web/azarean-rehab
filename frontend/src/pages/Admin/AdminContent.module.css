@@ -296,6 +296,8 @@
   padding: clamp(20px, 3vw, 32px);
   max-width: 520px;
   width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
@@ -457,5 +459,145 @@
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
+}
+
+/* === Wave 2 коммит 2.03 — Phase transition criteria (accordion sub-CRUD) === */
+
+.criteriaToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.criteriaToggle:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.criteriaToggle[aria-expanded="true"] {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.criteriaPanelRow {
+  background: var(--color-surface-2);
+}
+
+.criteriaPanelRow > td {
+  padding: 16px !important;
+  border-top: 1px solid var(--color-border);
+}
+
+.criteriaPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.criteriaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.criteriaEmpty {
+  padding: 16px;
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.criteriaList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.criteriaCard {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.criteriaCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.criteriaTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-surface-2);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+.criteriaCode {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.criteriaInactive {
+  font-size: 11px;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.criteriaCardActions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.criteriaCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.criteriaLabel {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.criteriaMeta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.criteriaQuestion {
+  font-style: italic;
+  color: var(--color-text);
+}
+
+.criteriaHint {
+  margin-top: 2px;
 }
 

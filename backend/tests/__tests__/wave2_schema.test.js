@@ -116,3 +116,43 @@ describe('Wave 2 pain_locations seed (коммит 2.02)', () => {
     expect(sql).toMatch(/'neck_lateral'[\s\S]+?'Возможная цервикальная радикулопатия/);
   });
 });
+
+describe('Wave 2 ACL criteria seed (коммит 2.03)', () => {
+  const seedPath = path.join(__dirname, '../../database/migrations/20260518_acl_criteria_seed.sql');
+  let sql;
+
+  beforeAll(() => {
+    sql = fs.readFileSync(seedPath, 'utf8');
+  });
+
+  it('содержит критерии для всех 6 фаз', () => {
+    for (let n = 1; n <= 6; n++) {
+      expect(sql).toMatch(new RegExp(`\\(${n}, '`));
+    }
+  });
+
+  it('содержит 24-32 критериев (целевой объём ~30)', () => {
+    const matches = sql.match(/\(\d,\s*'[a-z0-9_]+',/g) || [];
+    expect(matches.length).toBeGreaterThanOrEqual(24);
+    expect(matches.length).toBeLessThanOrEqual(32);
+  });
+
+  it('содержит все 3 типа критериев', () => {
+    expect(sql).toMatch(/'measurement'/);
+    expect(sql).toMatch(/'self_report'/);
+    expect(sql).toMatch(/'instructor_check'/);
+  });
+
+  it('JOIN на rehab_phases по program_type=acl + phase_number', () => {
+    expect(sql).toMatch(/JOIN rehab_phases[\s\S]+?program_type\s*=\s*'acl'[\s\S]+?phase_number\s*=\s*cd\.phase_number/);
+  });
+
+  it('идемпотентность ON CONFLICT (phase_id, criterion_code) DO NOTHING', () => {
+    expect(sql).toMatch(/ON CONFLICT \(phase_id, criterion_code\) DO NOTHING/);
+  });
+
+  it('транзакционность BEGIN/COMMIT', () => {
+    expect(sql.trim()).toMatch(/^BEGIN;/m);
+    expect(sql.trim()).toMatch(/COMMIT;\s*$/);
+  });
+});

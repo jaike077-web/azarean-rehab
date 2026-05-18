@@ -1144,3 +1144,198 @@ describe('DELETE /api/admin/pain-locations/:code', () => {
     expect(res.status).toBe(404);
   });
 });
+
+// =====================================================
+// PHASE TRANSITION CRITERIA CRUD (Wave 2 коммит 2.03)
+// =====================================================
+
+describe('GET /api/admin/phases/:phase_id/criteria', () => {
+  it('returns list of criteria for phase', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, phase_id: 5, criterion_code: 'full_extension', criterion_type: 'measurement', measurement_type: 'knee_extension_degrees', threshold_operator: '=', threshold_value: 0 },
+        { id: 2, phase_id: 5, criterion_code: 'no_extension_lag', criterion_type: 'instructor_check' },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.total).toBe(2);
+  });
+
+  it('400 when phase_id non-numeric', async () => {
+    const res = await request(app)
+      .get('/api/admin/phases/abc/criteria')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/admin/phases/:phase_id/criteria', () => {
+  it('creates measurement criterion + audit log', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 5 }] })  // phase exists
+      .mockResolvedValueOnce({ rows: [{ id: 100, phase_id: 5, criterion_code: 'test', criterion_type: 'measurement' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });  // logAudit
+
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        criterion_code: 'test', label: 'X', criterion_type: 'measurement',
+        measurement_type: 'knee_flexion_degrees', measurement_source: 'rom',
+        threshold_operator: '>=', threshold_value: 90,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.criterion_code).toBe('test');
+    const auditCall = query.mock.calls.find((call) => /INSERT INTO audit_logs/.test(call[0]));
+    expect(auditCall).toBeDefined();
+  });
+
+  it('400 self_report without question', async () => {
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ criterion_code: 'test', label: 'X', criterion_type: 'self_report' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/self_report_question/);
+  });
+
+  it('400 measurement without threshold_operator', async () => {
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        criterion_code: 'test', label: 'X', criterion_type: 'measurement',
+        measurement_type: 'knee_flexion_degrees', measurement_source: 'rom',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/threshold_operator/);
+  });
+
+  it('400 measurement between without threshold_value2', async () => {
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        criterion_code: 'test', label: 'X', criterion_type: 'measurement',
+        measurement_type: 'knee_flexion_degrees', measurement_source: 'rom',
+        threshold_operator: 'between', threshold_value: 90,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/threshold_value2/);
+  });
+
+  it('instructor_check accepts minimal body', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 5 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 101, criterion_type: 'instructor_check' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ criterion_code: 'test', label: 'X', criterion_type: 'instructor_check' });
+
+    expect(res.status).toBe(201);
+  });
+
+  it('404 when phase not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post('/api/admin/phases/99999/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ criterion_code: 'test', label: 'X', criterion_type: 'instructor_check' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('409 on duplicate criterion_code in phase', async () => {
+    const dupErr = new Error('duplicate');
+    dupErr.code = '23505';
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 5 }] })
+      .mockRejectedValueOnce(dupErr);
+
+    const res = await request(app)
+      .post('/api/admin/phases/5/criteria')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ criterion_code: 'full_extension', label: 'X', criterion_type: 'instructor_check' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('PUT /api/admin/criteria/:id', () => {
+  it('updates label', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1, label: 'Обновлено' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .put('/api/admin/criteria/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'Обновлено' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.label).toBe('Обновлено');
+  });
+
+  it('404 if not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/criteria/99999')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'X' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('400 when no fields to update', async () => {
+    const res = await request(app)
+      .put('/api/admin/criteria/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('DELETE /api/admin/criteria/:id', () => {
+  it('409 if patient_criterion_answers refs exist', async () => {
+    query.mockResolvedValueOnce({ rows: [{ cnt: 3 }] });
+
+    const res = await request(app)
+      .delete('/api/admin/criteria/1')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/в 3 ответах/);
+  });
+
+  it('deletes when no refs + audit log', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 1 }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .delete('/api/admin/criteria/1')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    const auditCall = query.mock.calls.find((call) => /INSERT INTO audit_logs/.test(call[0]));
+    expect(auditCall).toBeDefined();
+  });
+});
