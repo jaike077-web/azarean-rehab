@@ -254,22 +254,28 @@
    ===================================================== */
 
 @media (max-width: 640px) {
+  /* Wave 2 hot-fix #7 (2026-05-18): mobile тоже сверху, не снизу.
+     Раньше bottom: ... было выбрано для thumb-reach, но при открытой модалке
+     или scrollable контенте toast'ы прятались за нижними UI элементами
+     (navigation tab пациентского dashboard, sticky bottom action bars).
+     На top — toast всегда виден сразу после действия. */
   .toastContainer {
-    top: auto;
-    bottom: clamp(16px, 3vw, 20px);
+    top: clamp(12px, 3vw, 16px);
+    bottom: auto;
     left: clamp(12px, 3vw, 16px);
     right: clamp(12px, 3vw, 16px);
+    max-width: none;
   }
 
   .toast {
     min-width: 100%;
     max-width: 100%;
   }
-  
-  /* На мобильных анимация снизу */
+
+  /* Slide-in сверху на mobile */
   @keyframes toastSlideIn {
     from {
-      transform: translateY(100%);
+      transform: translateY(-100%);
       opacity: 0;
     }
     to {
@@ -284,7 +290,7 @@
       opacity: 1;
     }
     to {
-      transform: translateY(100%);
+      transform: translateY(-100%);
       opacity: 0;
     }
   }

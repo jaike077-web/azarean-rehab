@@ -7,6 +7,12 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Toast from '../components/Toast';
+// Wave 2 hot-fix #7 (2026-05-18): импорт CSS Modules — раньше container использовал
+// kebab-class "toast-container" как plain string. После CSS Modules миграции 2026-05-04
+// (commit c8834b5) этот global class перестал существовать. Container терял всё
+// позиционирование (fixed/top/z-index) → toast'ы появлялись в normal DOM flow внизу
+// страницы и были невидны при открытой модалке или scrollable content.
+import s from '../components/Toast.module.css';
 
 const ToastContext = createContext(null);
 
@@ -68,8 +74,8 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={toast}>
       {children}
       
-      {/* Toast Container */}
-      <div className="toast-container">
+      {/* Toast Container — Wave 2 hot-fix #7: CSS Modules camelCase class */}
+      <div className={s.toastContainer}>
         {toasts.map((t) => (
           <Toast
             key={t.id}
