@@ -1775,4 +1775,105 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+// ============================================================================
+// OPS ALERTS (Wave 2 коммит 2.04)
+// Incident-журнал для admin triage. Записи создаются из routes/rehab.js
+// triggerRedFlagAlert при red-flag pain_entry. Telegram отправка — в utils/opsAlert.js.
+// ============================================================================
+
+/**
+ * GET /api/admin/ops-alerts
+ * Filters: resolved (true|false), alert_type, severity, patient_id, limit, offset.
+ * JOIN на pain_entries даёт VAS+notes+is_event прямо в списке для админ-триажа.
+ */
+router.get('/ops-alerts', async (req, res) => {
+  try {
+    const { resolved, alert_type, severity, patient_id } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (resolved === 'true') conditions.push('oa.resolved_at IS NOT NULL');
+    else if (resolved === 'false') conditions.push('oa.resolved_at IS NULL');
+    if (alert_type) {
+      params.push(alert_type);
+      conditions.push(`oa.alert_type = $${params.length}`);
+    }
+    if (severity) {
+      params.push(severity);
+      conditions.push(`oa.severity   = $${params.length}`);
+    }
+    if (patient_id) {
+      params.push(parseInt(patient_id, 10));
+      conditions.push(`oa.patient_id = $${params.length}`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+    const offset = parseInt(req.query.offset, 10) || 0;
+    params.push(limit);
+    params.push(offset);
+
+    const { rows } = await query(
+      `SELECT
+         oa.id, oa.patient_id, p.full_name AS patient_name, p.phone AS patient_phone,
+         oa.alert_type, oa.severity,
+         oa.source_entity_type, oa.source_entity_id, oa.details,
+         oa.telegram_attempted_at, oa.telegram_dedup_key,
+         oa.resolved_at, oa.resolved_by_user_id, oa.resolution_notes,
+         oa.created_at,
+         pe.vas_score   AS pain_vas_score,
+         pe.notes       AS pain_notes,
+         pe.is_event    AS pain_is_event,
+         pe.entry_date  AS pain_entry_date
+       FROM ops_alerts oa
+       LEFT JOIN patients p ON p.id = oa.patient_id
+       LEFT JOIN pain_entries pe
+         ON oa.source_entity_type = 'pain_entry' AND pe.id = oa.source_entity_id
+       ${whereClause}
+       ORDER BY oa.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return res.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error('GET /admin/ops-alerts error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось получить алерты' });
+  }
+});
+
+/**
+ * PUT /api/admin/ops-alerts/:id/resolve
+ * Body: { resolution_notes? }
+ */
+router.put('/ops-alerts/:id/resolve', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'ValidationError', message: 'id должен быть числом' });
+  }
+  const { resolution_notes } = req.body;
+
+  try {
+    const { rows } = await query(
+      `UPDATE ops_alerts
+       SET resolved_at = NOW(), resolved_by_user_id = $1,
+           resolution_notes = $2, updated_at = NOW()
+       WHERE id = $3 AND resolved_at IS NULL
+       RETURNING *`,
+      [req.user.id, resolution_notes ?? null, id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'NotFound', message: 'Алерт не найден или уже резолвлен' });
+    }
+
+    await logAudit(req, 'RESOLVE', 'ops_alert', id, { resolution_notes });
+
+    return res.json({ data: rows[0], message: 'Алерт резолвлен' });
+  } catch (err) {
+    console.error('PUT /admin/ops-alerts/:id/resolve error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось резолвить' });
+  }
+});
+
 module.exports = router;

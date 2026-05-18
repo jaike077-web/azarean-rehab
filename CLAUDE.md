@@ -3,30 +3,33 @@
 Платформа реабилитации для физиотерапевтической студии **Azarean Network** (Екатеринбург).
 Создание персонализированных комплексов упражнений, отслеживание прогресса пациентов, программы реабилитации (плечо, колено), Telegram-бот.
 
-## Текущее состояние (апрель 2026)
+## Текущее состояние (май 2026)
 
-### 🚧 Wave 1 в работе (2026-05-12..13) — 10 коммитов на feature-ветках, не запушены
+### 🚧 Wave 2 Block A Foundation закрыт + 2 hot-fix — 5 коммитов на feature-ветках ⏸ заморожены, не запушены (2026-05-18)
 
-Multi-protocol foundation + program_templates + 3-step wizard для RehabProgramModal + stuck-detection инструктора.
+Schema infrastructure + content layer (pain locations, ACL criteria) + critical UX hot-fix'ы (toast position regress c8834b5 + retrospective orphan audit).
 
-| # | SHA | Что | Bug |
+| # | SHA | Ветка | Что |
 |---|---|---|---|
-| 1.01 | `a3dfff7` | Миграция `program_types` + FK | — |
-| 1.02 | `b0170f1` | `/api/rehab/program-types` + dashboard JOIN | — |
-| 1.03 | `fa177b4` | Удалён regex-маппинг `deriveProgramLabel` | — |
-| 1.04 | `ceb32aa` | Динамический program_type (RoadmapScreen + telegramBot) | #12 ✅ |
-| 1.05 | `8c420b2` | AdminContent CRUD program_types + select PhaseForm | — |
-| 1.06 | `8223b60` | Миграция `program_templates` + endpoints + POST /programs принимает template_id | — |
-| 1.07 | `77f2e7e` | AdminContent ProgramTemplatesTab + 7 endpoints + PhaseComplexEditor | — |
-| 1.08a | `6d68a87` | `derived_title` computed field в /api/complexes | #13 (backend) |
-| 1.08b | `28623f8` | RehabProgramModal → директория (CreateWizard + EditForm + ComplexSelector) | #13 ✅ |
-| **1.09** | — | **Stuck detection инструктор** (yellow badge + opsAlert red push + weekly cron) | — |
+| 2.01 | `af313b4` | `wave-2/01-schema-migrations` от main `f7ef711` | 7 таблиц Wave 2 (rom_measurements, girth_measurements, pain_locations, pain_entries, pain_entry_locations, phase_transition_criteria, patient_criterion_answers) + ALTER patients ×3 |
+| 2.02 | `a6f7980` | `wave-2/02-pain-locations` | 16 pain_locations seed (8 knee + 8 shoulder, 2 red-flag) + AdminContent PainLocationsTab + 5 admin endpoints + dark-input amend |
+| 2.03 | `82544c0` | `wave-2/03-criteria-admin-seed` | 29 ACL criteria seed (5+5+5+5+5+4 по 6 фазам, 3 типа) + PhasesTab accordion + CriteriaPanel + CriterionForm three-type conditional + `.adminModal` max-height shore-up |
+| HF #7 | `98ca5f2` | `wave-2/hotfix-07-toast-position` | ToastContext.js orphan kebab→camelCase + Toast.module.css mobile @media top — закрыл **скрытый регресс c8834b5 14 дней** |
+| HF #8 | `e6f11a9` | `wave-2/hotfix-08-orphan-classname-audit` | Retrospective grep: 0 actionable orphans, memory rules усилены, новый `css_modules_orphan_audit.md` |
 
-**Состояние:** ветка `wave-1/09-stuck-detection-instructor` (HEAD). Backend 423/423 (+18), frontend 252/252 (+3). Все коммиты идут цепочкой от `main` → ничего не запушено. **7 premise drift'ов** в `memory/architect_premise_drift_2026-05-13.md`.
+**Состояние:** ветка `wave-2/hotfix-08-orphan-classname-audit` (HEAD). Backend **491/491** (+54 от 437), frontend **271/271** (+19 от 252). 26+16 suites, 3 миграции. **5 PR ⏸ заморожен, ничего не запушено.** Block A полностью закрыт.
 
-**Dirty файлы (НЕ ТРОГАТЬ):** 4 файла dark-theme от 2026-05-04. Все 10 коммитов прошли мимо — продолжаем эту изоляцию.
+**Dirty файлы (НЕ ТРОГАТЬ):** 4 файла dark-theme от 2026-05-04 + CLAUDE.md правки от 2026-05-16. В stash@{0}. Все 5 коммитов прошли мимо — продолжаем эту изоляцию.
 
-**Следующий шаг:** финальный отчёт архитектору → batch merge всей волны (10 PR #45..#54) → 24ч стабильности → Wave 2 (клинический дневник).
+**Метрика c8834b5 миграции (2026-05-04):** 14 дней работал orphan `className="toast-container"` в ToastContext.js — закрыт hot-fix #7. Hot-fix #8 retrospective grep подтвердил что больше orphan'ов из той миграции нет.
+
+**Следующий шаг:** Block B Pain tracking. **TZ_WAVE_2_04_pain_backend.md** в корне готов. Команда: «делай 2.04».
+
+**Точка входа в новый чат:** [SESSION_HANDOFF_2026-05-18.md](SESSION_HANDOFF_2026-05-18.md).
+
+### ✅ Wave 1 + hot-fix batch — ЗАКРЫТА в проде (2026-05-15)
+
+Multi-protocol foundation + program_templates + 3-step wizard + stuck-detection инструктора. Все 10 коммитов 1.01-1.09 в main (`f71038e → c74c468`), плюс 6 hot-fix PR #61-#66 (retrospective, OAuth post-registration, complex.title field, AdminContent CSS Modules, invite-code share UX, SW bump v4). Backend 423→437, frontend 252/252. Bug #5/#12/#13 закрыты. Точка входа: [SESSION_HANDOFF_2026-05-15_HOTFIXES_DONE.md](SESSION_HANDOFF_2026-05-15_HOTFIXES_DONE.md).
 
 **Точка входа в новый чат:** [`SESSION_HANDOFF_2026-05-13_WAVE1_PRE_109.md`](SESSION_HANDOFF_2026-05-13_WAVE1_PRE_109.md). Memory: [`wave_1_block_b_progress.md`](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/wave_1_block_b_progress.md).
 
@@ -130,6 +133,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_phase_
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260516_wave2_schema.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260517_pain_locations_seed.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260518_acl_criteria_seed.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260519_ops_alerts.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -151,6 +155,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260518_acl_cr
 **20260513_program_templates:** шаблоны программ + связи. Новые таблицы `program_templates` (id, code UNIQUE, program_type FK→program_types(code), title, description, surgery_required, default_phase_count, variant_of self-FK, is_active, position) и `program_template_phase_complexes` (id, program_template_id FK CASCADE, phase_number, complex_template_id FK→templates(id) ON DELETE SET NULL, is_recommended, notes, UNIQUE по program_template_id+phase_number). + ALTER `rehab_programs ADD program_template_id INTEGER REFERENCES program_templates(id) ON DELETE SET NULL` для tracking. + ALTER `templates ADD program_type VARCHAR(50) REFERENCES program_types(code)` для фильтрации комплексов. **Без seed** — Vadim наполняет через AdminContent (1.07). Wave 1 коммит 1.06 — фундамент блока B. Полностью идемпотентна.
 
 **20260513_phase_stuck_alerts:** новая таблица `phase_stuck_alerts` (id, program_id FK CASCADE, phase_number SMALLINT, threshold_level CHECK IN ('yellow','red'), detected_at, resolved_at, notified_instructor BOOLEAN, notified_at, UNIQUE(program_id, phase_number, threshold_level)). Дедуп alerts cron-задачи `checkStuckPhases()`. Партиал-индекс по `program_id WHERE resolved_at IS NULL` для EXISTS-агрегата в `/api/patients`. Wave 1 коммит 1.09 — инструкторская сторона stuck detection. Полностью идемпотентна.
+
+**20260519_ops_alerts:** Wave 2 коммит 2.04 — таблица `ops_alerts` (SLIM) — incident-журнал для admin triage с resolve flow. Поля: `id, patient_id FK CASCADE, alert_type VARCHAR(50)` (`'red_flag_pain'`, future: `'overdue_diary'`, ...), `severity VARCHAR(20) DEFAULT 'high'` CHECK IN low/medium/high/critical, `source_entity_type/_id` (для JOIN на pain_entries в admin'е), `details JSONB`, `telegram_attempted_at/_dedup_key`, `resolved_at/_by_user_id/_notes`. CHECK consistency: `resolved_at IS NULL ↔ resolved_by_user_id IS NULL`. 3 индекса: partial unresolved, per-patient, per-source. **Telegram отправка и dedup — в `utils/opsAlert.js` (Wave 1 fix #50)**, не дублируется здесь. Источник записей: `routes/rehab.js triggerRedFlagAlert` при red-flag pain_entry. Полностью идемпотентна (CREATE IF NOT EXISTS + DO-блок для триггера). Применена + idempotency-cycle ✓.
 
 **20260518_acl_criteria_seed:** Wave 2 коммит 2.03 — seed справочника `phase_transition_criteria` 29 default ACL-критериями. WITH clause + INSERT...SELECT с JOIN на `rehab_phases (program_type='acl', phase_number)`. Распределение по 6 фазам: 5+5+5+5+5+4. Три типа: `measurement` (11), `instructor_check` (12), `self_report` (6). Источник — AAOS/APTA guidelines (Claude initial draft); Vadim ревьюит и калибрует через AdminContent → Фазы → «крит. ▶» аккордеон. Идемпотентно через `ON CONFLICT (phase_id, criterion_code) DO NOTHING` — ручные правки сохраняются при re-run.
 
@@ -499,6 +505,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **tips** — советы по фазам реабилитации
 - **phase_videos** — видео для фаз (FK → rehab_phases)
 - **phase_stuck_alerts** — Wave 1 #1.09: alerts от cron checkStuckPhases() для дедупликации yellow/red push'ей. `UNIQUE(program_id, phase_number, threshold_level)` гарантирует один alert на (программа, фаза, уровень). `notified_instructor=TRUE` помечает что red-push уже отправлен. `resolved_at` — backlog (UI для resolve пока нет).
+- **ops_alerts** — Wave 2 #2.04: incident-журнал для admin triage. Поля: patient_id FK CASCADE, alert_type (`'red_flag_pain'`, future расширяемый), severity (low/medium/high/critical CHECK), source_entity_type/_id (для JOIN на pain_entries при `'pain_entry'`), details JSONB, telegram_attempted_at/_dedup_key, resolved_at/_by_user_id/_notes. CHECK pairs `resolved_at IS NULL ↔ resolved_by_user_id IS NULL`. 3 индекса: partial unresolved, per-patient, per-source. **Telegram отправка и dedup отсутствуют в этой таблице** — это handles `utils/opsAlert.js` (Wave 1 fix #50). Источник записей: `routes/rehab.js triggerRedFlagAlert` при red-flag pain_entry; в будущем — overdue diary, criterion stuck.
 - **messages** — чат пациент↔инструктор (sender_id без FK!). С миграции 20260421 добавлены `linked_diary_id INT REFERENCES diary_entries(id) ON DELETE SET NULL` (привязка ответа куратора к конкретной записи дневника) и `channel VARCHAR(20) CHECK ('telegram'|'whatsapp'|'max'|'in_app' OR NULL)`.
 - **notification_settings** — настройки уведомлений пациента (UNIQUE patient_id)
 - **telegram_link_codes** — одноразовые коды привязки Telegram
@@ -635,6 +642,10 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | POST | /api/rehab/my/messages | PatientJWT | Отправить сообщение |
 | GET | /api/rehab/my/notifications | PatientJWT | Настройки уведомлений |
 | PUT | /api/rehab/my/notifications | PatientJWT | Обновить настройки уведомлений |
+| GET | /api/rehab/my/pain-locations | PatientJWT | Активные локации боли для program_type программы пациента (Wave 2 #2.04) |
+| POST | /api/rehab/my/pain/daily | PatientJWT | Daily diary запись о боли (UPSERT через SELECT FOR UPDATE, один на день). Body: `vas_score` (0..10 req), `notes?`, `location_codes?`, `pain_character?` (enum), `program_id?`. Red-flag → `sendOpsAlert` + ops_alerts INSERT + UPDATE `ops_alert_sent_at`. `red_flag_triggered` sticky (Wave 2 #2.04) |
+| POST | /api/rehab/my/pain/event | PatientJWT | Pain Event SOS (INSERT, многократно за день). Body: `vas_score` req, `location_codes` ≥1 req, `notes?`, `trigger_type?` (enum), `pain_character?` (enum), `photo_url?`, `program_id?`. Red-flag automation идентичен daily (Wave 2 #2.04) |
+| GET | /api/rehab/my/pain | PatientJWT/JWT | История pain_entries. Query: `type=daily\|event\|all` (default all), `limit`, `offset`, `patient_id` (req для инструктора). json_agg locations через junction (Wave 2 #2.04) |
 | GET | /api/rehab/phases/:type | **Нет** | Фазы реабилитации |
 | GET | /api/rehab/phases/:id | **Нет** | Конкретная фаза |
 | GET | /api/rehab/program-types | **Нет** | Справочник типов программ (Wave 1 #1.02) |
@@ -693,6 +704,8 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | GET/POST/PUT/DELETE | /api/admin/pain-locations/* | JWT + Admin | CRUD справочника локаций боли (Wave 2 #2.02). GET принимает `?program_type=&is_active=` фильтр. POST валидирует код `[a-z_]+`, program_type в справочнике, requires red_flag_reason при is_red_flag=true. PUT с is_red_flag=false обнуляет reason. DELETE → 409 при ссылках из pain_entry_locations (рекомендует is_active=false). Audit logging через logAudit |
 | GET/POST | /api/admin/phases/:phase_id/criteria | JWT + Admin | Список/создать критерии фазы (Wave 2 #2.03). GET принимает `?is_active=` фильтр. POST: three types (`measurement`/`self_report`/`instructor_check`) с conditional валидацией: measurement требует threshold_operator+threshold_value (+value2 для `between`), self_report — self_report_question. Audit logging entity_type='phase_criterion' |
 | PUT/DELETE | /api/admin/criteria/:id | JWT + Admin | Обновить/удалить критерий (Wave 2 #2.03). phase_id и criterion_code immutable. DELETE → 409 при ссылках из patient_criterion_answers (рекомендует is_active=false) |
+| GET | /api/admin/ops-alerts | JWT + Admin | Incident-журнал. Filters: `resolved`, `alert_type`, `severity`, `patient_id`, `limit`, `offset`. LEFT JOIN на `pain_entries` для триажа — поля `pain_vas_score`, `pain_notes`, `pain_is_event`, `pain_entry_date` в каждой строке (Wave 2 #2.04) |
+| PUT | /api/admin/ops-alerts/:id/resolve | JWT + Admin | Резолв алерта. Body: `resolution_notes?`. 404 если уже resolved. Audit `RESOLVE` entity_type=`ops_alert` (Wave 2 #2.04) |
 | GET | /api/admin/system | JWT + Admin | Информация о системе |
 
 ## Правила кода
@@ -857,6 +870,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ### OAuth boundary tests (2026-04-29, приоритет архитектора #1)
 52. **OAuth match-flow не покрывался unit-тестами** → 18 тестов в [backend/tests/__tests__/oauthCallback.routes.test.js](backend/tests/__tests__/oauthCallback.routes.test.js): Telegram callback (8 boundary scenarios — returning/phone-autolink-single/no-match/multi-match anti-misroute/claimed-account/state-expired/deactivated/phone-format-norm + 3 edge cases) + Yandex callback (6 — returning/autolink/no-match-with-email-prefill/no-code-fail/extractClaims-default-phone-parse/no-default-phone) + meta /oauth/providers. **Multi-match anti-misroute** (родитель↔ребёнок с одним телефоном) покрыт явно — главная зона риска по ФЗ-152. Mock-инфраструктура: services/telegramOidc + services/yandexOauth полностью замоканы (handleCallback возвращает claims), `extractClaims` Yandex остаётся реальным через jest.requireActual для покрытия парсинг-логики `default_phone: { id, number }`.
+
+### Wave 2 коммит 2.04 — Pain endpoints + red-flag automation + ops_alerts (2026-05-18, в feature-ветке)
+60. **Backend для Block B Pain Tracking + auto-incident канал куратору** → ветка `wave-2/04-pain-backend` от HF#8 `e6f11a9`. SHA `05a41c0` (после amend по UX-feedback). Миграция [20260519_ops_alerts.sql](backend/database/migrations/20260519_ops_alerts.sql) — SLIM таблица для admin триажа (telegram tracking minimal — основной dedup в `utils/opsAlert.js`, чтобы не дублировать). **routes/rehab.js:** 4 endpoints — `GET /my/pain-locations` (program_type→pain_locations через `rehab_programs`); `POST /my/pain/daily` race-safe UPSERT через SELECT FOR UPDATE → UPDATE/INSERT, partial UNIQUE по `(patient_id, entry_date) WHERE is_event=false`, sticky `red_flag_triggered`; `POST /my/pain/event` INSERT с is_event=true, требует `location_codes ≥1`; `GET /my/pain` с filter `type=daily|event|all`. Inline `triggerRedFlagAlert` helper использует **существующий** `sendOpsAlert(title, body)` из `utils/opsAlert.js` (Wave 1 fix #50) — dedup hash + hourly cap уже там, не дублируется. После `await sendOpsAlert` → INSERT в `ops_alerts` для admin триажа (`source_entity_id=pain_entry.id` для JOIN) + UPDATE `pain_entries SET ops_alert_sent_at=NOW()`. **routes/admin.js:** GET `/ops-alerts` с filter resolved/alert_type/severity/patient_id + LEFT JOIN на `pain_entries` для триажа (pain_vas_score/pain_notes/pain_is_event прямо в списке); PUT `/ops-alerts/:id/resolve` с audit `RESOLVE` UPPERCASE. **Whitelist валидация enum'ов:** `PAIN_CHARACTER_VALUES` (aching/sharp/burning/shooting/throbbing/other) + `TRIGGER_TYPE_VALUES` (at_rest/on_flexion/on_extension/on_walking/at_night/after_exercise/on_lifting/other) — сверено с CHECK constraint миграции 2.01. **Human-label mappings** `TRIGGER_TYPE_LABELS` + `PAIN_CHARACTER_LABELS` — enum codes (`on_walking`, `burning`) разворачиваются в русский текст (`при ходьбе`, `жгучая`) **только в Telegram-теле** alert'а для куратора; в БД и API contract'е остаются enum коды. Добавлено через amend `05a41c0` после первого живого alert'а где Vadim увидел сырое `on_walking` (UX drift #10). **Backend tests:** `rehab.pain.test.js` (26 новых, включая label-проверку для trigger+character) + admin ops-alerts (6 новых) = 491→523. **Smoke 6/6 ✅** на dev: миграция idempotent ✓, daily UPSERT (id=2 повторно), event без red-flag (id=4,5), red-flag event (id=7, реальный Telegram alert Vadim'у через `sendOpsAlert`, ops_alerts.id=1 + pain_entries.ops_alert_sent_at заполнен), dedup (id=8 второй red-flag — ops_alerts.id=2 создан, Telegram не дублирован — utils dedup сработал по hash(title+body)), admin GET JOIN видит pain_vas_score, admin PUT resolve + audit_logs.action='RESOLVE' UPPERCASE entity_type='ops_alert', history filter all=5/daily=1/event=4. **TZ-coordination история:** v2 содержала 8 premise drifts (free_text vs notes, vas_score optional vs NOT NULL, новый services/opsAlerts.js дублирующий utils, req.user.patient_id vs req.patient.id, …), отозвана; v3 учёл всё после verify-step + 2 уточнения архитектору; runtime обнаружен 9-й drift (`trigger_type` тоже enum CHECK, не free string — TZ предлагал length-only валидацию); 10-й UX-drift обнаружен после первого живого Telegram alert'а — enum codes без человекочитаемого mapping'а в alert body. Memory: [`architect_premise_drift_2026-05-18.md`](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/architect_premise_drift_2026-05-18.md).
 
 ### Wave 2 hot-fix #8 — retrospective grep на kebab-className orphans (2026-05-18, в feature-ветке)
 59. **Retrospective audit после c8834b5 CSS Modules миграции** → ветка `wave-2/hotfix-08-orphan-classname-audit` от `wave-2/hotfix-07-toast-position`. После root cause discovery в hot-fix #7 (orphan `className="toast-container"` 14 дней) — прогнал `grep -rEn 'className=["\047]\w+(-\w+)+["\047]' frontend/src/` по всему фронту. **Результат: 0 actionable orphans** (Cat 1/2). ~75 matches классифицированы как Cat 3 (legitimate global): App.js `skip-link` (a11y из index.css), все PatientDashboard `pd-*` (intentional non-Modules per memory), ProgressDashboard (legacy non-migrated с ProgramDashboard.css). c8834b5 миграция была проведена **правильно для CSS Modules файлов**; единственный пропуск ToastContext.js закрыт hot-fix #7. **Memory rules усилены:** [feedback_smoke_real_browser.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/feedback_smoke_real_browser.md) расширен «mandatory grep + DevTools Inspect first»; новый [css_modules_orphan_audit.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/css_modules_orphan_audit.md) с 3-категорийной классификацией, project exceptions, retrospective-per-волну правило. Tests 271/271 (без изменений — нет code changes, только memory). Pre-Block-B preparation: дополнительные latent CSS Modules регрессы исключены до 2.05. PR не открыт.

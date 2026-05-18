@@ -1339,3 +1339,91 @@ describe('DELETE /api/admin/criteria/:id', () => {
     expect(auditCall).toBeDefined();
   });
 });
+
+// =====================================================
+// OPS ALERTS — Wave 2 коммит 2.04
+// =====================================================
+
+describe('GET /api/admin/ops-alerts', () => {
+  it('возвращает список с JOIN на pain_entries (vas_score, notes, is_event видны)', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 1, patient_id: 14, patient_name: 'Тест', patient_phone: '+7900',
+          alert_type: 'red_flag_pain', severity: 'high',
+          source_entity_type: 'pain_entry', source_entity_id: 50,
+          resolved_at: null,
+          pain_vas_score: 8, pain_notes: 'икра', pain_is_event: false, pain_entry_date: '2026-05-18',
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/ops-alerts')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data[0].pain_vas_score).toBe(8);
+    // call[0] — is_active check в auth middleware, call[1] — наш SELECT
+    expect(query.mock.calls[1][0]).toMatch(/LEFT JOIN pain_entries pe[\s\S]+source_entity_id/);
+  });
+
+  it('?resolved=false фильтр в WHERE', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .get('/api/admin/ops-alerts?resolved=false')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(query.mock.calls[1][0]).toMatch(/oa\.resolved_at IS NULL/);
+  });
+
+  it('?patient_id=14 в params', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .get('/api/admin/ops-alerts?patient_id=14')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(query.mock.calls[1][1]).toContain(14);
+  });
+});
+
+describe('PUT /api/admin/ops-alerts/:id/resolve', () => {
+  it('200 + audit UPPERCASE RESOLVE + entity_type ops_alert', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1, resolved_at: new Date(), resolved_by_user_id: 1 }] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [] }); // logAudit INSERT
+
+    const res = await request(app)
+      .put('/api/admin/ops-alerts/1/resolve')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ resolution_notes: 'связался' });
+
+    expect(res.status).toBe(200);
+    const auditCall = query.mock.calls.find((call) => /INSERT INTO audit_logs/.test(call[0]));
+    expect(auditCall).toBeDefined();
+    expect(auditCall[1]).toContain('RESOLVE');
+    expect(auditCall[1]).toContain('ops_alert');
+  });
+
+  it('404 если уже resolved (UPDATE WHERE resolved_at IS NULL вернул 0 строк)', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/ops-alerts/1/resolve')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+
+    expect(res.status).toBe(404);
+  });
+
+  it('400 — non-numeric id', async () => {
+    const res = await request(app)
+      .put('/api/admin/ops-alerts/abc/resolve')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+});
