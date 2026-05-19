@@ -30,6 +30,8 @@ import {
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { MessengerCTA } from './ui';
+import DailyPainSection from './DailyPainSection';
+import PainHistoryView from './PainHistoryView';
 import './DiaryScreen.css';
 
 // Описание интенсивности боли (для подписи под слайдером)
@@ -799,6 +801,14 @@ export default function DiaryScreen({
           </div>
         </div>
       )}
+
+      {/* Wave 2 #2.05 — структурированная pain локализация (новая таблица pain_entries) */}
+      <DailyPainSection />
+
+      <details className="pd-diary__pain-history-toggle">
+        <summary>История боли по локациям</summary>
+        <PainHistoryView />
+      </details>
 
       {/* 12. История */}
       {history.length > 0 && (

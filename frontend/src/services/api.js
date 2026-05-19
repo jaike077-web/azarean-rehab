@@ -521,6 +521,20 @@ export const rehab = {
   getTelegramStatus: () => patientApi.get('/telegram/status'),
   generateTelegramCode: () => patientApi.post('/telegram/link-code'),
   unlinkTelegram: () => patientApi.delete('/telegram/unlink'),
+
+  // Wave 2 #2.05 — Pain tracking
+  getPainLocations: () => patientApi.get('/rehab/my/pain-locations'),
+  // Pre-load existing daily запись за сегодня (UPSERT pattern в UI)
+  getDailyPainToday: () => patientApi.get('/rehab/my/pain?type=daily&limit=1'),
+  createDailyPain: (data) => patientApi.post('/rehab/my/pain/daily', data),
+  createPainEvent: (data) => patientApi.post('/rehab/my/pain/event', data),
+  getPainHistory: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return patientApi.get(qs ? `/rehab/my/pain?${qs}` : '/rehab/my/pain');
+  },
+  // Recent red-flag alerts для dedup-UX (баннер в PainEventForm)
+  getRecentRedFlagAlerts: (hours = 1) =>
+    patientApi.get(`/rehab/my/ops-alerts/recent?hours=${encodeURIComponent(hours)}`),
 };
 
 // =====================================================

@@ -20,14 +20,31 @@ jest.mock('../hooks/usePatientAvatarBlob', () => ({
 jest.mock('../../../services/api', () => ({
   rehab: {
     createDiaryEntry: jest.fn(),
+    // Wave 2 #2.05 — PainEventForm mount triggers these (silent .catch)
+    getPainLocations: jest.fn(() => Promise.resolve({ data: [] })),
+    getRecentRedFlagAlerts: jest.fn(() => Promise.resolve({ data: [] })),
+    createPainEvent: jest.fn(() => Promise.resolve({ data: { id: 1 } })),
   },
   patientAuth: {},
+}));
+
+// Wave 2 #2.05 — PainEventForm рендерится в HomeScreen и hook'ает useToast,
+// поэтому контекст должен быть mocked (тесту не нужен реальный ToastProvider).
+jest.mock('../../../context/ToastContext', () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  }),
 }));
 
 const { rehab: apiRehab } = require('../../../services/api');
 
 beforeEach(() => {
   apiRehab.createDiaryEntry.mockResolvedValue({ data: null });
+  // Wave 2 #2.05 — PainEventForm mount triggers these
+  apiRehab.getPainLocations.mockResolvedValue({ data: [] });
+  apiRehab.getRecentRedFlagAlerts.mockResolvedValue({ data: [] });
 });
 
 const mockPatient = {
