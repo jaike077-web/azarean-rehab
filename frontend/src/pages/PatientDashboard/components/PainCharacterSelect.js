@@ -1,9 +1,13 @@
 // =====================================================
-// Wave 2 #2.05 — PainCharacterSelect
-// Single-select chips для pain_character (6 значений из backend CHECK enum).
-// ВАЖНО: backend хранит pain_character как VARCHAR(50) single value
-// (verify-step 2.04 drift #9 — НЕ массив, как ассумит TZ 2.05 v1).
-// Отдельная секция от TriggerSelect (UX option 3A — обе всегда видны).
+// Wave 2 Hot-fix #9 v2 — PainCharacterSelect multi-select
+// =====================================================
+// Backend хранит pain_character как TEXT[] (после migration 20260520).
+// Multi нужен клинически: sharp + burning при cervical radiculopathy,
+// throbbing + aching при vascular pathology и т.п.
+//
+// Props:
+//   value: string[] — array of selected codes (default [])
+//   onChange: (string[]) => void — receives new array on toggle
 // =====================================================
 
 import React from 'react';
@@ -12,20 +16,26 @@ import { PAIN_CHARACTER_OPTIONS } from '../constants/pain';
 import './PainComponents.css';
 
 export default function PainCharacterSelect({ value, onChange, error, disabled }) {
+  const arr = Array.isArray(value) ? value : [];
+
+  const toggle = (val) => {
+    if (disabled) return;
+    onChange(arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val]);
+  };
+
   return (
     <fieldset className="pd-pain-character">
-      <legend className="pd-pain-character__legend">Характер боли (опционально)</legend>
-      <div className="pd-pain-character__chips" role="radiogroup">
+      <legend className="pd-pain-character__legend">Характер боли (можно несколько)</legend>
+      <div className="pd-pain-character__chips" role="group">
         {PAIN_CHARACTER_OPTIONS.map((opt) => {
-          const isSelected = value === opt.value;
+          const isSelected = arr.includes(opt.value);
           return (
             <button
               key={opt.value}
               type="button"
-              role="radio"
-              aria-checked={isSelected}
+              aria-pressed={isSelected}
               className={`pd-pain-character-chip ${isSelected ? 'pd-pain-character-chip--selected' : ''}`}
-              onClick={() => !disabled && onChange(isSelected ? '' : opt.value)}
+              onClick={() => toggle(opt.value)}
               disabled={disabled}
             >
               {opt.label}
@@ -39,12 +49,12 @@ export default function PainCharacterSelect({ value, onChange, error, disabled }
 }
 
 PainCharacterSelect.propTypes = {
-  value: PropTypes.string,
+  value: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func.isRequired,
   error: PropTypes.string,
   disabled: PropTypes.bool,
 };
 
 PainCharacterSelect.defaultProps = {
-  value: '',
+  value: [],
 };

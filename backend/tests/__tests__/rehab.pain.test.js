@@ -115,13 +115,60 @@ describe('POST /api/rehab/my/pain/daily', () => {
     expect(res.status).toBe(400);
   });
 
-  it('400 — pain_character вне whitelist', async () => {
+  it('400 — pain_character не массив (HF#9 v2)', async () => {
     const res = await request(app)
       .post('/api/rehab/my/pain/daily')
       .set('Authorization', `Bearer ${patientToken}`)
-      .send({ vas_score: 5, pain_character: 'tickling' });
+      .send({ vas_score: 5, pain_character: 'sharp' }); // string, не array
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/pain_character/);
+    expect(res.body.message).toMatch(/должен быть массивом/);
+  });
+
+  it('400 — pain_character пустой массив', async () => {
+    const res = await request(app)
+      .post('/api/rehab/my/pain/daily')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ vas_score: 5, pain_character: [] });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/пустой массив/);
+  });
+
+  it('400 — pain_character содержит невалидный элемент', async () => {
+    const res = await request(app)
+      .post('/api/rehab/my/pain/daily')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ vas_score: 5, pain_character: ['sharp', 'totally_invalid'] });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/totally_invalid/);
+  });
+
+  it('INSERT новой daily с pain_character массивом нескольких значений', async () => {
+    const mc = makeMockClient();
+    getClient.mockResolvedValueOnce(mc);
+    mc.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // FOR UPDATE
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: 110, patient_id: 14, vas_score: 5, is_event: false,
+            entry_date: '2026-05-18', created_at: new Date(),
+            pain_character: ['sharp', 'burning'], red_flag_triggered: false,
+          },
+        ],
+      }) // INSERT
+      .mockResolvedValueOnce(undefined) // DELETE pain_entry_locations
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    const res = await request(app)
+      .post('/api/rehab/my/pain/daily')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ vas_score: 5, pain_character: ['sharp', 'burning'] });
+
+    expect(res.status).toBe(201);
+    // Подтверждаем что INSERT получил массив (не строку)
+    const insertCall = mc.query.mock.calls.find((c) => /^\s*INSERT INTO pain_entries/.test(c[0]));
+    expect(insertCall[1]).toEqual(expect.arrayContaining([['sharp', 'burning']]));
   });
 
   it('INSERT новой daily (нет существующей) — без red-flag', async () => {
@@ -403,7 +450,8 @@ describe('POST /api/rehab/my/pain/event', () => {
           {
             id: 202, patient_id: 14, vas_score: 7, is_event: true,
             created_at: new Date(),
-            pain_character: 'burning', red_flag_triggered: true,
+            // HF#9 v2 — pain_character теперь массив
+            pain_character: ['burning', 'throbbing'], red_flag_triggered: true,
           },
         ],
       }) // INSERT
@@ -421,13 +469,13 @@ describe('POST /api/rehab/my/pain/event', () => {
       .send({
         vas_score: 7,
         location_codes: ['calf_posterior'],
-        pain_character: 'burning',
+        pain_character: ['burning', 'throbbing'],
       });
 
     expect(res.status).toBe(201);
     const [, body] = sendOpsAlert.mock.calls[0];
-    // burning → 'жгучая'
-    expect(body).toMatch(/Характер: жгучая/);
+    // Multi-character → русские labels join'ом ", ": burning='жгучая', throbbing='пульсирующая'
+    expect(body).toMatch(/Характер: жгучая, пульсирующая/);
     expect(body).not.toMatch(/Характер: burning/);
   });
 
@@ -461,12 +509,13 @@ describe('POST /api/rehab/my/pain/event', () => {
     expect(insertCall[1]).toContain('/uploads/pain_202.jpg');
   });
 
-  it('400 — pain_character вне whitelist', async () => {
+  it('400 — pain_character в event не массив', async () => {
     const res = await request(app)
       .post('/api/rehab/my/pain/event')
       .set('Authorization', `Bearer ${patientToken}`)
-      .send({ vas_score: 5, location_codes: ['knee_anterior'], pain_character: 'tickly' });
+      .send({ vas_score: 5, location_codes: ['knee_anterior'], pain_character: 'sharp' });
     expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/должен быть массивом/);
   });
 });
 

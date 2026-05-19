@@ -150,4 +150,45 @@ describe('PainEventForm', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalled();
   });
+
+  // HF#9 v2 — multi-select pain_character
+  it('multi-select pain_character — несколько values отправляются массивом', async () => {
+    render(<PainEventForm isOpen={true} onClose={jest.fn()} />);
+    await waitFor(() => expect(rehab.getPainLocations).toHaveBeenCalled());
+    // Required: VAS + location
+    fireEvent.click(await screen.findByRole('button', { name: 'Уровень боли 5 из 10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Передняя поверхность колена' }));
+    // Multi-select pain_character: «Острая» (sharp) + «Жгучая» (burning)
+    fireEvent.click(screen.getByRole('button', { name: 'Острая' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Жгучая' }));
+    fireEvent.click(screen.getByRole('button', { name: /Отправить/ }));
+    await waitFor(() => {
+      expect(rehab.createPainEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ pain_character: ['sharp', 'burning'] })
+      );
+    });
+  });
+
+  it('toggle pain_character chip — снимает выбор, не накапливает', async () => {
+    render(<PainEventForm isOpen={true} onClose={jest.fn()} />);
+    await waitFor(() => expect(rehab.getPainLocations).toHaveBeenCalled());
+    const chip = await screen.findByRole('button', { name: 'Острая' });
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('пустой pain_character → payload не содержит pain_character', async () => {
+    render(<PainEventForm isOpen={true} onClose={jest.fn()} />);
+    await waitFor(() => expect(rehab.getPainLocations).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole('button', { name: 'Уровень боли 4 из 10' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Передняя поверхность колена' }));
+    fireEvent.click(screen.getByRole('button', { name: /Отправить/ }));
+    await waitFor(() => {
+      expect(rehab.createPainEvent).toHaveBeenCalled();
+    });
+    const payload = rehab.createPainEvent.mock.calls[0][0];
+    expect(payload.pain_character).toBeUndefined();
+  });
 });
