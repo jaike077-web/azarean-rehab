@@ -1,5 +1,15 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 const config = require('../config/config');
+
+// HF#11 (2026-05-19): pg-node по умолчанию возвращает BIGINT (int8, oid=20)
+// как string чтобы избежать precision loss для значений > Number.MAX_SAFE_INTEGER
+// (2^53 ≈ 9×10^15). В нашей схеме BIGINT используется только для
+// rom_measurements.measurement_session_id + girth_measurements.measurement_session_id —
+// frontend генерирует Date.now() millis (~1.7×10^12), ≪ 2^53, безопасно.
+// patients.telegram_chat_id — NUMERIC(20), НЕ затрагивается (oid=1700).
+// Если в будущем добавятся BIGINT columns с values > 2^53 — нужно вернуть default
+// и обрабатывать те column'ы локально.
+types.setTypeParser(20, (val) => (val === null ? null : parseInt(val, 10)));
 
 // Создаем пул подключений к базе данных
 const pool = new Pool(config.database);
