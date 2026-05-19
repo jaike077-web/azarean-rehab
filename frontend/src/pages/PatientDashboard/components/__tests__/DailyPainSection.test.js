@@ -125,6 +125,38 @@ describe('DailyPainSection', () => {
     });
   });
 
+  // HF#10 Fix A — timezone regression guard
+  it('pre-load matches через local date (не UTC) когда отличаются на 1 день', async () => {
+    // Сценарий «03:30 МСК = 22:30 UTC предыдущего дня». В этот момент:
+    //   new Date().toISOString().slice(0,10) → UTC date (вчера, '2026-05-19')
+    //   getFullYear/getMonth/getDate         → local date (сегодня, '2026-05-20')
+    // Backend через pe.entry_date::text шлёт local '2026-05-20' (PG TZ
+    // Asia/Yekaterinburg). Pre-load обязан матчить — иначе пациент видит
+    // пустую форму и отправляет дубль.
+    const ySpy = jest.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026);
+    const mSpy = jest.spyOn(Date.prototype, 'getMonth').mockReturnValue(4);
+    const dSpy = jest.spyOn(Date.prototype, 'getDate').mockReturnValue(20);
+
+    rehab.getDailyPainToday.mockResolvedValue({
+      data: [{
+        id: 99,
+        entry_date: '2026-05-20',  // backend ::text → local date
+        vas_score: 6,
+        locations: [],
+        pain_character: ['sharp'],
+        created_at: '2026-05-19T22:30:00.000Z',  // UTC ISO предыдущего дня
+      }],
+    });
+
+    render(<DailyPainSection />);
+    expect(await screen.findByText(/Сегодняшняя запись от/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Обновить/ })).toBeInTheDocument();
+
+    ySpy.mockRestore();
+    mSpy.mockRestore();
+    dSpy.mockRestore();
+  });
+
   // HF#9 v2 — pain_character как массив (multi-select)
   it('pre-load existing с pain_character массивом — все chips выделены', async () => {
     rehab.getDailyPainToday.mockResolvedValue({

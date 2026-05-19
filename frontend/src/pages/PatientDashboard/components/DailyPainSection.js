@@ -61,7 +61,12 @@ export default function DailyPainSection({ onSaved }) {
         const today = (res.data || [])[0];
         // pre-load если запись за сегодня уже есть (UX option C)
         if (today) {
-          const todayDate = new Date().toISOString().slice(0, 10);
+          // HF#10 Fix A — local date matches backend CURRENT_DATE (PG session TZ
+          // Asia/Yekaterinburg). new Date().toISOString() возвращает UTC date — после
+          // 19:00 UTC (т.е. 00:00 МСК следующего дня) даёт «вчера» и pre-load
+          // никогда не срабатывает. Используем local-date сегмент браузера.
+          const now = new Date();
+          const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
           const entryDate = String(today.entry_date || '').slice(0, 10);
           if (entryDate === todayDate) {
             setExisting(today);

@@ -2307,9 +2307,13 @@ router.get('/my/pain', authenticatePatientOrInstructor, async (req, res) => {
     if (type === 'daily') typeFilter = 'AND pe.is_event = FALSE';
     if (type === 'event') typeFilter = 'AND pe.is_event = TRUE';
 
+    // HF#10 Fix A — pe.entry_date::text возвращает 'YYYY-MM-DD' без timezone shift.
+    // Иначе pg-node парсит DATE в JS Date (UTC midnight) → JSON.stringify → ISO с
+    // UTC offset → в RU (+05) дата сдвигается на -1 день, DailyPainSection не
+    // pre-load'ит pain_entry за «сегодня». См. CLAUDE.md «PostgreSQL DATE → JSON timezone».
     const { rows } = await query(
       `SELECT
-         pe.id, pe.patient_id, pe.program_id, pe.entry_date, pe.is_event,
+         pe.id, pe.patient_id, pe.program_id, pe.entry_date::text AS entry_date, pe.is_event,
          pe.vas_score, pe.notes, pe.trigger_type, pe.pain_character, pe.photo_url,
          pe.red_flag_triggered, pe.ops_alert_sent_at,
          pe.created_at, pe.updated_at,
