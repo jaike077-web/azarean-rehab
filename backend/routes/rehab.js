@@ -54,6 +54,47 @@ const PAIN_CHARACTER_LABELS = {
 };
 
 // =====================================================
+// Wave 2 коммит 2.06 — Measurements (ROM + girth) whitelists
+// =====================================================
+// ROM measurement types → во какое value-поле писать. Защита уровня JS перед
+// SQL CHECK rom_value_exactly_one (XOR value_degrees / value_cm / value_categorical).
+// 8 типов: 5 плечо + 3 колено. Sync с TZ_WAVE_2_01_schema_migrations.md.
+const ROM_TYPES = {
+  // shoulder
+  shoulder_forward_flexion_degrees: 'degrees',
+  shoulder_abduction_degrees:       'degrees',
+  shoulder_er_0_degrees:            'degrees',
+  shoulder_ir_90_abd_degrees:       'degrees',
+  shoulder_hbb_categorical:         'categorical',
+  // knee
+  knee_flexion_degrees:             'degrees',
+  knee_extension_degrees:           'degrees',
+  knee_flexion_hbd_cm:              'cm',
+};
+
+// Girth — всегда value_cm. measured_by CHECK имеет ТОЛЬКО 2 enum
+// (instructor_direct, patient_self) — НЕ shared validator с ROM (у того 5 enum).
+const GIRTH_TYPES = new Set([
+  // shoulder
+  'shoulder_mid_deltoid_cm',
+  'shoulder_mid_biceps_cm',
+  // knee
+  'knee_joint_line_cm',
+  'knee_suprapatellar_5cm_cm',
+  'knee_suprapatellar_10cm_cm',
+  'knee_suprapatellar_15cm_cm',
+  'knee_calf_max_cm',
+]);
+
+// HBB (Hand-Behind-Back) — категориальные значения позвонков. Используется
+// только в shoulder_hbb_categorical → rom_measurements.value_categorical.
+const HBB_VERTEBRAE = [
+  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12',
+  'L1', 'L2', 'L3', 'L4', 'L5',
+  'sacrum', 'great_trochanter',
+];
+
+// =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
 // =====================================================
 
@@ -2379,6 +2420,355 @@ router.get('/my/ops-alerts/recent', authenticatePatient, async (req, res) => {
   } catch (err) {
     console.error('GET /rehab/my/ops-alerts/recent error:', err.message);
     return res.status(500).json({ error: 'ServerError', message: 'Не удалось получить' });
+  }
+});
+
+// =====================================================
+// Wave 2 коммит 2.06 — Measurements endpoints (ROM + girth)
+// =====================================================
+// Tier 1 endpoints для пациента — three routes:
+//   POST /my/measurements/rom    — ROM degrees/cm/HBB (XOR 3 value-полей)
+//   POST /my/measurements/girth  — окружности cm
+//   GET  /my/measurements        — история, filter type/program_id/since
+//
+// measured_by жёстко 'patient_self' для Tier 1. Photo upload + AI consent —
+// отдельный TZ 2.07. Frontend — TZ 2.08.
+//
+// Timezone rule #27 (HF#10): measured_at::text возвращается, иначе pg-node
+// парсит DATE → JS Date (UTC midnight) → JSON ISO с -1 day shift в RU (+05).
+// =====================================================
+
+/**
+ * POST /api/rehab/my/measurements/rom
+ * Body: { measurement_type, side: 'L'|'R', value, program_id?, measurement_session_id?, notes? }
+ * value тип зависит от measurement_type (см. ROM_TYPES).
+ */
+router.post('/my/measurements/rom', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const {
+      measurement_type, side, value,
+      program_id, measurement_session_id, notes,
+    } = req.body;
+
+    // 1. measurement_type whitelist
+    const valueKind = ROM_TYPES[measurement_type];
+    if (!valueKind) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: `Unknown measurement_type. Allowed: ${Object.keys(ROM_TYPES).join(', ')}`,
+      });
+    }
+
+    // 2. side
+    if (!['L', 'R'].includes(side)) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'side must be "L" or "R"',
+      });
+    }
+
+    // 3. value по типу — JS XOR перед SQL CHECK rom_value_exactly_one
+    let value_degrees = null;
+    let value_cm = null;
+    let value_categorical = null;
+
+    if (valueKind === 'degrees') {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0 || n > 360) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'value must be a number 0..360 for *_degrees types',
+        });
+      }
+      value_degrees = Math.round(n * 10) / 10; // NUMERIC(5,1)
+    } else if (valueKind === 'cm') {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0 || n > 200) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'value must be a number 0..200 for *_cm types',
+        });
+      }
+      value_cm = Math.round(n * 100) / 100; // NUMERIC(5,2)
+    } else if (valueKind === 'categorical') {
+      if (typeof value !== 'string' || !HBB_VERTEBRAE.includes(value)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: `value must be one of: ${HBB_VERTEBRAE.join(', ')}`,
+        });
+      }
+      value_categorical = value;
+    }
+
+    // 4. Optional program_id (FK violation → 23503 → 400)
+    let programIdParam = null;
+    if (program_id != null && program_id !== '') {
+      programIdParam = parseInt(program_id, 10);
+      if (!Number.isFinite(programIdParam) || programIdParam <= 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id must be a positive integer or null',
+        });
+      }
+    }
+
+    // 5. Optional measurement_session_id (INTEGER без FK — grouping ID для L+R пары)
+    let sessionId = null;
+    if (measurement_session_id != null && measurement_session_id !== '') {
+      sessionId = parseInt(measurement_session_id, 10);
+      if (!Number.isFinite(sessionId)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'measurement_session_id must be an integer or null',
+        });
+      }
+    }
+
+    // 6. notes — truncate без валидации
+    const notesParam = notes != null ? String(notes).slice(0, 1000) : null;
+
+    // 7. INSERT — measured_by='patient_self' жёстко для Tier 1
+    const result = await query(
+      `INSERT INTO rom_measurements (
+         patient_id, program_id, measurement_type, side,
+         value_degrees, value_cm, value_categorical,
+         measured_by, measurement_session_id, notes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'patient_self', $8, $9)
+       RETURNING
+         id, patient_id, program_id, measurement_type, side,
+         value_degrees, value_cm, value_categorical,
+         measured_by, measurement_session_id, notes,
+         measured_at::text AS measured_at,
+         created_at`,
+      [
+        patientId, programIdParam, measurement_type, side,
+        value_degrees, value_cm, value_categorical,
+        sessionId, notesParam,
+      ]
+    );
+
+    return res.status(201).json({
+      data: result.rows[0],
+      message: 'ROM measurement saved',
+    });
+  } catch (err) {
+    if (err.code === '23503') {
+      return res.status(400).json({ error: 'FK_VIOLATION', message: 'program_id does not exist' });
+    }
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'CHECK_VIOLATION', message: err.message });
+    }
+    console.error('POST /my/measurements/rom error:', err.message);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to save ROM measurement' });
+  }
+});
+
+/**
+ * POST /api/rehab/my/measurements/girth
+ * Body: { measurement_type, side: 'L'|'R', value_cm, program_id?, measurement_session_id?, notes? }
+ */
+router.post('/my/measurements/girth', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const {
+      measurement_type, side, value_cm,
+      program_id, measurement_session_id, notes,
+    } = req.body;
+
+    // 1. measurement_type — отдельный Set, НЕ shared с ROM
+    if (!GIRTH_TYPES.has(measurement_type)) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: `Unknown girth measurement_type. Allowed: ${[...GIRTH_TYPES].join(', ')}`,
+      });
+    }
+
+    // 2. side
+    if (!['L', 'R'].includes(side)) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'side must be "L" or "R"',
+      });
+    }
+
+    // 3. value_cm — required, CHECK > 0 AND < 200 (exclusive с обеих сторон)
+    const n = Number(value_cm);
+    if (!Number.isFinite(n) || n <= 0 || n >= 200) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'value_cm must be a number in (0, 200) exclusive',
+      });
+    }
+    const valueCmRounded = Math.round(n * 100) / 100;
+
+    // 4. Optional program_id
+    let programIdParam = null;
+    if (program_id != null && program_id !== '') {
+      programIdParam = parseInt(program_id, 10);
+      if (!Number.isFinite(programIdParam) || programIdParam <= 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id must be a positive integer or null',
+        });
+      }
+    }
+
+    // 5. Optional measurement_session_id
+    let sessionId = null;
+    if (measurement_session_id != null && measurement_session_id !== '') {
+      sessionId = parseInt(measurement_session_id, 10);
+      if (!Number.isFinite(sessionId)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'measurement_session_id must be an integer or null',
+        });
+      }
+    }
+
+    const notesParam = notes != null ? String(notes).slice(0, 1000) : null;
+
+    // 7. INSERT — measured_by='patient_self' (girth CHECK enum: instructor_direct | patient_self)
+    const result = await query(
+      `INSERT INTO girth_measurements (
+         patient_id, program_id, measurement_type, side,
+         value_cm, measured_by, measurement_session_id, notes
+       ) VALUES ($1, $2, $3, $4, $5, 'patient_self', $6, $7)
+       RETURNING
+         id, patient_id, program_id, measurement_type, side,
+         value_cm, measured_by, measurement_session_id, notes,
+         measured_at::text AS measured_at,
+         created_at`,
+      [
+        patientId, programIdParam, measurement_type, side,
+        valueCmRounded, sessionId, notesParam,
+      ]
+    );
+
+    return res.status(201).json({
+      data: result.rows[0],
+      message: 'Girth measurement saved',
+    });
+  } catch (err) {
+    if (err.code === '23503') {
+      return res.status(400).json({ error: 'FK_VIOLATION', message: 'program_id does not exist' });
+    }
+    if (err.code === '23514') {
+      return res.status(400).json({ error: 'CHECK_VIOLATION', message: err.message });
+    }
+    console.error('POST /my/measurements/girth error:', err.message);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to save girth measurement' });
+  }
+});
+
+/**
+ * GET /api/rehab/my/measurements?type=rom|girth|all&program_id=...&since=YYYY-MM-DD&limit=100
+ * Возвращает { data: { rom: [...], girth: [...] }, total }.
+ * Tier 2/3 поля (photo_url, ai_*, markup_points) НЕ возвращаются — это будет в 2.07+.
+ */
+router.get('/my/measurements', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const type = req.query.type || 'all';
+    if (!['rom', 'girth', 'all'].includes(type)) {
+      return res.status(400).json({
+        error: 'VALIDATION_ERROR',
+        message: 'type must be one of: rom, girth, all',
+      });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+
+    let programFilter = null;
+    if (req.query.program_id != null && req.query.program_id !== '') {
+      programFilter = parseInt(req.query.program_id, 10);
+      if (!Number.isFinite(programFilter)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id must be integer',
+        });
+      }
+    }
+
+    let sinceFilter = null;
+    if (req.query.since) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(req.query.since)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'since must be YYYY-MM-DD',
+        });
+      }
+      sinceFilter = req.query.since;
+    }
+
+    const result = { rom: [], girth: [] };
+
+    if (type === 'rom' || type === 'all') {
+      const conditions = ['patient_id = $1'];
+      const params = [patientId];
+      let i = 2;
+      if (programFilter != null) {
+        conditions.push(`program_id = $${i++}`);
+        params.push(programFilter);
+      }
+      if (sinceFilter) {
+        conditions.push(`measured_at >= $${i++}::date`);
+        params.push(sinceFilter);
+      }
+      params.push(limit);
+
+      const rom = await query(
+        `SELECT
+           id, program_id, measurement_type, side,
+           value_degrees, value_cm, value_categorical,
+           measured_by, measurement_session_id, notes,
+           measured_at::text AS measured_at,
+           created_at
+         FROM rom_measurements
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY measured_at DESC, id DESC
+         LIMIT $${i}`,
+        params
+      );
+      result.rom = rom.rows;
+    }
+
+    if (type === 'girth' || type === 'all') {
+      const conditions = ['patient_id = $1'];
+      const params = [patientId];
+      let i = 2;
+      if (programFilter != null) {
+        conditions.push(`program_id = $${i++}`);
+        params.push(programFilter);
+      }
+      if (sinceFilter) {
+        conditions.push(`measured_at >= $${i++}::date`);
+        params.push(sinceFilter);
+      }
+      params.push(limit);
+
+      const girth = await query(
+        `SELECT
+           id, program_id, measurement_type, side,
+           value_cm, measured_by, measurement_session_id, notes,
+           measured_at::text AS measured_at,
+           created_at
+         FROM girth_measurements
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY measured_at DESC, id DESC
+         LIMIT $${i}`,
+        params
+      );
+      result.girth = girth.rows;
+    }
+
+    return res.json({
+      data: result,
+      total: result.rom.length + result.girth.length,
+    });
+  } catch (err) {
+    console.error('GET /my/measurements error:', err.message);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to fetch measurements' });
   }
 });
 
