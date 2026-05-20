@@ -581,6 +581,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | POST | /api/patient-auth/reset-password | Нет | Сброс пароля по токену |
 | GET | /api/patient-auth/my-complexes | Cookie | Все активные комплексы пациента |
 | GET | /api/patient-auth/my-complexes/:id | Cookie | Конкретный комплекс с упражнениями |
+| POST | /api/patient-auth/photo-consent | Cookie | Согласие на upload биометрических фото (Wave 2 #2.07). Идемпотентно, sets `patients.photo_consent_at = NOW()`, `photo_consent_version = 'v1'`. Required перед POST `/my/rom/:id/photo`. |
 
 ### Пациенты
 | Метод | Путь | Auth | Описание |
@@ -653,6 +654,11 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | POST | /api/rehab/my/pain/event | PatientJWT | Pain Event SOS (INSERT, многократно за день). Body: `vas_score` req, `location_codes` ≥1 req, `notes?`, `trigger_type?` (enum), `pain_character?` (enum), `photo_url?`, `program_id?`. Red-flag automation идентичен daily (Wave 2 #2.04) |
 | GET | /api/rehab/my/pain | PatientJWT/JWT | История pain_entries. Query: `type=daily\|event\|all` (default all), `limit`, `offset`, `patient_id` (req для инструктора). json_agg locations через junction (Wave 2 #2.04) |
 | GET | /api/rehab/my/ops-alerts/recent | PatientJWT | Recent red-flag alerts пациента (default за час, clamp 1..24). Frontend dedup detection — banner в PainEventForm если за час уже был alert (Wave 2 #2.05) |
+| POST | /api/rehab/my/measurements/rom | PatientJWT | ROM measurement Tier 1 (8 types, XOR degrees/cm/categorical, HBB 19 vertebrae, `measured_by='patient_self'` hardcoded). Wave 2 #2.06 |
+| POST | /api/rehab/my/measurements/girth | PatientJWT | Окружность (7 types, value_cm 0..200 exclusive, `measured_by='patient_self'`). Wave 2 #2.06 |
+| GET | /api/rehab/my/measurements | PatientJWT | История measurements. Query: `type=rom\|girth\|all`, `program_id`, `since=YYYY-MM-DD`, `limit` (max 500). measured_at::text rule #27. Wave 2 #2.06 |
+| POST | /api/rehab/my/rom/:id/photo | PatientJWT | Загрузить photo к ROM measurement (multipart `photo`). multer 10MB → sharp 1200max JPEG q82 → `backend/uploads/measurements/rom_{id}_{ts}_{rnd}.jpg`. Consent gate: 412 если `patients.photo_consent_at IS NULL`. Ownership check, cleanup старого photo при overwrite. Wave 2 #2.07 |
+| GET | /api/rehab/my/rom/:id/photo | PatientJWT/JWT | Отдаёт photo blob. Patient — свои (SQL ownership), instructor через `?patient_id=X`. Containment защита resolved filepath. Wave 2 #2.07 |
 | GET | /api/rehab/phases/:type | **Нет** | Фазы реабилитации |
 | GET | /api/rehab/phases/:id | **Нет** | Конкретная фаза |
 | GET | /api/rehab/program-types | **Нет** | Справочник типов программ (Wave 1 #1.02) |

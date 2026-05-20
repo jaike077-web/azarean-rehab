@@ -15,7 +15,10 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
-const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
+const {
+  diaryPhotoUpload, processDiaryPhoto,
+  measurementPhotoUpload, processMeasurementPhoto,
+} = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
@@ -2769,6 +2772,169 @@ router.get('/my/measurements', authenticatePatient, async (req, res) => {
   } catch (err) {
     console.error('GET /my/measurements error:', err.message);
     return res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to fetch measurements' });
+  }
+});
+
+// =====================================================
+// Wave 2 коммит 2.07 — ROM measurement photo upload + GET
+// =====================================================
+// POST /my/rom/:id/photo — multipart 'photo' field, multer in-memory →
+// sharp 1200max JPEG q82 (через processMeasurementPhoto middleware).
+// Gate: patients.photo_consent_at IS NOT NULL → 412 если NULL.
+// Ownership: SELECT WHERE id AND patient_id. Cleanup: старый photo file
+// удаляется при overwrite (одна photo на measurement сейчас).
+//
+// GET /my/rom/:id/photo — id-based (drift #26 vs TZ filename-based):
+// ownership через SQL (consistent с /my/diary/:entry_id/photos/:photo_id
+// pattern). authenticatePatientOrInstructor — пациент видит свои,
+// инструктор через ?patient_id=X.
+// =====================================================
+
+/**
+ * POST /api/rehab/my/rom/:id/photo
+ * multipart/form-data, поле 'photo'. 10MB до sharp, JPEG ~200-400KB на
+ * выходе. Требует photo_consent_at IS NOT NULL → 412 CONSENT_REQUIRED.
+ */
+router.post(
+  '/my/rom/:id/photo',
+  authenticatePatient,
+  measurementPhotoUpload.single('photo'),
+  processMeasurementPhoto,
+  async (req, res) => {
+    try {
+      const patientId = req.patient.id;
+      const measurementId = parseInt(req.params.id, 10);
+
+      // 1. id уже провалидирован в processMeasurementPhoto (но повторим если файла нет)
+      if (!Number.isFinite(measurementId) || measurementId <= 0) {
+        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Invalid measurement id' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Photo file required (field name: photo)' });
+      }
+
+      // 2. Ownership + существование measurement
+      const measurement = await query(
+        'SELECT id, patient_id, photo_url FROM rom_measurements WHERE id = $1 AND patient_id = $2',
+        [measurementId, patientId]
+      );
+      if (measurement.rows.length === 0) {
+        // Файл уже сохранён middleware — удаляем
+        try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+        return res.status(404).json({ error: 'NOT_FOUND', message: 'Measurement not found' });
+      }
+
+      // 3. Consent gate (memory #22 — 412 Precondition Failed)
+      const consent = await query(
+        'SELECT photo_consent_at FROM patients WHERE id = $1',
+        [patientId]
+      );
+      if (!consent.rows[0] || consent.rows[0].photo_consent_at == null) {
+        // Файл уже на диске после processMeasurementPhoto — cleanup
+        try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+        return res.status(412).json({
+          error: 'CONSENT_REQUIRED',
+          message: 'Patient must accept photo consent before uploading photos',
+        });
+      }
+
+      // 4. UPDATE rom_measurements.photo_url
+      await query(
+        'UPDATE rom_measurements SET photo_url = $1, updated_at = NOW() WHERE id = $2',
+        [req.file.relativePath, measurementId]
+      );
+
+      // 5. Cleanup старого photo (если был)
+      const oldPhotoUrl = measurement.rows[0].photo_url;
+      if (oldPhotoUrl && oldPhotoUrl !== req.file.relativePath) {
+        const oldFilepath = path.join(__dirname, '..', oldPhotoUrl);
+        const measurementsDir = path.join(__dirname, '../uploads/measurements');
+        // Containment защита — старый path должен лежать внутри measurements dir
+        if (oldFilepath.startsWith(measurementsDir + path.sep)) {
+          try { fs.unlinkSync(oldFilepath); } catch (_) { /* старый файл может отсутствовать */ }
+        }
+      }
+
+      res.status(201).json({
+        data: { id: measurementId, photo_url: req.file.relativePath },
+        message: 'Photo uploaded',
+      });
+    } catch (err) {
+      // Multer errors
+      if (err && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'FILE_TOO_LARGE', message: 'Max 10MB' });
+      }
+      // Если файл успели записать — cleanup
+      if (req.file && req.file.path) {
+        try { fs.unlinkSync(req.file.path); } catch (_) { /* ignore */ }
+      }
+      console.error('POST /my/rom/:id/photo error:', err.message);
+      res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to upload photo' });
+    }
+  }
+);
+
+/**
+ * GET /api/rehab/my/rom/:id/photo
+ * Отдаёт файл-blob с JWT-auth. Пациент видит свои; инструктор передаёт
+ * ?patient_id=X (consistent с GET /my/pain pattern). Path traversal
+ * закрыт через containment check на resolved filepath.
+ */
+router.get('/my/rom/:id/photo', authenticatePatientOrInstructor, async (req, res) => {
+  try {
+    const measurementId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(measurementId) || measurementId <= 0) {
+      return res.status(400).json({ error: 'VALIDATION_ERROR', message: 'Invalid measurement id' });
+    }
+
+    // Определяем patient_id источник
+    let patientId;
+    if (req.patient) {
+      patientId = req.patient.id;
+    } else {
+      patientId = parseInt(req.query.patient_id, 10);
+      if (!Number.isFinite(patientId)) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'patient_id обязателен для инструктора',
+        });
+      }
+    }
+
+    // SQL ownership — пациент только свои, инструктор по ?patient_id=
+    const result = await query(
+      'SELECT photo_url FROM rom_measurements WHERE id = $1 AND patient_id = $2',
+      [measurementId, patientId]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Measurement not found' });
+    }
+
+    const photoUrl = result.rows[0].photo_url;
+    if (!photoUrl) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Photo not uploaded' });
+    }
+
+    // Containment защита (defense-in-depth — photo_url из БД, теоретически
+    // contaminated через UPDATE, поэтому resolve + startsWith check).
+    const measurementsDir = path.join(__dirname, '../uploads/measurements');
+    const filepath = path.join(__dirname, '..', photoUrl);
+    if (!filepath.startsWith(measurementsDir + path.sep)) {
+      console.error('Path traversal attempt blocked:', filepath);
+      return res.status(400).json({ error: 'PATH_TRAVERSAL', message: 'Forbidden path' });
+    }
+
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Photo file missing' });
+    }
+
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    fs.createReadStream(filepath).pipe(res);
+  } catch (err) {
+    console.error('GET /my/rom/:id/photo error:', err.message);
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to fetch photo' });
   }
 });
 
