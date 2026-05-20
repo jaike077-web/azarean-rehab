@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield } from 'lucide-react';
+import { Home, Map, Dumbbell, FileText, MessageCircle, Flame, Shield, Ruler } from 'lucide-react';
 import { rehab } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { usePatientAuth } from '../../context/PatientAuthContext';
@@ -10,6 +10,7 @@ import DiaryScreen from './components/DiaryScreen';
 import ContactScreen from './components/ContactScreen';
 import ExercisesScreen from './components/ExercisesScreen';
 import ProfileScreen from './components/ProfileScreen';
+import MeasurementsScreen from './components/MeasurementsScreen';
 import { TabBar, AvatarBtn } from './components/ui';
 import usePatientAvatarBlob from './hooks/usePatientAvatarBlob';
 import './PatientDashboard.css';
@@ -19,6 +20,7 @@ const NAV = [
   { id: 1, Icon: Map, label: 'Путь' },
   { id: 4, Icon: Dumbbell, label: 'Упражнения', accent: true },
   { id: 2, Icon: FileText, label: 'Дневник' },
+  { id: 5, Icon: Ruler, label: 'Замеры' },
   { id: 3, Icon: MessageCircle, label: 'Связь' },
 ];
 
@@ -163,6 +165,8 @@ export default function PatientDashboard() {
         return <ContactScreen {...screenProps} />;
       case 4:
         return <ExercisesScreen {...screenProps} />;
+      case 5:
+        return <MeasurementsScreen {...screenProps} />;
       default:
         return <HomeScreen {...screenProps} />;
     }

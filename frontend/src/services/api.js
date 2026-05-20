@@ -535,6 +535,18 @@ export const rehab = {
   // Recent red-flag alerts для dedup-UX (баннер в PainEventForm)
   getRecentRedFlagAlerts: (hours = 1) =>
     patientApi.get(`/rehab/my/ops-alerts/recent?hours=${encodeURIComponent(hours)}`),
+
+  // Wave 2 #2.06 — Tier 1 measurements (ROM + girth). Flat namespace
+  // consistent с pain endpoints выше (drift #28: TZ предлагал nested
+  // rehab.measurements.{...}, реально все existing rehab exports — flat).
+  // Bilateral L/R pair: один measurement_session_id (BIGINT millis) для пары,
+  // два sequential POST'а с side='L' и 'R' (HF#11 закрыл int4 overflow).
+  postRomMeasurement: (payload) => patientApi.post('/rehab/my/measurements/rom', payload),
+  postGirthMeasurement: (payload) => patientApi.post('/rehab/my/measurements/girth', payload),
+  getMeasurements: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return patientApi.get(qs ? `/rehab/my/measurements?${qs}` : '/rehab/my/measurements');
+  },
 };
 
 // =====================================================

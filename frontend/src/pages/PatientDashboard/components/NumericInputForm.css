@@ -1,0 +1,133 @@
+/* =====================================================
+   Wave 2 #2.08 — NumericInputForm
+   ===================================================== */
+
+.pd-num-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pd-num-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pd-num-form__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pd-text, #0f172a);
+}
+
+.pd-num-form__select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.15));
+  background: var(--pd-surface-2, #fff);
+  color: var(--pd-text, #0f172a);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.pd-num-form__select:focus {
+  outline: 2px solid var(--pd-accent-teal, #0d9488);
+  outline-offset: 1px;
+}
+
+.pd-num-form__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.15));
+  background: var(--pd-surface-2, #fff);
+  color: var(--pd-text, #0f172a);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.pd-num-form__textarea:focus {
+  outline: 2px solid var(--pd-accent-teal, #0d9488);
+  outline-offset: 1px;
+}
+
+.pd-num-form__bilateral-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--pd-text, #0f172a);
+  cursor: pointer;
+  user-select: none;
+}
+.pd-num-form__bilateral-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ----- Numeric input + unit ----- */
+.pd-num-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pd-num-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.15));
+  background: var(--pd-surface-2, #fff);
+  color: var(--pd-text, #0f172a);
+  font: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.pd-num-input:focus {
+  outline: 2px solid var(--pd-accent-teal, #0d9488);
+  outline-offset: 1px;
+}
+.pd-num-input-unit {
+  font-size: 14px;
+  color: var(--pd-text-secondary, #64748b);
+  font-weight: 600;
+  min-width: 32px;
+}
+
+/* ----- Submit ----- */
+.pd-num-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+  border-top: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.06));
+  margin-top: 6px;
+}
+.pd-num-form__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.pd-num-form__submit:hover:not(:disabled) {
+  background: var(--pd-accent-teal-hover, #0f766e);
+}
+.pd-num-form__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ----- Mobile ----- */
+@media (max-width: 480px) {
+  .pd-num-form__actions { justify-content: stretch; }
+  .pd-num-form__submit { width: 100%; justify-content: center; }
+}
