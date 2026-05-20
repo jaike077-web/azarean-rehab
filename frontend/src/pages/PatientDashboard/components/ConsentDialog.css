@@ -1,0 +1,98 @@
+/* =====================================================
+   Wave 2 #2.09 — ConsentDialog (pd-* global, memory #20)
+   Обёрнут в PatientModal (z-index 9000, rule #29).
+   ===================================================== */
+
+.pd-consent-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pd-consent-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--pd-text, #0f172a);
+}
+
+.pd-consent-text-note {
+  font-size: 12px;
+  color: var(--pd-text-secondary, #64748b);
+  margin: 0;
+}
+
+.pd-consent-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--pd-surface-2, #f8fafc);
+  border: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.08));
+  cursor: pointer;
+  user-select: none;
+}
+.pd-consent-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+.pd-consent-checkbox span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pd-text, #0f172a);
+}
+
+.pd-consent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.06));
+}
+
+.pd-consent-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+.pd-consent-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pd-consent-btn--primary {
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+}
+/* Rule #28: hover guard — :not(:disabled) защищает от override during pending */
+.pd-consent-btn--primary:hover:not(:disabled) {
+  background: var(--pd-accent-teal-hover, #0f766e);
+}
+
+.pd-consent-btn--secondary {
+  background: transparent;
+  color: var(--pd-text, #0f172a);
+  border-color: var(--pd-border, rgba(15, 23, 42, 0.15));
+}
+.pd-consent-btn--secondary:hover:not(:disabled) {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+}
+
+@media (max-width: 480px) {
+  .pd-consent-actions {
+    flex-direction: column-reverse;
+  }
+  .pd-consent-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

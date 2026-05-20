@@ -547,6 +547,20 @@ export const rehab = {
     const qs = new URLSearchParams(params).toString();
     return patientApi.get(qs ? `/rehab/my/measurements?${qs}` : '/rehab/my/measurements');
   },
+
+  // Wave 2 #2.09 — Photo capture + consent для ROM measurements.
+  // Flat exports per memory #25. Drift #29: blob fetch (не direct <img src=url>)
+  // для consistency с uploadDiaryPhoto/fetchDiaryPhotoBlob pattern (line 491+).
+  // Drift #30: uploadRomPhoto принимает уже готовый FormData (caller строит),
+  // как uploadDiaryPhoto. TZ предлагал принимать `file` напрямую — repo pattern
+  // даёт caller'у больше контроля (e.g., можно прикладывать metadata).
+  postPhotoConsent: () => patientApi.post('/patient-auth/photo-consent'),
+  uploadRomPhoto: (romId, formData) =>
+    patientApi.post(`/rehab/my/rom/${romId}/photo`, formData, {
+      headers: { 'Content-Type': undefined }, // axios сам поставит boundary
+    }),
+  fetchRomPhotoBlob: (romId) =>
+    patientApi.get(`/rehab/my/rom/${romId}/photo`, { responseType: 'blob' }),
 };
 
 // =====================================================

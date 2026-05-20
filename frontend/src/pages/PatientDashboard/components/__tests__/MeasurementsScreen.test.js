@@ -11,6 +11,9 @@ jest.mock('../../../../services/api', () => ({
     getMeasurements: jest.fn(),
     postRomMeasurement: jest.fn(),
     postGirthMeasurement: jest.fn(),
+    postPhotoConsent: jest.fn(),
+    uploadRomPhoto: jest.fn(),
+    fetchRomPhotoBlob: jest.fn(),
   },
 }));
 
@@ -22,6 +25,14 @@ jest.mock('../../../../context/ToastContext', () => {
     __toastMocks: { success, error },
   };
 });
+
+// MeasurementHistoryList (2.09 photo) использует usePatientAuth — mock'аем
+jest.mock('../../../../context/PatientAuthContext', () => ({
+  usePatientAuth: () => ({
+    patient: { id: 14, photo_consent_at: null },
+    refresh: jest.fn(),
+  }),
+}));
 
 const { rehab } = require('../../../../services/api');
 

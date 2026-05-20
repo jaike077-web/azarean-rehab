@@ -1051,7 +1051,8 @@ router.get('/me', authenticatePatient, async (req, res) => {
     const result = await query(
       `SELECT id, email, full_name, phone, birth_date, diagnosis, avatar_url,
               telegram_chat_id, preferred_messenger,
-              email_verified, auth_provider, last_login_at, created_at, updated_at
+              email_verified, auth_provider, last_login_at, created_at, updated_at,
+              photo_consent_at, photo_consent_version
        FROM patients WHERE id = $1 AND is_active = true`,
       [req.patient.id]
     );

@@ -62,3 +62,50 @@
   font-style: italic;
 }
 .pd-measurement-card__unit-srhint { display: none; }
+
+/* ----- 2.09 photo capture controls ----- */
+.pd-measurement-card__photo-row {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 4px;
+  border-top: 1px dashed var(--pd-border-soft, rgba(15, 23, 42, 0.06));
+  margin-top: 2px;
+}
+
+.pd-measurement-card__photo-add,
+.pd-measurement-card__photo-thumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.pd-measurement-card__photo-add {
+  background: transparent;
+  color: var(--pd-text-secondary, #64748b);
+  border-color: var(--pd-border, rgba(15, 23, 42, 0.15));
+}
+/* Rule #28: hover guard — :not(:disabled) */
+.pd-measurement-card__photo-add:hover:not(:disabled) {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+  color: var(--pd-text, #0f172a);
+}
+.pd-measurement-card__photo-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pd-measurement-card__photo-thumb {
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+}
+.pd-measurement-card__photo-thumb:hover:not(:disabled) {
+  background: var(--pd-accent-teal-hover, #0f766e);
+}
+
