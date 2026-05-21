@@ -91,7 +91,7 @@ const EmptyState = ({ goTo }) => (
     <div className="pd-home-empty-icon"><ClipboardList size={36} /></div>
     <h3 className="pd-home-empty-title">Программа не создана</h3>
     <p className="pd-home-empty-text">
-      Ваш инструктор ещё не создал программу реабилитации.
+      Ваш инструктор ещё не создал программу восстановления.
       Свяжитесь с ним для получения подробностей.
     </p>
     <button className="pd-home-empty-btn" onClick={() => goTo(3)}>Связаться</button>
