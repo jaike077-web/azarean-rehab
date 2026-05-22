@@ -69,7 +69,11 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.pd-pain-loc-chip:hover:not(:disabled) {
+/* HF#10 Fix B — :hover не должен перекрывать .selected. Без :not(--selected)
+   specificity :hover:not(:disabled) (0,2,0) > .selected (0,1,0) → после клика
+   chip оставался серым (hover-фон), пока курсор не уйдёт. Юзер видел selected
+   state inverted: последняя clicked серая, предыдущая зелёная. */
+.pd-pain-loc-chip:hover:not(:disabled):not(.pd-pain-loc-chip--selected) {
   background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
 }
 .pd-pain-loc-chip--selected {
@@ -111,8 +115,10 @@
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.pd-pain-trigger-chip:hover:not(:disabled),
-.pd-pain-character-chip:hover:not(:disabled) {
+/* HF#10 Fix B (см. .pd-pain-loc-chip выше) — :not(--selected) защищает
+   selected chip от hover-override (specificity-фикс без изменения порядка). */
+.pd-pain-trigger-chip:hover:not(:disabled):not(.pd-pain-trigger-chip--selected),
+.pd-pain-character-chip:hover:not(:disabled):not(.pd-pain-character-chip--selected) {
   background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
 }
 .pd-pain-trigger-chip--selected,

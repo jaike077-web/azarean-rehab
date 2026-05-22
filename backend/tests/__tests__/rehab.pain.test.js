@@ -602,6 +602,22 @@ describe('GET /api/rehab/my/pain', () => {
     expect(params[1]).toBe(10);
     expect(params[2]).toBe(20);
   });
+
+  // HF#10 Fix A — entry_date::text без timezone shift
+  it('entry_date возвращается как text (без timezone shift)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] });
+
+    await request(app)
+      .get('/api/rehab/my/pain?type=daily')
+      .set('Authorization', `Bearer ${patientToken}`);
+
+    const [sql] = query.mock.calls[0];
+    // PG DATE → pg-node JS Date → JSON UTC ISO сдвигает дату на -1 в RU (+05).
+    // ::text возвращает 'YYYY-MM-DD' буквально, без timezone роли.
+    expect(sql).toMatch(/pe\.entry_date::text\s+AS\s+entry_date/);
+  });
 });
 
 // =====================================================
