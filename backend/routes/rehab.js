@@ -2667,7 +2667,7 @@ router.post('/my/measurements/girth', authenticatePatient, async (req, res) => {
 /**
  * GET /api/rehab/my/measurements?type=rom|girth|all&program_id=...&since=YYYY-MM-DD&limit=100
  * Возвращает { data: { rom: [...], girth: [...] }, total }.
- * Tier 2/3 поля (photo_url, ai_*, markup_points) НЕ возвращаются — это будет в 2.07+.
+ * Tier 2 photo_url возвращается (HF#12 closed drift TZ 2.07). Tier 3 ai_* + markup_points отложено в Block D.
  */
 router.get('/my/measurements', authenticatePatient, async (req, res) => {
   try {
@@ -2724,7 +2724,7 @@ router.get('/my/measurements', authenticatePatient, async (req, res) => {
         `SELECT
            id, program_id, measurement_type, side,
            value_degrees, value_cm, value_categorical,
-           measured_by, measurement_session_id, notes,
+           measured_by, measurement_session_id, notes, photo_url,
            measured_at::text AS measured_at,
            created_at
          FROM rom_measurements
