@@ -21,8 +21,9 @@ const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
 const { sendOpsAlert } = require('../utils/opsAlert');
 
-// Whitelist для pain_entries.pain_character (VARCHAR(50) single value из enum, не массив).
-// Сверено с CHECK constraint миграции 20260516_wave2_schema.
+// Whitelist для pain_entries.pain_character (TEXT[] после Wave 2 HF#9 v2 migration 20260520).
+// Каждый элемент массива должен быть из enum. Backend CHECK constraint chk_pain_character_array
+// проверяет array_length>0 + array <@ enum.
 const PAIN_CHARACTER_VALUES = ['aching', 'sharp', 'burning', 'shooting', 'throbbing', 'other'];
 
 // Whitelist для pain_entries.trigger_type (VARCHAR(50) enum).
@@ -1854,8 +1855,9 @@ async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_even
   const triggerLine = pain_entry.trigger_type
     ? `\nТриггер: ${TRIGGER_TYPE_LABELS[pain_entry.trigger_type] || pain_entry.trigger_type}`
     : '';
-  const characterLine = pain_entry.pain_character
-    ? `\nХарактер: ${PAIN_CHARACTER_LABELS[pain_entry.pain_character] || pain_entry.pain_character}`
+  // Wave 2 HF#9 v2 — pain_character теперь TEXT[]. Label loop по элементам.
+  const characterLine = Array.isArray(pain_entry.pain_character) && pain_entry.pain_character.length > 0
+    ? `\nХарактер: ${pain_entry.pain_character.map((c) => PAIN_CHARACTER_LABELS[c] || c).join(', ')}`
     : '';
   const phoneLine = patient.phone ? `\nТелефон: ${patient.phone}` : '';
 
@@ -1959,11 +1961,25 @@ router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
       return res.status(400).json({ error: 'ValidationError', message: 'location_codes — массив до 16' });
     }
   }
+  // Wave 2 HF#9 v2 — pain_character теперь массив (TEXT[] в БД).
   if (pain_character !== undefined && pain_character !== null) {
-    if (typeof pain_character !== 'string' || !PAIN_CHARACTER_VALUES.includes(pain_character)) {
+    if (!Array.isArray(pain_character)) {
       return res.status(400).json({
         error: 'ValidationError',
-        message: `pain_character: одно из ${PAIN_CHARACTER_VALUES.join('|')}`
+        message: 'pain_character должен быть массивом'
+      });
+    }
+    if (pain_character.length === 0) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'pain_character пустой массив — передавай null'
+      });
+    }
+    const invalidChars = pain_character.filter((v) => !PAIN_CHARACTER_VALUES.includes(v));
+    if (invalidChars.length > 0) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `Неизвестные значения pain_character: ${invalidChars.join(', ')}`
       });
     }
   }
@@ -2141,11 +2157,25 @@ router.post('/my/pain/event', authenticatePatient, async (req, res) => {
       return res.status(400).json({ error: 'ValidationError', message: 'photo_url ≤ 500 символов' });
     }
   }
+  // Wave 2 HF#9 v2 — pain_character теперь массив (TEXT[] в БД).
   if (pain_character !== undefined && pain_character !== null) {
-    if (typeof pain_character !== 'string' || !PAIN_CHARACTER_VALUES.includes(pain_character)) {
+    if (!Array.isArray(pain_character)) {
       return res.status(400).json({
         error: 'ValidationError',
-        message: `pain_character: одно из ${PAIN_CHARACTER_VALUES.join('|')}`
+        message: 'pain_character должен быть массивом'
+      });
+    }
+    if (pain_character.length === 0) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: 'pain_character пустой массив — передавай null'
+      });
+    }
+    const invalidChars = pain_character.filter((v) => !PAIN_CHARACTER_VALUES.includes(v));
+    if (invalidChars.length > 0) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `Неизвестные значения pain_character: ${invalidChars.join(', ')}`
       });
     }
   }

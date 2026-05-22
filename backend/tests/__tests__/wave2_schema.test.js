@@ -156,3 +156,41 @@ describe('Wave 2 ACL criteria seed (коммит 2.03)', () => {
     expect(sql.trim()).toMatch(/COMMIT;\s*$/);
   });
 });
+
+// =====================================================
+// Wave 2 Hot-fix #9 v2 — pain_character VARCHAR → TEXT[]
+// Sanity тест для миграции 20260520_pain_character_to_array.sql
+// =====================================================
+
+describe('Wave 2 HF#9 v2 — pain_character TEXT[] migration', () => {
+  const hfSqlPath = path.join(__dirname, '../../database/migrations/20260520_pain_character_to_array.sql');
+  let hfSql;
+  beforeAll(() => {
+    hfSql = fs.readFileSync(hfSqlPath, 'utf8');
+  });
+
+  it('ALTER COLUMN pain_character TYPE TEXT[]', () => {
+    expect(hfSql).toMatch(/ALTER\s+COLUMN\s+pain_character\s+TYPE\s+TEXT\[\]/i);
+  });
+
+  it('USING clause конвертирует single → 1-element array', () => {
+    expect(hfSql).toMatch(/ARRAY\[pain_character::TEXT\]/);
+  });
+
+  it('CHECK constraint chk_pain_character_array с COALESCE(array_length...) > 0 + <@ enum', () => {
+    expect(hfSql).toMatch(/chk_pain_character_array/);
+    // COALESCE — defensive против NULL semantics empty array
+    expect(hfSql).toMatch(/COALESCE\(array_length\(pain_character,\s*1\),\s*0\)\s*>\s*0/);
+    expect(hfSql).toMatch(/pain_character\s*<@\s*ARRAY\[/);
+  });
+
+  it('идемпотентность через DO block data_type check', () => {
+    expect(hfSql).toMatch(/data_type INTO v_column_type/);
+    expect(hfSql).toMatch(/IF v_column_type = 'character varying' THEN/);
+  });
+
+  it('dynamic constraint name lookup (не hardcoded)', () => {
+    expect(hfSql).toMatch(/SELECT conname INTO v_constraint_name/);
+    expect(hfSql).toMatch(/EXECUTE format\('ALTER TABLE pain_entries DROP CONSTRAINT %I'/);
+  });
+});

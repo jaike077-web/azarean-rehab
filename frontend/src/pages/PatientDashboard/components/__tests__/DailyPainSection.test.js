@@ -54,7 +54,7 @@ describe('DailyPainSection', () => {
         locations: [{ code: 'knee_anterior' }],
         notes: 'OK',
         trigger_type: 'at_rest',
-        pain_character: 'aching',
+        pain_character: ['aching', 'throbbing'], // HF#9 v2: array
         created_at: new Date().toISOString(),
       }],
     });
@@ -123,5 +123,26 @@ describe('DailyPainSection', () => {
     await waitFor(() => {
       expect(__toastMocks.success).toHaveBeenCalledWith('Сегодняшняя запись обновлена');
     });
+  });
+
+  // HF#9 v2 — pain_character как массив (multi-select)
+  it('pre-load existing с pain_character массивом — все chips выделены', async () => {
+    rehab.getDailyPainToday.mockResolvedValue({
+      data: [{
+        id: 60,
+        entry_date: new Date().toISOString().slice(0, 10),
+        vas_score: 5,
+        pain_character: ['aching', 'throbbing'],
+        locations: [],
+        created_at: new Date().toISOString(),
+      }],
+    });
+
+    render(<DailyPainSection />);
+    // Ждём pre-load
+    expect(await screen.findByText(/Сегодняшняя запись от/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ноющая' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Пульсирующая' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Острая' })).toHaveAttribute('aria-pressed', 'false');
   });
 });

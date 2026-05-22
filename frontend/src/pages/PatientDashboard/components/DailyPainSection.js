@@ -26,7 +26,7 @@ const EMPTY_FORM = {
   vas_score: null,
   location_codes: [],
   trigger_type: '',
-  pain_character: '',
+  pain_character: [], // HF#9 v2: array (multi-select)
   notes: '',
 };
 
@@ -69,7 +69,8 @@ export default function DailyPainSection({ onSaved }) {
               vas_score: today.vas_score,
               location_codes: (today.locations || []).map((l) => l.code),
               trigger_type: today.trigger_type || '',
-              pain_character: today.pain_character || '',
+              // HF#9 v2: pain_character — array; backend возвращает массив или null
+              pain_character: Array.isArray(today.pain_character) ? today.pain_character : [],
               notes: today.notes || '',
             });
           }
@@ -94,7 +95,8 @@ export default function DailyPainSection({ onSaved }) {
         vas_score: form.vas_score,
         location_codes: form.location_codes.length ? form.location_codes : undefined,
         trigger_type: form.trigger_type || undefined,
-        pain_character: form.pain_character || undefined,
+        // HF#9 v2: empty array → undefined (backend reject'нул бы empty[])
+        pain_character: form.pain_character.length > 0 ? form.pain_character : undefined,
         notes: form.notes || undefined,
       };
       const res = await rehab.createDailyPain(payload);

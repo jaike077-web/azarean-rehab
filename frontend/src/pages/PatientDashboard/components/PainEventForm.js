@@ -6,7 +6,7 @@
 //   - PainScale (DVPRS) — обязательный
 //   - LocationsMultiSelect (chips, red-flag индикация) — обязательны ≥1
 //   - TriggerSelect single-select — опциональный
-//   - PainCharacterSelect single-select — опциональный
+//   - PainCharacterSelect multi-select (HF#9 v2) — опциональный
 //   - notes textarea — опциональная
 //   - photo upload (camera+gallery через accept="image/*")
 //
@@ -31,7 +31,7 @@ const EMPTY_FORM = {
   vas_score: null,
   location_codes: [],
   trigger_type: '',
-  pain_character: '',
+  pain_character: [], // HF#9 v2: array (multi-select)
   notes: '',
   photo_file: null,
 };
@@ -97,7 +97,8 @@ export default function PainEventForm({ isOpen, onClose, onSubmitted }) {
         vas_score: form.vas_score,
         location_codes: form.location_codes,
         trigger_type: form.trigger_type || undefined,
-        pain_character: form.pain_character || undefined,
+        // HF#9 v2: pain_character — array; empty → undefined (backend ожидает null/отсутствие)
+        pain_character: form.pain_character.length > 0 ? form.pain_character : undefined,
         notes: form.notes || undefined,
         // photo_url: пока пропускаем — добавим в 2.06
       };
