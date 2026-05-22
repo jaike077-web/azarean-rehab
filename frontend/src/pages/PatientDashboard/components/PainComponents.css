@@ -1,0 +1,369 @@
+/* =====================================================
+   Wave 2 #2.05 — Pain components (all classes)
+   pd-pain-* — общие
+   pd-modal-* — для PatientModal
+   pd-daily-pain__* — DailyPainSection
+   pd-pain-event-form__* — PainEventForm
+   pd-pain-history__* — PainHistoryView
+   pd-pain-banner — RecentRedFlagBanner
+   Global pd-* prefix — намеренный паттерн PatientDashboard
+   (см. CLAUDE.md «CSS prefix `pd-` для PatientDashboard»).
+   ===================================================== */
+
+/* ----- PatientModal ----- */
+.pd-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 20px 16px;
+  z-index: 9000;
+  overflow-y: auto;
+}
+.pd-modal {
+  background: var(--pd-bg, #fff);
+  color: var(--pd-text, #0f172a);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  margin: auto 0;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 40px);
+}
+.pd-modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--pd-border, rgba(15, 23, 42, 0.1));
+}
+.pd-modal__title { margin: 0; font-size: 18px; font-weight: 600; }
+.pd-modal__close {
+  background: transparent; border: 0; cursor: pointer;
+  padding: 6px; border-radius: 8px;
+  color: var(--pd-text-secondary, #64748b);
+}
+.pd-modal__close:hover { background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05)); }
+.pd-modal__body {
+  padding: 16px 20px 20px;
+  overflow-y: auto;
+}
+
+/* ----- shared ----- */
+.pd-pain-required { color: #dc2626; font-weight: 600; }
+.pd-pain-error {
+  font-size: 13px; color: #dc2626;
+  margin-top: 6px;
+}
+
+/* ----- LocationsMultiSelect ----- */
+.pd-pain-locations__chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.pd-pain-loc-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--pd-surface-2, #f1f5f9);
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.1));
+  color: var(--pd-text, #0f172a);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.pd-pain-loc-chip:hover:not(:disabled) {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+}
+.pd-pain-loc-chip--selected {
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+  border-color: var(--pd-accent-teal, #0d9488);
+}
+.pd-pain-loc-chip--redflag {
+  /* Тонкий cue без panic'а — coral border. Не красим всю кнопку red */
+  border-color: var(--pd-accent-coral, #f97316);
+}
+.pd-pain-loc-chip--redflag.pd-pain-loc-chip--selected {
+  background: var(--pd-accent-coral, #f97316);
+  border-color: var(--pd-accent-coral, #f97316);
+}
+.pd-pain-loc-chip:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+
+/* ----- TriggerSelect / PainCharacterSelect ----- */
+.pd-pain-trigger, .pd-pain-character {
+  border: 0; padding: 0; margin: 16px 0 0;
+}
+.pd-pain-trigger__legend, .pd-pain-character__legend {
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--pd-text, #0f172a);
+}
+.pd-pain-trigger__chips, .pd-pain-character__chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.pd-pain-trigger-chip, .pd-pain-character-chip {
+  padding: 7px 13px;
+  border-radius: 16px;
+  background: var(--pd-surface-2, #f1f5f9);
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.1));
+  color: var(--pd-text, #0f172a);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pd-pain-trigger-chip:hover:not(:disabled),
+.pd-pain-character-chip:hover:not(:disabled) {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+}
+.pd-pain-trigger-chip--selected,
+.pd-pain-character-chip--selected {
+  background: var(--pd-accent-blue, #2563eb);
+  color: #fff;
+  border-color: var(--pd-accent-blue, #2563eb);
+}
+
+/* ----- RecentRedFlagBanner ----- */
+.pd-pain-banner {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.pd-pain-banner--warning {
+  background: var(--pd-warning-bg, #fef3c7);
+  color: var(--pd-warning-text, #78350f);
+  border: 1px solid var(--pd-warning-border, #fcd34d);
+}
+.pd-pain-banner__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.pd-pain-banner__body strong { display: block; margin-bottom: 4px; }
+.pd-pain-banner__body p { margin: 0; }
+.pd-pain-banner__phone {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: inherit; text-decoration: underline;
+  font-weight: 600;
+}
+
+/* ----- PainEventForm ----- */
+.pd-pain-event-form { display: flex; flex-direction: column; gap: 16px; }
+.pd-pain-event-form__group { display: flex; flex-direction: column; gap: 8px; }
+.pd-pain-event-form__label {
+  font-size: 14px; font-weight: 600;
+  color: var(--pd-text, #0f172a);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.pd-pain-event-form__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.15));
+  background: var(--pd-surface-2, #fff);
+  color: var(--pd-text, #0f172a);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.pd-pain-event-form__textarea:focus {
+  outline: 2px solid var(--pd-accent-teal, #0d9488);
+  outline-offset: 1px;
+}
+.pd-pain-event-form__file {
+  font-size: 14px;
+  padding: 6px 0;
+}
+.pd-pain-event-form__photo-name {
+  font-size: 13px;
+  color: var(--pd-text-secondary, #64748b);
+}
+.pd-pain-event-form__hint {
+  font-size: 12px;
+  color: var(--pd-text-secondary, #64748b);
+}
+.pd-pain-event-form__actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.06));
+  margin-top: 6px;
+  padding-top: 14px;
+}
+
+/* ----- Pain buttons ----- */
+.pd-pain-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, opacity 0.15s;
+}
+.pd-pain-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.pd-pain-btn--primary {
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+}
+.pd-pain-btn--primary:hover:not(:disabled) {
+  background: var(--pd-accent-teal-hover, #0f766e);
+}
+.pd-pain-btn--secondary {
+  background: transparent;
+  border-color: var(--pd-border, rgba(15, 23, 42, 0.15));
+  color: var(--pd-text, #0f172a);
+}
+.pd-pain-btn--secondary:hover:not(:disabled) {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+}
+
+/* ----- DailyPainSection ----- */
+.pd-daily-pain {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--pd-surface-2, #f8fafc);
+  border: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.08));
+}
+.pd-daily-pain__heading {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.pd-daily-pain__existing-banner {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  background: var(--pd-info-bg, #dbeafe);
+  color: var(--pd-info-text, #1e40af);
+  margin-bottom: 12px;
+}
+.pd-daily-pain__form {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.pd-daily-pain__actions {
+  display: flex; justify-content: flex-end;
+}
+
+/* ----- PainHistoryView ----- */
+.pd-pain-history { margin-top: 12px; }
+.pd-pain-history__filter {
+  display: flex; gap: 6px;
+  margin-bottom: 12px;
+}
+.pd-pain-history__filter-btn {
+  padding: 6px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--pd-border, rgba(15, 23, 42, 0.15));
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--pd-text, #0f172a);
+}
+.pd-pain-history__filter-btn--active {
+  background: var(--pd-accent-teal, #0d9488);
+  color: #fff;
+  border-color: var(--pd-accent-teal, #0d9488);
+}
+.pd-pain-history__loading,
+.pd-pain-history__empty {
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--pd-text-secondary, #64748b);
+}
+.pd-pain-history__list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pd-pain-history__item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.08));
+  background: var(--pd-bg, #fff);
+}
+.pd-pain-history__row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  font-size: 13px;
+}
+.pd-pain-history__date {
+  color: var(--pd-text-secondary, #64748b);
+}
+.pd-pain-history__badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.pd-pain-history__badge--event {
+  background: var(--pd-accent-blue-soft, #dbeafe);
+  color: var(--pd-accent-blue, #1d4ed8);
+}
+.pd-pain-history__badge--redflag {
+  background: var(--pd-warning-bg, #fef3c7);
+  color: var(--pd-warning-text, #92400e);
+}
+.pd-pain-history__vas {
+  font-weight: 600;
+  margin-top: 4px;
+}
+.pd-pain-history__locations,
+.pd-pain-history__notes {
+  font-size: 13px;
+  color: var(--pd-text-secondary, #64748b);
+  margin-top: 2px;
+}
+
+/* ----- HomeScreen footer SOS link (UX option 2B — не FAB, не attention-grabbing) ----- */
+.pd-home__pain-sos-footer {
+  margin: 32px 0 8px;
+  padding: 16px;
+  text-align: center;
+  border-top: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.08));
+}
+.pd-home__pain-sos-link {
+  display: inline-block;
+  background: transparent;
+  border: 0;
+  color: var(--pd-text-secondary, #64748b);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: center;
+  line-height: 1.4;
+}
+.pd-home__pain-sos-link:hover {
+  background: var(--pd-surface-hover, rgba(15, 23, 42, 0.05));
+}
+.pd-home__pain-sos-link span {
+  color: var(--pd-accent-teal, #0d9488);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ----- PainHistory toggle inside DiaryScreen ----- */
+.pd-diary__pain-history-toggle {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.06));
+}
+.pd-diary__pain-history-toggle > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pd-text, #0f172a);
+}
+
+/* ----- Mobile ----- */
+@media (max-width: 480px) {
+  .pd-modal { border-radius: 14px; max-height: calc(100vh - 24px); }
+  .pd-modal__header { padding: 14px 16px; }
+  .pd-modal__body { padding: 14px 16px 16px; }
+  .pd-pain-event-form__actions { flex-direction: column-reverse; }
+  .pd-pain-event-form__actions .pd-pain-btn { width: 100%; justify-content: center; }
+}

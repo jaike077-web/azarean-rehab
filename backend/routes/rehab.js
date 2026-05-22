@@ -2317,4 +2317,35 @@ router.get('/my/pain', authenticatePatientOrInstructor, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/rehab/my/ops-alerts/recent
+ * Wave 2 коммит 2.05 — для frontend dedup UX detection.
+ * Возвращает recent red-flag alerts пациента за последние N часов (default 1, clamp 1..24).
+ * Frontend использует это перед открытием PainEventForm — если есть recent alert,
+ * показывает banner «Куратор уже уведомлён».
+ */
+router.get('/my/ops-alerts/recent', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    let hours = parseInt(req.query.hours, 10);
+    if (isNaN(hours) || hours < 1) hours = 1;
+    if (hours > 24) hours = 24;
+
+    const { rows } = await query(
+      `SELECT id, alert_type, severity, source_entity_id,
+              telegram_attempted_at, created_at
+       FROM ops_alerts
+       WHERE patient_id = $1
+         AND alert_type = 'red_flag_pain'
+         AND created_at > NOW() - ($2 || ' hours')::INTERVAL
+       ORDER BY created_at DESC`,
+      [patientId, hours]
+    );
+    return res.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error('GET /rehab/my/ops-alerts/recent error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось получить' });
+  }
+});
+
 module.exports = router;

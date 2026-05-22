@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { IllKnee } from './ui';
 import { rehab } from '../../../services/api';
+import PainEventForm from './PainEventForm';
 import './HomeScreen.css';
 
 // Маппинг имени иконки фазы из БД (rehab_phases.icon) → lucide-компонент.
@@ -119,6 +120,7 @@ export default function HomeScreen({
 }) {
   const [feelSaved, setFeelSaved] = useState(false);
   const [showStatTip, setShowStatTip] = useState(false);
+  const [isPainEventOpen, setIsPainEventOpen] = useState(false);
 
 
   if (dashboardData === null || dashboardData === undefined) return <LoadingSkeleton />;
@@ -395,6 +397,22 @@ export default function HomeScreen({
           </div>
         </div>
       )}
+
+      {/* Wave 2 #2.05 — Pain Event SOS footer link (UX option 2B — не FAB, не attention-grabbing) */}
+      <footer className="pd-home__pain-sos-footer">
+        <button
+          type="button"
+          className="pd-home__pain-sos-link"
+          onClick={() => setIsPainEventOpen(true)}
+        >
+          Резкая боль и нужна срочная связь с куратором? <span>Записать pain event →</span>
+        </button>
+      </footer>
+
+      <PainEventForm
+        isOpen={isPainEventOpen}
+        onClose={() => setIsPainEventOpen(false)}
+      />
     </div>
   );
 }

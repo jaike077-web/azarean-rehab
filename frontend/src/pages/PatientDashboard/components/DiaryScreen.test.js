@@ -23,6 +23,11 @@ jest.mock('../../../services/api', () => ({
     fetchDiaryPhotoBlob: jest.fn(() => Promise.resolve({ data: null })),
     getMyMessages: jest.fn(() => Promise.resolve({ data: [] })),
     sendMessage: jest.fn(() => Promise.resolve({ data: { id: 1 } })),
+    // Wave 2 #2.05 — pain endpoints используются в DailyPainSection + PainHistoryView
+    getPainLocations: jest.fn(() => Promise.resolve({ data: [] })),
+    getDailyPainToday: jest.fn(() => Promise.resolve({ data: [] })),
+    createDailyPain: jest.fn(() => Promise.resolve({ data: { id: 1 } })),
+    getPainHistory: jest.fn(() => Promise.resolve({ data: [] })),
   },
   patientAuth: {},
 }));
@@ -74,6 +79,12 @@ describe('DiaryScreen v12', () => {
     rehab.fetchDiaryPhotoBlob.mockResolvedValue({ data: null });
     rehab.getMyMessages.mockResolvedValue({ data: [] });
     rehab.sendMessage.mockResolvedValue({ data: { id: 1 } });
+    // Wave 2 #2.05 — pain helpers (clearAllMocks обнуляет implementations, нужно
+    // переустанавливать каждый раз).
+    rehab.getPainLocations.mockResolvedValue({ data: [] });
+    rehab.getDailyPainToday.mockResolvedValue({ data: [] });
+    rehab.createDailyPain.mockResolvedValue({ data: { id: 1 } });
+    rehab.getPainHistory.mockResolvedValue({ data: [] });
   });
 
   describe('Header', () => {
@@ -121,7 +132,7 @@ describe('DiaryScreen v12', () => {
       for (const [feel, expected] of [['better', '2'], ['same', '4'], ['worse', '6']]) {
         const { unmount } = setup({ pgicFeel: feel });
         await waitForLoaded();
-        const slider = screen.getByLabelText(/Уровень боли/);
+        const slider = screen.getByLabelText('Уровень боли 0-10');
         expect(slider.value).toBe(expected);
         unmount();
       }
@@ -132,7 +143,7 @@ describe('DiaryScreen v12', () => {
     it('renders slider 0..10', async () => {
       setup();
       await waitForLoaded();
-      const slider = screen.getByLabelText(/Уровень боли/);
+      const slider = screen.getByLabelText('Уровень боли 0-10');
       expect(slider).toHaveAttribute('min', '0');
       expect(slider).toHaveAttribute('max', '10');
     });
@@ -140,7 +151,7 @@ describe('DiaryScreen v12', () => {
     it('updates value on change', async () => {
       setup();
       await waitForLoaded();
-      const slider = screen.getByLabelText(/Уровень боли/);
+      const slider = screen.getByLabelText('Уровень боли 0-10');
       fireEvent.change(slider, { target: { value: '7' } });
       expect(slider.value).toBe('7');
     });
@@ -195,10 +206,12 @@ describe('DiaryScreen v12', () => {
       await waitForLoaded();
       const dec = screen.getByRole('button', { name: /Уменьшить/ });
       for (let i = 0; i < 200; i += 1) fireEvent.click(dec);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      // После Wave 2 #2.05 (DailyPainSection использует PainScale с buttons 0-10)
+      // в DOM появляется много '0'/'10' элементов — ищем именно в pd-diary-rom-num
+      expect(document.querySelector('.pd-diary-rom-num').textContent).toBe('0');
       const inc = screen.getByRole('button', { name: /Увеличить/ });
       for (let i = 0; i < 200; i += 1) fireEvent.click(inc);
-      expect(screen.getByText('180')).toBeInTheDocument();
+      expect(document.querySelector('.pd-diary-rom-num').textContent).toBe('180');
     });
 
     it('drag slider sets value directly', async () => {
@@ -247,7 +260,7 @@ describe('DiaryScreen v12', () => {
       });
       setup();
       await waitForLoaded();
-      const slider = screen.getByLabelText(/Уровень боли/);
+      const slider = screen.getByLabelText('Уровень боли 0-10');
       await waitFor(() => expect(slider.value).toBe('4'));
       expect(screen.getByText('128')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Вечер/ }).className).toMatch(/--active/);

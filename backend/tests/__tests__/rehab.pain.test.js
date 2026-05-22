@@ -554,3 +554,51 @@ describe('GET /api/rehab/my/pain', () => {
     expect(params[2]).toBe(20);
   });
 });
+
+// =====================================================
+// GET /rehab/my/ops-alerts/recent — Wave 2 #2.05 для dedup UX
+// =====================================================
+
+describe('GET /api/rehab/my/ops-alerts/recent', () => {
+  it('возвращает recent red-flag alerts за час по умолчанию', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { id: 1, alert_type: 'red_flag_pain', severity: 'high', source_entity_id: 50, created_at: new Date() },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/rehab/my/ops-alerts/recent')
+      .set('Authorization', `Bearer ${patientToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.total).toBe(1);
+    // default 1 hour должно быть в params
+    expect(query.mock.calls[0][1]).toEqual([14, 1]);
+  });
+
+  it('hours param custom (3 часа)', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await request(app)
+      .get('/api/rehab/my/ops-alerts/recent?hours=3')
+      .set('Authorization', `Bearer ${patientToken}`);
+
+    expect(query.mock.calls[0][1]).toEqual([14, 3]);
+  });
+
+  it('hours param clamp (0 → 1, 99 → 24)', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app)
+      .get('/api/rehab/my/ops-alerts/recent?hours=0')
+      .set('Authorization', `Bearer ${patientToken}`);
+    expect(query.mock.calls[0][1]).toEqual([14, 1]);
+
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app)
+      .get('/api/rehab/my/ops-alerts/recent?hours=99')
+      .set('Authorization', `Bearer ${patientToken}`);
+    expect(query.mock.calls[1][1]).toEqual([14, 24]);
+  });
+});
