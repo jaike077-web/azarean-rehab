@@ -127,6 +127,7 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260508_streak
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260512_program_types.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_program_templates.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_phase_stuck_alerts.sql
+psql -U postgres -d azarean_rehab -f backend/database/migrations/20260516_wave2_schema.sql
 ```
 
 **20260424_prod_schema_recovery:** восстанавливает schema drift между dev и prod. Переименовывает `exercises.category`→`body_region` с миграцией данных, `exercises.difficulty`→`difficulty_level` (beginner=1, intermediate=3, advanced=5), дропает неиспользуемый `body_part`, добавляет `movement_pattern/chain_type/joint/is_unilateral` и `diagnoses.deleted_at/updated_at`. Полностью идемпотентна — на dev БД no-op.
@@ -148,6 +149,8 @@ psql -U postgres -d azarean_rehab -f backend/database/migrations/20260513_phase_
 **20260513_program_templates:** шаблоны программ + связи. Новые таблицы `program_templates` (id, code UNIQUE, program_type FK→program_types(code), title, description, surgery_required, default_phase_count, variant_of self-FK, is_active, position) и `program_template_phase_complexes` (id, program_template_id FK CASCADE, phase_number, complex_template_id FK→templates(id) ON DELETE SET NULL, is_recommended, notes, UNIQUE по program_template_id+phase_number). + ALTER `rehab_programs ADD program_template_id INTEGER REFERENCES program_templates(id) ON DELETE SET NULL` для tracking. + ALTER `templates ADD program_type VARCHAR(50) REFERENCES program_types(code)` для фильтрации комплексов. **Без seed** — Vadim наполняет через AdminContent (1.07). Wave 1 коммит 1.06 — фундамент блока B. Полностью идемпотентна.
 
 **20260513_phase_stuck_alerts:** новая таблица `phase_stuck_alerts` (id, program_id FK CASCADE, phase_number SMALLINT, threshold_level CHECK IN ('yellow','red'), detected_at, resolved_at, notified_instructor BOOLEAN, notified_at, UNIQUE(program_id, phase_number, threshold_level)). Дедуп alerts cron-задачи `checkStuckPhases()`. Партиал-индекс по `program_id WHERE resolved_at IS NULL` для EXISTS-агрегата в `/api/patients`. Wave 1 коммит 1.09 — инструкторская сторона stuck detection. Полностью идемпотентна.
+
+**20260516_wave2_schema:** единая идемпотентная миграция Wave 2 коммит 2.01 — 7 новых таблиц клинического дневника + ALTER patients. Таблицы: `rom_measurements` (ROM degrees + HBD cm + HBB categorical, AI/markup поля, CHECK ровно одно из value_degrees/value_cm/value_categorical), `girth_measurements` (окружности), `pain_locations` (справочник по program_type, seed в 2.02), `pain_entries` (daily + Pain Event с `is_event` flag, partial UNIQUE index по `(patient_id, entry_date) WHERE is_event=FALSE`), `pain_entry_locations` (junction many-to-many), `phase_transition_criteria` (три типа: measurement / self_report / instructor_check), `patient_criterion_answers` (audit trail для self_report и instructor_check). ALTER `patients`: + `measurement_reference_photo_url`, `photo_consent_at`, `photo_consent_version`. Без бэкенд-логики и UI — фундамент для 2.02-2.14. Полностью идемпотентна (createdb → schema → migrate × 2 cycle пройден).
 
 ### 2. Переменные окружения
 
@@ -324,7 +327,7 @@ Azarean_rehab/
             └── skeletons/       # 4 специализированных скелетона
 ```
 
-## Схема БД (20 таблиц)
+## Схема БД (27 таблиц)
 
 ### users (инструкторы/админы)
 ```sql
@@ -346,6 +349,8 @@ avatar_url VARCHAR(500), last_login_at TIMESTAMP,
 telegram_chat_id BIGINT UNIQUE,
 preferred_messenger VARCHAR(20) NOT NULL DEFAULT 'telegram'
   CHECK (preferred_messenger IN ('telegram','whatsapp','max')),  -- миграция 20260421
+measurement_reference_photo_url VARCHAR(500),  -- Wave 2 #2.01: personal эталон-фото от инструктора
+photo_consent_at TIMESTAMP, photo_consent_version VARCHAR(20),  -- Wave 2 #2.01: consent на upload биометрики
 failed_login_attempts SMALLINT DEFAULT 0, locked_until TIMESTAMP,
 created_at TIMESTAMP, updated_at TIMESTAMP
 ```
@@ -474,6 +479,15 @@ program_id INT REFERENCES rehab_programs(id) ON DELETE SET NULL,
 current_streak INT DEFAULT 0, longest_streak INT DEFAULT 0, total_days INT DEFAULT 0,
 last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ```
+
+### Wave 2 таблицы (миграция 20260516_wave2_schema, коммит 2.01)
+- **rom_measurements** — ROM замеры в градусах / cm (HBD) / categorical (HBB позвонки). Поля: `measurement_type`, `side` ('L'/'R'), `value_degrees`/`value_cm`/`value_categorical` (CHECK ровно одно), `measured_by` IN ('instructor_direct','instructor_markup','ai_assisted','ai_unverified','patient_self'), `photo_url`, AI tracking (`ai_confidence`, `ai_raw_landmarks` JSONB, `ai_suggested_degrees`), `markup_points` JSONB (Tier 2), `measurement_session_id` (группировка L+R). Index: `(patient_id, measurement_type, measured_at DESC)`, partial `WHERE measured_by='ai_unverified'`.
+- **girth_measurements** — окружности (`mid_deltoid_cm`, `mid_biceps_cm`, `joint_line_cm`, `suprapatellar_5/10/15cm_cm`, `calf_max_cm` и др.) Поля: `measurement_type`, `side`, `value_cm` (CHECK > 0 AND < 200), `measured_by` IN ('instructor_direct','patient_self'), `measurement_session_id`.
+- **pain_locations** — справочник кодов локализаций боли по `program_type` (FK→program_types). Поля: `code` PK, `program_type`, `label`, `position`, `is_red_flag`, `red_flag_reason`, `is_active`. Seed данных в коммите 2.02.
+- **pain_entries** — daily pain entry + Pain Event (через `is_event` flag). Tier 1 = VAS only, Tier 2 = `trigger_type` IN ('at_rest','on_flexion',...) + `pain_character` IN ('aching','sharp',...) + `photo_url`. Partial UNIQUE `(patient_id, entry_date) WHERE is_event=FALSE` — один daily на дату, N events. Red flag tracking: `red_flag_triggered`, `ops_alert_sent_at`.
+- **pain_entry_locations** — junction many-to-many `(pain_entry_id, location_code)` PRIMARY KEY composite. CASCADE на pain_entries, ON UPDATE CASCADE на pain_locations.code.
+- **phase_transition_criteria** — структурированные критерии перехода между фазами. Три типа: `measurement` (auto-check против rom/girth/pain с `threshold_operator` IN ('>=','<=','=','>','<','between') + `staleness_days` 7d default), `self_report` (пациент сам yes/no с `self_report_question`/`hint`), `instructor_check` (куратор очно). FK→rehab_phases(id) CASCADE. UNIQUE `(phase_id, criterion_code)`.
+- **patient_criterion_answers** — audit trail ответов пациента/куратора на self_report/instructor_check критерии. `answered_by_type` IN ('patient','instructor') + CHECK консистентности `answered_by_user_id` (NULL для patient, NOT NULL для instructor). Один current answer на (patient, criterion), исторические сохраняются.
 
 ### Остальные таблицы
 - **tips** — советы по фазам реабилитации
@@ -834,6 +848,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ### OAuth boundary tests (2026-04-29, приоритет архитектора #1)
 52. **OAuth match-flow не покрывался unit-тестами** → 18 тестов в [backend/tests/__tests__/oauthCallback.routes.test.js](backend/tests/__tests__/oauthCallback.routes.test.js): Telegram callback (8 boundary scenarios — returning/phone-autolink-single/no-match/multi-match anti-misroute/claimed-account/state-expired/deactivated/phone-format-norm + 3 edge cases) + Yandex callback (6 — returning/autolink/no-match-with-email-prefill/no-code-fail/extractClaims-default-phone-parse/no-default-phone) + meta /oauth/providers. **Multi-match anti-misroute** (родитель↔ребёнок с одним телефоном) покрыт явно — главная зона риска по ФЗ-152. Mock-инфраструктура: services/telegramOidc + services/yandexOauth полностью замоканы (handleCallback возвращает claims), `extractClaims` Yandex остаётся реальным через jest.requireActual для покрытия парсинг-логики `default_phone: { id, number }`.
+
+### Wave 2 коммит 2.01 — schema infrastructure (2026-05-16, в feature-ветке, PR ждёт «давай 2.02»)
+55. **Wave 2 фундамент: 7 таблиц клинического дневника + ALTER patients** → ветка `wave-2/01-schema-migrations`, миграция [20260516_wave2_schema.sql](backend/database/migrations/20260516_wave2_schema.sql) (~190 строк). Создаёт: `rom_measurements` (ROM + HBD + HBB, AI/markup поля, CHECK rom_value_exactly_one), `girth_measurements` (окружности, CHECK 0 < value_cm < 200), `pain_locations` (справочник по program_type), `pain_entries` (VAS 0-10 + trigger/character + is_event flag, partial UNIQUE по daily), `pain_entry_locations` (junction), `phase_transition_criteria` (measurement/self_report/instructor_check), `patient_criterion_answers` (audit trail). ALTER patients: `measurement_reference_photo_url`, `photo_consent_at`, `photo_consent_version`. Без бэкенд-логики и UI — фундамент для 2.02-2.14. **Sanity тесты:** [backend/tests/__tests__/wave2_schema.test.js](backend/tests/__tests__/wave2_schema.test.js) +13 SQL pattern-тестов (mock-based, без реальной БД). **Idempotency cycle:** createdb test_db → schema.sql → все migrations × 2 → 7 таблиц + 3 patients columns видны → drop. Все CHECK / FK / UNIQUE partial smoke-проверены через psql. Backend 437→450. PR не открыт, ждёт «давай 2.02» от Vadim'а.
 
 ### Wave 0 commit 01 — стрик без обнуления (2026-05-08, в feature-ветке, ждёт пакетного merge'а)
 54. **Стрик не инкрементировался в v12 (Bug #11 закрыт)** → ветка `wave-0/01-streak-no-reset`, SHA `3aca77d`, PR #45. Старая `updateStreak` обнуляла counter при пропуске + дёргалась только из мёртвого `if (exercises_done)` ветки в diary (флаг убран из UI v12) + не вызывалась из `POST /api/progress`. Новая модель: миграция [20260508_streak_days.sql](backend/database/migrations/20260508_streak_days.sql) + [backend/utils/streaks.js](backend/utils/streaks.js) с defensive `updateStreak` (UPSERT через streak_days, ROLLBACK при ошибке, не пробрасывает). `current_streak` = total уникальных дней активности (не consecutive), `longest_streak` хранит max consecutive run для retrospective и Star Tracker. Триггерится из `POST /api/progress` (source='progress') + `POST /my/diary` безусловно (source='diary') + telegram bot diary wizard (удалён дубль -49 строк). `/my/dashboard` и `/my/streak` возвращают `missed_yesterday` + `days_since_last_activity`. HomeScreen показывает жёлтую плашку «Ты пропустил вчера…» под карточкой прогресса при `missed_yesterday=true`. **Тесты:** backend +14 (`streaks.test.js`), frontend +3 (HomeScreen warning branch). Smoke 4/4 в браузере: warning при пропуске виден, активность не обнуляет (5→6), diary+progress оба триггерят. **Архитектурное решение** — стрик НЕ daily consecutive, а total active days, сохранено в [memory/wave_0_streak.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/wave_0_streak.md).
