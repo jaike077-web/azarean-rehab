@@ -125,13 +125,15 @@ describe('PatientDashboard Component', () => {
     });
   });
 
-  it('renders AZAREAN header text', async () => {
+  it('renders Azarean logo image in header', async () => {
     await act(async () => {
       render(<PatientDashboard />);
     });
 
     await waitFor(() => {
-      expect(screen.getByText('AZAREAN')).toBeInTheDocument();
+      const logo = screen.getByAltText('Azarean');
+      expect(logo).toBeInTheDocument();
+      expect(logo.tagName).toBe('IMG');
     });
   });
 

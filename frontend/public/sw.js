@@ -12,8 +12,15 @@
 // показал что Telegram-share отдавал старый формат — это cache-first для JS
 // (новый bundle.<hash>.js не подгружался, old hash в кэше). Bump v4 → activate
 // очищает старый кеш → юзеры получают свежий index.html + новый bundle.
-const CACHE_NAME = 'azarean-v4';
-const API_CACHE = 'azarean-api-v4';
+// v5 (2026-05-22) — Brand polish: favicon.ico пересобран из AN-logo.jpg
+// (старый был дефолтный React), apple-touch-icon/logo192/logo512 регенерированы.
+// Старые юзеры с PWA на главном экране получат новую иконку только после
+// activate (которое очищает старый CACHE_NAME и форсит refetch манифеста).
+// v6 (2026-05-22 vol.2) — Favicon swap: AN-logo.jpg → logo_az.png (clean A+AZAREAN
+// monogram, 1024×1024 source, лучшая чёткость на 192/512). Bump для инвалидации
+// иконок у пациентов с уже установленной PWA.
+const CACHE_NAME = 'azarean-v6';
+const API_CACHE = 'azarean-api-v6';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

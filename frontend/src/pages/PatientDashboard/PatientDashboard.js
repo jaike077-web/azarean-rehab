@@ -214,8 +214,11 @@ export default function PatientDashboard() {
 
       <header className="pd-header">
         <div className="pd-header-logo">
-          <div className="pd-header-logo-dot"></div>
-          <span className="pd-header-logo-text">AZAREAN</span>
+          <img
+            src="/logo_az.png"
+            alt="Azarean"
+            className="pd-header-logo-img"
+          />
         </div>
         <div className="pd-header-right">
           {dashboardData?.streak && (

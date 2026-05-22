@@ -24,6 +24,7 @@ import {
 import { useToast } from '../../../context/ToastContext';
 import { rehab } from '../../../services/api';
 import { MessengerCTA } from './ui';
+import PainEventForm from './PainEventForm';
 import './ContactScreen.css';
 
 // Форматирование времени сообщения: сегодня → «HH:mm»,
@@ -80,6 +81,7 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [tgConnected, setTgConnected] = useState(false);
   const [tgStatusLoading, setTgStatusLoading] = useState(true);
+  const [isPainEventOpen, setIsPainEventOpen] = useState(false);
   // Wave 0 commit 03 — последний отчёт пациента (message_kind='diary_report').
   // Показываем как карточку под feedback'ом инструктора, чтобы пациент видел
   // что отчёт реально ушёл в систему. Кнопка «Открыть запись» ведёт на Дневник.
@@ -444,11 +446,13 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
               type="button"
               className={`pd-contact-quick-row ${last ? 'pd-contact-quick-row--last' : ''}`}
               onClick={() => {
-                // TODO: реализовать по-разному
-                //   question → модалка свободного вопроса → send via preferred_messenger
-                //   pain → prefilled «Боль усилилась» + критерии severity
-                //   appointment → интеграция с календарём студии
-                //   photo → multer upload до 10 МБ, аналог diary photos
+                // pain → live PainEventForm (Wave 2 #2.05).
+                // Остальные 3 — backend не имплементирован, показываем info-toast.
+                if (a.id === 'pain') {
+                  setIsPainEventOpen(true);
+                  return;
+                }
+                toast.info('Скоро будет доступно', 'Готовим эту функцию');
               }}
             >
               <span
@@ -512,6 +516,13 @@ export default function ContactScreen({ patient, dashboardData, onOpenProfile, g
           );
         })}
       </div>
+
+      {/* Pain Event modal — открывается из quick-action «Боль усилилась».
+          Источник той же PainEventForm что HomeScreen footer link (Wave 2 #2.05). */}
+      <PainEventForm
+        isOpen={isPainEventOpen}
+        onClose={() => setIsPainEventOpen(false)}
+      />
     </div>
   );
 }

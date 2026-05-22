@@ -405,7 +405,7 @@ export default function HomeScreen({
           className="pd-home__pain-sos-link"
           onClick={() => setIsPainEventOpen(true)}
         >
-          Резкая боль и нужна срочная связь с куратором? <span>Записать pain event →</span>
+          Резкая боль и нужна срочная связь с куратором? <span>Записать сейчас →</span>
         </button>
       </footer>
 

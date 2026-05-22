@@ -36,7 +36,7 @@ function Login() {
       <div className={styles.loginBox}>
       <div className={styles.loginHeader}>
   <div className={styles.loginLogo}>
-    <img src="/AN-logo.jpg" alt="Azarean Network Logo" />
+    <img src="/logo_az.png" alt="Azarean Network Logo" />
   </div>
   <h1>Azarean Network</h1>
   <p>Система реабилитации</p>

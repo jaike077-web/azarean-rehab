@@ -230,7 +230,7 @@ function Dashboard() {
 
           <div className={s.appBrand}>
             <img
-              src="/AN-logo.jpg"
+              src="/logo_az.png"
               alt="Azarean Network"
               className={s.appLogo}
             />

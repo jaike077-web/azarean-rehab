@@ -42,8 +42,11 @@ const PatientForgotPassword = () => {
     <div className={s.patientAuthContainer}>
       <div className={s.patientAuthCard}>
         <div className={s.patientAuthLogo}>
-          <div className={s.patientAuthLogoDot} />
-          <span className={s.patientAuthLogoText}>Azarean</span>
+          <img
+            src="/logo_az.png"
+            alt="Azarean"
+            className={s.patientAuthLogoImg}
+          />
         </div>
 
         <h1 className={s.patientAuthHeading}>Восстановление пароля</h1>

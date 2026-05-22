@@ -120,8 +120,11 @@ function PatientRegister() {
     <div className={s.patientAuthContainer}>
       <div className={s.patientAuthCard}>
         <div className={s.patientAuthLogo}>
-          <div className={s.patientAuthLogoDot}></div>
-          <div className={s.patientAuthLogoText}>Azarean</div>
+          <img
+            src="/logo_az.png"
+            alt="Azarean"
+            className={s.patientAuthLogoImg}
+          />
         </div>
 
         <h1 className={s.patientAuthHeading}>Создание аккаунта</h1>

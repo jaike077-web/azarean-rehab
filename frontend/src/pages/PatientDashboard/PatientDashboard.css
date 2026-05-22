@@ -83,20 +83,14 @@
   gap: 10px;
 }
 
-.pd-header-logo-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--pd-accent), var(--pd-accent2));
-}
-
-.pd-header-logo-text {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  color: var(--pd-text3);
-  font-family: var(--pd-font-display);
-  font-weight: 700;
+.pd-header-logo-img {
+  /* logo_az.png — 1024×1024 brand mark (Azarean "A" + AZAREAN текст).
+     Trim'нут до knot, padding 6% для дыхания. object-fit:contain чтобы
+     белый фон не выглядел кропнутым. */
+  height: 36px;
+  width: 36px;
+  display: block;
+  object-fit: contain;
 }
 
 /* ==========================================================================
