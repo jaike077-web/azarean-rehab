@@ -459,3 +459,87 @@ describe('Measurements auth + isolation', () => {
     expect(params).not.toContain(9999);
   });
 });
+
+// =====================================================
+// HF#11 — measurement_session_id BIGINT range (Date.now() millis)
+// =====================================================
+
+describe('measurement_session_id BIGINT range (HF#11)', () => {
+  const UNIX_MILLIS = 1716100000000; // 13 digits, был overflow int4 в 2.06
+
+  it('POST rom принимает Date.now() millis как session_id', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 100, patient_id: 14,
+        measurement_type: 'knee_flexion_degrees', side: 'L',
+        value_degrees: '120.0', value_cm: null, value_categorical: null,
+        measured_by: 'patient_self',
+        measurement_session_id: UNIX_MILLIS,
+        measured_at: '2026-05-19',
+      }],
+    });
+
+    const res = await request(app)
+      .post('/api/rehab/my/measurements/rom')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({
+        measurement_type: 'knee_flexion_degrees',
+        side: 'L',
+        value: 120,
+        measurement_session_id: UNIX_MILLIS,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.measurement_session_id).toBe(UNIX_MILLIS);
+    // Подтверждение что в INSERT params попал именно millis (а не truncated int4)
+    const params = query.mock.calls[0][1];
+    expect(params).toContain(UNIX_MILLIS);
+  });
+
+  it('POST girth принимает Date.now() millis как session_id', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{
+        id: 101, measurement_type: 'knee_joint_line_cm', side: 'R',
+        value_cm: '42.50', measured_by: 'patient_self',
+        measurement_session_id: UNIX_MILLIS,
+        measured_at: '2026-05-19',
+      }],
+    });
+
+    const res = await request(app)
+      .post('/api/rehab/my/measurements/girth')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({
+        measurement_type: 'knee_joint_line_cm',
+        side: 'R',
+        value_cm: 42.5,
+        measurement_session_id: UNIX_MILLIS,
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.measurement_session_id).toBe(UNIX_MILLIS);
+  });
+
+  it('GET возвращает measurement_session_id как Number (setTypeParser активен)', async () => {
+    // Mock симулирует pg-node после setTypeParser (BIGINT → Number)
+    query
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 100, measurement_type: 'knee_flexion_degrees', side: 'L',
+          value_degrees: '120.0',
+          measurement_session_id: UNIX_MILLIS, // Number, не string
+          measured_at: '2026-05-19',
+        }],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/rehab/my/measurements?type=rom')
+      .set('Authorization', `Bearer ${patientToken}`);
+
+    expect(res.status).toBe(200);
+    const entry = res.body.data.rom[0];
+    expect(typeof entry.measurement_session_id).toBe('number');
+    expect(entry.measurement_session_id).toBe(UNIX_MILLIS);
+  });
+});
