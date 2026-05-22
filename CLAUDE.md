@@ -5,27 +5,38 @@
 
 ## Текущее состояние (май 2026)
 
-### 🚧 Wave 2 Block A Foundation закрыт + 2 hot-fix — 5 коммитов на feature-ветках ⏸ заморожены, не запушены (2026-05-18)
+### ✅ Wave 2 — ЗАКРЫТА в проде (2026-05-22)
 
-Schema infrastructure + content layer (pain locations, ACL criteria) + critical UX hot-fix'ы (toast position regress c8834b5 + retrospective orphan audit).
+Multi-protocol клинический дневник полностью смержен и задеплоен. **Все 3 блока (A Foundation + B Pain Tracking + C Measurements) живут на https://my.azarean.ru.** 17 PR на feature ветках + 1 dark theme PR смерджены в main batch'ем, CI/CD pipeline отработал успешно (3m 3s первый deploy + 1m 23s second через workflow_dispatch для uploads persistence verify).
 
-| # | SHA | Ветка | Что |
-|---|---|---|---|
-| 2.01 | `af313b4` | `wave-2/01-schema-migrations` от main `f7ef711` | 7 таблиц Wave 2 (rom_measurements, girth_measurements, pain_locations, pain_entries, pain_entry_locations, phase_transition_criteria, patient_criterion_answers) + ALTER patients ×3 |
-| 2.02 | `a6f7980` | `wave-2/02-pain-locations` | 16 pain_locations seed (8 knee + 8 shoulder, 2 red-flag) + AdminContent PainLocationsTab + 5 admin endpoints + dark-input amend |
-| 2.03 | `82544c0` | `wave-2/03-criteria-admin-seed` | 29 ACL criteria seed (5+5+5+5+5+4 по 6 фазам, 3 типа) + PhasesTab accordion + CriteriaPanel + CriterionForm three-type conditional + `.adminModal` max-height shore-up |
-| HF #7 | `98ca5f2` | `wave-2/hotfix-07-toast-position` | ToastContext.js orphan kebab→camelCase + Toast.module.css mobile @media top — закрыл **скрытый регресс c8834b5 14 дней** |
-| HF #8 | `e6f11a9` | `wave-2/hotfix-08-orphan-classname-audit` | Retrospective grep: 0 actionable orphans, memory rules усилены, новый `css_modules_orphan_audit.md` |
+**Финальный stack 17 PR (main tip = `3039323`, tag `v0.1.0-pilot`):**
+- 14 Wave 2 (af313b4 → 4f97006): schema + pain + measurements + photo upload + frontend Tier 1+2
+- HF#12 (`c47a65e`): GET /my/measurements возвращает photo_url (drift TZ 2.07 — найден в live smoke)
+- chore language baseline (`8f6dc3f`): реабилитация → восстановление в 8 patient-visible местах
+- fix uploads-persistence (`3039323`): symlink `backend/uploads → /opt/azarean-rehab/data/uploads` в deploy.yml — закрывает `bug_avatar_lost_on_deploy.md`
 
-**Состояние:** ветка `wave-2/hotfix-08-orphan-classname-audit` (HEAD). Backend **491/491** (+54 от 437), frontend **271/271** (+19 от 252). 26+16 suites, 3 миграции. **5 PR ⏸ заморожен, ничего не запушено.** Block A полностью закрыт.
+Параллельно мержено PR #67 (`16ed04c` AdminContent dark inputs Bug #15 partial) через `954c55d`.
 
-**Dirty файлы (НЕ ТРОГАТЬ):** 4 файла dark-theme от 2026-05-04 + CLAUDE.md правки от 2026-05-16. В stash@{0}. Все 5 коммитов прошли мимо — продолжаем эту изоляцию.
+**Метрики:**
+- Backend **592/592** (+155 от Wave 1 baseline 437), frontend **338/338** (+86 от 252)
+- 30 + 25 jest suites, 930 tests
+- 6 новых миграций применены (29 → 35): `20260516_wave2_schema`, `20260517_pain_locations_seed`, `20260518_acl_criteria_seed`, `20260519_ops_alerts`, `20260519_session_id_bigint`, `20260520_pain_character_to_array`
+- Prod smoke 10/10 PASSED (1 cosmetic 🟡 — PhotoViewerModal close X button невидим, Esc работает)
+- Uploads persistence verified через **второй CI deploy** — фото после Smoke 7 пережило `workflow_dispatch` deploy
 
-**Метрика c8834b5 миграции (2026-05-04):** 14 дней работал orphan `className="toast-container"` в ToastContext.js — закрыт hot-fix #7. Hot-fix #8 retrospective grep подтвердил что больше orphan'ов из той миграции нет.
+**Drifts итого за Wave 2: 35** (см. memory `architect_premise_drift_2026-05-18.md` + дополнительно зафиксированы HF#12 + language drift `program_types.label` в БД). Главные lessons: schema-touching commits обязаны прикладывать `\d <table>` + constraint dump в отчёт; backend SELECT allowlist для round-trip flows должен быть проверен через реальный live smoke, не только jest mock-based unit tests.
 
-**Следующий шаг:** Block B Pain tracking. **TZ_WAVE_2_04_pain_backend.md** в корне готов. Команда: «делай 2.04».
+**Backlog для Wave 3 / Wave 2.5 hot-fixes:**
+- HF#13 (cosmetic): PhotoViewerModal close X button невидим
+- `program_types.label='ПКС реабилитация'` в БД содержит «реабилитация» — миграция `UPDATE program_types SET label='ПКС восстановление' WHERE code='acl'`
+- «pain event» EN термин в RU UI (HomeScreen footer link «Записать pain event»)
+- 404 `/api/rehab/my/exercises` — investigate (возможно endpoint не имплементирован full)
+- 401 `/api/rehab/my/stuck-status` — investigate (норма для нового пациента?)
+- Node.js 20 deprecation GitHub Actions runners (deadline Sep 2026)
+- Ops Alerts admin UI — Wave 2.04 backend есть, фронт нет (был scope-decision)
+- Backend POST /programs не ставит `status='active'` по умолчанию → программы создаются inactive, dashboard их не находит (нашли в Phase 8 — workaround SQL UPDATE)
 
-**Точка входа в новый чат:** [SESSION_HANDOFF_2026-05-18.md](SESSION_HANDOFF_2026-05-18.md).
+**Точка входа в новый чат:** [SESSION_HANDOFF_2026-05-22.md](SESSION_HANDOFF_2026-05-22.md).
 
 ### ✅ Wave 1 + hot-fix batch — ЗАКРЫТА в проде (2026-05-15)
 
