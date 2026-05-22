@@ -62,7 +62,7 @@ export default function MeasurementsScreen() {
         {loading ? (
           <div className="pd-measurements-history-section__loading">Загрузка…</div>
         ) : (
-          <MeasurementHistoryList items={history} />
+          <MeasurementHistoryList items={history} onReload={reloadHistory} />
         )}
       </section>
     </div>
