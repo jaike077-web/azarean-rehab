@@ -12,13 +12,45 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
-const { query } = require('../database/db');
+const { query, getClient } = require('../database/db');
 const { authenticatePatient } = require('../middleware/patientAuth');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, authenticatePatientOrInstructor } = require('../middleware/auth');
 const { diaryPhotoUpload, processDiaryPhoto } = require('../middleware/upload');
 const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
+const { sendOpsAlert } = require('../utils/opsAlert');
+
+// Whitelist для pain_entries.pain_character (VARCHAR(50) single value из enum, не массив).
+// Сверено с CHECK constraint миграции 20260516_wave2_schema.
+const PAIN_CHARACTER_VALUES = ['aching', 'sharp', 'burning', 'shooting', 'throbbing', 'other'];
+
+// Whitelist для pain_entries.trigger_type (VARCHAR(50) enum).
+// Сверено с CHECK constraint миграции 20260516_wave2_schema.
+const TRIGGER_TYPE_VALUES = [
+  'at_rest', 'on_flexion', 'on_extension', 'on_walking',
+  'at_night', 'after_exercise', 'on_lifting', 'other'
+];
+
+// Человекочитаемые лейблы для Telegram alert куратору — иначе видит enum codes.
+const TRIGGER_TYPE_LABELS = {
+  at_rest: 'в покое',
+  on_flexion: 'при сгибании',
+  on_extension: 'при разгибании',
+  on_walking: 'при ходьбе',
+  at_night: 'ночью',
+  after_exercise: 'после упражнений',
+  on_lifting: 'при подъёме тяжести',
+  other: 'другое',
+};
+const PAIN_CHARACTER_LABELS = {
+  aching: 'ноющая',
+  sharp: 'острая',
+  burning: 'жгучая',
+  shooting: 'простреливающая',
+  throbbing: 'пульсирующая',
+  other: 'другая',
+};
 
 // =====================================================
 // ПУБЛИЧНЫЕ: Справочник фаз реабилитации
@@ -1797,6 +1829,491 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
   } catch (error) {
     console.error('Ошибка получения упражнений:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения упражнений' });
+  }
+});
+
+// ============================================================================
+// PAIN endpoints (Wave 2 коммит 2.04)
+// Два режима: daily diary (UPSERT, один в день) + event SOS (INSERT, многократно).
+// Red-flag automation через существующий utils/opsAlert.js — дедуп + hourly cap.
+// ============================================================================
+
+/**
+ * Helper: trigger red-flag pain alert.
+ * - await sendOpsAlert(title, body) — fire-and-forget, дедуп+hourly cap в utils
+ * - INSERT в ops_alerts с source_entity_id=pain_entry.id для admin триажа
+ * Возвращает ops_alert.id или null если INSERT упал (Telegram уже ушёл — независимо).
+ */
+async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_event }) {
+  const modeLabel = is_event ? 'Pain Event' : 'Daily diary';
+  const title = `🚨 RED FLAG: ${patient.full_name || 'Пациент'} (ID ${patient.id})`;
+  const redFlagDescriptions = red_flag_locs
+    .map(l => `• ${l.label} — ${l.red_flag_reason || 'причина не указана'}`)
+    .join('\n');
+  const notesLine = pain_entry.notes ? `\nЗаметка: ${pain_entry.notes}` : '';
+  const triggerLine = pain_entry.trigger_type
+    ? `\nТриггер: ${TRIGGER_TYPE_LABELS[pain_entry.trigger_type] || pain_entry.trigger_type}`
+    : '';
+  const characterLine = pain_entry.pain_character
+    ? `\nХарактер: ${PAIN_CHARACTER_LABELS[pain_entry.pain_character] || pain_entry.pain_character}`
+    : '';
+  const phoneLine = patient.phone ? `\nТелефон: ${patient.phone}` : '';
+
+  const body =
+    `Режим: ${modeLabel}\n` +
+    `VAS: ${pain_entry.vas_score}/10\n` +
+    `Локации с красным флагом:\n${redFlagDescriptions}` +
+    triggerLine + characterLine + notesLine + phoneLine +
+    `\n\nДействие: связаться с пациентом, оценить состояние.\n` +
+    `Pain entry ID: ${pain_entry.id} (${new Date(pain_entry.created_at).toLocaleString('ru-RU')})`;
+
+  try {
+    await sendOpsAlert(title, body);
+  } catch (err) {
+    console.error('[triggerRedFlagAlert] sendOpsAlert threw:', err.message);
+  }
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO ops_alerts
+         (patient_id, alert_type, severity, source_entity_type, source_entity_id,
+          details, telegram_attempted_at)
+       VALUES ($1, 'red_flag_pain', 'high', 'pain_entry', $2, $3, NOW())
+       RETURNING id`,
+      [
+        patient.id,
+        pain_entry.id,
+        JSON.stringify({
+          vas_score: pain_entry.vas_score,
+          notes: pain_entry.notes,
+          trigger_type: pain_entry.trigger_type,
+          is_event,
+          red_flag_locations: red_flag_locs.map(l => ({
+            code: l.code, label: l.label, reason: l.red_flag_reason
+          }))
+        })
+      ]
+    );
+    return rows[0].id;
+  } catch (err) {
+    console.error('[triggerRedFlagAlert] ops_alerts INSERT failed:', err.message);
+    return null;
+  }
+}
+
+/**
+ * GET /api/rehab/my/pain-locations
+ * Active локации боли для program_type активной программы пациента.
+ * Источник program_type — rehab_programs.program_type (Wave 1 #1.01).
+ */
+router.get('/my/pain-locations', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+
+    const ptRes = await query(
+      `SELECT program_type FROM rehab_programs
+       WHERE patient_id = $1 AND is_active = TRUE
+       ORDER BY created_at DESC LIMIT 1`,
+      [patientId]
+    );
+
+    const programType = ptRes.rows[0]?.program_type;
+    if (!programType) {
+      return res.json({ data: [], total: 0 });
+    }
+
+    const { rows } = await query(
+      `SELECT code, program_type, label, position, is_red_flag
+       FROM pain_locations
+       WHERE program_type = $1 AND is_active = TRUE
+       ORDER BY position, code`,
+      [programType]
+    );
+    return res.json({ data: rows, total: rows.length });
+  } catch (err) {
+    console.error('GET /rehab/my/pain-locations error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось получить локации' });
+  }
+});
+
+/**
+ * POST /api/rehab/my/pain/daily
+ * UPSERT daily entry. Race-safe через SELECT FOR UPDATE → UPDATE/INSERT.
+ * Один daily в день на пациента (партиал-UNIQUE `(patient_id, entry_date) WHERE is_event=false`).
+ * Body: { vas_score (req, 0..10), notes?, location_codes?, pain_character?, program_id? }
+ * red_flag_triggered sticky — если ранее был true и сейчас локаций red-flag нет, остаётся true.
+ */
+router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
+  const { vas_score, notes, location_codes, pain_character, program_id } = req.body;
+
+  if (typeof vas_score !== 'number' || vas_score < 0 || vas_score > 10) {
+    return res.status(400).json({ error: 'ValidationError', message: 'vas_score обязателен (число 0..10)' });
+  }
+  if (notes !== undefined && notes !== null) {
+    if (typeof notes !== 'string' || notes.length > 1000) {
+      return res.status(400).json({ error: 'ValidationError', message: 'notes ≤ 1000 символов' });
+    }
+  }
+  if (location_codes !== undefined && location_codes !== null) {
+    if (!Array.isArray(location_codes) || location_codes.length > 16) {
+      return res.status(400).json({ error: 'ValidationError', message: 'location_codes — массив до 16' });
+    }
+  }
+  if (pain_character !== undefined && pain_character !== null) {
+    if (typeof pain_character !== 'string' || !PAIN_CHARACTER_VALUES.includes(pain_character)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `pain_character: одно из ${PAIN_CHARACTER_VALUES.join('|')}`
+      });
+    }
+  }
+
+  const patientId = req.patient.id;
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    let locsFound = [];
+    if (Array.isArray(location_codes) && location_codes.length > 0) {
+      const locsRes = await client.query(
+        `SELECT code, label, position, is_red_flag, red_flag_reason
+         FROM pain_locations
+         WHERE code = ANY($1) AND is_active = TRUE`,
+        [location_codes]
+      );
+      locsFound = locsRes.rows;
+      const found = new Set(locsFound.map(l => l.code));
+      const missing = location_codes.filter(c => !found.has(c));
+      if (missing.length > 0) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          error: 'ValidationError',
+          message: `Неизвестные/неактивные локации: ${missing.join(', ')}`
+        });
+      }
+    }
+
+    const redFlagLocs = locsFound.filter(l => l.is_red_flag);
+    const newRedFlag = redFlagLocs.length > 0;
+
+    // Race-safe lookup существующей daily-записи
+    const existingRes = await client.query(
+      `SELECT id, created_at, red_flag_triggered
+       FROM pain_entries
+       WHERE patient_id = $1 AND entry_date = CURRENT_DATE AND is_event = FALSE
+       FOR UPDATE`,
+      [patientId]
+    );
+
+    let painEntry;
+    if (existingRes.rows.length > 0) {
+      const existingId = existingRes.rows[0].id;
+      const prevRedFlag = existingRes.rows[0].red_flag_triggered === true;
+      const upRes = await client.query(
+        `UPDATE pain_entries
+         SET vas_score = $1, notes = $2, pain_character = $3, program_id = $4,
+             red_flag_triggered = $5, updated_at = NOW()
+         WHERE id = $6
+         RETURNING *`,
+        [
+          vas_score,
+          notes ?? null,
+          pain_character ?? null,
+          program_id ?? null,
+          prevRedFlag || newRedFlag, // sticky
+          existingId
+        ]
+      );
+      painEntry = upRes.rows[0];
+    } else {
+      const insRes = await client.query(
+        `INSERT INTO pain_entries
+           (patient_id, program_id, entry_date, is_event,
+            vas_score, notes, pain_character, red_flag_triggered)
+         VALUES ($1, $2, CURRENT_DATE, FALSE, $3, $4, $5, $6)
+         RETURNING *`,
+        [
+          patientId,
+          program_id ?? null,
+          vas_score,
+          notes ?? null,
+          pain_character ?? null,
+          newRedFlag
+        ]
+      );
+      painEntry = insRes.rows[0];
+    }
+
+    // Локации — clear + reinsert
+    await client.query(
+      `DELETE FROM pain_entry_locations WHERE pain_entry_id = $1`,
+      [painEntry.id]
+    );
+    for (const loc of locsFound) {
+      await client.query(
+        `INSERT INTO pain_entry_locations (pain_entry_id, location_code) VALUES ($1, $2)`,
+        [painEntry.id, loc.code]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    // Red-flag automation — после COMMIT, не откатывает pain_entry при failure
+    let opsAlertId = null;
+    if (newRedFlag) {
+      const patRes = await query(
+        `SELECT id, full_name, phone, email FROM patients WHERE id = $1`,
+        [patientId]
+      );
+      opsAlertId = await triggerRedFlagAlert({
+        patient: patRes.rows[0],
+        pain_entry: painEntry,
+        red_flag_locs: redFlagLocs,
+        is_event: false
+      });
+
+      if (opsAlertId) {
+        await query(
+          `UPDATE pain_entries SET ops_alert_sent_at = NOW() WHERE id = $1`,
+          [painEntry.id]
+        );
+      }
+    }
+
+    return res.status(201).json({
+      data: {
+        ...painEntry,
+        locations: locsFound.map(l => ({
+          code: l.code, label: l.label, is_red_flag: l.is_red_flag
+        })),
+        ops_alert_id: opsAlertId
+      },
+      message: newRedFlag
+        ? 'Запись в дневнике сохранена. Куратор получит уведомление о красном флаге.'
+        : 'Запись в дневнике сохранена'
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('POST /rehab/my/pain/daily error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось сохранить запись' });
+  } finally {
+    client.release();
+  }
+});
+
+/**
+ * POST /api/rehab/my/pain/event
+ * INSERT event SOS. is_event=TRUE → не подпадает под daily UNIQUE.
+ * Body: { vas_score (req), location_codes (req, ≥1), notes?, trigger_type?, pain_character?, photo_url?, program_id? }
+ */
+router.post('/my/pain/event', authenticatePatient, async (req, res) => {
+  const {
+    vas_score, location_codes, notes, trigger_type, pain_character, photo_url, program_id
+  } = req.body;
+
+  if (typeof vas_score !== 'number' || vas_score < 0 || vas_score > 10) {
+    return res.status(400).json({ error: 'ValidationError', message: 'vas_score обязателен (число 0..10)' });
+  }
+  if (!Array.isArray(location_codes) || location_codes.length === 0) {
+    return res.status(400).json({
+      error: 'ValidationError',
+      message: 'location_codes обязательны для pain event (минимум 1)'
+    });
+  }
+  if (location_codes.length > 16) {
+    return res.status(400).json({ error: 'ValidationError', message: 'не больше 16 локаций' });
+  }
+  if (notes !== undefined && notes !== null) {
+    if (typeof notes !== 'string' || notes.length > 1000) {
+      return res.status(400).json({ error: 'ValidationError', message: 'notes ≤ 1000 символов' });
+    }
+  }
+  if (trigger_type !== undefined && trigger_type !== null) {
+    if (typeof trigger_type !== 'string' || !TRIGGER_TYPE_VALUES.includes(trigger_type)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `trigger_type: одно из ${TRIGGER_TYPE_VALUES.join('|')}`
+      });
+    }
+  }
+  if (photo_url !== undefined && photo_url !== null) {
+    if (typeof photo_url !== 'string' || photo_url.length > 500) {
+      return res.status(400).json({ error: 'ValidationError', message: 'photo_url ≤ 500 символов' });
+    }
+  }
+  if (pain_character !== undefined && pain_character !== null) {
+    if (typeof pain_character !== 'string' || !PAIN_CHARACTER_VALUES.includes(pain_character)) {
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `pain_character: одно из ${PAIN_CHARACTER_VALUES.join('|')}`
+      });
+    }
+  }
+
+  const patientId = req.patient.id;
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const locsRes = await client.query(
+      `SELECT code, label, position, is_red_flag, red_flag_reason
+       FROM pain_locations
+       WHERE code = ANY($1) AND is_active = TRUE`,
+      [location_codes]
+    );
+    const locsFound = locsRes.rows;
+    const found = new Set(locsFound.map(l => l.code));
+    const missing = location_codes.filter(c => !found.has(c));
+    if (missing.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'ValidationError',
+        message: `Неизвестные/неактивные локации: ${missing.join(', ')}`
+      });
+    }
+
+    const redFlagLocs = locsFound.filter(l => l.is_red_flag);
+    const newRedFlag = redFlagLocs.length > 0;
+
+    const insRes = await client.query(
+      `INSERT INTO pain_entries
+         (patient_id, program_id, entry_date, is_event,
+          vas_score, notes, trigger_type, pain_character, photo_url, red_flag_triggered)
+       VALUES ($1, $2, CURRENT_DATE, TRUE, $3, $4, $5, $6, $7, $8)
+       RETURNING *`,
+      [
+        patientId,
+        program_id ?? null,
+        vas_score,
+        notes ?? null,
+        trigger_type ?? null,
+        pain_character ?? null,
+        photo_url ?? null,
+        newRedFlag
+      ]
+    );
+    const painEntry = insRes.rows[0];
+
+    for (const loc of locsFound) {
+      await client.query(
+        `INSERT INTO pain_entry_locations (pain_entry_id, location_code) VALUES ($1, $2)`,
+        [painEntry.id, loc.code]
+      );
+    }
+
+    await client.query('COMMIT');
+
+    let opsAlertId = null;
+    if (newRedFlag) {
+      const patRes = await query(
+        `SELECT id, full_name, phone, email FROM patients WHERE id = $1`,
+        [patientId]
+      );
+      opsAlertId = await triggerRedFlagAlert({
+        patient: patRes.rows[0],
+        pain_entry: painEntry,
+        red_flag_locs: redFlagLocs,
+        is_event: true
+      });
+
+      if (opsAlertId) {
+        await query(
+          `UPDATE pain_entries SET ops_alert_sent_at = NOW() WHERE id = $1`,
+          [painEntry.id]
+        );
+      }
+    }
+
+    return res.status(201).json({
+      data: {
+        ...painEntry,
+        locations: locsFound.map(l => ({
+          code: l.code, label: l.label, is_red_flag: l.is_red_flag
+        })),
+        ops_alert_id: opsAlertId
+      },
+      message: newRedFlag
+        ? 'Запись о боли сохранена. Куратор получит уведомление о красном флаге.'
+        : 'Запись о боли сохранена'
+    });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('POST /rehab/my/pain/event error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось сохранить запись' });
+  } finally {
+    client.release();
+  }
+});
+
+/**
+ * GET /api/rehab/my/pain
+ * История pain_entries. Query: type=daily|event|all (default all), limit, offset, patient_id (instructor).
+ * Пациент видит свою историю; инструктор должен передать ?patient_id.
+ */
+router.get('/my/pain', authenticatePatientOrInstructor, async (req, res) => {
+  try {
+    let patientId;
+    if (req.patient) {
+      patientId = req.patient.id;
+    } else {
+      patientId = parseInt(req.query.patient_id, 10);
+      if (isNaN(patientId)) {
+        return res.status(400).json({
+          error: 'ValidationError',
+          message: 'patient_id обязателен для инструктора'
+        });
+      }
+    }
+
+    const type = req.query.type || 'all';
+    if (!['all', 'daily', 'event'].includes(type)) {
+      return res.status(400).json({ error: 'ValidationError', message: 'type: all|daily|event' });
+    }
+
+    const limit = Math.min(parseInt(req.query.limit, 10) || 30, 100);
+    const offset = parseInt(req.query.offset, 10) || 0;
+
+    let typeFilter = '';
+    if (type === 'daily') typeFilter = 'AND pe.is_event = FALSE';
+    if (type === 'event') typeFilter = 'AND pe.is_event = TRUE';
+
+    const { rows } = await query(
+      `SELECT
+         pe.id, pe.patient_id, pe.program_id, pe.entry_date, pe.is_event,
+         pe.vas_score, pe.notes, pe.trigger_type, pe.pain_character, pe.photo_url,
+         pe.red_flag_triggered, pe.ops_alert_sent_at,
+         pe.created_at, pe.updated_at,
+         COALESCE(
+           json_agg(
+             json_build_object('code', pl.code, 'label', pl.label, 'is_red_flag', pl.is_red_flag)
+             ORDER BY pl.position
+           ) FILTER (WHERE pl.code IS NOT NULL),
+           '[]'::json
+         ) AS locations
+       FROM pain_entries pe
+       LEFT JOIN pain_entry_locations pel ON pel.pain_entry_id = pe.id
+       LEFT JOIN pain_locations pl ON pl.code = pel.location_code
+       WHERE pe.patient_id = $1 ${typeFilter}
+       GROUP BY pe.id
+       ORDER BY pe.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [patientId, limit, offset]
+    );
+
+    let totalFilter = '';
+    if (type === 'daily') totalFilter = 'AND is_event = FALSE';
+    if (type === 'event') totalFilter = 'AND is_event = TRUE';
+
+    const totalRes = await query(
+      `SELECT COUNT(*)::int AS cnt FROM pain_entries
+       WHERE patient_id = $1 ${totalFilter}`,
+      [patientId]
+    );
+
+    return res.json({ data: rows, total: totalRes.rows[0].cnt });
+  } catch (err) {
+    console.error('GET /rehab/my/pain error:', err.message);
+    return res.status(500).json({ error: 'ServerError', message: 'Не удалось получить историю' });
   }
 });
 
