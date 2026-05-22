@@ -188,6 +188,16 @@ jobs:
             mv "\$RELEASES/$RELEASE/frontend" "\$APP_DIR/frontend"
             cp -r "\$RELEASES/$RELEASE/deploy/"* "\$APP_DIR/deploy/"
 
+            # Uploads persistence (fix bug_avatar_lost_on_deploy):
+            # atomic swap каталога backend терял uploads/ при каждом deploy
+            # (avatars, diary_photos, measurements). Symlink на persistent
+            # /opt/azarean-rehab/data/uploads — outside swap target, переживает
+            # все будущие deploys. One-time data migration существующих файлов
+            # выполняется вручную перед первым deploy после merge.
+            mkdir -p "\$APP_DIR/data/uploads"
+            rm -rf "\$APP_DIR/backend/uploads"
+            ln -sfn "\$APP_DIR/data/uploads" "\$APP_DIR/backend/uploads"
+
             # Ставим production deps
             cd "\$APP_DIR/backend"
             npm ci --omit=dev --no-audit --no-fund
