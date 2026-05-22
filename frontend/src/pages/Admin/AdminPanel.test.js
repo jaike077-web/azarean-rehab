@@ -21,6 +21,17 @@ jest.mock('../../services/api', () => ({
     createPhase: jest.fn(),
     updatePhase: jest.fn(),
     deletePhase: jest.fn(),
+    getProgramTypes: jest.fn().mockResolvedValue({ data: [] }),
+    createProgramType: jest.fn(),
+    updateProgramType: jest.fn(),
+    deleteProgramType: jest.fn(),
+    getProgramTemplates: jest.fn().mockResolvedValue({ data: [] }),
+    createProgramTemplate: jest.fn(),
+    updateProgramTemplate: jest.fn(),
+    deleteProgramTemplate: jest.fn(),
+    getPhaseComplexes: jest.fn(),
+    upsertPhaseComplex: jest.fn(),
+    deletePhaseComplex: jest.fn(),
     getTips: jest.fn(),
     createTip: jest.fn(),
     updateTip: jest.fn(),
@@ -29,7 +40,16 @@ jest.mock('../../services/api', () => ({
     createVideo: jest.fn(),
     updateVideo: jest.fn(),
     deleteVideo: jest.fn(),
+    getPainLocations: jest.fn(),
+    getPainLocation: jest.fn(),
+    createPainLocation: jest.fn(),
+    updatePainLocation: jest.fn(),
+    deletePainLocation: jest.fn(),
     getSystemInfo: jest.fn(),
+  },
+  templates: {
+    getAll: jest.fn().mockResolvedValue({ data: [] }),
+    list: jest.fn().mockResolvedValue({ data: [] }),
   },
 }));
 
@@ -240,6 +260,143 @@ describe('AdminContent', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Создать')).toBeInTheDocument();
+    });
+  });
+});
+
+// =====================================================
+// PainLocationsTab (Wave 2 коммит 2.02)
+// =====================================================
+describe('PainLocationsTab', () => {
+  const mockLocations = [
+    { code: 'knee_anterior', program_type: 'acl', program_type_label: 'ПКС', label: 'Передняя', position: 10, is_red_flag: false, red_flag_reason: null, is_active: true },
+    { code: 'calf_posterior', program_type: 'acl', program_type_label: 'ПКС', label: 'Икроножная', position: 80, is_red_flag: true, red_flag_reason: 'ТГВ', is_active: true },
+  ];
+  const mockProgramTypes = [
+    { code: 'acl', label: 'ПКС реабилитация' },
+    { code: 'shoulder_general', label: 'Реабилитация плеча' },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    admin.getProgramTypes.mockResolvedValue({ data: mockProgramTypes });
+    admin.getPainLocations.mockResolvedValue({ data: mockLocations });
+    admin.getPhases.mockResolvedValue({ data: [] });
+  });
+
+  const openPainLocationsTab = async () => {
+    await act(async () => { render(<AdminContent />); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Локации боли'));
+    });
+    await waitFor(() => expect(screen.getByText('Передняя')).toBeInTheDocument());
+  };
+
+  it('renders tab button in navigation', async () => {
+    await act(async () => { render(<AdminContent />); });
+    expect(screen.getByText('Локации боли')).toBeInTheDocument();
+  });
+
+  it('switches to pain-locations tab and renders rows', async () => {
+    await openPainLocationsTab();
+    expect(screen.getByText('Передняя')).toBeInTheDocument();
+    expect(screen.getByText('Икроножная')).toBeInTheDocument();
+  });
+
+  it('shows red-flag icon for calf_posterior row', async () => {
+    await openPainLocationsTab();
+    const icon = screen.getByTestId('red-flag-icon');
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute('title', 'ТГВ');
+  });
+
+  it('filter by program_type calls API with param', async () => {
+    await openPainLocationsTab();
+    admin.getPainLocations.mockClear();
+    admin.getPainLocations.mockResolvedValue({ data: [mockLocations[0]] });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Фильтр программа'), { target: { value: 'acl' } });
+    });
+
+    await waitFor(() => {
+      expect(admin.getPainLocations).toHaveBeenCalledWith(expect.objectContaining({ program_type: 'acl' }));
+    });
+  });
+
+  it('"Добавить локацию" button opens create form', async () => {
+    await openPainLocationsTab();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить локацию/i }));
+    });
+    expect(screen.getByLabelText(/Код/)).toBeInTheDocument();
+  });
+
+  it('create calls createPainLocation with form values', async () => {
+    await openPainLocationsTab();
+    admin.createPainLocation.mockResolvedValueOnce({ data: { code: 'test_loc' } });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить локацию/i }));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/Код/), { target: { value: 'test_loc' } });
+      fireEvent.change(screen.getByLabelText('Программа'), { target: { value: 'acl' } });
+      fireEvent.change(screen.getByLabelText(/Название/), { target: { value: 'Тест' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Сохранить/ }));
+    });
+
+    await waitFor(() => {
+      expect(admin.createPainLocation).toHaveBeenCalledWith(expect.objectContaining({
+        code: 'test_loc',
+        program_type: 'acl',
+        label: 'Тест',
+      }));
+    });
+  });
+
+  it('toggle is_red_flag reveals red_flag_reason textarea', async () => {
+    await openPainLocationsTab();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить локацию/i }));
+    });
+    expect(screen.queryByLabelText(/Причина red-flag/)).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/Red-flag локация/));
+    });
+
+    expect(screen.getByLabelText(/Причина red-flag/)).toBeInTheDocument();
+  });
+
+  it('edit form disables code and program_type', async () => {
+    await openPainLocationsTab();
+    const editBtns = screen.getAllByTitle('Редактировать');
+    await act(async () => { fireEvent.click(editBtns[0]); });
+
+    expect(screen.getByLabelText(/Код/)).toBeDisabled();
+    expect(screen.getByLabelText('Программа')).toBeDisabled();
+  });
+
+  it('delete 409 shows error toast with refs message', async () => {
+    await openPainLocationsTab();
+    admin.deletePainLocation.mockRejectedValueOnce({
+      response: { status: 409, data: { message: 'Локация используется в 5 записях боли' } },
+    });
+
+    const delBtns = screen.getAllByTitle('Удалить');
+    await act(async () => { fireEvent.click(delBtns[0]); });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Confirm'));
+    });
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(expect.stringMatching(/используется в 5/));
     });
   });
 });

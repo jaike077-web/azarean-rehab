@@ -1019,6 +1019,213 @@ router.delete('/program-templates/:id/phase-complexes/:phase', async (req, res) 
 });
 
 // =====================================================
+// КОНТЕНТ: ЛОКАЦИИ БОЛИ (Wave 2 коммит 2.02)
+// =====================================================
+
+// GET /api/admin/pain-locations — список локаций (опц. filter program_type, is_active)
+router.get('/pain-locations', async (req, res) => {
+  try {
+    const { program_type, is_active } = req.query;
+    const conditions = [];
+    const params = [];
+
+    if (program_type) {
+      params.push(program_type);
+      conditions.push(`pl.program_type = $${params.length}`);
+    }
+    if (is_active !== undefined) {
+      params.push(is_active === 'true' || is_active === true);
+      conditions.push(`pl.is_active = $${params.length}`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await query(
+      `SELECT pl.code, pl.program_type, pt.label AS program_type_label,
+              pl.label, pl.position, pl.is_red_flag, pl.red_flag_reason,
+              pl.is_active, pl.created_at, pl.updated_at
+       FROM pain_locations pl
+       LEFT JOIN program_types pt ON pt.code = pl.program_type
+       ${whereClause}
+       ORDER BY pl.program_type, pl.position, pl.code`,
+      params
+    );
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get pain-locations error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения локаций боли' });
+  }
+});
+
+// GET /api/admin/pain-locations/:code — одна локация
+router.get('/pain-locations/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    const result = await query(
+      `SELECT pl.code, pl.program_type, pt.label AS program_type_label,
+              pl.label, pl.position, pl.is_red_flag, pl.red_flag_reason,
+              pl.is_active, pl.created_at, pl.updated_at
+       FROM pain_locations pl
+       LEFT JOIN program_types pt ON pt.code = pl.program_type
+       WHERE pl.code = $1`,
+      [code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Локация не найдена' });
+    }
+    res.json({ data: result.rows[0] });
+  } catch (error) {
+    console.error('Admin get pain-location error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения локации' });
+  }
+});
+
+// POST /api/admin/pain-locations — создать новую локацию
+router.post('/pain-locations', async (req, res) => {
+  const { code, program_type, label, position, is_red_flag, red_flag_reason } = req.body;
+
+  if (!code || typeof code !== 'string' || !/^[a-z_]+$/.test(code) || code.length > 50) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: 'code обязателен, latin lowercase + underscore, до 50 символов'
+    });
+  }
+  if (!program_type || !label || typeof label !== 'string' || label.length === 0 || label.length > 100) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: 'program_type и label (1..100 символов) обязательны'
+    });
+  }
+  if (is_red_flag && (!red_flag_reason || red_flag_reason.length > 255)) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: 'Для red-flag локации red_flag_reason обязателен (≤255 символов)'
+    });
+  }
+
+  try {
+    const ptCheck = await query('SELECT code FROM program_types WHERE code = $1', [program_type]);
+    if (ptCheck.rows.length === 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: `program_type "${program_type}" не существует`
+      });
+    }
+
+    const result = await query(
+      `INSERT INTO pain_locations (code, program_type, label, position, is_red_flag, red_flag_reason, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+       RETURNING *`,
+      [code, program_type, label, position ?? 0, !!is_red_flag, is_red_flag ? red_flag_reason : null]
+    );
+
+    await logAudit(req, 'CREATE', 'pain_location', null, {
+      code, program_type, label, is_red_flag: !!is_red_flag
+    });
+
+    res.status(201).json({ data: result.rows[0], message: 'Локация создана' });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Conflict', message: `Локация с code="${code}" уже существует` });
+    }
+    console.error('Admin create pain-location error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания локации' });
+  }
+});
+
+// PUT /api/admin/pain-locations/:code — обновить label / position / is_red_flag / reason / is_active.
+// code и program_type immutable.
+router.put('/pain-locations/:code', async (req, res) => {
+  const { code } = req.params;
+  const { label, position, is_red_flag, red_flag_reason, is_active } = req.body;
+
+  if (label !== undefined && (typeof label !== 'string' || label.length === 0 || label.length > 100)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'label длина 1..100' });
+  }
+  if (is_red_flag === true && (!red_flag_reason || red_flag_reason.length > 255)) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: 'Для red-flag локации red_flag_reason обязателен (≤255 символов)'
+    });
+  }
+
+  try {
+    const sets = [];
+    const params = [];
+    let idx = 1;
+
+    if (label !== undefined) { sets.push(`label = $${idx++}`); params.push(label); }
+    if (position !== undefined) { sets.push(`position = $${idx++}`); params.push(position); }
+    if (is_red_flag !== undefined) {
+      sets.push(`is_red_flag = $${idx++}`);
+      params.push(!!is_red_flag);
+      if (is_red_flag === false) {
+        sets.push(`red_flag_reason = NULL`);
+      }
+    }
+    if (red_flag_reason !== undefined && is_red_flag !== false) {
+      sets.push(`red_flag_reason = $${idx++}`);
+      params.push(red_flag_reason);
+    }
+    if (is_active !== undefined) { sets.push(`is_active = $${idx++}`); params.push(!!is_active); }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Нет полей для обновления' });
+    }
+
+    sets.push(`updated_at = NOW()`);
+    params.push(code);
+
+    const result = await query(
+      `UPDATE pain_locations SET ${sets.join(', ')} WHERE code = $${idx} RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Локация не найдена' });
+    }
+
+    await logAudit(req, 'UPDATE', 'pain_location', null, { code, changes: req.body });
+
+    res.json({ data: result.rows[0], message: 'Локация обновлена' });
+  } catch (error) {
+    console.error('Admin update pain-location error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления локации' });
+  }
+});
+
+// DELETE /api/admin/pain-locations/:code — hard delete только если нет ссылок из pain_entry_locations.
+// При наличии ссылок — 409 с подсказкой деактивировать (is_active=false) через PUT.
+router.delete('/pain-locations/:code', async (req, res) => {
+  const { code } = req.params;
+
+  try {
+    const refsCheck = await query(
+      `SELECT COUNT(*)::int AS cnt FROM pain_entry_locations WHERE location_code = $1`,
+      [code]
+    );
+    const cnt = refsCheck.rows[0]?.cnt ?? 0;
+    if (cnt > 0) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `Локация используется в ${cnt} записях боли. Деактивируйте (is_active=false) вместо удаления.`
+      });
+    }
+
+    const result = await query('DELETE FROM pain_locations WHERE code = $1 RETURNING code', [code]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Локация не найдена' });
+    }
+
+    await logAudit(req, 'DELETE', 'pain_location', null, { code });
+
+    res.json({ data: { code }, message: 'Локация удалена' });
+  } catch (error) {
+    console.error('Admin delete pain-location error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления локации' });
+  }
+});
+
+// =====================================================
 // КОНТЕНТ: СОВЕТЫ (TIPS)
 // =====================================================
 

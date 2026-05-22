@@ -929,3 +929,218 @@ describe('DELETE /api/admin/program-templates/:id/phase-complexes/:phase', () =>
     expect(res.status).toBe(404);
   });
 });
+
+// =====================================================
+// PAIN LOCATIONS CRUD (Wave 2 коммит 2.02)
+// =====================================================
+
+describe('GET /api/admin/pain-locations', () => {
+  it('returns list of 16 locations', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        { code: 'knee_anterior', program_type: 'acl', program_type_label: 'ПКС', label: 'Передняя', position: 10, is_red_flag: false, red_flag_reason: null, is_active: true },
+        { code: 'calf_posterior', program_type: 'acl', program_type_label: 'ПКС', label: 'Икроножная', position: 80, is_red_flag: true, red_flag_reason: 'ТГВ', is_active: true },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.total).toBe(2);
+  });
+
+  it('filters by program_type', async () => {
+    query.mockResolvedValueOnce({ rows: [{ code: 'knee_anterior', program_type: 'acl' }] });
+
+    const res = await request(app)
+      .get('/api/admin/pain-locations?program_type=acl')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    // beforeEach is_active call = call[0], pain-locations = call[1]
+    expect(query.mock.calls[1][1]).toContain('acl');
+  });
+});
+
+describe('GET /api/admin/pain-locations/:code', () => {
+  it('returns one location', async () => {
+    query.mockResolvedValueOnce({ rows: [{ code: 'knee_anterior', program_type: 'acl', label: 'Передняя' }] });
+
+    const res = await request(app)
+      .get('/api/admin/pain-locations/knee_anterior')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.code).toBe('knee_anterior');
+  });
+
+  it('404 if not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .get('/api/admin/pain-locations/nonexistent')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/admin/pain-locations', () => {
+  it('creates new location + audit log', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'acl' }] })                       // program_types check
+      .mockResolvedValueOnce({ rows: [{ code: 'new_loc', program_type: 'acl', label: 'X', is_active: true }] }) // INSERT
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });                        // logAudit
+
+    const res = await request(app)
+      .post('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'new_loc', program_type: 'acl', label: 'X' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.code).toBe('new_loc');
+    const auditCall = query.mock.calls.find((call) => /INSERT INTO audit_logs/.test(call[0]));
+    expect(auditCall).toBeDefined();
+  });
+
+  it('400 when code format invalid', async () => {
+    const res = await request(app)
+      .post('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'Invalid-CODE!', program_type: 'acl', label: 'X' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('400 when red-flag without reason', async () => {
+    const res = await request(app)
+      .post('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'new_loc', program_type: 'acl', label: 'X', is_red_flag: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/red_flag_reason обязателен/);
+  });
+
+  it('400 when program_type does not exist', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // program_types check empty
+
+    const res = await request(app)
+      .post('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'new_loc', program_type: 'nonexistent', label: 'X' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/program_type/);
+  });
+
+  it('409 on duplicate code (PG 23505)', async () => {
+    const dupErr = new Error('duplicate key');
+    dupErr.code = '23505';
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'acl' }] })
+      .mockRejectedValueOnce(dupErr);
+
+    const res = await request(app)
+      .post('/api/admin/pain-locations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ code: 'knee_anterior', program_type: 'acl', label: 'X' });
+
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('PUT /api/admin/pain-locations/:code', () => {
+  it('updates label', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'knee_anterior', label: 'Новый label' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .put('/api/admin/pain-locations/knee_anterior')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'Новый label' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.label).toBe('Новый label');
+  });
+
+  it('404 if not found', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .put('/api/admin/pain-locations/nonexistent')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ label: 'X' });
+
+    expect(res.status).toBe(404);
+  });
+
+  it('clearing is_red_flag nullifies red_flag_reason', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ code: 'calf_posterior', is_red_flag: false, red_flag_reason: null }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .put('/api/admin/pain-locations/calf_posterior')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ is_red_flag: false });
+
+    expect(res.status).toBe(200);
+    // beforeEach is_active call = call[0], UPDATE = call[1]
+    expect(query.mock.calls[1][0]).toMatch(/red_flag_reason = NULL/);
+  });
+
+  it('400 when no fields to update', async () => {
+    const res = await request(app)
+      .put('/api/admin/pain-locations/knee_anterior')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('DELETE /api/admin/pain-locations/:code', () => {
+  it('409 if there are pain_entry_locations refs', async () => {
+    query.mockResolvedValueOnce({ rows: [{ cnt: 5 }] });
+
+    const res = await request(app)
+      .delete('/api/admin/pain-locations/knee_anterior')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toMatch(/в 5 записях/);
+  });
+
+  it('deletes when no refs + audit log', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ code: 'knee_anterior' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const res = await request(app)
+      .delete('/api/admin/pain-locations/knee_anterior')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    const auditCall = query.mock.calls.find((call) => /INSERT INTO audit_logs/.test(call[0]));
+    expect(auditCall).toBeDefined();
+  });
+
+  it('404 if code does not exist', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .delete('/api/admin/pain-locations/nonexistent')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+  });
+});
