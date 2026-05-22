@@ -1,0 +1,60 @@
+/* =====================================================
+   Wave 2 #2.08 — MeasurementsScreen (pd-* global, memory #20)
+   ===================================================== */
+
+.pd-measurements-screen {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pd-measurements-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0 4px;
+}
+.pd-measurements-header__icon {
+  color: var(--pd-accent-teal, #0d9488);
+}
+.pd-measurements-header__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--pd-text, #0f172a);
+  letter-spacing: -0.01em;
+}
+
+/* ----- Form card ----- */
+.pd-measurements-card {
+  background: var(--pd-bg, #fff);
+  border: 1px solid var(--pd-border-soft, rgba(15, 23, 42, 0.08));
+  border-radius: 16px;
+  padding: 18px 16px;
+}
+.pd-measurements-card__heading {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pd-text, #0f172a);
+}
+
+/* ----- History section ----- */
+.pd-measurements-history-section__heading {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pd-text, #0f172a);
+}
+.pd-measurements-history-section__loading {
+  padding: 16px 0;
+  font-size: 14px;
+  color: var(--pd-text-secondary, #64748b);
+}
+
+/* ----- Mobile ----- */
+@media (max-width: 480px) {
+  .pd-measurements-screen { padding: 12px; gap: 16px; }
+  .pd-measurements-card { padding: 14px 12px; }
+}
