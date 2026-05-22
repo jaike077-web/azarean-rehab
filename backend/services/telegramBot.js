@@ -29,7 +29,11 @@ function initBot() {
   }
 
   const TelegramBot = require('node-telegram-bot-api');
-  bot = new TelegramBot(token, { polling: true });
+  // baseApiUrl — fallback на reverse-proxy через зарубежный VDS (tg-proxy.azarean.ru)
+  // если NetAngels включит DPI-блокировку api.telegram.org по SNI (инцидент 2026-05-22).
+  // Пусто → дефолт node-telegram-bot-api ('https://api.telegram.org').
+  const baseApiUrl = process.env.TELEGRAM_API_URL || 'https://api.telegram.org';
+  bot = new TelegramBot(token, { polling: true, baseApiUrl });
 
   // Регистрируем меню команд
   bot.setMyCommands([
@@ -53,9 +57,10 @@ function initBot() {
   // Текстовые сообщения (для заметок в wizard)
   bot.on('message', handleTextMessage);
 
-  // Ошибки polling
+  // Ошибки polling — НЕ падать, node-telegram-bot-api сам ретраит.
+  // При DPI-блокировке (EFATAL/ECONNRESET) это спасает от крашлупа PM2.
   bot.on('polling_error', (err) => {
-    console.error('Telegram polling error:', err.message);
+    console.error('[polling_error]', err.code || 'NO_CODE', err.message);
   });
 
   console.log('🤖 Telegram бот запущен (long polling)');

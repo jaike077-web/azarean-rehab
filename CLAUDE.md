@@ -190,6 +190,14 @@ KINESCOPE_PROJECT_ID=...
 CORS_ORIGIN=http://localhost:3000
 TELEGRAM_BOT_TOKEN=...
 
+# Bot API base URL — fallback на reverse-proxy через зарубежный VDS,
+# когда NetAngels блокирует api.telegram.org по SNI (инцидент 2026-05-22, ~1ч 40мин downtime
+# трёх ботов из четырёх до patch'а). Пусто → дефолт node-telegram-bot-api на api.telegram.org.
+# Prod значение: https://tg-proxy.azarean.ru/tg (БЕЗ trailing slash — node-telegram-bot-api
+# делает string concat, slash сломает; Telegraf в JARVIS наоборот требует slash).
+# Тот же финский VDS что и TG_PROXY_URL ниже, новая location /tg/ от того же nginx.
+TELEGRAM_API_URL=
+
 # Telegram OIDC (Phase 2 — на проде)
 # BotFather → @az_zari_bot → Login Widget → Switch to OpenID Connect Login
 TELEGRAM_OIDC_CLIENT_ID=...
@@ -794,6 +802,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 ## Завершённые исправления (защита от регрессий)
 
 > Полный список с деталями: [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md)
+
+### Telegram Bot API DPI-блокировка — локальный патч (2026-05-22, в ветке `fix/uploads-persistence`)
+69. **Зеркало production-патча в `/opt/azarean-rehab` чтобы следующий deploy не перетёр** → инцидент NetAngels (см. [JARVIS_TELEGRAM_DPI_INCIDENT_REPORT.md](JARVIS_TELEGRAM_DPI_INCIDENT_REPORT.md)): DPI-фильтр по SNI на `api.telegram.org`, TCP коннект проходит, TLS ClientHello улетает в timeout. Три из четырёх production-ботов (включая `@az_zari_bot`) потеряли связь, rehab крашился в PM2 crashloop 28 раз за 75 минут (нет error-handler на polling_error). JARVIS поднял reverse-proxy `tg-proxy.azarean.ru/tg` на финском VDS (78.17.1.70, IP-allowlist 185.93.109.234). **Локальный патч:** [backend/services/telegramBot.js](backend/services/telegramBot.js) — `bot = new TelegramBot(token, { polling: true, baseApiUrl: process.env.TELEGRAM_API_URL || 'https://api.telegram.org' })`. **Polling error handler** усилен — теперь логирует `err.code` (`EFATAL`/`ECONNRESET`/`ETELEGRAM`) для лучшей диагностики и **не падает** (node-telegram-bot-api сам ретраит). Env-шаблоны обновлены: `.env.example` (пустое = дефолт прямого канала, dev), `.env.production.example` (`https://tg-proxy.azarean.ru/tg` — БЕЗ trailing slash, в отличие от Telegraf'а в JARVIS). На проде уже стоит `TELEGRAM_API_URL=https://tg-proxy.azarean.ru/tg` в `.env` (применено через `pm2 restart --update-env && pm2 save`). **Урок:** не использовать одиночный TG-канал для админ-алертов когда TG может лечь — нужен Max-зеркало для `sendOpsAlert`. Backlog (см. отчёт): runbook `docs/INCIDENT_TELEGRAM_BLOCKED.md`, cron-проба `api.telegram.org` каждые 3 минуты, fallback canal в Max.
 
 ### CRITICAL (все закрыты 2026-04-08)
 1. **POST /api/auth/register** — был открыт для всех → теперь `authenticateToken + requireAdmin`, ответ без JWT
