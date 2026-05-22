@@ -40,6 +40,8 @@ jest.mock('../../middleware/upload', () => ({
     }
     next();
   },
+  measurementPhotoUpload: { single: () => (_req, _res, next) => next() },
+  processMeasurementPhoto: (_req, _res, next) => next(),
 }));
 
 const request = require('supertest');

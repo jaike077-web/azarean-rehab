@@ -2069,4 +2069,43 @@ router.get('/oauth/:provider/callback', (req, res) => {
   });
 });
 
+/**
+ * POST /api/patient-auth/photo-consent (Wave 2 коммит 2.07)
+ * Идемпотентный — пациент re-confirm обновляет timestamp.
+ * version = 'v1' hardcode для MVP. Когда legal обновит текст соглашения —
+ * incrementing к 'v2', frontend проверит мismatched version и попросит
+ * re-confirm (Wave 3 backlog).
+ */
+router.post('/photo-consent', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const version = 'v1';
+
+    const result = await query(
+      `UPDATE patients
+         SET photo_consent_at = NOW(),
+             photo_consent_version = $2
+       WHERE id = $1
+       RETURNING id, photo_consent_at, photo_consent_version`,
+      [patientId, version]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'NOT_FOUND', message: 'Patient not found' });
+    }
+
+    res.json({
+      data: {
+        patient_id: result.rows[0].id,
+        photo_consent_at: result.rows[0].photo_consent_at,
+        photo_consent_version: result.rows[0].photo_consent_version,
+      },
+      message: 'Photo consent recorded',
+    });
+  } catch (err) {
+    console.error('POST /patient-auth/photo-consent error:', err.message);
+    res.status(500).json({ error: 'INTERNAL_ERROR', message: 'Failed to record consent' });
+  }
+});
+
 module.exports = router;

@@ -143,4 +143,70 @@ const processDiaryPhoto = async (req, res, next) => {
   }
 };
 
-module.exports = { avatarUpload, processAvatar, diaryPhotoUpload, processDiaryPhoto };
+// =====================================================
+// Фото измерений (Wave 2 коммит 2.07 — ROM photo Tier 2)
+// Применяет тот же sharp pipeline что diary_photos: fit:inside 1200×1200
+// JPEG q82. Имя: `rom_{measurement_id}_{ts}_{random}.jpg`.
+// =====================================================
+
+const measurementPhotosDir = path.join(__dirname, '../uploads/measurements');
+if (!fs.existsSync(measurementPhotosDir)) {
+  fs.mkdirSync(measurementPhotosDir, { recursive: true });
+}
+
+const measurementPhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 МБ до компрессии
+  },
+});
+
+/**
+ * Сжимает фото ROM-измерения и сохраняет на диск.
+ * Требует req.params.id (rom_measurements.id) и req.patient.id.
+ * Возвращает в req.file: filename, path, size, relativePath (для БД).
+ */
+const processMeasurementPhoto = async (req, res, next) => {
+  if (!req.file) return next();
+
+  try {
+    const measurementId = parseInt(req.params.id, 10);
+    if (!Number.isFinite(measurementId) || measurementId <= 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный ID измерения',
+      });
+    }
+    const timestamp = Date.now();
+    const random = crypto.randomBytes(4).toString('hex');
+    const filename = `rom_${measurementId}_${timestamp}_${random}.jpg`;
+    const outputPath = path.join(measurementPhotosDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toFile(outputPath);
+
+    req.file.filename = filename;
+    req.file.path = outputPath;
+    req.file.size = fs.statSync(outputPath).size;
+    // Относительный путь для БД (без /backend prefix).
+    // Чтение обратно — через GET endpoint с JWT-auth, не static.
+    req.file.relativePath = `/uploads/measurements/${filename}`;
+
+    next();
+  } catch (error) {
+    console.error('Measurement photo processing error:', error.message);
+    return res.status(400).json({
+      error: 'Processing Error',
+      message: 'Не удалось обработать изображение. Попробуйте другой файл.',
+    });
+  }
+};
+
+module.exports = {
+  avatarUpload, processAvatar,
+  diaryPhotoUpload, processDiaryPhoto,
+  measurementPhotoUpload, processMeasurementPhoto,
+};
