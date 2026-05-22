@@ -365,7 +365,7 @@ export default function DiaryScreen({
       return;
     }
     if (!programId) {
-      toast.error('Нет программы', 'Свяжитесь с куратором — программа реабилитации не назначена');
+      toast.error('Нет программы', 'Свяжитесь с куратором — программа восстановления не назначена');
       return;
     }
     setReportSending(true);

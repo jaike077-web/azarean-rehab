@@ -56,7 +56,7 @@ export default function ConsentDialog({ open, onConsent, onCancel }) {
       <div className="pd-consent-body">
         <p className="pd-consent-text">
           Вы загружаете фотографию для медицинского наблюдения за прогрессом
-          реабилитации. Фото хранятся на серверах в России (152-ФЗ).
+          восстановления. Фото хранятся на серверах в России (152-ФЗ).
           Доступ имеют только вы и ваш инструктор.
         </p>
         <p className="pd-consent-text">

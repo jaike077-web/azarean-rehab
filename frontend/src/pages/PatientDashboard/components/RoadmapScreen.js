@@ -438,7 +438,7 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
     return (
       <div className="pd-rm pd-roadmap-screen">
         <header className="pd-rm-header">
-          <h1 className="pd-rm-title">Программа реабилитации</h1>
+          <h1 className="pd-rm-title">Программа восстановления</h1>
           <p className="pd-rm-sub">У вас пока нет активной программы. Куратор скоро её составит.</p>
         </header>
       </div>
@@ -526,7 +526,7 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
       {/* Timeline */}
       <div className="pd-rm-timeline">
         {phases.length === 0 && (
-          <p className="pd-rm-empty">Фазы реабилитации недоступны</p>
+          <p className="pd-rm-empty">Фазы восстановления недоступны</p>
         )}
         {phases.map((phase, idx) => {
           const phaseNumber = phase.phase_number;

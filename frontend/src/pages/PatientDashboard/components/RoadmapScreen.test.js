@@ -291,7 +291,7 @@ describe('RoadmapScreen v12', () => {
       await waitFor(() => {
         expect(screen.getByText('Путь восстановления')).toBeInTheDocument();
       });
-      expect(screen.getByText('Фазы реабилитации недоступны')).toBeInTheDocument();
+      expect(screen.getByText('Фазы восстановления недоступны')).toBeInTheDocument();
     });
   });
 
