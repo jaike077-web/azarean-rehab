@@ -548,6 +548,14 @@ export const admin = {
   updatePhase: (id, data) => api.put(`/admin/phases/${id}`, data),
   deletePhase: (id) => api.delete(`/admin/phases/${id}`),
 
+  // Критерии перехода фаз (Wave 2 коммит 2.03) — sub-CRUD под каждой фазой.
+  // Three types: measurement / self_report / instructor_check (conditional fields).
+  // DELETE 409 если есть ссылки из patient_criterion_answers — рекомендует is_active=false.
+  getPhaseCriteria: (phaseId, params = {}) => api.get(`/admin/phases/${phaseId}/criteria`, { params }),
+  createPhaseCriterion: (phaseId, data) => api.post(`/admin/phases/${phaseId}/criteria`, data),
+  updateCriterion: (id, data) => api.put(`/admin/criteria/${id}`, data),
+  deleteCriterion: (id) => api.delete(`/admin/criteria/${id}`),
+
   // Типы программ (Wave 1 #1.05) — CRUD справочника program_types.
   // GET admin/program-types отдаёт всё (включая is_active=false);
   // публичный /rehab/program-types (rehab.getProgramTypes) — только active.

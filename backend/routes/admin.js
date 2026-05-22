@@ -1019,6 +1019,244 @@ router.delete('/program-templates/:id/phase-complexes/:phase', async (req, res) 
 });
 
 // =====================================================
+// КОНТЕНТ: КРИТЕРИИ ПЕРЕХОДА ФАЗ (Wave 2 коммит 2.03)
+// =====================================================
+
+// GET /api/admin/phases/:phase_id/criteria — список критериев фазы (опц. filter is_active)
+router.get('/phases/:phase_id/criteria', async (req, res) => {
+  try {
+    const phase_id = parseInt(req.params.phase_id, 10);
+    if (!Number.isFinite(phase_id)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'phase_id должен быть числом' });
+    }
+
+    const { is_active } = req.query;
+    let sql = `
+      SELECT id, phase_id, criterion_code, label, criterion_type,
+             measurement_type, measurement_source,
+             threshold_operator, threshold_value, threshold_value2, staleness_days,
+             self_report_question, self_report_hint,
+             position, is_required, is_active, created_at, updated_at
+      FROM phase_transition_criteria
+      WHERE phase_id = $1
+    `;
+    const params = [phase_id];
+
+    if (is_active !== undefined) {
+      params.push(is_active === 'true' || is_active === true);
+      sql += ` AND is_active = $${params.length}`;
+    }
+
+    sql += ` ORDER BY position, id`;
+    const result = await query(sql, params);
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get phase-criteria error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения критериев' });
+  }
+});
+
+// POST /api/admin/phases/:phase_id/criteria — создать критерий под фазой
+router.post('/phases/:phase_id/criteria', async (req, res) => {
+  const phase_id = parseInt(req.params.phase_id, 10);
+  if (!Number.isFinite(phase_id)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'phase_id должен быть числом' });
+  }
+
+  const {
+    criterion_code, label, criterion_type,
+    measurement_type, measurement_source,
+    threshold_operator, threshold_value, threshold_value2, staleness_days,
+    self_report_question, self_report_hint,
+    position, is_required
+  } = req.body;
+
+  if (!criterion_code || typeof criterion_code !== 'string' || !/^[a-z0-9_]+$/.test(criterion_code) || criterion_code.length > 50) {
+    return res.status(400).json({ error: 'Validation Error', message: 'criterion_code: lowercase + digits + underscore, до 50 символов' });
+  }
+  if (!label || typeof label !== 'string' || label.length === 0 || label.length > 255) {
+    return res.status(400).json({ error: 'Validation Error', message: 'label обязателен (≤255 символов)' });
+  }
+  if (!['measurement', 'self_report', 'instructor_check'].includes(criterion_type)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'criterion_type: measurement|self_report|instructor_check' });
+  }
+
+  if (criterion_type === 'measurement') {
+    if (!measurement_type || !measurement_source || !threshold_operator) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Для measurement критерия: measurement_type, measurement_source, threshold_operator обязательны'
+      });
+    }
+    if (!['>=', '<=', '=', '>', '<', 'between'].includes(threshold_operator)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'threshold_operator: >=, <=, =, >, <, between' });
+    }
+    if (threshold_value === undefined || threshold_value === null) {
+      return res.status(400).json({ error: 'Validation Error', message: 'threshold_value обязателен для measurement' });
+    }
+    if (threshold_operator === 'between' && (threshold_value2 === undefined || threshold_value2 === null)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'threshold_value2 обязателен для operator between' });
+    }
+    if (!['rom', 'girth', 'pain'].includes(measurement_source)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'measurement_source: rom|girth|pain' });
+    }
+  }
+
+  if (criterion_type === 'self_report' && !self_report_question) {
+    return res.status(400).json({ error: 'Validation Error', message: 'self_report_question обязателен для self_report' });
+  }
+
+  try {
+    const phaseCheck = await query('SELECT id FROM rehab_phases WHERE id = $1', [phase_id]);
+    if (phaseCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Фаза не найдена' });
+    }
+
+    const result = await query(
+      `INSERT INTO phase_transition_criteria (
+         phase_id, criterion_code, label, criterion_type,
+         measurement_type, measurement_source,
+         threshold_operator, threshold_value, threshold_value2, staleness_days,
+         self_report_question, self_report_hint,
+         position, is_required, is_active
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, TRUE)
+       RETURNING *`,
+      [
+        phase_id, criterion_code, label, criterion_type,
+        criterion_type === 'measurement' ? measurement_type : null,
+        criterion_type === 'measurement' ? measurement_source : null,
+        criterion_type === 'measurement' ? threshold_operator : null,
+        criterion_type === 'measurement' ? threshold_value : null,
+        criterion_type === 'measurement' && threshold_operator === 'between' ? threshold_value2 : null,
+        staleness_days ?? 7,
+        criterion_type === 'self_report' ? self_report_question : null,
+        criterion_type === 'self_report' ? (self_report_hint || null) : null,
+        position ?? 0,
+        is_required ?? true
+      ]
+    );
+
+    await logAudit(req, 'CREATE', 'phase_criterion', result.rows[0].id, { phase_id, criterion_code, criterion_type });
+
+    res.status(201).json({ data: result.rows[0], message: 'Критерий создан' });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Conflict', message: 'criterion_code уже существует в этой фазе' });
+    }
+    console.error('Admin create phase-criterion error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания критерия' });
+  }
+});
+
+// PUT /api/admin/criteria/:id — обновить критерий. phase_id и criterion_code immutable.
+router.put('/criteria/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'id должен быть числом' });
+  }
+
+  const {
+    label, criterion_type,
+    measurement_type, measurement_source,
+    threshold_operator, threshold_value, threshold_value2, staleness_days,
+    self_report_question, self_report_hint,
+    position, is_required, is_active
+  } = req.body;
+
+  const sets = [];
+  const params = [];
+  let idx = 1;
+
+  if (label !== undefined) {
+    if (typeof label !== 'string' || !label.length || label.length > 255) {
+      return res.status(400).json({ error: 'Validation Error', message: 'label длина 1..255' });
+    }
+    sets.push(`label = $${idx++}`); params.push(label);
+  }
+  if (criterion_type !== undefined) {
+    if (!['measurement', 'self_report', 'instructor_check'].includes(criterion_type)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'criterion_type invalid' });
+    }
+    sets.push(`criterion_type = $${idx++}`); params.push(criterion_type);
+  }
+  if (measurement_type !== undefined) { sets.push(`measurement_type = $${idx++}`); params.push(measurement_type); }
+  if (measurement_source !== undefined) { sets.push(`measurement_source = $${idx++}`); params.push(measurement_source); }
+  if (threshold_operator !== undefined) {
+    if (threshold_operator !== null && !['>=', '<=', '=', '>', '<', 'between'].includes(threshold_operator)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'threshold_operator invalid' });
+    }
+    sets.push(`threshold_operator = $${idx++}`); params.push(threshold_operator);
+  }
+  if (threshold_value !== undefined) { sets.push(`threshold_value = $${idx++}`); params.push(threshold_value); }
+  if (threshold_value2 !== undefined) { sets.push(`threshold_value2 = $${idx++}`); params.push(threshold_value2); }
+  if (staleness_days !== undefined) { sets.push(`staleness_days = $${idx++}`); params.push(staleness_days); }
+  if (self_report_question !== undefined) { sets.push(`self_report_question = $${idx++}`); params.push(self_report_question); }
+  if (self_report_hint !== undefined) { sets.push(`self_report_hint = $${idx++}`); params.push(self_report_hint); }
+  if (position !== undefined) { sets.push(`position = $${idx++}`); params.push(position); }
+  if (is_required !== undefined) { sets.push(`is_required = $${idx++}`); params.push(!!is_required); }
+  if (is_active !== undefined) { sets.push(`is_active = $${idx++}`); params.push(!!is_active); }
+
+  if (sets.length === 0) {
+    return res.status(400).json({ error: 'Validation Error', message: 'Нет полей для обновления' });
+  }
+
+  sets.push(`updated_at = NOW()`);
+  params.push(id);
+
+  try {
+    const result = await query(
+      `UPDATE phase_transition_criteria SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Критерий не найден' });
+    }
+
+    await logAudit(req, 'UPDATE', 'phase_criterion', id, { changes: req.body });
+
+    res.json({ data: result.rows[0], message: 'Критерий обновлён' });
+  } catch (error) {
+    console.error('Admin update criterion error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления критерия' });
+  }
+});
+
+// DELETE /api/admin/criteria/:id — hard delete только если нет ссылок из patient_criterion_answers
+router.delete('/criteria/:id', async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'id должен быть числом' });
+  }
+
+  try {
+    const refsCheck = await query(
+      `SELECT COUNT(*)::int AS cnt FROM patient_criterion_answers WHERE criterion_id = $1`,
+      [id]
+    );
+    const cnt = refsCheck.rows[0]?.cnt ?? 0;
+    if (cnt > 0) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `Критерий использован в ${cnt} ответах пациентов. Деактивируйте (is_active=false) вместо удаления.`
+      });
+    }
+
+    const result = await query('DELETE FROM phase_transition_criteria WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Критерий не найден' });
+    }
+
+    await logAudit(req, 'DELETE', 'phase_criterion', id, {});
+
+    res.json({ data: { id }, message: 'Критерий удалён' });
+  } catch (error) {
+    console.error('Admin delete criterion error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления критерия' });
+  }
+});
+
+// =====================================================
 // КОНТЕНТ: ЛОКАЦИИ БОЛИ (Wave 2 коммит 2.02)
 // =====================================================
 

@@ -45,6 +45,10 @@ jest.mock('../../services/api', () => ({
     createPainLocation: jest.fn(),
     updatePainLocation: jest.fn(),
     deletePainLocation: jest.fn(),
+    getPhaseCriteria: jest.fn(),
+    createPhaseCriterion: jest.fn(),
+    updateCriterion: jest.fn(),
+    deleteCriterion: jest.fn(),
     getSystemInfo: jest.fn(),
   },
   templates: {
@@ -461,6 +465,225 @@ describe('AdminSystem', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Обновить')).toBeInTheDocument();
+    });
+  });
+});
+
+// =====================================================
+// PhasesTab criteria sub-CRUD (Wave 2 коммит 2.03)
+// =====================================================
+describe('PhasesTab criteria sub-CRUD', () => {
+  const mockPhases = [
+    { id: 5, program_type: 'acl', phase_number: 1, title: 'Защита', duration_weeks: 2, is_active: true },
+    { id: 6, program_type: 'acl', phase_number: 2, title: 'Ранняя мобильность', duration_weeks: 4, is_active: true },
+  ];
+  const mockCriteria = [
+    { id: 1, phase_id: 5, criterion_code: 'full_extension', label: 'Полное разгибание', criterion_type: 'measurement', measurement_type: 'knee_extension_degrees', measurement_source: 'rom', threshold_operator: '=', threshold_value: 0, staleness_days: 7, is_active: true, is_required: true, position: 10 },
+    { id: 2, phase_id: 5, criterion_code: 'pwb_ambulation', label: 'Передвижение на костылях', criterion_type: 'self_report', self_report_question: 'Можете передвигаться?', self_report_hint: null, is_active: true, is_required: true, position: 50 },
+    { id: 3, phase_id: 5, criterion_code: 'quad_activation', label: 'Активация квадрицепса', criterion_type: 'instructor_check', is_active: true, is_required: true, position: 30 },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    admin.getProgramTypes.mockResolvedValue({ data: [{ code: 'acl', label: 'ПКС' }] });
+    admin.getPhases.mockResolvedValue({ data: mockPhases });
+    admin.getPhaseCriteria.mockResolvedValue({ data: mockCriteria });
+  });
+
+  it('renders phases table with new "Критерии" column', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => expect(screen.getByText('Защита')).toBeInTheDocument());
+    expect(screen.getByText('Критерии')).toBeInTheDocument();
+  });
+
+  it('click "крит." toggle calls getPhaseCriteria and renders criteria', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+
+    await waitFor(() => {
+      expect(admin.getPhaseCriteria).toHaveBeenCalledWith(5);
+      expect(screen.getByText('Полное разгибание')).toBeInTheDocument();
+    });
+  });
+
+  it('measurement criterion card shows threshold info', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+
+    await waitFor(() => {
+      const cards = screen.getAllByTestId('criterion-card');
+      const measurementCard = cards.find((c) => c.textContent.includes('Полное разгибание'));
+      expect(measurementCard).toBeDefined();
+      expect(measurementCard.textContent).toMatch(/knee_extension_degrees/);
+      expect(measurementCard.textContent).toMatch(/=/);
+    });
+  });
+
+  it('self_report criterion shows question', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Можете передвигаться/)).toBeInTheDocument();
+    });
+  });
+
+  it('create form: changing criterion_type shows/hides conditional fields', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+    await waitFor(() => screen.getByRole('button', { name: /Добавить критерий/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить критерий/i }));
+    });
+
+    expect(screen.getByLabelText('Оператор')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Тип'), { target: { value: 'self_report' } });
+    });
+    expect(screen.queryByLabelText('Оператор')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Вопрос пациенту')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Тип'), { target: { value: 'instructor_check' } });
+    });
+    expect(screen.queryByLabelText('Вопрос пациенту')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Оператор')).not.toBeInTheDocument();
+  });
+
+  it('between operator reveals "Значение 2" field', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+    await waitFor(() => screen.getByRole('button', { name: /Добавить критерий/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить критерий/i }));
+    });
+
+    expect(screen.queryByLabelText('Значение 2')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Оператор'), { target: { value: 'between' } });
+    });
+
+    expect(screen.getByLabelText('Значение 2')).toBeInTheDocument();
+  });
+
+  it('create measurement criterion calls createPhaseCriterion with payload', async () => {
+    admin.createPhaseCriterion.mockResolvedValueOnce({ data: { id: 100 } });
+
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+    await waitFor(() => screen.getByRole('button', { name: /Добавить критерий/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить критерий/i }));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/Код/), { target: { value: 'new_crit' } });
+      fireEvent.change(screen.getByLabelText(/Название/), { target: { value: 'Новый' } });
+      fireEvent.change(screen.getByLabelText('Измеряем'), { target: { value: 'knee_flexion_degrees' } });
+      fireEvent.change(screen.getByLabelText('Значение'), { target: { value: '90' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Сохранить/ }));
+    });
+
+    await waitFor(() => {
+      expect(admin.createPhaseCriterion).toHaveBeenCalledWith(5, expect.objectContaining({
+        criterion_code: 'new_crit',
+        criterion_type: 'measurement',
+        measurement_type: 'knee_flexion_degrees',
+        threshold_operator: '>=',
+        threshold_value: 90,
+      }));
+    });
+  });
+
+  it('edit form disables criterion_code and criterion_type', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+    await waitFor(() => screen.getByText('Полное разгибание'));
+
+    const editBtns = screen.getAllByTitle('Редактировать');
+    // editBtns[0] = phase edit (existing PhasesTab); criterion edit buttons are inside CriteriaPanel
+    const criterionEdit = editBtns.find((btn) => btn.closest('[data-testid="criterion-card"]'));
+    expect(criterionEdit).toBeDefined();
+
+    await act(async () => { fireEvent.click(criterionEdit); });
+
+    expect(screen.getByLabelText(/Код/)).toBeDisabled();
+    expect(screen.getByLabelText('Тип')).toBeDisabled();
+  });
+
+  it('delete 409 shows error toast with refs message', async () => {
+    admin.deleteCriterion.mockRejectedValueOnce({
+      response: { status: 409, data: { message: 'Критерий использован в 3 ответах пациентов' } },
+    });
+
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+    await waitFor(() => screen.getByText('Полное разгибание'));
+
+    const delBtns = screen.getAllByTitle('Удалить');
+    const criterionDel = delBtns.find((btn) => btn.closest('[data-testid="criterion-card"]'));
+    await act(async () => { fireEvent.click(criterionDel); });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Confirm'));
+    });
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(expect.stringMatching(/в 3 ответах/));
+    });
+  });
+
+  it('shows criteria count in toggle button after load', async () => {
+    await act(async () => { render(<AdminContent />); });
+    await waitFor(() => screen.getByText('Защита'));
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByRole('button', { name: /Критерии фазы Защита/i })[0]);
+    });
+
+    await waitFor(() => {
+      const toggleBtn = screen.getByRole('button', { name: /Критерии фазы Защита/i });
+      expect(toggleBtn.textContent).toMatch(/\(3\)/);
     });
   });
 });

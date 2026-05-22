@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { admin, templates as complexTemplatesApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight, AlertTriangle, MapPin } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight, AlertTriangle, MapPin, Ruler, MessageCircleQuestion, UserCheck } from 'lucide-react';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
@@ -17,6 +17,13 @@ function PhasesTab() {
   const [editPhase, setEditPhase] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
+  // Wave 2 #2.03: criteria sub-CRUD per phase (accordion)
+  const [expandedPhase, setExpandedPhase] = useState(null);
+  const [criteriaByPhase, setCriteriaByPhase] = useState({});
+  const [criteriaLoading, setCriteriaLoading] = useState({});
+  const [editingCriterion, setEditingCriterion] = useState(null);
+  const [creatingForPhase, setCreatingForPhase] = useState(null);
+  const [deleteCriterion, setDeleteCriterion] = useState(null);
   const toast = useToast();
 
   // Wave 1 #1.05: загружаем фазы и справочник program_types параллельно.
@@ -80,7 +87,67 @@ function PhasesTab() {
   const openEdit = (phase) => { setEditPhase(phase); setShowForm(true); };
   const openCreate = () => { setEditPhase(null); setShowForm(true); };
 
-  if (loading) return <TableSkeleton rows={6} columns={7} />;
+  // Wave 2 #2.03: accordion toggle + lazy load criteria
+  const togglePhase = async (phaseId) => {
+    if (expandedPhase === phaseId) {
+      setExpandedPhase(null);
+      return;
+    }
+    setExpandedPhase(phaseId);
+    if (!criteriaByPhase[phaseId]) {
+      setCriteriaLoading((prev) => ({ ...prev, [phaseId]: true }));
+      try {
+        const res = await admin.getPhaseCriteria(phaseId);
+        setCriteriaByPhase((prev) => ({ ...prev, [phaseId]: res.data || [] }));
+      } catch {
+        toast.error('Не удалось загрузить критерии');
+      } finally {
+        setCriteriaLoading((prev) => ({ ...prev, [phaseId]: false }));
+      }
+    }
+  };
+
+  const reloadCriteria = async (phaseId) => {
+    try {
+      const res = await admin.getPhaseCriteria(phaseId);
+      setCriteriaByPhase((prev) => ({ ...prev, [phaseId]: res.data || [] }));
+    } catch {
+      toast.error('Не удалось обновить критерии');
+    }
+  };
+
+  const handleCriterionSave = async (form, phaseId) => {
+    try {
+      if (editingCriterion) {
+        const { criterion_code, criterion_type, ...patch } = form;
+        await admin.updateCriterion(editingCriterion.id, patch);
+        toast.success('Критерий обновлён');
+      } else {
+        await admin.createPhaseCriterion(phaseId, form);
+        toast.success('Критерий создан');
+      }
+      setEditingCriterion(null);
+      setCreatingForPhase(null);
+      reloadCriteria(phaseId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения критерия');
+    }
+  };
+
+  const confirmDeleteCriterion = async () => {
+    if (!deleteCriterion) return;
+    const phaseId = deleteCriterion.phase_id;
+    try {
+      await admin.deleteCriterion(deleteCriterion.id);
+      toast.success('Критерий удалён');
+      reloadCriteria(phaseId);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления критерия');
+    }
+    setDeleteCriterion(null);
+  };
+
+  if (loading) return <TableSkeleton rows={6} columns={8} />;
 
   return (
     <div>
@@ -107,27 +174,67 @@ function PhasesTab() {
       {visiblePhases.length > 0 && (
         <div className={s.adminTableWrap}>
           <table className={s.adminTable}>
-            <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Название</th><th>Длительность</th><th>Активна</th><th>Действия</th></tr></thead>
+            <thead><tr><th>ID</th><th>Тип</th><th>Фаза</th><th>Название</th><th>Длительность</th><th>Активна</th><th>Критерии</th><th>Действия</th></tr></thead>
             <tbody>
-              {visiblePhases.map(p => (
-                <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
-                  <td className={s.tdId}>{p.id}</td>
-                  <td>{p.program_type}</td>
-                  <td>{p.phase_number}</td>
-                  <td className={s.tdName}>{p.title}</td>
-                  <td>{p.duration_weeks ? `${p.duration_weeks} нед.` : '—'}</td>
-                  <td>{p.is_active ? '✅' : '❌'}</td>
-                  <td className={s.tdActions}>
-                    <button className={s.adminActionBtn} onClick={() => openEdit(p)}><Pencil size={14} strokeWidth={1.8} /></button>
-                    <button className={`${s.adminActionBtn} ${s.btnDanger}`} onClick={() => setDeleteItem(p)}><Trash2 size={14} strokeWidth={1.8} /></button>
-                  </td>
-                </tr>
-              ))}
+              {visiblePhases.map(p => {
+                const isExpanded = expandedPhase === p.id;
+                const criteria = criteriaByPhase[p.id] || [];
+                const isLoadingCriteria = !!criteriaLoading[p.id];
+                return (
+                  <React.Fragment key={p.id}>
+                    <tr className={!p.is_active ? s.rowInactive : ''}>
+                      <td className={s.tdId}>{p.id}</td>
+                      <td>{p.program_type}</td>
+                      <td>{p.phase_number}</td>
+                      <td className={s.tdName}>{p.title}</td>
+                      <td>{p.duration_weeks ? `${p.duration_weeks} нед.` : '—'}</td>
+                      <td>{p.is_active ? '✅' : '❌'}</td>
+                      <td>
+                        <button
+                          className={s.criteriaToggle}
+                          onClick={() => togglePhase(p.id)}
+                          aria-label={`Критерии фазы ${p.title}`}
+                          aria-expanded={isExpanded}
+                        >
+                          {isExpanded ? <ChevronDown size={14} strokeWidth={1.8} /> : <ChevronRight size={14} strokeWidth={1.8} />}
+                          {' '}крит.{criteria.length > 0 ? ` (${criteria.length})` : ''}
+                        </button>
+                      </td>
+                      <td className={s.tdActions}>
+                        <button className={s.adminActionBtn} onClick={() => openEdit(p)} title="Редактировать"><Pencil size={14} strokeWidth={1.8} /></button>
+                        <button className={`${s.adminActionBtn} ${s.btnDanger}`} onClick={() => setDeleteItem(p)} title="Деактивировать"><Trash2 size={14} strokeWidth={1.8} /></button>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className={s.criteriaPanelRow}>
+                        <td colSpan="8">
+                          <CriteriaPanel
+                            phase={p}
+                            criteria={criteria}
+                            loading={isLoadingCriteria}
+                            onCreate={() => { setEditingCriterion(null); setCreatingForPhase(p.id); }}
+                            onEdit={(c) => { setEditingCriterion(c); setCreatingForPhase(null); }}
+                            onDelete={(c) => setDeleteCriterion(c)}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
       {showForm && <PhaseForm phase={editPhase} programTypes={programTypes} onSave={handleSave} onClose={() => { setShowForm(false); setEditPhase(null); }} />}
+      {(editingCriterion || creatingForPhase) && (
+        <CriterionForm
+          initial={editingCriterion}
+          phaseId={editingCriterion ? editingCriterion.phase_id : creatingForPhase}
+          onSave={(form) => handleCriterionSave(form, editingCriterion ? editingCriterion.phase_id : creatingForPhase)}
+          onClose={() => { setEditingCriterion(null); setCreatingForPhase(null); }}
+        />
+      )}
       <ConfirmModal
         isOpen={!!deleteItem}
         onClose={() => setDeleteItem(null)}
@@ -135,6 +242,16 @@ function PhasesTab() {
         title="Деактивация фазы"
         message={`Деактивировать фазу "${deleteItem?.title}"?`}
         confirmText="Деактивировать"
+        variant="danger"
+        icon={Trash2}
+      />
+      <ConfirmModal
+        isOpen={!!deleteCriterion}
+        onClose={() => setDeleteCriterion(null)}
+        onConfirm={confirmDeleteCriterion}
+        title="Удаление критерия"
+        message={`Удалить критерий "${deleteCriterion?.label}"? Если есть ответы пациентов — рекомендуется деактивировать (is_active=false).`}
+        confirmText="Удалить"
         variant="danger"
         icon={Trash2}
       />
@@ -206,6 +323,380 @@ function PhaseForm({ phase, programTypes = [], onSave, onClose }) {
           <div className={s.adminModalActions}>
             <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
             <button className={s.adminBtnPrimary} disabled={saving} onClick={async () => { setSaving(true); try { await onSave(form); } finally { setSaving(false); } }}>{saving ? 'Сохранение...' : 'Сохранить'}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
+// Wave 2 #2.03: Criteria sub-CRUD под фазой (accordion)
+// =====================================================
+
+// Список measurement_types для select в форме критерия — какие 2.06 будет принимать
+const MEASUREMENT_TYPE_OPTIONS = [
+  { group: 'Колено ROM', options: [
+    { value: 'knee_flexion_degrees', label: 'Сгибание колена (°)' },
+    { value: 'knee_extension_degrees', label: 'Разгибание колена (°)' },
+    { value: 'knee_flexion_hbd_cm', label: 'Heel-to-buttock (см)' },
+  ]},
+  { group: 'Колено окружности', options: [
+    { value: 'knee_joint_line_cm', label: 'Линия сустава (см)' },
+    { value: 'knee_suprapatellar_5cm_cm', label: 'Над пателлой +5см (см)' },
+    { value: 'knee_suprapatellar_10cm_cm', label: 'Над пателлой +10см (см)' },
+    { value: 'knee_suprapatellar_15cm_cm', label: 'Над пателлой +15см (см)' },
+    { value: 'knee_calf_max_cm', label: 'Икра max (см)' },
+  ]},
+  { group: 'Плечо ROM', options: [
+    { value: 'shoulder_forward_flexion_degrees', label: 'Forward flexion (°)' },
+    { value: 'shoulder_abduction_degrees', label: 'Abduction (°)' },
+    { value: 'shoulder_er_0_degrees', label: 'ER в 0° (°)' },
+    { value: 'shoulder_ir_90_abd_degrees', label: 'IR в 90° abd (°)' },
+    { value: 'shoulder_hbb_categorical', label: 'Hand-behind-back (T/L)' },
+  ]},
+  { group: 'Плечо окружности', options: [
+    { value: 'shoulder_mid_deltoid_cm', label: 'Mid-deltoid (см)' },
+    { value: 'shoulder_mid_biceps_cm', label: 'Mid-biceps (см)' },
+  ]},
+  { group: 'Боль', options: [
+    { value: 'vas_score', label: 'VAS score (0-10)' },
+  ]},
+];
+
+const CRITERION_TYPE_META = {
+  measurement: { label: 'Измерение', icon: Ruler },
+  self_report: { label: 'Самоотчёт пациента', icon: MessageCircleQuestion },
+  instructor_check: { label: 'Проверка инструктором', icon: UserCheck },
+};
+
+function CriteriaPanel({ phase, criteria, loading, onCreate, onEdit, onDelete }) {
+  if (loading) {
+    return (
+      <div className={s.criteriaPanel}>
+        <TableSkeleton rows={3} columns={1} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={s.criteriaPanel}>
+      <div className={s.criteriaHeader}>
+        <span>{criteria.length} критер.</span>
+        <button className={s.adminBtnPrimary} onClick={onCreate}>
+          <Plus size={14} strokeWidth={1.8} /> Добавить критерий
+        </button>
+      </div>
+      {criteria.length === 0 && (
+        <div className={s.criteriaEmpty}>
+          Под этой фазой ещё нет критериев. Создайте первый или используйте seed.
+        </div>
+      )}
+      {criteria.length > 0 && (
+        <div className={s.criteriaList}>
+          {criteria.map((c) => {
+            const meta = CRITERION_TYPE_META[c.criterion_type] || CRITERION_TYPE_META.instructor_check;
+            const Icon = meta.icon;
+            return (
+              <div key={c.id} className={`${s.criteriaCard} ${!c.is_active ? s.rowInactive : ''}`} data-testid="criterion-card">
+                <div className={s.criteriaCardHeader}>
+                  <span className={s.criteriaTypeBadge}><Icon size={14} strokeWidth={1.8} /> {meta.label}</span>
+                  <code className={s.criteriaCode}>{c.criterion_code}</code>
+                  {!c.is_active && <span className={s.criteriaInactive}>архив</span>}
+                  <div className={s.criteriaCardActions}>
+                    <button className={s.adminActionBtn} onClick={() => onEdit(c)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    <button className={`${s.adminActionBtn} ${s.btnDanger}`} onClick={() => onDelete(c)} title="Удалить">
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                  </div>
+                </div>
+                <div className={s.criteriaCardBody}>
+                  <div className={s.criteriaLabel}>{c.label}</div>
+                  {c.criterion_type === 'measurement' && (
+                    <div className={s.criteriaMeta}>
+                      <code>{c.measurement_type}</code> {c.threshold_operator} <b>{c.threshold_value}</b>
+                      {c.threshold_operator === 'between' && c.threshold_value2 != null && <> и <b>{c.threshold_value2}</b></>}
+                      {' · '}свежесть {c.staleness_days}д
+                    </div>
+                  )}
+                  {c.criterion_type === 'self_report' && (
+                    <div className={s.criteriaMeta}>
+                      <div className={s.criteriaQuestion}>«{c.self_report_question}»</div>
+                      {c.self_report_hint && <div className={s.criteriaHint}>Подсказка: {c.self_report_hint}</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CriterionForm({ initial, phaseId, onSave, onClose }) {
+  const [saving, setSaving] = useState(false);
+  const isEdit = !!initial;
+  const [form, setForm] = useState({
+    criterion_code: '',
+    label: '',
+    criterion_type: 'measurement',
+    measurement_type: '',
+    measurement_source: 'rom',
+    threshold_operator: '>=',
+    threshold_value: '',
+    threshold_value2: '',
+    staleness_days: 7,
+    self_report_question: '',
+    self_report_hint: '',
+    position: 0,
+    is_required: true,
+    is_active: true,
+  });
+
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        criterion_code: initial.criterion_code || '',
+        label: initial.label || '',
+        criterion_type: initial.criterion_type || 'measurement',
+        measurement_type: initial.measurement_type || '',
+        measurement_source: initial.measurement_source || 'rom',
+        threshold_operator: initial.threshold_operator || '>=',
+        threshold_value: initial.threshold_value ?? '',
+        threshold_value2: initial.threshold_value2 ?? '',
+        staleness_days: initial.staleness_days ?? 7,
+        self_report_question: initial.self_report_question || '',
+        self_report_hint: initial.self_report_hint || '',
+        position: initial.position ?? 0,
+        is_required: initial.is_required ?? true,
+        is_active: initial.is_active ?? true,
+      });
+    }
+  }, [initial]);
+
+  const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  const submit = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        criterion_code: form.criterion_code,
+        label: form.label,
+        criterion_type: form.criterion_type,
+        position: parseInt(form.position, 10) || 0,
+        is_required: !!form.is_required,
+      };
+      if (isEdit) payload.is_active = !!form.is_active;
+      if (form.criterion_type === 'measurement') {
+        payload.measurement_type = form.measurement_type;
+        payload.measurement_source = form.measurement_source;
+        payload.threshold_operator = form.threshold_operator;
+        payload.threshold_value = form.threshold_value === '' ? null : parseFloat(form.threshold_value);
+        if (form.threshold_operator === 'between') {
+          payload.threshold_value2 = form.threshold_value2 === '' ? null : parseFloat(form.threshold_value2);
+        }
+        payload.staleness_days = parseInt(form.staleness_days, 10) || 7;
+      }
+      if (form.criterion_type === 'self_report') {
+        payload.self_report_question = form.self_report_question;
+        payload.self_report_hint = form.self_report_hint || null;
+      }
+      await onSave(payload);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={s.adminModalOverlay} onClick={onClose}>
+      <div className={`${s.adminModal} ${s.adminModalWide}`} onClick={(e) => e.stopPropagation()}>
+        <div className={s.adminModalHeader}>
+          <h3>{isEdit ? 'Редактировать критерий' : 'Создать критерий'}</h3>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+        </div>
+        <div className={s.adminModalForm}>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="crit-type">Тип</label>
+            <select
+              id="crit-type"
+              value={form.criterion_type}
+              onChange={(e) => set('criterion_type', e.target.value)}
+              disabled={isEdit}
+            >
+              <option value="measurement">Измерение</option>
+              <option value="self_report">Самоотчёт пациента</option>
+              <option value="instructor_check">Проверка инструктором</option>
+            </select>
+            {isEdit && <small>Тип менять нельзя — создайте новый критерий.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="crit-code">Код (a-z, 0-9, _)</label>
+            <input
+              id="crit-code"
+              value={form.criterion_code}
+              onChange={(e) => set('criterion_code', e.target.value)}
+              placeholder="full_extension"
+              disabled={isEdit}
+            />
+            {isEdit && <small>Код менять нельзя — на него ссылаются ответы пациентов.</small>}
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="crit-label">Название (для пациента/инструктора)</label>
+            <input
+              id="crit-label"
+              value={form.label}
+              onChange={(e) => set('label', e.target.value)}
+              maxLength={255}
+            />
+          </div>
+
+          {form.criterion_type === 'measurement' && (
+            <>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-meas-type">Измеряем</label>
+                <select
+                  id="crit-meas-type"
+                  value={form.measurement_type}
+                  onChange={(e) => set('measurement_type', e.target.value)}
+                >
+                  <option value="">Выберите параметр</option>
+                  {MEASUREMENT_TYPE_OPTIONS.map((group) => (
+                    <optgroup key={group.group} label={group.group}>
+                      {group.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-meas-source">Источник</label>
+                <select
+                  id="crit-meas-source"
+                  value={form.measurement_source}
+                  onChange={(e) => set('measurement_source', e.target.value)}
+                >
+                  <option value="rom">ROM</option>
+                  <option value="girth">Окружность</option>
+                  <option value="pain">Боль</option>
+                </select>
+              </div>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-op">Оператор</label>
+                <select
+                  id="crit-op"
+                  value={form.threshold_operator}
+                  onChange={(e) => set('threshold_operator', e.target.value)}
+                >
+                  <option value=">=">≥</option>
+                  <option value="<=">≤</option>
+                  <option value="=">=</option>
+                  <option value=">">{'>'}</option>
+                  <option value="<">{'<'}</option>
+                  <option value="between">между</option>
+                </select>
+              </div>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-val">Значение</label>
+                <input
+                  id="crit-val"
+                  type="number"
+                  step="0.01"
+                  value={form.threshold_value}
+                  onChange={(e) => set('threshold_value', e.target.value)}
+                />
+              </div>
+              {form.threshold_operator === 'between' && (
+                <div className={s.adminFormGroup}>
+                  <label htmlFor="crit-val2">Значение 2</label>
+                  <input
+                    id="crit-val2"
+                    type="number"
+                    step="0.01"
+                    value={form.threshold_value2}
+                    onChange={(e) => set('threshold_value2', e.target.value)}
+                  />
+                </div>
+              )}
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-stale">Свежесть (дни)</label>
+                <input
+                  id="crit-stale"
+                  type="number"
+                  value={form.staleness_days}
+                  onChange={(e) => set('staleness_days', e.target.value)}
+                />
+              </div>
+            </>
+          )}
+
+          {form.criterion_type === 'self_report' && (
+            <>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-question">Вопрос пациенту</label>
+                <input
+                  id="crit-question"
+                  value={form.self_report_question}
+                  onChange={(e) => set('self_report_question', e.target.value)}
+                  placeholder="Можете подняться по лестнице нормальным шагом?"
+                  maxLength={500}
+                />
+              </div>
+              <div className={s.adminFormGroup}>
+                <label htmlFor="crit-hint">Подсказка (опционально)</label>
+                <textarea
+                  id="crit-hint"
+                  rows="2"
+                  value={form.self_report_hint}
+                  onChange={(e) => set('self_report_hint', e.target.value)}
+                  placeholder="Попробуйте подняться без перил"
+                  maxLength={500}
+                />
+              </div>
+            </>
+          )}
+
+          <div className={s.adminFormGroup}>
+            <label htmlFor="crit-pos">Позиция (для сортировки)</label>
+            <input
+              id="crit-pos"
+              type="number"
+              value={form.position}
+              onChange={(e) => set('position', e.target.value)}
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.is_required}
+                onChange={(e) => set('is_required', e.target.checked)}
+              />{' '}
+              Обязательный для перехода
+            </label>
+          </div>
+          {isEdit && (
+            <div className={s.adminFormGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => set('is_active', e.target.checked)}
+                />{' '}
+                Активен
+              </label>
+            </div>
+          )}
+
+          <div className={s.adminModalActions}>
+            <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
+            <button className={s.adminBtnPrimary} disabled={saving} onClick={submit}>
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
           </div>
         </div>
       </div>
