@@ -32,10 +32,11 @@ function AdminUserModal({ user, onSave, onClose }) {
       setError('Введите ФИО');
       return;
     }
-    if (!isEdit && !form.email.trim()) {
+    if (!form.email.trim()) {
       setError('Введите email');
       return;
     }
+    // При create пароль обязателен. При edit — пустой = не менять.
     if (!isEdit && !form.password) {
       setError('Введите пароль');
       return;
@@ -43,9 +44,26 @@ function AdminUserModal({ user, onSave, onClose }) {
 
     setSaving(true);
     try {
-      const data = isEdit
-        ? { full_name: form.full_name, role: form.role }
-        : { email: form.email, password: form.password, full_name: form.full_name, role: form.role };
+      let data;
+      if (isEdit) {
+        // Отправляем full_name/role всегда. email — только если изменился
+        // (чтобы не упасть в unique check на собственный email). new_password
+        // — только если введён.
+        data = { full_name: form.full_name, role: form.role };
+        if (form.email.trim() !== (user.email || '').toLowerCase()) {
+          data.email = form.email.trim();
+        }
+        if (form.password) {
+          data.new_password = form.password;
+        }
+      } else {
+        data = {
+          email: form.email,
+          password: form.password,
+          full_name: form.full_name,
+          role: form.role,
+        };
+      }
       await onSave(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка сохранения');
@@ -75,29 +93,31 @@ function AdminUserModal({ user, onSave, onClose }) {
             />
           </div>
 
-          {!isEdit && (
-            <div className={s.adminFormGroup}>
-              <label>Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="email@example.com"
-              />
-            </div>
-          )}
+          <div className={s.adminFormGroup}>
+            <label>Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
+              placeholder="email@example.com"
+            />
+          </div>
 
-          {!isEdit && (
-            <div className={s.adminFormGroup}>
-              <label>Пароль</label>
-              <input
-                type="password"
-                value={form.password}
-                onChange={e => setForm(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="Минимум 8 символов, A-Z, a-z, 0-9"
-              />
-            </div>
-          )}
+          <div className={s.adminFormGroup}>
+            <label>{isEdit ? 'Новый пароль' : 'Пароль'}</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={e => setForm(prev => ({ ...prev, password: e.target.value }))}
+              placeholder={isEdit ? 'Оставьте пустым чтобы не менять' : 'Минимум 8 символов, A-Z, a-z, 0-9'}
+              autoComplete="new-password"
+            />
+            {isEdit && form.password && (
+              <div className={s.adminFormHint} style={{ marginTop: 6, color: 'var(--color-warn, #b45309)', fontSize: 13 }}>
+                После сохранения активные сессии этого пользователя будут разлогинены — придётся войти заново.
+              </div>
+            )}
+          </div>
 
           <div className={s.adminFormGroup}>
             <label>Роль</label>

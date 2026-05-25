@@ -178,6 +178,82 @@ describe('PUT /api/admin/users/:id', () => {
       .send({ full_name: 'Test' });
     expect(res.status).toBe(404);
   });
+
+  it('should update email after unique check', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // dupe check returns no conflicts
+    query.mockResolvedValueOnce({ rows: [{ ...fixtures.mockUserRow, email: 'jaike077@yandex.ru' }] }); // UPDATE
+    query.mockResolvedValueOnce({ rows: [] }); // audit
+
+    const res = await request(app)
+      .put('/api/admin/users/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'jaike077@yandex.ru' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.email).toBe('jaike077@yandex.ru');
+  });
+
+  it('should return 409 when new email already taken', async () => {
+    query.mockResolvedValueOnce({ rows: [{ id: 99 }] }); // dupe check finds conflict
+
+    const res = await request(app)
+      .put('/api/admin/users/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'existing@test.com' });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toContain('занят');
+  });
+
+  it('should return 400 for invalid email format', async () => {
+    const res = await request(app)
+      .put('/api/admin/users/1')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ email: 'not-an-email' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('email');
+  });
+
+  it('should update password and invalidate refresh tokens', async () => {
+    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] }); // UPDATE
+    query.mockResolvedValueOnce({ rows: [] }); // DELETE refresh_tokens
+    query.mockResolvedValueOnce({ rows: [] }); // audit
+
+    const res = await request(app)
+      .put('/api/admin/users/2')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ new_password: 'NewStrongPass123' });
+    expect(res.status).toBe(200);
+
+    // Проверяем что DELETE FROM refresh_tokens вызван
+    const deleteCall = query.mock.calls.find(c =>
+      typeof c[0] === 'string' && c[0].includes('DELETE FROM refresh_tokens')
+    );
+    expect(deleteCall).toBeDefined();
+    expect(deleteCall[1]).toEqual(['2']);
+  });
+
+  it('should reject weak password', async () => {
+    const res = await request(app)
+      .put('/api/admin/users/2')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ new_password: '123' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Пароль');
+  });
+
+  it('should not invalidate refresh_tokens if password unchanged', async () => {
+    query.mockResolvedValueOnce({ rows: [fixtures.mockUserRow] }); // UPDATE
+    query.mockResolvedValueOnce({ rows: [] }); // audit
+
+    await request(app)
+      .put('/api/admin/users/2')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ full_name: 'Only name change' });
+
+    const deleteCall = query.mock.calls.find(c =>
+      typeof c[0] === 'string' && c[0].includes('DELETE FROM refresh_tokens')
+    );
+    expect(deleteCall).toBeUndefined();
+  });
 });
 
 describe('PATCH /api/admin/users/:id/deactivate', () => {

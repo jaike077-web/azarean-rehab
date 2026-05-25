@@ -63,6 +63,21 @@ jest.mock('../../context/ToastContext', () => ({
   useToast: () => mockToast,
 }));
 
+// Mock AuthContext — AdminUsers использует useAuth для определения «своего» аккаунта
+// при смене пароля (force logout if self). Тестам достаточно стабильного стаба.
+const mockLogout = jest.fn();
+const mockAuth = { user: { id: 1, email: 'admin@test.com', role: 'admin' }, logout: mockLogout };
+jest.mock('../../context/AuthContext', () => ({
+  useAuth: () => mockAuth,
+}));
+
+// Mock react-router-dom useNavigate — AdminUsers редиректит на /login после
+// смены своего пароля.
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => mockNavigate,
+}));
+
 // Mock shared components
 jest.mock('../../components/Skeleton', () => ({
   Skeleton: (props) => <div data-testid="skeleton" />,

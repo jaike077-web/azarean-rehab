@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { admin } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import AdminUserModal from './AdminUserModal';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -15,6 +17,8 @@ function AdminUsers() {
   const [editUser, setEditUser] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const toast = useToast();
+  const { user: currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -38,9 +42,20 @@ function AdminUsers() {
   };
 
   const handleUpdate = async (data) => {
+    const isSelf = currentUser && editUser && editUser.id === currentUser.id;
+    const changedPassword = !!data.new_password;
     await admin.updateUser(editUser.id, data);
-    toast.success('Пользователь обновлён');
     setEditUser(null);
+    // Если меняем СВОЙ пароль — backend инвалидирует все refresh_tokens.
+    // Принудительно logout + redirect, иначе access_token продолжит работать
+    // до expiry и UX будет рассинхронизирован.
+    if (isSelf && changedPassword) {
+      toast.success('Пароль обновлён — войдите с новым');
+      logout();
+      navigate('/login');
+      return;
+    }
+    toast.success('Пользователь обновлён');
     loadUsers();
   };
 

@@ -170,7 +170,7 @@ router.post('/users', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { full_name, role, is_active } = req.body;
+    const { full_name, role, is_active, email, new_password } = req.body;
 
     // Нельзя деактивировать себя
     if (parseInt(id) === req.user.id && is_active === false) {
@@ -187,22 +187,79 @@ router.put('/users/:id', async (req, res) => {
       });
     }
 
+    // Опциональный email change: validate + unique check (исключая self).
+    // Пустая строка / undefined / null → не трогаем email.
+    let normalizedEmail = null;
+    if (email && typeof email === 'string' && email.trim() !== '') {
+      if (!isValidEmail(email)) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'Некорректный формат email'
+        });
+      }
+      normalizedEmail = email.toLowerCase().trim();
+      const dupe = await query(
+        'SELECT id FROM users WHERE LOWER(email) = $1 AND id != $2',
+        [normalizedEmail, id]
+      );
+      if (dupe.rows.length > 0) {
+        return res.status(409).json({
+          error: 'Conflict',
+          message: 'Email уже занят другим пользователем'
+        });
+      }
+    }
+
+    // Опциональный password change: validate + bcrypt hash.
+    // После UPDATE — инвалидируем все refresh_tokens этого юзера (force re-login).
+    let password_hash = null;
+    if (new_password && typeof new_password === 'string' && new_password.length > 0) {
+      const passwordErrors = validatePassword(new_password);
+      if (passwordErrors.length > 0) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: `Пароль должен содержать: ${passwordErrors.join(', ')}`
+        });
+      }
+      const salt = await bcrypt.genSalt(12);
+      password_hash = await bcrypt.hash(new_password, salt);
+    }
+
     const result = await query(
       `UPDATE users SET
         full_name = COALESCE($1, full_name),
         role = COALESCE($2, role),
         is_active = COALESCE($3, is_active),
+        email = COALESCE($4, email),
+        password_hash = COALESCE($5, password_hash),
         updated_at = NOW()
-       WHERE id = $4
+       WHERE id = $6
        RETURNING id, email, full_name, role, is_active, created_at, updated_at`,
-      [full_name || null, role || null, is_active !== undefined ? is_active : null, id]
+      [
+        full_name || null,
+        role || null,
+        is_active !== undefined ? is_active : null,
+        normalizedEmail,
+        password_hash,
+        id,
+      ]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Пользователь не найден' });
     }
 
-    await logAudit(req, 'UPDATE', 'user', parseInt(id), { full_name, role, is_active });
+    // Force re-login после password change — все active refresh_tokens этого юзера удаляются.
+    if (password_hash) {
+      await query('DELETE FROM refresh_tokens WHERE user_id = $1', [id]);
+    }
+
+    // Audit: фиксируем что менялось без записи самого пароля.
+    const auditDetails = { full_name, role, is_active };
+    if (normalizedEmail) auditDetails.email_changed_to = normalizedEmail;
+    if (password_hash) auditDetails.password_changed = true;
+    await logAudit(req, 'UPDATE', 'user', parseInt(id), auditDetails);
+
     res.json({ data: result.rows[0], message: 'Пользователь обновлён' });
   } catch (error) {
     console.error('Admin update user error:', error.message);
