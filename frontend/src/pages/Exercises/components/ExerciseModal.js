@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, X, Info } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi } from '../../../services/api';
 import s from './ExerciseModal.module.css';
+import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 
 // Wave 0 commit 05 — hint-метки рядом с полями, видимые инструктору.
 // Помогают понять где в пациентском UI отрисуется значение поля,
@@ -220,10 +221,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   // ========================================
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
       <div
         className={`${s.modalContent} ${s.exerciseModal}`}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* HEADER */}
         <div className={s.modalHeader}>

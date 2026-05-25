@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { BookOpen, X } from 'lucide-react';
 import { SkeletonText } from './Skeleton';
 import s from '../pages/MyComplexes.module.css';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 
 const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
   const toast = useToast();
@@ -66,7 +67,7 @@ const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
   const exercisesCount = template?.exercises?.length || 0;
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
       <div
         className={`${s.modalContent} ${s.templateViewModal}`}
         onClick={(event) => event.stopPropagation()}

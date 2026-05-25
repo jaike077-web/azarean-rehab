@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import CreateWizard from './CreateWizard';
 import EditForm from './EditForm';
 import s from './RehabProgramModal.module.css';
+import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 
 /**
  * RehabProgramModal — dual-mode роутер.
@@ -60,10 +61,9 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
   }, [loadData]);
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
         <div
           className={`${s.modalContent} ${s.rehabProgramModal}`}
-          onClick={(e) => e.stopPropagation()}
         >
           <div className={s.modalHeader}>
             <h2>

@@ -4,6 +4,7 @@ import { AlertTriangle, Trash2, X } from 'lucide-react';
 import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import s from '../pages/MyComplexes.module.css';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 
 const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   const toast = useToast();
@@ -46,7 +47,7 @@ const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   };
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
       <div
         className={`${s.modalContent} ${s.deleteTemplateModal}`}
         onClick={(event) => event.stopPropagation()}

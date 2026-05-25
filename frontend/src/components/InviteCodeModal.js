@@ -3,6 +3,7 @@ import { X, Copy, Check, KeyRound, RefreshCw } from 'lucide-react';
 import { patients as patientsApi } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import s from './InviteCodeModal.module.css';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 
 // Форматируем дату-истечения в читаемом виде ("через 23 ч 14 мин").
 const formatExpiresIn = (expiresAt) => {
@@ -80,8 +81,8 @@ function InviteCodeModal({ patient, onClose }) {
     : null;
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
-      <div className={`${s.modalContent} ${s.inviteCodeModal}`} onClick={(e) => e.stopPropagation()}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={`${s.modalContent} ${s.inviteCodeModal}`}>
         <div className={s.modalHeader}>
           <h2>
             <KeyRound size={20} className={s.pageIcon} />

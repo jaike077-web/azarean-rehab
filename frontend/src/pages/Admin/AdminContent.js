@@ -5,6 +5,7 @@ import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, 
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
+import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 
 // =====================================================
 // Суб-таб: Фазы
@@ -291,8 +292,8 @@ function PhaseForm({ phase, programTypes = [], onSave, onClose }) {
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={`${s.adminModal} ${s.adminModalWide}`} onClick={e => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={`${s.adminModal} ${s.adminModalWide}`}>
         <div className={s.adminModalHeader}>
           <h3>{phase ? 'Редактировать фазу' : 'Создать фазу'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
@@ -512,8 +513,8 @@ function CriterionForm({ initial, phaseId, onSave, onClose }) {
   };
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={`${s.adminModal} ${s.adminModalWide}`} onClick={(e) => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={`${s.adminModal} ${s.adminModalWide}`}>
         <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать критерий' : 'Создать критерий'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
@@ -864,8 +865,8 @@ function ProgramTypeForm({ initial, onSave, onClose }) {
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать тип программы' : 'Создать тип программы'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
@@ -1158,8 +1159,8 @@ function ProgramTemplateForm({ initial, programTypes = [], allTemplates = [], on
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать шаблон' : 'Создать шаблон программы'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
@@ -1533,8 +1534,8 @@ function TipForm({ tip, onSave, onClose }) {
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={e => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}><h3>{tip ? 'Редактировать совет' : 'Создать совет'}</h3><button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button></div>
         <div className={s.adminModalForm}>
           <div className={s.adminFormGroup}><label>Тип программы</label><input value={form.program_type} onChange={e => set('program_type', e.target.value)} /></div>
@@ -1663,8 +1664,8 @@ function VideoForm({ video, phases, onSave, onClose }) {
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={e => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}><h3>{video ? 'Редактировать видео' : 'Создать видео'}</h3><button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button></div>
         <div className={s.adminModalForm}>
           <div className={s.adminFormGroup}><label>Фаза</label>
@@ -1908,8 +1909,8 @@ function PainLocationForm({ initial, programTypes, onSave, onClose }) {
   };
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={(e) => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать локацию боли' : 'Создать локацию боли'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import s from './AdminUsers.module.css';
+import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 
 function AdminUserModal({ user, onSave, onClose }) {
   const isEdit = !!user;
@@ -73,8 +74,8 @@ function AdminUserModal({ user, onSave, onClose }) {
   };
 
   return (
-    <div className={s.adminModalOverlay} onClick={onClose}>
-      <div className={s.adminModal} onClick={e => e.stopPropagation()}>
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
           <h3>{isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>

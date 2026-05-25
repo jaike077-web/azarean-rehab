@@ -7,6 +7,7 @@ import React, { useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { AlertTriangle, X } from 'lucide-react';
 import s from './ConfirmModal.module.css';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 
 const ConfirmModal = ({
   isOpen,
@@ -42,10 +43,9 @@ const ConfirmModal = ({
   const Icon = CustomIcon || AlertTriangle;
 
   return (
-    <div className={s.confirmModalOverlay} onClick={onClose}>
+    <div className={s.confirmModalOverlay} {...useModalOverlayClose(onClose)}>
       <div
         className={`${s.confirmModal} ${s[`confirmModal${variant.charAt(0).toUpperCase()}${variant.slice(1)}`] || ''}`}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"

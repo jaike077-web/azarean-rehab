@@ -5,6 +5,7 @@ import { templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import { SkeletonText } from './Skeleton';
 import s from '../pages/MyComplexes.module.css';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 
 const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
   const toast = useToast();
@@ -67,7 +68,7 @@ const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
   }
 
   return (
-    <div className={s.modalOverlay} onClick={onClose}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
       <div
         className={`${s.modalContent} ${s.templateSelector}`}
         onClick={(event) => event.stopPropagation()}
