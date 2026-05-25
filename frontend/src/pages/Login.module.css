@@ -35,6 +35,21 @@
   margin-bottom: clamp(24px, 5vw, 36px);
 }
 
+/* Logo wrapper — без явных rules image рендерится intrinsic 1024×1024
+   (огромный, ломает layout). Constrains image к 100px и центрирует. */
+.loginLogo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: clamp(12px, 2.5vw, 20px);
+}
+
+.loginLogo img {
+  width: clamp(80px, 18vw, 120px);
+  height: clamp(80px, 18vw, 120px);
+  object-fit: contain;
+  display: block;
+}
+
 .loginHeader h1 {
   font-size: clamp(26px, 5vw, 36px);
   margin: 0 0 clamp(8px, 2vw, 12px) 0;
