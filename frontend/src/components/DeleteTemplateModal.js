@@ -24,6 +24,9 @@ const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
     }
   }, [isOpen, handleEscape]);
 
+  // Hook ВЫШЕ early return — Rules of Hooks.
+  const overlayProps = useModalOverlayClose(onClose);
+
   if (!isOpen || !template) {
     return null;
   }
@@ -47,10 +50,9 @@ const DeleteTemplateModal = ({ template, isOpen, onClose, onConfirm }) => {
   };
 
   return (
-    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
+    <div className={s.modalOverlay} {...overlayProps}>
       <div
         className={`${s.modalContent} ${s.deleteTemplateModal}`}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className={s.modalHeader}>
           <h2>
