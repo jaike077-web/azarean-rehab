@@ -124,7 +124,9 @@ describe('GET /api/admin/command-center — сегменты (cadence-relative)'
     expect(res.body.data.segments).toEqual({ active: 0, at_risk: 1, dormant: 0, churned: 0 });
   });
 
-  it('day/1, days_since=3 → dormant (gap=1, 2*gap=2, 3>2 → не at_risk)', async () => {
+  it('day/1, days_since=3 → at_risk (gap=1, ceiling=max(2, 4)=4, 1<3≤4)', async () => {
+    // Пол потолка at_risk = gap+3 для дневных. Пропуск 3 дней при дневной
+    // рутине = «under risk», а не «спит» (это калибровка из ТЗ C2-followup).
     query.mockResolvedValueOnce({
       rows: [
         makeRow({
@@ -136,7 +138,38 @@ describe('GET /api/admin/command-center — сегменты (cadence-relative)'
     const res = await request(app)
       .get('/api/admin/command-center')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.body.data.segments).toEqual({ active: 0, at_risk: 0, dormant: 1, churned: 0 });
+    expect(res.body.data.segments).toEqual({ active: 0, at_risk: 1, dormant: 0, churned: 0 });
+  });
+
+  it('day/1, days_since=4 → at_risk; days_since=5 → dormant (граница пола at_risk)', async () => {
+    // gap=1, ceiling=max(2, 4)=4. Точно проверяем верхнюю границу пола.
+    query.mockResolvedValueOnce({
+      rows: [
+        makeRow({ patient_id: 1, target_min: 1, target_unit: 'day', expected_gap_days: 1, days_since: 4 }),
+        makeRow({ patient_id: 2, target_min: 1, target_unit: 'day', expected_gap_days: 1, days_since: 5 }),
+      ],
+    });
+    const res = await request(app)
+      .get('/api/admin/command-center')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.body.data.segments).toEqual({ active: 0, at_risk: 1, dormant: 1, churned: 0 });
+  });
+
+  it('недельные режимы: gap+3 не работает (gap=7 → ceiling=14, не 10)', async () => {
+    // gap=7, ceiling=max(14, 10)=14. Пол gap+3=10 не активен для недельных.
+    // Проверяем что days_since=12 всё ещё at_risk (а не dormant с порогом 10).
+    query.mockResolvedValueOnce({
+      rows: [
+        makeRow({
+          target_min: 1, target_unit: 'week',
+          expected_gap_days: 7, days_since: 12,
+        }),
+      ],
+    });
+    const res = await request(app)
+      .get('/api/admin/command-center')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.body.data.segments).toEqual({ active: 0, at_risk: 1, dormant: 0, churned: 0 });
   });
 
   it('days_since на границе active: days_since == expected_gap_days → active', async () => {

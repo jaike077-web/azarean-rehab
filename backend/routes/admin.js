@@ -1964,6 +1964,11 @@ function parseInstructorId(raw) {
 // Классифицирует сегмент пациента по cadence-relative окну.
 // expected_gap_days: ожидаемый интервал между активностями (по target).
 // Backstop 30 дней независимо от cadence — для редких частот.
+//
+// Потолок at_risk = MAX(2*gap, gap+3) — пол для дневных режимов:
+// при gap=1 чистое 2*gap=2 слишком туго (пропустил 3 дня → уже dormant);
+// пол gap+3 даёт at_risk 2-4 для day, dormant с 5-го. Для недели
+// (gap=7) пол=10 < 2*gap=14, эффективно не работает — сохраняем 14.
 function classifySegment(row) {
   const daysSince = row.days_since;
   const gap = row.expected_gap_days;
@@ -1980,8 +1985,9 @@ function classifySegment(row) {
   if (daysSince > 30) return 'churned';
 
   if (daysSince <= gap) return 'active';
-  if (daysSince <= 2 * gap) return 'at_risk';
-  return 'dormant'; // (2*gap, 30]
+  const ceilingAtRisk = Math.max(2 * gap, gap + 3);
+  if (daysSince <= ceilingAtRisk) return 'at_risk';
+  return 'dormant'; // (ceilingAtRisk, 30]
 }
 
 // Адхеренс per patient. Только если target_min задан (есть цель для оценки).
@@ -2031,7 +2037,7 @@ router.get('/command-center', async (req, res) => {
           FROM streaks s
           JOIN active_program ap ON ap.patient_id = s.patient_id
          WHERE s.program_id = ap.program_id OR s.program_id IS NULL
-         ORDER BY s.patient_id, s.current_streak DESC NULLS LAST
+         ORDER BY s.patient_id, s.current_streak DESC NULLS LAST, s.updated_at DESC
       ),
       sessions_in_window AS (
         SELECT ap.patient_id,
