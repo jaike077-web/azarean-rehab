@@ -203,6 +203,9 @@ export const patients = {
   deletePermanent: (id) => api.delete(`/patients/${id}/permanent`),
   getWithProgress: () => api.get('/patients/with-progress'),
   generateInviteCode: (id) => api.post(`/patients/${id}/invite-code`),
+  // Передача пациента другому инструктору (Wave 3 C1, admin-only)
+  // body: { instructor_id, reason? } → audit logAudit('PATIENT_REASSIGNED', ...)
+  assignInstructor: (id, data) => api.patch(`/patients/${id}/assign-instructor`, data),
 };
 
 // Комплексы
@@ -636,6 +639,16 @@ export const admin = {
   createPainLocation: (data) => api.post('/admin/pain-locations', data),
   updatePainLocation: (code, data) => api.put(`/admin/pain-locations/${encodeURIComponent(code)}`, data),
   deletePainLocation: (code) => api.delete(`/admin/pain-locations/${encodeURIComponent(code)}`),
+
+  // Командный центр (Wave 3 C2/C3/C4) — admin-only, glob authenticateToken + requireAdmin.
+  // Параметры (period: '7d'|'30d'|'all', instructor_id, limit, severity) — из API-контракта.
+  // Период влияет только на адхеренс-окно и динамику; воронка/сегменты — current-state.
+  commandCenter: {
+    getSummary:     (params = {}) => api.get('/admin/command-center', { params }),
+    getInstructors: (params = {}) => api.get('/admin/command-center/instructors', { params }),
+    getAttention:   (params = {}) => api.get('/admin/command-center/attention', { params }),
+    getDynamics:    (params = {}) => api.get('/admin/command-center/dynamics', { params }),
+  },
 
   // Система
   getSystemInfo: () => api.get('/admin/system'),
