@@ -1963,6 +1963,13 @@ function parseInstructorId(raw) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+// Калибровочные ручки динамики (C4). Пороги вынесены, чтобы калибровать
+// на pilot-данных — не зашитая магия, не регрессия (overkill для пилота).
+const PAIN_DELTA_THRESHOLD = 0.5; // VAS пунктов между половинами окна
+const ADHERENCE_RATIO_HI = 1.2;   // вторая половина >= 1.2x первой → improving
+const ADHERENCE_RATIO_LO = 0.8;   //                  <= 0.8x       → worsening
+const MIN_DIARY_POINTS = 2;       // мин. записей в КАЖДОЙ половине для классификации боли
+
 // Whitelist severities из ops_alerts CHECK + computed для phase_stuck (yellow→medium, red→high).
 const SEVERITY_WHITELIST = new Set(['low', 'medium', 'high', 'critical']);
 function parseSeverity(raw) {
@@ -2264,6 +2271,182 @@ router.get('/command-center/instructors', async (req, res) => {
     return res
       .status(500)
       .json({ error: 'ServerError', message: 'Не удалось получить срез инструкторов' });
+  }
+});
+
+// =====================================================
+// C4: GET /api/admin/command-center/dynamics
+// =====================================================
+// Read-only тренды по трём осям РАЗДЕЛЬНО (не схлопывая в один балл).
+// Метод — halving (первая половина окна vs вторая), не регрессия.
+// Конфликт «pain↑ + adherence↑» → overtraining_candidate (отдельная корзина,
+// НЕ вычитается из своих осей — клинически важный сигнал).
+//
+// Источники (зафиксировано):
+//   pain      → diary_entries.pain_level (daily, 1/день)
+//   adherence → progress_logs.session_id (DISTINCT, anti-175%)
+//   phase     → current-state из C3 EXISTS phase_stuck_alerts (без истории)
+//
+// Параметры $1=instructor_id, $2=window_days, $3=days_first_half.
+// Границы: first_half = [start, midpoint), second_half = [midpoint, today].
+// start = CURRENT_DATE - (window_days - 1).
+// midpoint = start + days_first_half = CURRENT_DATE - (window_days - 1 - days_first_half).
+
+function classifyPainTrend(row) {
+  const countFirst = parseInt(row.pain_count_first, 10) || 0;
+  const countSecond = parseInt(row.pain_count_second, 10) || 0;
+  if (countFirst < MIN_DIARY_POINTS || countSecond < MIN_DIARY_POINTS) {
+    return 'insufficient_data';
+  }
+  const avgFirst = parseFloat(row.pain_avg_first);
+  const avgSecond = parseFloat(row.pain_avg_second);
+  const delta = avgSecond - avgFirst;
+  if (delta <= -PAIN_DELTA_THRESHOLD) return 'improving'; // боль падает = хорошо
+  if (delta >=  PAIN_DELTA_THRESHOLD) return 'worsening';
+  return 'stable';
+}
+
+function classifyAdherenceTrend(row, windowDays) {
+  const sessFirst = parseInt(row.sessions_first, 10) || 0;
+  const sessSecond = parseInt(row.sessions_second, 10) || 0;
+  if (sessFirst + sessSecond === 0) return 'insufficient_data';
+
+  const daysFirst = Math.floor(windowDays / 2);
+  const daysSecond = windowDays - daysFirst;
+  const rateFirst = sessFirst / daysFirst;
+  const rateSecond = sessSecond / daysSecond;
+
+  // Edge: 0→N — явно improving (избегаем 0/0 в умножении)
+  if (rateFirst === 0 && rateSecond > 0) return 'improving';
+
+  if (rateSecond >= rateFirst * ADHERENCE_RATIO_HI) return 'improving';
+  if (rateSecond <= rateFirst * ADHERENCE_RATIO_LO) return 'worsening';
+  return 'stable';
+}
+
+router.get('/command-center/dynamics', async (req, res) => {
+  try {
+    const { period, adherence_window_days: windowDays } = parsePeriod(req.query.period);
+    const instructorId = parseInstructorId(req.query.instructor_id);
+    const daysFirstHalf = Math.floor(windowDays / 2);
+
+    // Когорта = активные программы (с опц. фильтром инструктора).
+    // Половинные агрегаты боли + сессий + is_stuck в одном запросе.
+    const sql = `
+      WITH base AS (
+        SELECT p.id, p.assigned_instructor_id
+          FROM patients p
+         WHERE p.is_active = true
+           AND ($1::int IS NULL OR p.assigned_instructor_id = $1)
+      ),
+      active_program AS (
+        SELECT DISTINCT ON (rp.patient_id)
+               rp.patient_id, rp.id AS program_id, rp.complex_id
+          FROM rehab_programs rp
+          JOIN base b ON b.id = rp.patient_id
+         WHERE rp.is_active = true AND rp.status = 'active'
+         ORDER BY rp.patient_id, rp.created_at DESC
+      ),
+      pain_halves AS (
+        SELECT
+          ap.patient_id,
+          AVG(de.pain_level) FILTER (
+            WHERE de.entry_date < CURRENT_DATE - ($2::int - 1 - $3::int)
+          ) AS pain_avg_first,
+          COUNT(*) FILTER (
+            WHERE de.entry_date < CURRENT_DATE - ($2::int - 1 - $3::int)
+              AND de.pain_level IS NOT NULL
+          ) AS pain_count_first,
+          AVG(de.pain_level) FILTER (
+            WHERE de.entry_date >= CURRENT_DATE - ($2::int - 1 - $3::int)
+          ) AS pain_avg_second,
+          COUNT(*) FILTER (
+            WHERE de.entry_date >= CURRENT_DATE - ($2::int - 1 - $3::int)
+              AND de.pain_level IS NOT NULL
+          ) AS pain_count_second
+        FROM active_program ap
+        LEFT JOIN diary_entries de
+               ON de.patient_id = ap.patient_id
+              AND de.entry_date >= CURRENT_DATE - ($2::int - 1)
+              AND de.entry_date <= CURRENT_DATE
+              AND de.pain_level IS NOT NULL
+        GROUP BY ap.patient_id
+      ),
+      sessions_halves AS (
+        SELECT
+          ap.patient_id,
+          COUNT(DISTINCT pl.session_id) FILTER (
+            WHERE pl.completed_at::date < CURRENT_DATE - ($2::int - 1 - $3::int)
+              AND pl.session_id IS NOT NULL
+          ) AS sessions_first,
+          COUNT(DISTINCT pl.session_id) FILTER (
+            WHERE pl.completed_at::date >= CURRENT_DATE - ($2::int - 1 - $3::int)
+              AND pl.session_id IS NOT NULL
+          ) AS sessions_second
+        FROM active_program ap
+        LEFT JOIN progress_logs pl
+               ON pl.complex_id = ap.complex_id
+              AND pl.completed = true
+              AND pl.completed_at::date >= CURRENT_DATE - ($2::int - 1)
+              AND pl.completed_at::date <= CURRENT_DATE
+        GROUP BY ap.patient_id
+      )
+      SELECT
+        ap.patient_id,
+        b.assigned_instructor_id,
+        ph.pain_avg_first, ph.pain_count_first,
+        ph.pain_avg_second, ph.pain_count_second,
+        COALESCE(sh.sessions_first, 0)::int  AS sessions_first,
+        COALESCE(sh.sessions_second, 0)::int AS sessions_second,
+        EXISTS (
+          SELECT 1 FROM phase_stuck_alerts psa
+          JOIN rehab_programs rp2 ON rp2.id = psa.program_id
+          WHERE rp2.patient_id = ap.patient_id
+            AND rp2.is_active = true AND rp2.status = 'active'
+            AND psa.resolved_at IS NULL
+        ) AS is_stuck
+      FROM active_program ap
+      JOIN base b ON b.id = ap.patient_id
+      LEFT JOIN pain_halves     ph ON ph.patient_id = ap.patient_id
+      LEFT JOIN sessions_halves sh ON sh.patient_id = ap.patient_id
+    `;
+
+    const { rows } = await query(sql, [instructorId, windowDays, daysFirstHalf]);
+
+    const cohort = rows.length;
+    const pain      = { improving: 0, stable: 0, worsening: 0, insufficient_data: 0 };
+    const adherence = { improving: 0, stable: 0, worsening: 0, insufficient_data: 0 };
+    const phase     = { on_track: 0, stalled: 0 };
+    let overtraining_candidates = 0;
+
+    for (const r of rows) {
+      const pTrend = classifyPainTrend(r);
+      const aTrend = classifyAdherenceTrend(r, windowDays);
+      pain[pTrend]      += 1;
+      adherence[aTrend] += 1;
+      phase[r.is_stuck ? 'stalled' : 'on_track'] += 1;
+
+      // Конфликт — НЕ вычитается из своих осей.
+      if (pTrend === 'worsening' && aTrend === 'improving') overtraining_candidates += 1;
+    }
+
+    return res.json({
+      data: {
+        period,
+        window_days: windowDays,
+        instructor_id: instructorId,
+        cohort,
+        pain,
+        adherence,
+        phase,
+        conflicts: { overtraining_candidates },
+      },
+    });
+  } catch (err) {
+    console.error('GET /admin/command-center/dynamics error:', err.message);
+    return res
+      .status(500)
+      .json({ error: 'ServerError', message: 'Не удалось получить динамику' });
   }
 });
 
