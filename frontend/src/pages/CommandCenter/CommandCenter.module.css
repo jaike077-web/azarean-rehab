@@ -99,15 +99,264 @@
   padding: clamp(14px, 2vw, 20px);
 }
 
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .panelTitle {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: clamp(15px, 1.6vw, 17px);
   font-weight: 600;
   color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .panelStub {
   margin: 0;
   font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.panelHint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Loading / Error states ---------- */
+
+.skelRow {
+  height: 14px;
+  margin: 8px 0;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-sm);
+  animation: ccPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ccPulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+.panelError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+
+.retryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-danger);
+  background: transparent;
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.retryBtn:hover {
+  background: var(--color-danger-bg);
+}
+
+/* ---------- AttentionPanel ---------- */
+
+.attnList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attentionRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.attentionRow:hover {
+  background: var(--color-surface-2);
+}
+
+.attentionRow:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.sevDot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.attnText {
+  flex: 1;
+  min-width: 0;
+}
+
+.attnSummary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.attnMeta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.attnChevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+}
+
+.attnEmpty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.attnEmptyIcon {
+  color: var(--color-text-subtle);
+}
+
+/* ---------- FunnelPanel ---------- */
+
+.funnelList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.funnelBar {
+  width: 100%;
+}
+
+.funnelTrack {
+  position: relative;
+  height: 32px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.funnelFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-primary);
+  opacity: 0.85;
+  border-radius: var(--radius-md);
+  transition: width 0.3s ease;
+}
+
+.funnelLabel {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--color-text);
+  mix-blend-mode: normal;
+}
+
+.funnelCount {
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 24px;
+}
+
+.funnelStage {
+  color: var(--color-text);
+}
+
+.gapCallout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.gapIcon {
+  flex-shrink: 0;
+}
+
+/* ---------- SegmentsPanel ---------- */
+
+.segGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.segCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.segValue {
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.segLabel {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.segNote {
+  margin: 10px 0 0;
+  font-size: 12px;
   color: var(--color-text-muted);
 }
