@@ -1934,19 +1934,21 @@ router.put('/ops-alerts/:id/resolve', async (req, res) => {
 });
 
 // =====================================================
-// COMMAND CENTER (Wave 3 C2) — агрегаты дашборда
+// COMMAND CENTER (Wave 3 C2 + C3) — агрегаты дашборда
 // =====================================================
-// Один read-only endpoint: воронка + сегменты + адхеренс.
-// period влияет ТОЛЬКО на адхеренс-окно; воронка-этапы 1..4 и сегменты —
-// current-state. period='all' → adherence_window_days=30 (sane default,
-// бессрочный rate бессмыслен).
+// C2: воронка + сегменты + адхеренс (system-wide и per-instructor).
+// C3: срез по инструкторам (тот же per-patient state, GROUP BY assigned_instructor_id)
+//     + attention feed (Слой 0: ops_alerts + phase_stuck_alerts unresolved).
 //
 // Дисциплина размерностей (anti-175%):
 //   сессия = COUNT(DISTINCT pl.session_id) FILTER (WHERE NOT NULL)
 //   свежесть = day-grained через streaks.last_activity_date (materialized)
 //   адхеренс = session-grained, в окне (CURRENT_DATE - (window_days - 1))
 //
-// GET /api/admin/command-center?period=7d|30d|all&instructor_id=NN
+// Endpoints:
+//   GET /api/admin/command-center?period=7d|30d|all&instructor_id=NN
+//   GET /api/admin/command-center/instructors?period=7d|30d|all
+//   GET /api/admin/command-center/attention?limit=&severity=
 
 function parsePeriod(raw) {
   if (raw === '7d') return { period: '7d', adherence_window_days: 7 };
@@ -1960,6 +1962,14 @@ function parseInstructorId(raw) {
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
+
+// Whitelist severities из ops_alerts CHECK + computed для phase_stuck (yellow→medium, red→high).
+const SEVERITY_WHITELIST = new Set(['low', 'medium', 'high', 'critical']);
+function parseSeverity(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  return SEVERITY_WHITELIST.has(String(raw)) ? String(raw) : null;
+}
+const SEVERITY_RANK = { critical: 4, high: 3, medium: 2, low: 1 };
 
 // Классифицирует сегмент пациента по cadence-relative окну.
 // expected_gap_days: ожидаемый интервал между активностями (по target).
@@ -2005,77 +2015,116 @@ function isAdhering(row, windowDays) {
   return (row.sessions || 0) >= threshold;
 }
 
+// Shared per-patient state SQL — потребляется обоими endpoint'ами:
+// `/command-center` (system-wide) и `/command-center/instructors` (GROUP BY).
+// Гарантия: оба endpoint'а классифицируют пациента ОДИНАКОВО (то же определение
+// 'active'/'adhering'), потому что строки идут из одного источника.
+//
+// Параметры:
+//   $1 = instructor_id (NULL → все)
+//   $2 = adherence_window_days (для sessions_in_window)
+//
+// CTE active_program: самая свежая активная программа (DISTINCT ON ORDER BY created_at DESC,
+//   как LIMIT 1 в /my/dashboard для multiple-programs случая).
+// streak_pick: строка streaks по program_id активной программы; fallback на standalone
+//   (program_id IS NULL); при N подходящих — DISTINCT ON ORDER BY current_streak DESC,
+//   updated_at DESC tie-breaker (как utils/streaks.js::getStreakSummary).
+// unanswered: per-program последнее сообщение от пациента (system_alert исключён —
+//   авто-алерты не требуют ответа); is_read НЕ используется (ставится при простом
+//   open ленты, не при ответе — recon messages).
+const PER_PATIENT_STATE_SQL = `
+  WITH base AS (
+    SELECT p.id, p.password_hash, p.assigned_instructor_id
+      FROM patients p
+     WHERE p.is_active = true
+       AND ($1::int IS NULL OR p.assigned_instructor_id = $1)
+  ),
+  active_program AS (
+    SELECT DISTINCT ON (rp.patient_id)
+           rp.patient_id, rp.id AS program_id, rp.complex_id,
+           rp.created_at AS program_created_at
+      FROM rehab_programs rp
+      JOIN base b ON b.id = rp.patient_id
+     WHERE rp.is_active = true AND rp.status = 'active'
+     ORDER BY rp.patient_id, rp.created_at DESC
+  ),
+  streak_pick AS (
+    SELECT DISTINCT ON (s.patient_id) s.patient_id, s.last_activity_date
+      FROM streaks s
+      JOIN active_program ap ON ap.patient_id = s.patient_id
+     WHERE s.program_id = ap.program_id OR s.program_id IS NULL
+     ORDER BY s.patient_id, s.current_streak DESC NULLS LAST, s.updated_at DESC
+  ),
+  sessions_in_window AS (
+    SELECT ap.patient_id,
+           COUNT(DISTINCT pl.session_id)
+             FILTER (WHERE pl.session_id IS NOT NULL) AS sessions
+      FROM active_program ap
+      LEFT JOIN progress_logs pl
+             ON pl.complex_id = ap.complex_id
+            AND pl.completed = true
+            AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
+     GROUP BY ap.patient_id
+  ),
+  unanswered AS (
+    SELECT rp.patient_id, last_msg.last_msg_at AS last_patient_msg_at
+      FROM (
+        SELECT DISTINCT ON (m.program_id)
+               m.program_id, m.sender_type, m.created_at AS last_msg_at
+          FROM messages m
+         WHERE m.message_kind <> 'system_alert'
+         ORDER BY m.program_id, m.created_at DESC
+      ) last_msg
+      JOIN rehab_programs rp ON rp.id = last_msg.program_id
+     WHERE last_msg.sender_type = 'patient'
+       AND rp.is_active = true AND rp.status = 'active'
+  )
+  SELECT
+    b.id AS patient_id,
+    b.assigned_instructor_id,
+    (b.password_hash IS NOT NULL) AS is_registered,
+    (ap.patient_id IS NOT NULL)   AS has_active_program,
+    c.target_min, c.target_unit,
+    sp.last_activity_date::text   AS last_activity_date,
+    CASE WHEN sp.last_activity_date IS NULL THEN NULL
+         ELSE (CURRENT_DATE - sp.last_activity_date)::int END AS days_since,
+    CASE
+      WHEN c.target_unit = 'day'  AND c.target_min > 0 THEN 1
+      WHEN c.target_unit = 'week' AND c.target_min > 0
+           THEN CEIL(7.0 / c.target_min)::int
+      ELSE 7
+    END AS expected_gap_days,
+    COALESCE(siw.sessions, 0)::int AS sessions,
+    CASE WHEN ap.patient_id IS NOT NULL
+         THEN (CURRENT_DATE - ap.program_created_at::date)::int
+         ELSE NULL END AS program_age_days,
+    (un.patient_id IS NOT NULL) AS is_unanswered,
+    un.last_patient_msg_at::text AS last_patient_msg_at,
+    EXISTS (
+      SELECT 1 FROM ops_alerts oa
+       WHERE oa.patient_id = b.id AND oa.resolved_at IS NULL
+    ) AS has_red_flag,
+    EXISTS (
+      SELECT 1 FROM phase_stuck_alerts psa
+       JOIN rehab_programs rp2 ON rp2.id = psa.program_id
+       WHERE rp2.patient_id = b.id
+         AND rp2.is_active = true AND rp2.status = 'active'
+         AND psa.resolved_at IS NULL
+    ) AS is_stuck
+  FROM base b
+  LEFT JOIN active_program     ap ON ap.patient_id = b.id
+  LEFT JOIN complexes          c  ON c.id = ap.complex_id
+  LEFT JOIN streak_pick        sp ON sp.patient_id = b.id
+  LEFT JOIN sessions_in_window siw ON siw.patient_id = b.id
+  LEFT JOIN unanswered         un ON un.patient_id = b.id
+`;
+
 router.get('/command-center', async (req, res) => {
   try {
     const { period, adherence_window_days } = parsePeriod(req.query.period);
     const instructorId = parseInstructorId(req.query.instructor_id);
 
-    // Один запрос: все активные пациенты + per-patient state (cadence, свежесть, сессии в окне).
-    // CTE active_program — самая свежая активная программа (DISTINCT ON ORDER BY created_at DESC,
-    // как `LIMIT 1` в /my/dashboard для multiple-programs случая).
-    // streak_pick — берём строку streaks по program_id активной программы; fallback на standalone
-    // (program_id IS NULL); при N подходящих — DISTINCT ON ORDER BY current_streak DESC,
-    // как в utils/streaks.js::getStreakSummary.
-    const sql = `
-      WITH base AS (
-        SELECT p.id, p.password_hash, p.assigned_instructor_id
-          FROM patients p
-         WHERE p.is_active = true
-           AND ($1::int IS NULL OR p.assigned_instructor_id = $1)
-      ),
-      active_program AS (
-        SELECT DISTINCT ON (rp.patient_id)
-               rp.patient_id, rp.id AS program_id, rp.complex_id,
-               rp.created_at AS program_created_at
-          FROM rehab_programs rp
-          JOIN base b ON b.id = rp.patient_id
-         WHERE rp.is_active = true AND rp.status = 'active'
-         ORDER BY rp.patient_id, rp.created_at DESC
-      ),
-      streak_pick AS (
-        SELECT DISTINCT ON (s.patient_id) s.patient_id, s.last_activity_date
-          FROM streaks s
-          JOIN active_program ap ON ap.patient_id = s.patient_id
-         WHERE s.program_id = ap.program_id OR s.program_id IS NULL
-         ORDER BY s.patient_id, s.current_streak DESC NULLS LAST, s.updated_at DESC
-      ),
-      sessions_in_window AS (
-        SELECT ap.patient_id,
-               COUNT(DISTINCT pl.session_id)
-                 FILTER (WHERE pl.session_id IS NOT NULL) AS sessions
-          FROM active_program ap
-          LEFT JOIN progress_logs pl
-                 ON pl.complex_id = ap.complex_id
-                AND pl.completed = true
-                AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
-         GROUP BY ap.patient_id
-      )
-      SELECT
-        b.id AS patient_id,
-        (b.password_hash IS NOT NULL) AS is_registered,
-        (ap.patient_id IS NOT NULL)   AS has_active_program,
-        c.target_min, c.target_unit,
-        sp.last_activity_date::text   AS last_activity_date,
-        CASE WHEN sp.last_activity_date IS NULL THEN NULL
-             ELSE (CURRENT_DATE - sp.last_activity_date)::int END AS days_since,
-        CASE
-          WHEN c.target_unit = 'day'  AND c.target_min > 0 THEN 1
-          WHEN c.target_unit = 'week' AND c.target_min > 0
-               THEN CEIL(7.0 / c.target_min)::int
-          ELSE 7
-        END AS expected_gap_days,
-        COALESCE(siw.sessions, 0)::int AS sessions,
-        CASE WHEN ap.patient_id IS NOT NULL
-             THEN (CURRENT_DATE - ap.program_created_at::date)::int
-             ELSE NULL END AS program_age_days
-      FROM base b
-      LEFT JOIN active_program     ap ON ap.patient_id = b.id
-      LEFT JOIN complexes          c  ON c.id = ap.complex_id
-      LEFT JOIN streak_pick        sp ON sp.patient_id = b.id
-      LEFT JOIN sessions_in_window siw ON siw.patient_id = b.id
-    `;
-
-    const { rows } = await query(sql, [instructorId, adherence_window_days]);
+    const { rows } = await query(PER_PATIENT_STATE_SQL, [instructorId, adherence_window_days]);
 
     // Воронка
     const created = rows.length;
@@ -2127,6 +2176,187 @@ router.get('/command-center', async (req, res) => {
     return res
       .status(500)
       .json({ error: 'ServerError', message: 'Не удалось получить агрегаты' });
+  }
+});
+
+// =====================================================
+// C3: GET /api/admin/command-center/instructors
+// =====================================================
+// Срез по инструкторам. Использует ТОТ ЖЕ PER_PATIENT_STATE_SQL что и C2
+// (instructorId=NULL — берём всех), потом GROUP BY assigned_instructor_id
+// в JS. Инструкторы без привязанных пациентов в срез не попадают.
+router.get('/command-center/instructors', async (req, res) => {
+  try {
+    const { period, adherence_window_days } = parsePeriod(req.query.period);
+
+    const { rows } = await query(PER_PATIENT_STATE_SQL, [null, adherence_window_days]);
+
+    // GROUP BY assigned_instructor_id — пациенты без owner'а (NULL) пропускаются.
+    const byInstructor = new Map();
+    for (const r of rows) {
+      const instId = r.assigned_instructor_id;
+      if (instId == null) continue;
+      if (!byInstructor.has(instId)) {
+        byInstructor.set(instId, {
+          instructor_id: instId,
+          caseload: 0, no_program: 0,
+          active: 0, at_risk: 0, dormant: 0, churned: 0,
+          unanswered: 0, red_flags: 0, stuck: 0,
+        });
+      }
+      const acc = byInstructor.get(instId);
+      acc.caseload += 1;
+
+      if (!r.has_active_program) {
+        // registered_no_active_program делегирует исключение из сегментов;
+        // считаем "no_program" если зарегистрирован но без активной программы
+        // (зеркалит funnel_gaps C2 per-instructor).
+        if (r.is_registered) acc.no_program += 1;
+      } else {
+        const segment = classifySegment(r);
+        acc[segment] += 1;
+      }
+
+      // Флаги внимания — считаем для ВСЕХ пациентов инструктора, не только
+      // онбордингованных: red_flag (pain) может прилететь и без программы,
+      // stuck требует программу (EXISTS phase_stuck_alerts JOIN активной),
+      // unanswered тоже требует активной программы (CTE условие).
+      if (r.is_unanswered) acc.unanswered += 1;
+      if (r.has_red_flag) acc.red_flags += 1;
+      if (r.is_stuck) acc.stuck += 1;
+    }
+
+    const instructorIds = Array.from(byInstructor.keys());
+    let nameRows = [];
+    if (instructorIds.length > 0) {
+      const namesResult = await query(
+        'SELECT id, full_name, role FROM users WHERE id = ANY($1::int[])',
+        [instructorIds]
+      );
+      nameRows = namesResult.rows;
+    }
+    const nameById = new Map(nameRows.map((u) => [u.id, u]));
+
+    const instructors = Array.from(byInstructor.values()).map((acc) => {
+      const u = nameById.get(acc.instructor_id) || {};
+      return {
+        ...acc,
+        instructor_name: u.full_name || null,
+        role: u.role || null,
+      };
+    });
+
+    // Сорт: caseload DESC, потом instructor_id ASC для детерминизма
+    instructors.sort((a, b) => {
+      if (b.caseload !== a.caseload) return b.caseload - a.caseload;
+      return a.instructor_id - b.instructor_id;
+    });
+
+    return res.json({
+      data: {
+        period,
+        adherence_window_days,
+        instructors,
+      },
+    });
+  } catch (err) {
+    console.error('GET /admin/command-center/instructors error:', err.message);
+    return res
+      .status(500)
+      .json({ error: 'ServerError', message: 'Не удалось получить срез инструкторов' });
+  }
+});
+
+// =====================================================
+// C3: GET /api/admin/command-center/attention
+// =====================================================
+// Unified лента: ops_alerts (pain_red_flag) + phase_stuck_alerts (phase_stuck),
+// только WHERE resolved_at IS NULL. JOIN на users через
+// patients.assigned_instructor_id (FK из C1) для имени куратора.
+//
+// severity: ops_alerts.severity (low|medium|high|critical) +
+//           phase_stuck.threshold_level → red→high, yellow→medium.
+// summary:  ops → "Резкая боль (VAS N)" из pain_entries (LEFT JOIN);
+//           stuck → "Застрял на фазе N".
+//
+// Сортировка: severity rank DESC (critical>high>medium>low), потом created_at DESC.
+router.get('/command-center/attention', async (req, res) => {
+  try {
+    const severity = parseSeverity(req.query.severity);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+    const sql = `
+      WITH feed AS (
+        SELECT
+          'pain_red_flag'::text AS kind,
+          oa.patient_id,
+          p.full_name AS patient_name,
+          p.assigned_instructor_id AS instructor_id,
+          u.full_name AS instructor_name,
+          oa.severity::text AS severity,
+          CONCAT('Резкая боль (VAS ', COALESCE(pe.vas_score::text, '?'), ')') AS summary,
+          oa.created_at,
+          oa.id AS source_id
+        FROM ops_alerts oa
+        JOIN patients p ON p.id = oa.patient_id
+        LEFT JOIN users u ON u.id = p.assigned_instructor_id
+        LEFT JOIN pain_entries pe
+               ON oa.source_entity_type = 'pain_entry' AND pe.id = oa.source_entity_id
+        WHERE oa.resolved_at IS NULL
+        UNION ALL
+        SELECT
+          'phase_stuck'::text AS kind,
+          rp.patient_id,
+          p.full_name AS patient_name,
+          p.assigned_instructor_id AS instructor_id,
+          u.full_name AS instructor_name,
+          (CASE WHEN psa.threshold_level = 'red' THEN 'high' ELSE 'medium' END)::text AS severity,
+          CONCAT('Застрял на фазе ', psa.phase_number) AS summary,
+          psa.detected_at AS created_at,
+          psa.id AS source_id
+        FROM phase_stuck_alerts psa
+        JOIN rehab_programs rp ON rp.id = psa.program_id
+        JOIN patients p ON p.id = rp.patient_id
+        LEFT JOIN users u ON u.id = p.assigned_instructor_id
+        WHERE psa.resolved_at IS NULL
+      )
+      SELECT *
+      FROM feed
+      WHERE ($1::text IS NULL OR severity = $1::text)
+      ORDER BY
+        CASE severity
+          WHEN 'critical' THEN 4 WHEN 'high' THEN 3
+          WHEN 'medium'   THEN 2 WHEN 'low'  THEN 1
+          ELSE 0
+        END DESC,
+        created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const { rows } = await query(sql, [severity, limit, offset]);
+
+    return res.json({
+      data: {
+        items: rows.map((r) => ({
+          kind: r.kind,
+          patient_id: r.patient_id,
+          patient_name: r.patient_name,
+          instructor_id: r.instructor_id,
+          instructor_name: r.instructor_name,
+          severity: r.severity,
+          summary: r.summary,
+          created_at: r.created_at,
+          source_id: r.source_id,
+        })),
+        total: rows.length,
+      },
+    });
+  } catch (err) {
+    console.error('GET /admin/command-center/attention error:', err.message);
+    return res
+      .status(500)
+      .json({ error: 'ServerError', message: 'Не удалось получить ленту внимания' });
   }
 });
 
