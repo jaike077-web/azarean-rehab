@@ -3,6 +3,7 @@ import { diagnoses } from '../services/api';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 import useConfirm from '../hooks/useConfirm';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 import {
   FileText,
   Plus,
@@ -113,6 +114,9 @@ function Diagnoses() {
     setFormData({ name: '', description: '', recommendations: '', warnings: '' });
     setFormErrors({});
   };
+
+  // Overlay-close hook (shared между 3 модалками — все используют handleCloseModals)
+  const overlayProps = useModalOverlayClose(handleCloseModals);
 
   const validateForm = () => {
     const errors = {};
@@ -285,8 +289,8 @@ function Diagnoses() {
 
       {/* Modal: Add/Edit Diagnosis */}
       {(showAddModal || showEditModal) && (
-        <div className={s.modalOverlay} onClick={handleCloseModals}>
-          <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={s.modalOverlay} {...overlayProps}>
+          <div className={s.modalContent}>
             <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} />
@@ -380,8 +384,8 @@ function Diagnoses() {
 
       {/* Modal: View Diagnosis */}
       {showViewModal && selectedDiagnosis && (
-        <div className={s.modalOverlay} onClick={handleCloseModals}>
-          <div className={`${s.modalContent} ${s.modalView}`} onClick={(e) => e.stopPropagation()}>
+        <div className={s.modalOverlay} {...overlayProps}>
+          <div className={`${s.modalContent} ${s.modalView}`}>
             <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} />

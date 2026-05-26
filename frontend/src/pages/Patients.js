@@ -8,6 +8,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import InviteCodeModal from '../components/InviteCodeModal';
 import RehabProgramModal from '../components/RehabProgramModal';
 import useConfirm from '../hooks/useConfirm';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 import s from './Patients.module.css';
 import { useToast } from '../context/ToastContext';
 import { PatientsPageSkeleton } from '../components/Skeleton';
@@ -44,6 +45,11 @@ function Patients() {
   const [patientComplexes, setPatientComplexes] = useState([]);
   const [inviteCodePatient, setInviteCodePatient] = useState(null);
   const [programPatient, setProgramPatient] = useState(null);
+
+  // Overlay-close hooks — ВСЕГДА вызываются (не внутри {showModal && ...}),
+  // чтобы соблюсти Rules of Hooks: порядок hook'ов стабильный между renders.
+  const addEditOverlayProps = useModalOverlayClose(() => setShowModal(false));
+  const complexesOverlayProps = useModalOverlayClose(() => setShowComplexesModal(false));
 
   // UI состояния
   const [viewMode, setViewMode] = useState('grid'); // 'grid' или 'list'
@@ -632,11 +638,10 @@ function Patients() {
       {showModal && (
         <div
           className={s.modalOverlay}
-          onClick={() => setShowModal(false)}
+          {...addEditOverlayProps}
         >
           <div
             className={s.modalContent}
-            onClick={(e) => e.stopPropagation()}
           >
             <div className={s.modalHeader}>
               <h2>
@@ -796,11 +801,10 @@ function Patients() {
       {showComplexesModal && selectedPatient && (
         <div
           className={s.modalOverlay}
-          onClick={() => setShowComplexesModal(false)}
+          {...complexesOverlayProps}
         >
           <div
             className={s.modalContent}
-            onClick={(e) => e.stopPropagation()}
           >
             <div className={s.modalHeader}>
               <h2>

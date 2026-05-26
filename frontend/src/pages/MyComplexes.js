@@ -7,6 +7,7 @@ import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import ConfirmModal from '../components/ConfirmModal';
 import useConfirm from '../hooks/useConfirm';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 import { useToast } from '../context/ToastContext';
 import { 
   LayoutDashboard, 
@@ -39,6 +40,7 @@ function MyComplexes() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCompositionModal, setShowCompositionModal] = useState(false);
+  const compositionOverlayProps = useModalOverlayClose(() => setShowCompositionModal(false));
   const [selectedComplex, setSelectedComplex] = useState(null);
   const [complexExercises, setComplexExercises] = useState([]);
   const navigate = useNavigate();
@@ -597,8 +599,8 @@ useEffect(() => {
 
       {/* Модальное окно состава комплекса */}
       {showCompositionModal && selectedComplex && (
-        <div className={s.modalOverlay} onClick={() => setShowCompositionModal(false)}>
-          <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={s.modalOverlay} {...compositionOverlayProps}>
+          <div className={s.modalContent}>
             <div className={s.modalHeader}>
               <h2>
                 <FileText size={24} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />

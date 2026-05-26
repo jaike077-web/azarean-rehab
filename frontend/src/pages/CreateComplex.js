@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { patients, diagnoses, exercises, complexes, templates } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 import {
   DndContext,
   closestCenter,
@@ -159,6 +160,7 @@ function CreateComplex() {
   const [error, setError] = useState('');
   // Шаблоны
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const saveTemplateOverlayProps = useModalOverlayClose(() => setShowSaveTemplateModal(false));
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
@@ -738,8 +740,8 @@ function CreateComplex() {
 
 {/* Модалка сохранения шаблона */}
 {showSaveTemplateModal && (
-  <div className={s.modalOverlay} onClick={() => setShowSaveTemplateModal(false)}>
-    <div className={`${s.modalContent} ${s.saveTemplateModal}`} onClick={e => e.stopPropagation()}>
+  <div className={s.modalOverlay} {...saveTemplateOverlayProps}>
+    <div className={`${s.modalContent} ${s.saveTemplateModal}`}>
       <div className={s.modalHeader}>
         <h3><Save size={20} /> Сохранить как шаблон</h3>
         <button className={s.modalClose} onClick={() => setShowSaveTemplateModal(false)}>
