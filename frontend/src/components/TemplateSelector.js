@@ -63,12 +63,15 @@ const TemplateSelector = ({ isOpen, onClose, onSelect, diagnosisId }) => {
     );
   }, [searchTerm, templatesList]);
 
+  // Hook ВЫШЕ early return — Rules of Hooks.
+  const overlayProps = useModalOverlayClose(onClose);
+
   if (!isOpen) {
     return null;
   }
 
   return (
-    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
+    <div className={s.modalOverlay} {...overlayProps}>
       <div
         className={`${s.modalContent} ${s.templateSelector}`}
         onClick={(event) => event.stopPropagation()}

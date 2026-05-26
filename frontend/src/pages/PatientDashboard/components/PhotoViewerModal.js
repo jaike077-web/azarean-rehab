@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
 import { rehab } from '../../../services/api';
+import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import './PhotoViewerModal.css';
 
 export default function PhotoViewerModal({ romId, onClose }) {
@@ -57,20 +58,13 @@ export default function PhotoViewerModal({ romId, onClose }) {
     };
   }, [onClose]);
 
-  const handleOverlayClick = (e) => {
-    // Только клик по overlay закрывает; клик по самой картинке/кнопке — нет
-    if (e.target.classList.contains('pd-photo-viewer__overlay')) {
-      onClose();
-    }
-  };
-
   return (
     <div
       className="pd-photo-viewer__overlay"
       role="dialog"
       aria-modal="true"
       aria-label="Просмотр фото замера"
-      onClick={handleOverlayClick}
+      {...useModalOverlayClose(onClose)}
     >
       <button
         type="button"

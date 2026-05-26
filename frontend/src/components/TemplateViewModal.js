@@ -60,6 +60,9 @@ const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
     };
   }, [isOpen, templateId, toast]);
 
+  // Hook ВЫШЕ early return — Rules of Hooks.
+  const overlayProps = useModalOverlayClose(onClose);
+
   if (!isOpen) {
     return null;
   }
@@ -67,7 +70,7 @@ const TemplateViewModal = ({ templateId, isOpen, onClose }) => {
   const exercisesCount = template?.exercises?.length || 0;
 
   return (
-    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
+    <div className={s.modalOverlay} {...overlayProps}>
       <div
         className={`${s.modalContent} ${s.templateViewModal}`}
         onClick={(event) => event.stopPropagation()}

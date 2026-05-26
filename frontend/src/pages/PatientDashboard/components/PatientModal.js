@@ -4,14 +4,13 @@
 // Используется PainEventForm. Если в проекте появится shared modal — заменить.
 // =====================================================
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
+import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import './PainComponents.css';
 
 export default function PatientModal({ isOpen, onClose, title, children }) {
-  const overlayRef = useRef(null);
-
   useEffect(() => {
     if (!isOpen) return undefined;
     const onKey = (e) => {
@@ -27,18 +26,16 @@ export default function PatientModal({ isOpen, onClose, title, children }) {
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  // Hook ВЫШЕ early return — Rules of Hooks: порядок должен быть стабильным.
+  const overlayProps = useModalOverlayClose(onClose);
 
-  const handleOverlayClick = (e) => {
-    if (e.target === overlayRef.current) onClose();
-  };
+  if (!isOpen) return null;
 
   return (
     <div
-      ref={overlayRef}
       className="pd-modal-overlay"
       role="presentation"
-      onClick={handleOverlayClick}
+      {...overlayProps}
     >
       <div className="pd-modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="pd-modal__header">

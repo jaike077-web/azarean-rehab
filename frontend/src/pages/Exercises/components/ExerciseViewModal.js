@@ -37,6 +37,7 @@ import {
   getRehabPhaseLabel,
   getPresetGoalLabel
 } from '../../../utils/exerciseConstants';
+import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import s from './ExerciseViewModal.module.css';
 
 function ExerciseViewModal({ exercise, onClose, onAdd }) {
@@ -63,14 +64,8 @@ function ExerciseViewModal({ exercise, onClose, onAdd }) {
     return url;
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    <div className={s.modalOverlay} onClick={handleOverlayClick}>
+    <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
       <div className={s.exerciseViewModal}>
         {/* Header */}
         <div className={s.modalHeader}>

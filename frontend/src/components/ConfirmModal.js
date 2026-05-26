@@ -38,12 +38,17 @@ const ConfirmModal = ({
     }
   }, [isOpen, handleEscape]);
 
+  // Hook ВЫШЕ early return — Rules of Hooks: порядок hook'ов должен быть
+  // стабильным между renders. Если isOpen меняется true→false→true, hook
+  // должен вызываться всегда.
+  const overlayProps = useModalOverlayClose(onClose);
+
   if (!isOpen) return null;
 
   const Icon = CustomIcon || AlertTriangle;
 
   return (
-    <div className={s.confirmModalOverlay} {...useModalOverlayClose(onClose)}>
+    <div className={s.confirmModalOverlay} {...overlayProps}>
       <div
         className={`${s.confirmModal} ${s[`confirmModal${variant.charAt(0).toUpperCase()}${variant.slice(1)}`] || ''}`}
         role="dialog"
