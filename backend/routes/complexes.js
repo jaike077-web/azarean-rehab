@@ -68,6 +68,17 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const complex = complexResult.rows[0];
 
+    // Wave 3 C1: автозаполнение ответственного инструктора пациента.
+    // Только если пациент ещё без ответственного — не перезаписываем существующее
+    // назначение (вторым комплексом другого инструктора и т.п.).
+    // В той же транзакции (client.query), иначе UPDATE может пройти при ROLLBACK INSERT'а.
+    await client.query(
+      `UPDATE patients
+          SET assigned_instructor_id = $1, updated_at = NOW()
+        WHERE id = $2 AND assigned_instructor_id IS NULL`,
+      [req.user.id, patient_id]
+    );
+
     // Добавляем упражнения в комплекс
     for (const exercise of exercises) {
       const durationSeconds = Math.max(0, Number(exercise.duration_seconds) || 0);
