@@ -1933,4 +1933,195 @@ router.put('/ops-alerts/:id/resolve', async (req, res) => {
   }
 });
 
+// =====================================================
+// COMMAND CENTER (Wave 3 C2) — агрегаты дашборда
+// =====================================================
+// Один read-only endpoint: воронка + сегменты + адхеренс.
+// period влияет ТОЛЬКО на адхеренс-окно; воронка-этапы 1..4 и сегменты —
+// current-state. period='all' → adherence_window_days=30 (sane default,
+// бессрочный rate бессмыслен).
+//
+// Дисциплина размерностей (anti-175%):
+//   сессия = COUNT(DISTINCT pl.session_id) FILTER (WHERE NOT NULL)
+//   свежесть = day-grained через streaks.last_activity_date (materialized)
+//   адхеренс = session-grained, в окне (CURRENT_DATE - (window_days - 1))
+//
+// GET /api/admin/command-center?period=7d|30d|all&instructor_id=NN
+
+function parsePeriod(raw) {
+  if (raw === '7d') return { period: '7d', adherence_window_days: 7 };
+  if (raw === 'all') return { period: 'all', adherence_window_days: 30 };
+  // default + любое невалидное → 30d
+  return { period: '30d', adherence_window_days: 30 };
+}
+
+function parseInstructorId(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Классифицирует сегмент пациента по cadence-relative окну.
+// expected_gap_days: ожидаемый интервал между активностями (по target).
+// Backstop 30 дней независимо от cadence — для редких частот.
+function classifySegment(row) {
+  const daysSince = row.days_since;
+  const gap = row.expected_gap_days;
+  const age = row.program_age_days;
+
+  if (daysSince === null) {
+    // Активности ни разу не было.
+    // Grace-эдж: новая программа (≤7 дней) → active (пациенту дали время).
+    if (age !== null && age <= 7) return 'active';
+    return 'dormant';
+  }
+
+  // Backstop: >30 дней — churned, независимо от cadence.
+  if (daysSince > 30) return 'churned';
+
+  if (daysSince <= gap) return 'active';
+  if (daysSince <= 2 * gap) return 'at_risk';
+  return 'dormant'; // (2*gap, 30]
+}
+
+// Адхеренс per patient. Только если target_min задан (есть цель для оценки).
+// Формула: sessions >= 0.6 * (target_min * units_in_window).
+// `target_unit='day'`  → 1 unit/день, units_in_window = window_days
+// `target_unit='week'` → 1 unit/неделя, units_in_window = window_days / 7
+function isAdhering(row, windowDays) {
+  if (row.target_min == null || row.target_unit == null) return null; // no target
+  const unitsInWindow =
+    row.target_unit === 'day'
+      ? windowDays
+      : windowDays / 7;
+  const expectedMin = row.target_min * unitsInWindow;
+  const threshold = 0.6 * expectedMin;
+  return (row.sessions || 0) >= threshold;
+}
+
+router.get('/command-center', async (req, res) => {
+  try {
+    const { period, adherence_window_days } = parsePeriod(req.query.period);
+    const instructorId = parseInstructorId(req.query.instructor_id);
+
+    // Один запрос: все активные пациенты + per-patient state (cadence, свежесть, сессии в окне).
+    // CTE active_program — самая свежая активная программа (DISTINCT ON ORDER BY created_at DESC,
+    // как `LIMIT 1` в /my/dashboard для multiple-programs случая).
+    // streak_pick — берём строку streaks по program_id активной программы; fallback на standalone
+    // (program_id IS NULL); при N подходящих — DISTINCT ON ORDER BY current_streak DESC,
+    // как в utils/streaks.js::getStreakSummary.
+    const sql = `
+      WITH base AS (
+        SELECT p.id, p.password_hash, p.assigned_instructor_id
+          FROM patients p
+         WHERE p.is_active = true
+           AND ($1::int IS NULL OR p.assigned_instructor_id = $1)
+      ),
+      active_program AS (
+        SELECT DISTINCT ON (rp.patient_id)
+               rp.patient_id, rp.id AS program_id, rp.complex_id,
+               rp.created_at AS program_created_at
+          FROM rehab_programs rp
+          JOIN base b ON b.id = rp.patient_id
+         WHERE rp.is_active = true AND rp.status = 'active'
+         ORDER BY rp.patient_id, rp.created_at DESC
+      ),
+      streak_pick AS (
+        SELECT DISTINCT ON (s.patient_id) s.patient_id, s.last_activity_date
+          FROM streaks s
+          JOIN active_program ap ON ap.patient_id = s.patient_id
+         WHERE s.program_id = ap.program_id OR s.program_id IS NULL
+         ORDER BY s.patient_id, s.current_streak DESC NULLS LAST
+      ),
+      sessions_in_window AS (
+        SELECT ap.patient_id,
+               COUNT(DISTINCT pl.session_id)
+                 FILTER (WHERE pl.session_id IS NOT NULL) AS sessions
+          FROM active_program ap
+          LEFT JOIN progress_logs pl
+                 ON pl.complex_id = ap.complex_id
+                AND pl.completed = true
+                AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
+         GROUP BY ap.patient_id
+      )
+      SELECT
+        b.id AS patient_id,
+        (b.password_hash IS NOT NULL) AS is_registered,
+        (ap.patient_id IS NOT NULL)   AS has_active_program,
+        c.target_min, c.target_unit,
+        sp.last_activity_date::text   AS last_activity_date,
+        CASE WHEN sp.last_activity_date IS NULL THEN NULL
+             ELSE (CURRENT_DATE - sp.last_activity_date)::int END AS days_since,
+        CASE
+          WHEN c.target_unit = 'day'  AND c.target_min > 0 THEN 1
+          WHEN c.target_unit = 'week' AND c.target_min > 0
+               THEN CEIL(7.0 / c.target_min)::int
+          ELSE 7
+        END AS expected_gap_days,
+        COALESCE(siw.sessions, 0)::int AS sessions,
+        CASE WHEN ap.patient_id IS NOT NULL
+             THEN (CURRENT_DATE - ap.program_created_at::date)::int
+             ELSE NULL END AS program_age_days
+      FROM base b
+      LEFT JOIN active_program     ap ON ap.patient_id = b.id
+      LEFT JOIN complexes          c  ON c.id = ap.complex_id
+      LEFT JOIN streak_pick        sp ON sp.patient_id = b.id
+      LEFT JOIN sessions_in_window siw ON siw.patient_id = b.id
+    `;
+
+    const { rows } = await query(sql, [instructorId, adherence_window_days]);
+
+    // Воронка
+    const created = rows.length;
+    const registered = rows.filter((r) => r.is_registered).length;
+    const active_program = rows.filter((r) => r.has_active_program).length;
+    const registered_no_active_program = rows.filter(
+      (r) => r.is_registered && !r.has_active_program
+    ).length;
+
+    // Сегменты + адхеренс — только среди has_active_program
+    const segments = { active: 0, at_risk: 0, dormant: 0, churned: 0 };
+    let active_count = 0;
+    let adhering_count = 0;
+    let no_target_set = 0;
+
+    for (const r of rows) {
+      if (!r.has_active_program) continue;
+      const segment = classifySegment(r);
+      segments[segment] += 1;
+      if (segment === 'active') active_count += 1;
+
+      const adheres = isAdhering(r, adherence_window_days);
+      if (adheres === null) {
+        no_target_set += 1;
+      } else if (adheres) {
+        adhering_count += 1;
+      }
+    }
+
+    return res.json({
+      data: {
+        period,
+        adherence_window_days,
+        instructor_id: instructorId,
+        funnel: {
+          created,
+          registered,
+          active_program,
+          active: active_count,
+          adhering: adhering_count,
+        },
+        funnel_gaps: { registered_no_active_program },
+        segments,
+        segments_note: { no_target_set },
+      },
+    });
+  } catch (err) {
+    console.error('GET /admin/command-center error:', err.message);
+    return res
+      .status(500)
+      .json({ error: 'ServerError', message: 'Не удалось получить агрегаты' });
+  }
+});
+
 module.exports = router;
