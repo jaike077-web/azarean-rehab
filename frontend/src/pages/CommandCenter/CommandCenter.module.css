@@ -460,3 +460,336 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+/* ---------- InstructorsPanel (таблица) ---------- */
+
+.instrTableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.instrTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(12px, 1.3vw, 14px);
+}
+
+.instrTable th {
+  background: var(--color-surface-2);
+  padding: clamp(10px, 1.2vw, 14px);
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.instrTable td {
+  padding: clamp(10px, 1.2vw, 14px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+}
+
+.instrTable tbody tr {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.instrTable tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.instrTable tbody tr:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.tdChev {
+  text-align: right;
+  color: var(--color-text-muted);
+  width: 24px;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+/* ---------- InstructorModal (z-index 9000 — Rule #29) ---------- */
+
+.instructorModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.instructorModal {
+  position: relative;
+  background: var(--color-surface-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  max-width: 720px;
+  width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 20px 22px;
+}
+
+.imHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.imHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.imTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.imClose {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imClose:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.imMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 16px;
+  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.imMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.imMetricLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.imMetricValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.imAttnSection {
+  margin-top: 8px;
+}
+
+.imSubTitle {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.imAttnList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.imAttnRow {
+  position: relative;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.imAttnRow:last-child {
+  border-bottom: none;
+}
+
+.imAttnRowMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.imAttnText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: var(--radius-md);
+  color: inherit;
+}
+
+.imAttnText:hover {
+  background: var(--color-surface-2);
+}
+
+.kebabBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-md);
+}
+
+.kebabBtn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* kebabMenu — НЕ второй overlay, а абсолютно позиционированный div
+   внутри модалки (z-index относительный, не +9000). */
+.kebabMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  min-width: 220px;
+}
+
+.kebabMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.kebabMenuItem:hover {
+  background: var(--color-surface-2);
+}
+
+/* Inline-форма переназначения (НЕ overlay) */
+.reassignForm {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reassignLabel {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.reassignSelect,
+.reassignReason {
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.reassignSelect:focus,
+.reassignReason:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.reassignActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.imBtnPrimary {
+  padding: 8px 16px;
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.imBtnPrimary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.imBtnPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.imBtnSecondary {
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.imBtnSecondary:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.imBtnSecondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
