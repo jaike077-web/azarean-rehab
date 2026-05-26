@@ -35,6 +35,8 @@ import AdminAuditLogs from './Admin/AdminAuditLogs';
 import AdminContent from './Admin/AdminContent';
 import AdminSystem from './Admin/AdminSystem';
 import ThemeToggle from '../components/ThemeToggle';
+// Wave 3 C5.1 — admin landing. НЕ lazy (Dashboard и сам критичный, не lazy).
+import CommandCenter from './CommandCenter/CommandCenter';
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -130,6 +132,12 @@ function Dashboard() {
       case 'admin-system':
         return <AdminSystem />;
       default:
+        // Wave 3 C5.1 — admin'у показываем командный центр (заглушки в C5.1,
+        // реальные панели в C5.2–C5.4). Instructor видит старый welcomeSection
+        // без изменений.
+        if (user?.role === 'admin') {
+          return <CommandCenter />;
+        }
         return (
           <div className={s.welcomeSection}>
             <h2 className={s.welcomeTitle}>

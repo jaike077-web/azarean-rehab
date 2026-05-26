@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../database/db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { patientValidator } = require('../middleware/validators');
 const { logAudit } = require('../utils/audit');
 const { hashToken } = require('../utils/tokens');
@@ -557,6 +557,85 @@ router.post('/:id/invite-code', authenticateToken, async (req, res) => {
     res.status(500).json({
       error: 'Server Error',
       message: 'Ошибка при создании кода приглашения',
+    });
+  }
+});
+
+// Wave 3 C1 — переназначение ответственного инструктора пациента
+// PATCH /:id/assign-instructor  body: { instructor_id, reason? }
+// Auth: admin-only (инструктор-инициированная передача — позже, в RBAC-блоке C5)
+router.patch('/:id/assign-instructor', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const patientId = parseInt(req.params.id, 10);
+    const { instructor_id, reason } = req.body;
+
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный ID пациента',
+      });
+    }
+    if (!Number.isInteger(instructor_id) || instructor_id <= 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'instructor_id обязателен и должен быть числом',
+      });
+    }
+
+    // 1. Пациент существует и активен
+    const patientResult = await query(
+      'SELECT id, assigned_instructor_id FROM patients WHERE id = $1 AND is_active = true',
+      [patientId]
+    );
+    if (patientResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Пациент не найден',
+      });
+    }
+    const fromUserId = patientResult.rows[0].assigned_instructor_id;
+
+    // 2. Инструктор существует и активен (любая роль admin|instructor)
+    const userResult = await query(
+      'SELECT id FROM users WHERE id = $1 AND is_active = true',
+      [instructor_id]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Инструктор не найден или деактивирован',
+      });
+    }
+
+    // 3. UPDATE
+    const updateResult = await query(
+      `UPDATE patients
+          SET assigned_instructor_id = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING id, assigned_instructor_id`,
+      [instructor_id, patientId]
+    );
+
+    // 4. Audit (Rule #17). Сигнатура logAudit(req, action, entityType, entityId, options),
+    // options = { patientId?, details? } — payload идёт в details, не плоско.
+    logAudit(req, 'PATIENT_REASSIGNED', 'patient', patientId, {
+      patientId,
+      details: {
+        from_user_id: fromUserId,
+        to_user_id: instructor_id,
+        reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null,
+      },
+    });
+
+    res.json({
+      data: updateResult.rows[0],
+      message: 'Инструктор назначен',
+    });
+  } catch (error) {
+    console.error('Ошибка переназначения инструктора:', error);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Ошибка при переназначении инструктора',
     });
   }
 });

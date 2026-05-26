@@ -23,8 +23,12 @@
 // modal close-on-drag fix. SW v6 был агрессивный (Vadim видел stale bundle
 // при тесте модального фикса, пришлось вручную Unregister + Clear site data).
 // Bump → activate сам очистит старый CACHE_NAME у всех клиентов.
-const CACHE_NAME = 'azarean-v7';
-const API_CACHE = 'azarean-api-v7';
+// v8 (2026-05-26) — Wave 3 LIVE: owner command center (C1–C5.4). Новые
+// admin-роуты в SPA + новые frontend chunks (CommandCenter/Attention/Funnel/
+// Segments/Dynamics/Instructors + InstructorModal). Без bump'а админ получит
+// старый bundle без новой главной — урок feedback_sw_cache_bump_required.
+const CACHE_NAME = 'azarean-v8';
+const API_CACHE = 'azarean-api-v8';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
