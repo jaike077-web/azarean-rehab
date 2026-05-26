@@ -19,8 +19,12 @@
 // v6 (2026-05-22 vol.2) — Favicon swap: AN-logo.jpg → logo_az.png (clean A+AZAREAN
 // monogram, 1024×1024 source, лучшая чёткость на 192/512). Bump для инвалидации
 // иконок у пациентов с уже установленной PWA.
-const CACHE_NAME = 'azarean-v6';
-const API_CACHE = 'azarean-api-v6';
+// v7 (2026-05-26) — Modal overlay hook + admin email-change UI + 4-волновый
+// modal close-on-drag fix. SW v6 был агрессивный (Vadim видел stale bundle
+// при тесте модального фикса, пришлось вручную Unregister + Clear site data).
+// Bump → activate сам очистит старый CACHE_NAME у всех клиентов.
+const CACHE_NAME = 'azarean-v7';
+const API_CACHE = 'azarean-api-v7';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
