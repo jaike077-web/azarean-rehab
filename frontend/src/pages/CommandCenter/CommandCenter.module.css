@@ -360,3 +360,103 @@
   font-size: 12px;
   color: var(--color-text-muted);
 }
+
+/* ---------- DynamicsPanel ---------- */
+
+.cohortNote {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.cohortNote b {
+  color: var(--color-text);
+}
+
+.dynamicsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.axisBlock {
+  padding: 12px 14px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.axisTitle {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.trendRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 14px;
+}
+
+.trendIcon {
+  flex-shrink: 0;
+}
+
+.trendLabel {
+  flex: 1;
+}
+
+.trendCount {
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 24px;
+  text-align: right;
+}
+
+.insufficientRow {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--color-border);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.insufficientRow b {
+  color: var(--color-text);
+}
+
+.axisHint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-subtle);
+  font-style: italic;
+}
+
+.phasePair {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.phaseChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.overtrainBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+}

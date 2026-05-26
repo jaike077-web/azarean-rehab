@@ -13,6 +13,7 @@ import s from './CommandCenter.module.css';
 import AttentionPanel from './AttentionPanel';
 import FunnelPanel from './FunnelPanel';
 import SegmentsPanel from './SegmentsPanel';
+import DynamicsPanel from './DynamicsPanel';
 
 const PERIOD_OPTIONS = [
   { v: '7d',  l: '7 дней' },
@@ -85,11 +86,8 @@ function CommandCenter() {
           onRetry={loadSummary}
         />
 
-        {/* C5.3 — заглушка Динамика */}
-        <section className={s.panel}>
-          <h3 className={s.panelTitle}>Динамика</h3>
-          <p className={s.panelStub}>—</p>
-        </section>
+        {/* C5.3 — Динамика (3 оси раздельно + insufficient_data + overtraining-бейдж) */}
+        <DynamicsPanel period={period} />
 
         {/* C5.4 — заглушка Срез по инструкторам */}
         <section className={s.panel}>
