@@ -51,7 +51,7 @@ Multi-protocol foundation + program_templates + 3-step wizard + stuck-detection 
 - **CI/CD:** GitHub Actions (`.github/workflows/deploy.yml`) — push на main → Test → Build → Deploy (SSH)
 - **Backend:** PM2 fork mode на :3001, nginx proxy, Let's Encrypt SSL
 - **Prod bot:** `@az_zari_bot` (отдельный от dev `@azarean_rehab_bot`)
-- **Админ:** `vadim@azarean.com` / `Test1234` (bcrypt хэш применён к prod БД)
+- **Админ:** `jaike077@yandex.ru` / `Test1234` (обновлён 2026-05-25 с placeholder vadim@azarean.com через UI смены email/password)
 - **Runbook:** `deploy/README.md`, credentials locations — `memory/production_deployment.md`
 - **Smoke test 7.1–7.3:** HTTPS, API, SPA — green. **7.4+ (instructor login)** — не верифицировано в чате из-за image limit.
 
@@ -246,7 +246,8 @@ cd frontend && PORT=3001 BROWSER=none npm start   # CRA на :3001
 
 ### Тестовые учётные данные (dev)
 
-- **Инструктор (admin):** `vadim@azarean.com` / `Test1234` (пароль сброшен 2026-04-08 через bcrypt в БД)
+- **Инструктор (admin) dev:** `vadim@azarean.com` / `Test1234` (пароль сброшен 2026-04-08 через bcrypt в БД)
+- **Инструктор (admin) prod:** `jaike077@yandex.ru` / `Test1234` (обновлён 2026-05-25 через UI)
 - **Тестовый пациент:** id=14, `avi707@mail.ru` / `Test1234` (Вадим, привязан к реальному Telegram — scheduler шлёт ему советы/напоминания при запущенном backend)
 
 ## LOCKED — Не изменять без явного запроса
@@ -815,6 +816,9 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 > Полный список с деталями: [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md)
 
+### Modal close-on-drag fix + UI смена admin email/password + brand polish (2026-05-25/26)
+70. **Pilot prep batch (8 коммитов 2026-05-25/26):** (а) Cleanup prod БД от 11 тестовых пациентов перед анонсом Татьяне/Алёне (id=12 whitelist, audit log, pg_dump backup); (б) PUT `/api/admin/users/:id` расширен принимать email + new_password, AdminUserModal UI смена email/password с force-logout при self password change (commit `5649e3c`); (в) Admin email сменён `vadim@azarean.com` → `jaike077@yandex.ru` через UI (Vadim сам); (г) **Modal close-on-drag fix** через 6 коммитов: `useModalOverlayClose` hook ([frontend/src/hooks/useModalOverlayClose.js](frontend/src/hooks/useModalOverlayClose.js)) + 25 модалок мигрированы (`663c6af` v1: 15 модалок, `76a247f` v2: PatientModal + 3 пропущенных string-literal className + Rules of Hooks для early-return, `790757f` v3: 6 page-level Patients/Diagnoses/MyComplexes/CreateComplex, `ea03913` v4: DeleteConfirmModal + lint script + CI gate + CLAUDE.md docs, `4291e3b` DeleteTemplateModal hook-above-early-return fix, `7cb4022` cleanup debug + SW v6→v7); (д) **CI gate** [frontend/scripts/lint-modals.js](frontend/scripts/lint-modals.js) — `npm run lint:modals` фейлит при anti-patterns (`onClick={onClose}` на overlay, `handleOverlayClick` handler, inline `onClick={() => setX(false)}` на overlay), 5 whitelisted non-modals (ExerciseCard hover, ExerciseDetail thumbnail, Dashboard navOverlay, ProfileScreen full-page, сам hook); (е) `frontend/src/pages/Login.js` — favicon swap последствие fix огромного логотипа (clamp 80-120px); (ж) brand polish 2026-05-22 favicon/Login/Dashboard logos с logo_az.png + правильные VK/Yandex SVG OAuth кнопки. **Lessons:** [[feedback-gh-run-watch-misleading]] (CI exit 0 ≠ deploy success — нужен per-job check), [[feedback-sw-cache-bump-required]] (SW v6 держал stale chunks 3 итерации тестов), [[feedback-eslint-rules-only-in-build]] (Rules of Hooks ловится в build не в jest).
+
 ### Telegram Bot API DPI-блокировка — локальный патч (2026-05-22, в ветке `fix/uploads-persistence`)
 69. **Зеркало production-патча в `/opt/azarean-rehab` чтобы следующий deploy не перетёр** → инцидент NetAngels (см. [JARVIS_TELEGRAM_DPI_INCIDENT_REPORT.md](JARVIS_TELEGRAM_DPI_INCIDENT_REPORT.md)): DPI-фильтр по SNI на `api.telegram.org`, TCP коннект проходит, TLS ClientHello улетает в timeout. Три из четырёх production-ботов (включая `@az_zari_bot`) потеряли связь, rehab крашился в PM2 crashloop 28 раз за 75 минут (нет error-handler на polling_error). JARVIS поднял reverse-proxy `tg-proxy.azarean.ru/tg` на финском VDS (78.17.1.70, IP-allowlist 185.93.109.234). **Локальный патч:** [backend/services/telegramBot.js](backend/services/telegramBot.js) — `bot = new TelegramBot(token, { polling: true, baseApiUrl: process.env.TELEGRAM_API_URL || 'https://api.telegram.org' })`. **Polling error handler** усилен — теперь логирует `err.code` (`EFATAL`/`ECONNRESET`/`ETELEGRAM`) для лучшей диагностики и **не падает** (node-telegram-bot-api сам ретраит). Env-шаблоны обновлены: `.env.example` (пустое = дефолт прямого канала, dev), `.env.production.example` (`https://tg-proxy.azarean.ru/tg` — БЕЗ trailing slash, в отличие от Telegraf'а в JARVIS). На проде уже стоит `TELEGRAM_API_URL=https://tg-proxy.azarean.ru/tg` в `.env` (применено через `pm2 restart --update-env && pm2 save`). **Урок:** не использовать одиночный TG-канал для админ-алертов когда TG может лечь — нужен Max-зеркало для `sendOpsAlert`. Backlog (см. отчёт): runbook `docs/INCIDENT_TELEGRAM_BLOCKED.md`, cron-проба `api.telegram.org` каждые 3 минуты, fallback canal в Max.
 
@@ -1021,7 +1025,7 @@ frontend/src/ (12 suites, 156 тестов)
 - **CI/CD:** `.github/workflows/deploy.yml` — push на main → Test → Build → Deploy (SSH)
 - **Runbook:** `deploy/README.md` (6-step smoke test, rollback, troubleshooting)
 - **Prod bot:** `@az_zari_bot` (token в `/opt/azarean-rehab/backend/.env` на VDS)
-- **Prod admin:** `vadim@azarean.com` / `Test1234`
+- **Prod admin:** `jaike077@yandex.ru` / `Test1234` (обновлён 2026-05-25 через AdminPanel → Pencil. Старый placeholder `vadim@azarean.com` больше не существует)
 - **Credentials locations:** `memory/production_deployment.md`
 
 ## Git
