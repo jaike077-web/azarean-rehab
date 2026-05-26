@@ -1924,7 +1924,7 @@ router.put('/ops-alerts/:id/resolve', async (req, res) => {
       return res.status(404).json({ error: 'NotFound', message: 'Алерт не найден или уже резолвлен' });
     }
 
-    await logAudit(req, 'RESOLVE', 'ops_alert', id, { details: { resolution_notes } });
+    await logAudit(req, 'RESOLVE', 'ops_alert', id, { resolution_notes });
 
     return res.json({ data: rows[0], message: 'Алерт резолвлен' });
   } catch (err) {
