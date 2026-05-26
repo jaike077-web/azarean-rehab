@@ -3,17 +3,12 @@
 
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import s from './DeleteConfirmModal.module.css';
 
 function DeleteConfirmModal({ title, onConfirm, onCancel }) {
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onCancel();
-    }
-  };
-
   return (
-      <div className={s.modalOverlay} onClick={handleOverlayClick}>
+      <div className={s.modalOverlay} {...useModalOverlayClose(onCancel)}>
       <div className={s.deleteConfirmModal}>
         <div className={s.modalIcon} aria-hidden="true">
           <AlertTriangle size={48} />

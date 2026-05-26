@@ -782,6 +782,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 - **`alert()` вместо Toast** в некоторых местах (Exercises.js)
 - Fluid CSS: `clamp()` вместо media queries (рекомендуется)
 - Touch-friendly: min-height 44px для кнопок
+- **Modal overlay close — ВСЕГДА через `useModalOverlayClose(onClose)` hook** ([frontend/src/hooks/useModalOverlayClose.js](frontend/src/hooks/useModalOverlayClose.js)). Spread на overlay div: `<div className={...} {...useModalOverlayClose(onClose)}>`. НЕ использовать `onClick={onClose}` напрямую — это закрывает модалку при drag-out из input наружу (классический баг). НЕ использовать `onClick={(e) => e.stopPropagation()}` на content — hook сам tracking'ует mousedown target. Hook ВЫЗЫВАТЬ ПЕРЕД `if (!isOpen) return null` (Rules of Hooks — порядок hook'ов стабильный между renders); для conditional render внутри JSX `{showModal && (<div ...>)}` — extract в `const overlayProps = useModalOverlayClose(...)` на верхнем уровне компонента. **CI gate:** `npm run lint:modals` в frontend ([scripts/lint-modals.js](frontend/scripts/lint-modals.js)) фейлит при обнаружении anti-patterns. Whitelist для non-modal overlays (hover effects, sidebar backdrops) — в самом скрипте с объяснением. См. commits `663c6af` (v1, 15 модалок), `76a247f` (v2, 3 пропущенных + Rules of Hooks), `790757f` (v3, 6 page-level).
 
 ### Специфичные правила
 - **Telegram Bot API не поддерживает кириллические команды!** Только `[a-z0-9_]`. Для кириллицы: `bot.onText(/^\/команда$/i, ...)`

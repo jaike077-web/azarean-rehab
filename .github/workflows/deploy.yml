@@ -74,6 +74,9 @@ jobs:
         env:
           NODE_ENV: test
 
+      - name: Lint frontend modals (anti-regression для overlay-close hook)
+        run: cd frontend && npm run lint:modals
+
       - name: Test frontend
         run: cd frontend && CI=true npx react-scripts test --watchAll=false
 
