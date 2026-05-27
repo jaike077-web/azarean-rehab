@@ -197,6 +197,13 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  /* bug #17: на десктопе welcome screen тянулся на всю ширину viewport.
+     Outer .pd-disclaimer остаётся fullscreen (background критичен),
+     content ограничиваем 520px и центрируем. На мобиле <520px — без эффекта. */
+  max-width: 520px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pd-disclaimer-icon {
