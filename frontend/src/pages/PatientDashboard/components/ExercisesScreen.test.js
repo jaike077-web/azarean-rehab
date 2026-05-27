@@ -168,6 +168,11 @@ describe('ExercisesScreen v2', () => {
           })
         );
       });
+
+      // Anti-regression bug #16: один клик = один POST /api/progress.
+      // Красный → петля в submit handler → эскалация на Ветку 1 (ref-guard
+      // в ExerciseRunner вместо серверного лимита).
+      expect(progressPatient.create).toHaveBeenCalledTimes(1);
     });
   });
 });
