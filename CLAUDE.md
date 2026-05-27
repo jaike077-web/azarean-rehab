@@ -5,6 +5,43 @@
 
 ## Текущее состояние (май 2026)
 
+### 🟢 Wave 3 (Owner Command Center) — LIVE на проде (2026-05-26)
+
+**main HEAD = `db64dc8`** (merge --no-ff от `wave-3/owner-command-center` поверх pre-Wave-3 `3907034`), **tag `v0.2.0-command-center`**. CI run `26457193975` — все 3 job'а success (Test 72s + Build 78s + Deploy 56s). Backend C1-C4 + frontend C5.1-C5.4 + миграция `20260526_instructor_assignment_and_cadence.sql` applied на проде в 15:17:56 UTC. Backend 701/36, frontend 393/33, lint:modals clean. **Pre-deploy backup:** `/opt/azarean-rehab/backups/azarean_rehab-20260526-151136.sql.gz` (60K). **Phase 7 verify ✅:** бэкфилл 2/2 пациентов, uploads symlink стоит (`backend/uploads → data/uploads`, внутри avatars/diary_photos/measurements), легаси-программ не-active = 0, PM2 `azarean-rehab` online. **Phase 8 browser smoke ✅:** 5/5 панелей живые, модалка инструктора с метриками + лента сигналов, тёмная тема, JARVIS не задет. SW bumped v7→v8.
+
+**Что эта волна сделала:** 4 read-only endpoint'а под `/api/admin/command-center/*` (admin-only glob) + 1 PATCH `/patients/:id/assign-instructor` + новая admin-главная (5 панелей в порядке Attention → Funnel → Segments → Dynamics → Instructors) + модалка инструктора + inline-переназначение пациента. Old «175%» welcome заменена на командный центр **только для admin**; instructor-welcome не тронут.
+
+**Open hot-fix backlog после prod smoke 2026-05-26:**
+- 🔴 **P1 блокер пилота:** POST `/api/progress` → 429 Too Many Requests loop (пациент в ExerciseRunner спамит endpoint). НЕ Wave 3 regression, pre-existing. См. [memory/bug_progress_429_loop.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/bug_progress_429_loop.md).
+- 🟡 P3: welcome screen пациента на десктопе тянется на 100% — нет max-width. [memory/bug_patient_welcome_desktop_layout.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/bug_patient_welcome_desktop_layout.md).
+- 🟡 Backlog: ExerciseRunner timer без звукового сигнала. [memory/feature_exercise_timer_no_sound.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/feature_exercise_timer_no_sound.md). LOCKED требует разблокировки.
+
+**Что добавлено в схему:**
+- `patients.assigned_instructor_id INT → users(id) ON DELETE SET NULL` + partial index `WHERE is_active=true` + бэкфилл из последнего `complexes.instructor_id` пациента (fallback `created_by`).
+- `complexes.target_min/target_max SMALLINT + target_unit VARCHAR(10)` + CHECK `chk_complexes_cadence` (всё NULL ИЛИ всё set + `min>=1, max>=min, unit IN ('day','week')`). Информативно: при подмене комплекса на фазе новый комплекс несёт свою частоту — phase-частоты отдельной структуры не плодим.
+
+**4 endpoint'а:**
+1. `GET /admin/command-center?period=&instructor_id=` — воронка (created→registered→active_program→active→adhering) + сегменты (active/at_risk/dormant/churned) + `funnel_gaps.registered_no_active_program` + `segments_note.no_target_set`.
+2. `GET /admin/command-center/instructors?period=` — per-instructor строки: caseload, no_program, сегменты × 4, unanswered, red_flags, stuck. GROUP BY `assigned_instructor_id` (C1).
+3. `GET /admin/command-center/attention?limit=&severity=` — unified лента UNION ALL ops_alerts (pain_red_flag) + phase_stuck_alerts (phase_stuck), оба `resolved_at IS NULL`.
+4. `GET /admin/command-center/dynamics?period=&instructor_id=` — 3 оси трендов **раздельно** (pain/adherence/phase) + `conflicts.overtraining_candidates` (pain↑+adh↑, не вычитается из своих осей — клинически важный сигнал).
+
+**Дисциплина размерностей (anti-175%):** сессия = `COUNT(DISTINCT pl.session_id) FILTER (WHERE NOT NULL)`, не `COUNT(pl.id)`. Свежесть → `streaks.last_activity_date` (materialized). Тренд боли → `diary_entries.pain_level` (НЕ `pain_entries.vas_score`). Эта дисциплина закреплена SQL-anti-regression тестами во всех 4 endpoint'ах.
+
+**Calibration knobs** (вынесены константами в `admin.js` под pilot-калибровку):
+- `PAIN_DELTA_THRESHOLD=0.5`, `ADHERENCE_RATIO_HI=1.2`, `ADHERENCE_RATIO_LO=0.8`, `MIN_DIARY_POINTS=2`.
+- `classifySegment`: `ceiling_at_risk = MAX(2*gap, gap+3)` — пол at_risk для дневных режимов.
+
+**Архитектурная грабля (зафиксирована, не блокер):** в проекте **ДВА `logAudit` с разной сигнатурой** — `utils/audit.js` (options `{patientId, details}`) и `admin.js:17` (локальная, details плоско). Перед "фиксом" вызова — посмотри откуда импорт. Видна также в revert `b5d59c7` (откат `980a7f5`, paper trail в истории main). Backlog: консолидировать в одну утилиту, после hot-fix'ов и Wave 3.x.
+
+**JSDOM-урок (Wave 3 C5 drifts), пойдёт в MEMORY_RULES §5:** для unit-тестов компонентов с CSS Modules моками через Proxy — (a) маппинги цвет/иконка/значение экспортировать как **named pure functions** (severityColor / painTrendMeta / adherenceTrendMeta), тестировать функциями; inline-style с CSS-переменными в JSDOM через style.X не ассертится. (b) Для проверок наличия/количества элементов — **`data-testid`**, не `querySelector('.className')` (Proxy не делает класс CSS-селектируемым). См. [feedback_data_testid_for_css_modules.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/feedback_data_testid_for_css_modules.md).
+
+**Что НЕ сделано в Wave 3 (явный scope cut):** C6 RBAC (instructor видит только своих), drill-down по сегментам, resolve ops_alerts из дашборда, роут `/patients/:id` (attention клик ведёт на `/patients`), звук в ExerciseRunner — всё backlog.
+
+**Три хвоста закрытия (после hot-fix'ов):** регенерация MEMORY_RULES.md с caveat'ами выше + reconcile-карта волн (execution C1-C6 vs стратегический Wave 3-6 patient export) + удалить апрельский CLAUDE.md из project files.
+
+**Точка входа в новый чат:** [SESSION_HANDOFF_2026-05-26_WAVE3_LIVE.md](SESSION_HANDOFF_2026-05-26_WAVE3_LIVE.md). Приоритет — hot-fix [bug_progress_429_loop](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/bug_progress_429_loop.md).
+
 ### ✅ Wave 2 — ЗАКРЫТА в проде (2026-05-22)
 
 Multi-protocol клинический дневник полностью смержен и задеплоен. **Все 3 блока (A Foundation + B Pain Tracking + C Measurements) живут на https://my.azarean.ru.** 17 PR на feature ветках + 1 dark theme PR смерджены в main batch'ем, CI/CD pipeline отработал успешно (3m 3s первый deploy + 1m 23s second через workflow_dispatch для uploads persistence verify).
@@ -58,7 +95,7 @@ Multi-protocol foundation + program_templates + 3-step wizard + stuck-detection 
 ### Завершено
 - **Security audit:** все 3 CRITICAL + все HIGH закрыты (см. «Завершённые исправления» ниже)
 - **API response format** стандартизирован: `{ data, message? }` во всех 13 роут-файлах
-- **ExerciseRunner v3** — CSS 1:1 порт из iOS-эталона (**LOCKED**, см. секцию ниже)
+- **ExerciseRunner v4** — CSS 1:1 порт из iOS-эталона (**LOCKED**, см. секцию ниже)
 - **Patient auth:** httpOnly cookie (SameSite=Lax), CSRF через Origin-check middleware
 - **Public token flow** полностью удалён (complexes.access_token дропнут, /patient/:token — нет)
 - **Telegram бот:** /start, /status, /diary (6-step wizard), /tip, cron-scheduler
@@ -95,7 +132,7 @@ Multi-protocol foundation + program_templates + 3-step wizard + stuck-detection 
 - **Интеграции:** node-telegram-bot-api 0.67, node-cron 4.2, multer 2.0 (аватары), sharp 0.34 (сжатие изображений)
 - **Auth:** bcryptjs 3.0 (пароли), jsonwebtoken 9.0 (JWT), cookie-parser (httpOnly access+refresh cookies)
 - **Security:** helmet 8.1 (headers), express-rate-limit 8.2 (5 req/15 min auth, general in production)
-- **Тесты:** Jest 30.2 + Supertest 7.2 (423 backend + 252 frontend = 675 тестов)
+- **Тесты:** Jest 30.2 + Supertest 7.2. Актуальный счётчик — см. handoff/CI. На 2026-05-26 (pilot-prep close, до Wave 3): backend 598, frontend 342. Wave 2 closure baseline (2026-05-22): 592 + 338 = 930. Числа в исторических разделах ниже — снимки на момент коммита, не источник правды.
 - **Observability:** Telegram ops-bot (utils/opsAlert.js, /api/log-error endpoint) → @vadim_azarenkov. Sentry SDK подключён в noop без DSN (sentry.io ingest заблокирован для русских IP)
 - **Runtime:** Node.js >= 20, nodemon 3.1 (dev)
 
@@ -110,7 +147,7 @@ psql -U postgres -c "CREATE DATABASE azarean_rehab;"
 # Применить схему
 psql -U postgres -d azarean_rehab -f backend/database/schema.sql
 
-# Миграции (по порядку, всего 16)
+# Миграции (по порядку; счётчик не фиксирован — текущий список см. в backend/database/migrations/, на 2026-05-26 41 файл)
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20240910_add_progress_session_columns.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20251224_add_rest_seconds.sql
 psql -U postgres -d azarean_rehab -f backend/database/migrations/20251225_add_kinescope_id.sql
@@ -252,7 +289,7 @@ cd frontend && PORT=3001 BROWSER=none npm start   # CRA на :3001
 
 ## LOCKED — Не изменять без явного запроса
 
-### ExerciseRunner (v3) — ЗАВЕРШЁН
+### ExerciseRunner (v4) — ЗАВЕРШЁН
 - **Файл:** `frontend/src/pages/PatientDashboard/components/ExerciseRunner.js` (384 строк)
 - **CSS:** 1:1 порт из `block-daria-gym.html` (iOS палитра `--az-*`, классы `.crd/.sec/.dot/.btn/.tmr/.fb-toggle/.rpe-b/.pv/.plbl/.cmt`)
 - **Layout:** `.pg` wrapper `max-width: 720px`, 3 media queries (480/769/1801), slide-in анимации `pdIn`/`pdBk`
@@ -365,7 +402,9 @@ Azarean_rehab/
             └── skeletons/       # 4 специализированных скелетона
 ```
 
-## Схема БД (27 таблиц)
+## Схема БД (ключевые таблицы)
+
+> Полный инвентарь таблиц — `\dt` в живой БД (на 2026-05-26 ≈45). Ниже описаны только ключевые/часто упоминаемые; новые таблицы Wave 2+ см. в разделе «Wave 2 таблицы» и в `backend/database/migrations/`.
 
 ### users (инструкторы/админы)
 ```sql
@@ -811,10 +850,16 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 | ~~13~~ | ~~MEDIUM~~ | ~~RehabProgramModal: «Комплекс #N»~~ → **ЗАКРЫТ** Wave 1 коммитами 1.08a + 1.08b. **1.08a:** computed поле `derived_title` в 4 SELECT'ах `routes/complexes.js` (`COALESCE(NULLIF(title, ''), first 2 exercises joined ' · ')`). **1.08b:** новый shared `ComplexSelector.js` (live в create-wizard и edit-form) использует `c.derived_title || c.title || \`Комплекс #${c.id}\``. Инструктор видит понятную метку из первых упражнений даже если у комплекса нет `title`. |
 | ~~14~~ | ~~LOW~~ | ~~`is_registered = false` для OAuth-пациентов~~ → **ЗАКРЫТО** 2026-05-12 (`52631a2`): условие во всех 5 SELECT'ах `routes/patients.js` расширено до `password_hash IS NOT NULL OR last_login_at IS NOT NULL`. Покрывает любой провайдер (local/telegram/yandex/google/vk + новые). Без миграции. |
 | 15 | MEDIUM | **MDEditor (поле «Описание» в редакторе упражнения) — text color не подхватывает тему** — пакет `@uiw/react-md-editor` v4 автоимпортирует только `esm/index.css` с layout, а CSS-variables (`--color-fg-default`/`--color-canvas-default`) живут в `dist/mdeditor.css` которая не exposed через `package.json` `exports`. На светлой теме редактор пишет белым по белому, в тёмной непредсказуемо. Партнёрский баг к B6: глобальный `input/textarea/select` в `index.css` без background/color tokens — некоторые формы пациента/инструктора без локальных tokens могут показывать default browser white в тёмной теме. Тех-долг — заходить отдельным TZ от архитектора с дизайн-spec. Обнаружено и зафиксировано в prod-smoke 2026-05-12. |
+| 16 | **CRITICAL** | **POST /api/progress → 429 Too Many Requests loop** — пациент в ExerciseRunner спамит endpoint, ~15 POST подряд за один заход → влетает в `generalLimiter` (100 req/15 мин). Pre-existing, **НЕ** Wave 3 regression. Обнаружено в prod smoke 2026-05-26. **Блокер пилота** — пациент не может выполнить тренировку. ExerciseRunner LOCKED, требует разблокировки для fix'а. Полная инфа + план repro/fix — [memory/bug_progress_429_loop.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/bug_progress_429_loop.md). |
+| 17 | LOW | **Welcome screen пациента на десктопе тянется на 100% ширины** — нет `max-width` в контейнере PatientSplash / disclaimer-onboarding. На мобиле ок. Обнаружено в prod smoke 2026-05-26 (incognito Chrome). Pre-existing, ~5 мин fix. [memory/bug_patient_welcome_desktop_layout.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/bug_patient_welcome_desktop_layout.md). |
+| 18 | LOW | **ExerciseRunner таймер/секундомер без звукового сигнала** — таймер достигает цели визуально, никакого beep/vibrate. Пациент должен смотреть на экран. ExerciseRunner LOCKED. Полный backlog (beep в конце + 3-2-1 отсчёт + звук rest end + опц. vibrate + настройка в Profile) — [memory/feature_exercise_timer_no_sound.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/feature_exercise_timer_no_sound.md). |
 
 ## Завершённые исправления (защита от регрессий)
 
 > Полный список с деталями: [audit_completed.md в memory](~/.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/audit_completed.md)
+
+### Wave 3 — Owner Command Center LIVE (2026-05-26)
+71. **Wave 3 в проде:** merge `db64dc8` (--no-ff) поверх pre-Wave-3 `3907034`, tag `v0.2.0-command-center`, CI run `26457193975` (Test 72s + Build 78s + Deploy 56s — все 3 job'а success). Backend C1-C4 на ветке `wave-3/owner-command-center` (commits `1568eeb→7bb440f`): 4 read-only endpoint'а `/api/admin/command-center/*` (admin-only glob) + PATCH `/patients/:id/assign-instructor` + миграция `20260526_instructor_assignment_and_cadence.sql` (additive: `patients.assigned_instructor_id INT FK→users + partial index WHERE is_active`, `complexes.target_min/max smallint + target_unit varchar(10)` + CHECK `chk_complexes_cadence`). **Дисциплина размерностей (anti-175%)** закреплена SQL-anti-regression тестами на каждом из 4 endpoint'ов. **Frontend C5.1-C5.4 (commits `495a6cd→7bb440f`):** новая admin-главная (5 панелей в порядке Attention → Funnel → Segments → Dynamics → Instructors, переопределяет `default:` case в Dashboard.js **только** для `role==='admin'`; instructor welcome не тронут), модалка инструктора с метриками + лента сигналов из `/attention?instructor_id`, inline-меню кебаба + inline-форма переназначения (NO modal-on-modal, z-index 9000), `useModalOverlayClose` hook поверх паттерна `AdminUserModal`. Источник целей переназначения = `admin.getUsers()` (не `/instructors` — там только инструкторы с ≥1 пациентом, lazy-load при первом открытии формы). SW bumped v7→v8. **Тесты:** backend 613→701 (+88, 36 suites), frontend 342→393 (+51, 33 suites), `lint:modals clean` (120 файлов). **Pre-deploy backup:** `/opt/azarean-rehab/backups/azarean_rehab-20260526-151136.sql.gz` (60K). **Phase 7 verify на проде ✅:** бэкфилл `assigned_instructor_id` 2/2 пациентов (100%), миграция в `_migrations` с checksum `0778bfd857bb…` (applied 15:17:56 UTC), uploads symlink `backend/uploads → /opt/azarean-rehab/data/uploads` стоит (внутри `avatars/diary_photos/measurements/`), легаси-программ НЕ active = 0 (Phase 1 GATE подтверждён на проде — командный центр НЕ покажет ложно-пустой дашборд), PM2 `azarean-rehab` online, fork mode, uptime 12m после reload. **Phase 8 browser smoke ✅:** 5/5 панелей читают реальные данные, тёмная тема читаема, модалка инструктора с метриками `1 (50%)` (activePct formula verified: `denom=2-0=2, active=1 → 50%`), JARVIS на `jarvis.azarean.ru` не задет (всё ещё 200 OK). **Architect drifts за всю волну: 4** (синхронизация parent SHA C5.1, JSDOM CSS-vars в inline-style для unit-теста — `severityColor` named export; `painTrendMeta`/`adherenceTrendMeta` pure functions с самого начала; data-testid вместо querySelector для NO-modal-on-modal assert — последний пойдёт в MEMORY_RULES §5). **Hygiene-пара `980a7f5` (fix audit) + `b5d59c7` (revert)** едет в main как есть — revert эксплицитный, документирует существование локального `logAudit` в admin.js (paper trail для Rule #35). **Open hot-fix backlog после prod smoke:** bug #16 (POST /api/progress 429 loop, **CRITICAL блокер пилота**), bug #17 (welcome screen desktop layout), bug #18 (ExerciseRunner timer без звука). См. [memory/wave_3_live.md](.claude/projects/c--Users-------Desktop-Azarean-rehab/memory/wave_3_live.md). Полный TZ-цикл (C1-C5.4) с verify-step grep'ами в commit messages каждого коммита.
 
 ### Modal close-on-drag fix + UI смена admin email/password + brand polish (2026-05-25/26)
 70. **Pilot prep batch (8 коммитов 2026-05-25/26):** (а) Cleanup prod БД от 11 тестовых пациентов перед анонсом Татьяне/Алёне (id=12 whitelist, audit log, pg_dump backup); (б) PUT `/api/admin/users/:id` расширен принимать email + new_password, AdminUserModal UI смена email/password с force-logout при self password change (commit `5649e3c`); (в) Admin email сменён `vadim@azarean.com` → `jaike077@yandex.ru` через UI (Vadim сам); (г) **Modal close-on-drag fix** через 6 коммитов: `useModalOverlayClose` hook ([frontend/src/hooks/useModalOverlayClose.js](frontend/src/hooks/useModalOverlayClose.js)) + 25 модалок мигрированы (`663c6af` v1: 15 модалок, `76a247f` v2: PatientModal + 3 пропущенных string-literal className + Rules of Hooks для early-return, `790757f` v3: 6 page-level Patients/Diagnoses/MyComplexes/CreateComplex, `ea03913` v4: DeleteConfirmModal + lint script + CI gate + CLAUDE.md docs, `4291e3b` DeleteTemplateModal hook-above-early-return fix, `7cb4022` cleanup debug + SW v6→v7); (д) **CI gate** [frontend/scripts/lint-modals.js](frontend/scripts/lint-modals.js) — `npm run lint:modals` фейлит при anti-patterns (`onClick={onClose}` на overlay, `handleOverlayClick` handler, inline `onClick={() => setX(false)}` на overlay), 5 whitelisted non-modals (ExerciseCard hover, ExerciseDetail thumbnail, Dashboard navOverlay, ProfileScreen full-page, сам hook); (е) `frontend/src/pages/Login.js` — favicon swap последствие fix огромного логотипа (clamp 80-120px); (ж) brand polish 2026-05-22 favicon/Login/Dashboard logos с logo_az.png + правильные VK/Yandex SVG OAuth кнопки. **Lessons:** [[feedback-gh-run-watch-misleading]] (CI exit 0 ≠ deploy success — нужен per-job check), [[feedback-sw-cache-bump-required]] (SW v6 держал stale chunks 3 итерации тестов), [[feedback-eslint-rules-only-in-build]] (Rules of Hooks ловится в build не в jest).
@@ -940,26 +985,7 @@ last_activity_date DATE, updated_at TIMESTAMP, UNIQUE(patient_id, program_id)
 
 ## Структура тестов
 
-```
-backend/tests/__tests__/ (16 файлов, 269 тестов)
-├── admin.routes.test.js            # Admin API (488 строк)
-├── patientAuth.middleware.test.js  # Patient JWT middleware (195 строк)
-├── patientProfile.test.js          # Профиль пациента + my-complexes + avatar (377 строк)
-├── progress.routes.test.js         # Progress с patient JWT + instructor JWT (176 строк)
-├── originCheck.test.js             # CSRF Origin-check (104 строки)
-├── rehab.routes.test.js            # Rehab API (656 строк)
-├── scheduler.test.js               # Scheduler (187 строк)
-├── telegram.routes.test.js         # Telegram API (164 строки)
-└── telegramBot.test.js             # Telegram бот (318 строк)
-
-frontend/src/ (12 suites, 156 тестов)
-├── services/api.test.js            # Тесты API-сервиса
-├── context/AuthContext.test.js
-├── pages/Admin/AdminPanel.test.js  # Admin panel (307 строк)
-├── pages/PatientDashboard/PatientDashboard.test.js
-│   components/ (HomeScreen.test.js, ExercisesScreen.test.js, DiaryScreen.test.js, ProfileScreen.test.js, RoadmapScreen.test.js)
-└── utils/exerciseConstants.test.js
-```
+Актуальное число и расклад — `npm test` в `backend/` и `frontend/`. На 2026-05-26: backend 598 (≈30 файлов), frontend 342 (≈25 suites). Список файлов меняется почти каждой волной — здесь его не дублируем, источник правды — файловая система `backend/tests/__tests__/` и `frontend/src/**/*.test.js`.
 
 ## Telegram бот
 
