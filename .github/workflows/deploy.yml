@@ -30,6 +30,13 @@ name: Deploy to production VDS
 on:
   push:
     branches: [main]
+    # docs-only коммиты не должны гонять test→build→deploy (3-4 минуты CI
+    # без причины). Если push содержит ТОЛЬКО изменения под paths-ignore,
+    # workflow пропускается. Любой смешанный push (md + код) запустит CI.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'memory/**'
   workflow_dispatch:
     inputs:
       skip_tests:
