@@ -5,3 +5,8 @@ deploy/**/*       text eol=lf
 *.conf            text eol=lf
 Dockerfile        text eol=lf
 .github/**/*.yml  text eol=lf
+# SQL миграции / schema / seeds — LF, чтобы checksum в deploy/migrate.sh
+# был платформонезависимым. Без этого Windows working tree с core.autocrlf=true
+# получал CRLF → sha256sum != stored (посчитанный на Linux). См. фикс migrate.sh
+# (strip-CR перед sha256) и hotfix/migration-checksum-hygiene.
+*.sql             text eol=lf

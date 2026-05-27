@@ -90,12 +90,17 @@ SKIPPED_COUNT=0
 for migration in $(ls "$MIGRATIONS_DIR"/*.sql | sort); do
   name=$(basename "$migration")
 
-  # Считаем checksum файла
+  # Считаем checksum файла. strip-CR перед хешем — line-ending-agnostic:
+  # на Linux/LF файл CR не содержит → no-op (тот же sha что раньше, prod-stable).
+  # На Windows working tree с core.autocrlf=true файл может содержать CRLF →
+  # после tr -d '\r' хеш совпадает с LF-вариантом, идентично prod-checksum.
+  # Корень: тул не должен зависеть от переводов строк (см. .gitattributes
+  # *.sql text eol=lf — это belt+suspenders, фиксят корень с двух сторон).
   if command -v sha256sum > /dev/null 2>&1; then
-    file_checksum=$(sha256sum "$migration" | awk '{print $1}')
+    file_checksum=$(tr -d '\r' < "$migration" | sha256sum | awk '{print $1}')
   else
     # macOS fallback
-    file_checksum=$(shasum -a 256 "$migration" | awk '{print $1}')
+    file_checksum=$(tr -d '\r' < "$migration" | shasum -a 256 | awk '{print $1}')
   fi
 
   # Проверяем состояние в _migrations
