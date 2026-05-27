@@ -1475,6 +1475,14 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- CP2a (TZ_TIMER_AUDIO_TIMESETS): time-sets + темп.
+                  -- auto_complete: переключатель countdown↔stopwatch для CP3a.
+                  -- tempo_*: фазы повтора (CP3b метроном). Раннер игнорирует
+                  -- эти поля до CP3 — graceful degradation.
+                  'auto_complete', ce.auto_complete,
+                  'tempo_eccentric_s', ce.tempo_eccentric_s,
+                  'tempo_pause_s', ce.tempo_pause_s,
+                  'tempo_concentric_s', ce.tempo_concentric_s,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
