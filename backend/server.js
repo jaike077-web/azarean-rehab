@@ -78,6 +78,11 @@ app.use(cors({
 }));
 
 // Rate Limiting - общий лимит
+// bug #16 hot-fix: skip для /progress — полный workout легитимно шлёт
+// ~15 POST /progress + ~15 GET /progress/exercise/:id/complex/:id (prevSession
+// useEffect в ExerciseRunner). 3-4 тренировки за окно 15 мин выжигали 100 req
+// глобального лимита. Под mount'ом app.use('/api', ...) Express strip'ит
+// префикс — req.path для /api/progress/foo приходит как /progress/foo.
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
   max: config.nodeEnv === 'production' ? 100 : 1000, // 100 запросов с одного IP
@@ -88,9 +93,29 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/progress'),
 });
-// 👇 вместо app.use('/api', generalLimiter); делаем так:
+
+// Отдельный щедрый лимит для /api/progress (bug #16 hot-fix, Ветка 2a).
+// 600/15min/IP ≈ 15-20 полных тренировок (включая prevSession GET'ы) — пилоту
+// с запасом, abuse-защита остаётся. Покрывает И POST /progress, И GET
+// /progress/exercise/:id/complex/:id одним mount'ом на /api/progress.
+const progressLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: config.nodeEnv === 'production' ? 600 : 1000,
+  message: {
+    error: 'Too Many Requests',
+    message: 'Слишком много запросов. Попробуйте позже.',
+    retryAfter: '15 минут'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 if (config.nodeEnv === 'production') {
+  // Specific сначала, потом general — но порядок не критичен из-за skip
+  // предиката в generalLimiter (пропустит /progress независимо).
+  app.use('/api/progress', progressLimiter);
   app.use('/api', generalLimiter);
 }
 
