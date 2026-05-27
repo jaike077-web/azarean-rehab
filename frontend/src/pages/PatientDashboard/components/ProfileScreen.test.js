@@ -429,4 +429,109 @@ describe('ProfileScreen overlay (v12)', () => {
       expect(cta).toHaveAttribute('href', expect.stringContaining('t.me'));
     });
   });
+
+  // -----------------------------
+  // Audio settings block (CP1)
+  // Локальный setup с AudioProvider — нужен реальный контекст для localStorage persist.
+  // -----------------------------
+  describe('Audio block (CP1)', () => {
+    // eslint-disable-next-line global-require
+    const { AudioProvider } = require('../context/AudioContext');
+    let mockCtxCtor;
+
+    const setupWithAudio = () => {
+      const props = {
+        onClose: jest.fn(),
+        handleLogout: jest.fn(),
+        goTo: jest.fn(),
+      };
+      return render(
+        <AudioProvider>
+          <ProfileScreen {...props} />
+        </AudioProvider>,
+      );
+    };
+
+    beforeEach(() => {
+      localStorage.clear();
+      mockCtxCtor = jest.fn(() => ({
+        state: 'running',
+        currentTime: 0,
+        destination: {},
+        createOscillator: jest.fn(() => ({
+          type: 'sine',
+          frequency: { value: 0 },
+          connect: jest.fn(),
+          start: jest.fn(),
+          stop: jest.fn(),
+        })),
+        createGain: jest.fn(() => ({ gain: { value: 0 }, connect: jest.fn() })),
+        createBuffer: jest.fn(() => ({})),
+        createBufferSource: jest.fn(() => ({
+          buffer: null,
+          connect: jest.fn(),
+          start: jest.fn(),
+        })),
+        resume: jest.fn(),
+      }));
+      global.AudioContext = mockCtxCtor;
+    });
+
+    afterEach(() => {
+      delete global.AudioContext;
+    });
+
+    it('рендерит секцию «Звук» с Switch + slider + кнопкой', () => {
+      setupWithAudio();
+      expect(screen.getByText('Звук')).toBeInTheDocument();
+      expect(screen.getByTestId('audio-enabled-switch')).toBeInTheDocument();
+      expect(screen.getByTestId('audio-volume-slider')).toBeInTheDocument();
+      expect(screen.getByTestId('audio-test-btn')).toBeInTheDocument();
+    });
+
+    it('toggle Switch → пишет localStorage azarean_audio.enabled=false', () => {
+      setupWithAudio();
+      const switchEl = within(screen.getByTestId('audio-enabled-switch')).getByRole('switch');
+      fireEvent.click(switchEl);
+      const stored = JSON.parse(localStorage.getItem('azarean_audio'));
+      expect(stored.enabled).toBe(false);
+    });
+
+    it('после выключения slider и кнопка скрыты', () => {
+      setupWithAudio();
+      const switchEl = within(screen.getByTestId('audio-enabled-switch')).getByRole('switch');
+      fireEvent.click(switchEl);
+      expect(screen.queryByTestId('audio-volume-slider')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('audio-test-btn')).not.toBeInTheDocument();
+    });
+
+    it('slider пишет volume в localStorage (как float 0..1)', () => {
+      setupWithAudio();
+      const slider = screen.getByTestId('audio-volume-slider');
+      fireEvent.change(slider, { target: { value: '40' } });
+      const stored = JSON.parse(localStorage.getItem('azarean_audio'));
+      expect(stored.volume).toBeCloseTo(0.4);
+    });
+
+    it('кнопка «Проверить звук» зовёт cue (создаёт 1 осциллятор)', () => {
+      setupWithAudio();
+      fireEvent.click(screen.getByTestId('audio-test-btn'));
+      // prime + cue('rest_end') → AudioContext создан ровно 1 раз
+      expect(mockCtxCtor).toHaveBeenCalledTimes(1);
+      const ctx = mockCtxCtor.mock.results[0].value;
+      expect(ctx.createOscillator).toHaveBeenCalledTimes(1);
+    });
+
+    it('persist через ремоунт: enabled=false читается из localStorage', () => {
+      localStorage.setItem(
+        'azarean_audio',
+        JSON.stringify({ enabled: false, volume: 0.3 }),
+      );
+      setupWithAudio();
+      const switchEl = within(screen.getByTestId('audio-enabled-switch')).getByRole('switch');
+      expect(switchEl).toHaveAttribute('aria-checked', 'false');
+      // Slider и кнопка скрыты (enabled=false)
+      expect(screen.queryByTestId('audio-volume-slider')).not.toBeInTheDocument();
+    });
+  });
 });

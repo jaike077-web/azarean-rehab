@@ -14,12 +14,17 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dumbbell, ChevronRight, Play } from 'lucide-react';
 import { rehab, patientAuth } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { useAudioCue } from '../context/AudioContext';
 import ComplexDetailView from './ComplexDetailView';
 import ExerciseRunner from './ExerciseRunner';
 import { Card } from './ui';
 
 const ExercisesScreen = ({ screenParams }) => {
   const toast = useToast();
+  // CP1: prime AudioContext в user-gesture (тап «Начать тренировку»)
+  // — обязательно для iOS PWA, иначе RestTimer cue будет молчать
+  // на проде (контекст создан, но в state='suspended').
+  const { prime } = useAudioCue();
 
   // Данные
   const [todayComplex, setTodayComplex] = useState(null); // из rehab.getMyExercises
@@ -76,6 +81,9 @@ const ExercisesScreen = ({ screenParams }) => {
   const openComplex = async (id) => {
     setSelectedComplexId(id);
     setSessionId(Date.now());
+    // iOS PWA AudioContext unlock — синхронно ДО первого await,
+    // чтобы user-gesture был активен в момент создания/резюма контекста.
+    prime();
     try {
       const res = await patientAuth.getMyComplex(id);
       const data = res.data;

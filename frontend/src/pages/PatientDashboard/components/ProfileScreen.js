@@ -32,6 +32,7 @@ import {
 } from './ui';
 import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
 import ThemeToggle from '../../../components/ThemeToggle';
+import { useAudioSettings } from '../context/AudioContext';
 import './ProfileScreen.css';
 
 // Tab id для Contact (см. NAV в PatientDashboard.js)
@@ -141,6 +142,7 @@ EditSheet.propTypes = {
 function ProfileScreen({ onClose, handleLogout, goTo }) {
   const toast = useToast();
   const { patient: ctxPatient, refresh, updatePatient } = usePatientAuth();
+  const { settings: audioSettings, setSettings: setAudioSettings, cue, prime } = useAudioSettings();
   const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(ctxPatient || null);
@@ -864,6 +866,88 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
               >
                 <span style={{ fontSize: 14, color: 'var(--pd-text)' }}>Тема</span>
                 <ThemeToggle />
+              </div>
+            </div>
+
+            {/* ===== Звук (CP1) =====
+                Per-device настройка через localStorage 'azarean_audio'. Управляет
+                звуковыми cue в раннере (rest_end сейчас, set_end/count_tick в CP3).
+                Vibration НЕ управляется отсюда — она всегда работает как fallback
+                для устройств в беззвучном режиме. */}
+            <div className="pd-profile-section">
+              <div className="pd-profile-section-label">Звук</div>
+              <div className="pd-profile-section-card">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 16px',
+                  }}
+                >
+                  <span style={{ fontSize: 14, color: 'var(--pd-text)' }}>Звуковые сигналы</span>
+                  <span data-testid="audio-enabled-switch">
+                    <Switch
+                      on={audioSettings.enabled}
+                      onTap={(next) => setAudioSettings({ enabled: next })}
+                      ariaLabel="Звуковые сигналы"
+                    />
+                  </span>
+                </div>
+                {audioSettings.enabled && (
+                  <>
+                    <div style={{ padding: '0 16px 10px' }}>
+                      <label
+                        htmlFor="audio-volume"
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 13,
+                          color: 'var(--pd-text-muted, #737373)',
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span>Громкость</span>
+                        <span>{Math.round(audioSettings.volume * 100)}%</span>
+                      </label>
+                      <input
+                        id="audio-volume"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={Math.round(audioSettings.volume * 100)}
+                        onChange={(e) =>
+                          setAudioSettings({ volume: Number(e.target.value) / 100 })
+                        }
+                        data-testid="audio-volume-slider"
+                        style={{
+                          width: '100%',
+                          accentColor: 'var(--pd-color-primary, #0D9488)',
+                        }}
+                      />
+                    </div>
+                    <div style={{ padding: '0 16px 14px' }}>
+                      <button
+                        type="button"
+                        className="pd-profile-btn-primary"
+                        onClick={() => {
+                          // prime + cue — двойная польза:
+                          // (а) пользователь слышит итоговую громкость;
+                          // (б) клик — user-gesture, AudioContext.resume() надёжно срабатывает.
+                          prime();
+                          cue('rest_end');
+                        }}
+                        data-testid="audio-test-btn"
+                      >
+                        Проверить звук
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="pd-profile-section-hint">
+                Сигнал конца отдыха в тренировке. Настройка действует на этом устройстве.
               </div>
             </div>
 
