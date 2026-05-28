@@ -58,6 +58,11 @@ export function getCueConfig(name) {
   switch (name) {
     case 'count_tick':
       return { frequencies: [600], gain: 0.3, durationMs: 80, type: 'sine' };
+    case 'set_start':
+      // CP3c.1: «go»-тон на старте подхода после 3-2-1 преролла. Восходящая
+      // пара 880→1320 Hz (октава+квинта), 200 ms — distinct против set_end
+      // (660→990, 250 ms) и громче чем count_tick. Open to architect tuning.
+      return { frequencies: [880, 1320], gain: 0.3, durationMs: 200, type: 'sine' };
     case 'set_end':
       return { frequencies: [660, 990], gain: 0.3, durationMs: 250, type: 'sine' };
     case 'rest_end':
@@ -65,7 +70,7 @@ export function getCueConfig(name) {
       // Anti-regression для CP1 — менять только с архитектором.
       return { frequencies: [880], gain: 0.3, durationMs: 300, type: 'sine' };
     case 'tempo_tick':
-      // CP1: имя зарезервировано, ещё не зовётся (CP3b).
+      // CP1: имя зарезервировано, ещё не зовётся (CP3b, темп-метроном — backlog).
       return { frequencies: [1000], gain: 0.15, durationMs: 40, type: 'sine' };
     default:
       return null;

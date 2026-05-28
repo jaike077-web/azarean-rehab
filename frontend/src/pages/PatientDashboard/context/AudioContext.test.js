@@ -138,6 +138,14 @@ describe('getCueConfig — pure cue catalogue', () => {
     expect(cfg.type).toBe('sine');
   });
 
+  it('set_start (CP3c.1) — восходящий двухтон 880→1320 Hz / 200 ms', () => {
+    const cfg = getCueConfig('set_start');
+    expect(cfg.frequencies).toEqual([880, 1320]);
+    expect(cfg.durationMs).toBe(200);
+    expect(cfg.gain).toBe(0.3);
+    expect(cfg.type).toBe('sine');
+  });
+
   it('tempo_tick — зарезервировано (CP3b), мягкий клик', () => {
     expect(getCueConfig('tempo_tick')).toEqual({
       frequencies: [1000],

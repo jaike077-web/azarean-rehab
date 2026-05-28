@@ -89,32 +89,79 @@ const ExerciseRunner = ({
     return () => clearInterval(swRef.current);
   }, [swRunning]);
 
-  // --- CP3a.1+CP3a.2: per-set гайд для timed-упражнений ---
+  // --- CP3a + CP3c.1: per-set гайд для timed-упражнений ---
   // Узкий unlock LOCKED-раннера. Гайд проводит по подходам внутри карточки:
   //  - auto_complete!==false (countdown mode, CP3a.1): countdown ВНИЗ →
   //    cue('set_end') на 0 → авто-старт RestTimer → следующий подход.
   //  - auto_complete===false (open-hold mode, CP3a.2): открытый count-UP
-  //    секундомер → ручное «Готово» → авто-старт RestTimer → следующий подход.
-  //    Без cue('set_end') (нет авто-завершения, звук только на countdown-0).
+  //    секундомер → ручное «Завершить подход» → авто-rest → следующий.
+  //    Без cue('set_end') (звук только на countdown-0).
+  // CP3c.1 расширения:
+  //  - Фаза `ready` перед каждым work-подходом (гейт «Начать подход»).
+  //    Отсчёт/секундомер НЕ стартует сам — пациент сам решает когда начать
+  //    (фикс iOS-смоук-фидбэка п.4).
+  //  - На «Начать подход»: 3-2-1 преролл (cue('count_tick') ×3) + cue('set_start')
+  //    на «go» → переход в work. Стартовое звуковое предупреждение (фикс п.1).
+  //  - Единая кнопка «Завершить подход» (countdown «Раньше» и open-hold
+  //    «Готово» унифицированы по копи + testid — фикс п.3).
   // Завершение всего упражнения и POST /api/progress — НЕ трогаем (canon LOCKED).
   // Rep-only (duration_seconds==null/0) → гайд НЕ активен, прежний flow 1:1.
   const sets = Math.max(1, parseInt(ce.sets, 10) || 1);
   const usesPerSetGuide = hasDuration;
   const isCountdownMode = usesPerSetGuide && ce.auto_complete !== false;
   const isOpenHoldMode = usesPerSetGuide && ce.auto_complete === false;
-  const { cue } = useAudioCue();
+  const { cue, prime } = useAudioCue();
   const cueRef = useRef(cue);
   useEffect(() => { cueRef.current = cue; }, [cue]);
   const [currentSetIndex, setCurrentSetIndex] = useState(0);
-  const [setPhase, setSetPhase] = useState('work'); // 'work' | 'rest' | 'done'
+  // CP3c.1: добавлена фаза 'ready' (initial, перед каждым work) и 'preroll'
+  // (3-2-1 преролл между ready и work). Поток:
+  //   ready → [тап «Начать»] → preroll(3→2→1) → work → completeSet
+  //     → k<N-1: rest → ready (следующий подход)
+  //     → k==N-1: done (существующий feedback/submit)
+  const [setPhase, setSetPhase] = useState('ready'); // 'ready'|'preroll'|'work'|'rest'|'done'
   const [setRemaining, setSetRemaining] = useState(ce.duration_seconds || 0);
+  const [prerollCountdown, setPrerollCountdown] = useState(0);
 
-  // Сброс per-set state при переходе на новое упражнение.
+  // Сброс per-set state при переходе на новое упражнение → ready phase.
   useEffect(() => {
     setCurrentSetIndex(0);
-    setSetPhase('work');
+    setSetPhase('ready');
     setSetRemaining(ce.duration_seconds || 0);
+    setPrerollCountdown(0);
   }, [index, ce.duration_seconds]);
+
+  // CP3c.1: «Начать подход» → prime AudioContext (iOS safety) + первый
+  // count_tick («3») сразу + переход в preroll.
+  const handleStartSet = () => {
+    if (!usesPerSetGuide) return;
+    if (setPhase !== 'ready') return;
+    if (typeof prime === 'function') prime();
+    if (cueRef.current) cueRef.current('count_tick');
+    setPrerollCountdown(3);
+    setSetPhase('preroll');
+  };
+
+  // CP3c.1: 3-2-1 преролл-tick. На каждой секунде cue('count_tick') («2», «1»),
+  // на последнем — cue('set_start') («go») + setPhase('work') + auto-start
+  // секундомера для open-hold mode (countdown сам стартует через setRemaining).
+  useEffect(() => {
+    if (setPhase !== 'preroll') return undefined;
+    const id = setInterval(() => {
+      setPrerollCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          if (cueRef.current) cueRef.current('set_start');
+          setSetPhase('work');
+          if (ce.auto_complete === false) setSwRunning(true);
+          return 0;
+        }
+        if (cueRef.current) cueRef.current('count_tick');
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [setPhase, ce.auto_complete]);
 
   // Тик countdown в work-фазе (ТОЛЬКО countdown mode). На prev<=1 →
   // cue('set_end') + переход в rest/done. cue зовём через ref чтобы
@@ -137,10 +184,9 @@ const ExerciseRunner = ({
     return () => clearInterval(id);
   }, [isCountdownMode, setPhase, currentSetIndex, sets]);
 
-  // Ручной «Раньше» (countdown) / «Готово» (open-hold) — единая семантика
-  // «завершить этот подход вручную». Без cue('set_end') — звук только на
-  // countdown-0. В open-hold сначала стопаем секундомер (UX: визуально
-  // фиксируем elapsed на момент клика).
+  // CP3c.1: единая «Завершить подход» (заменяет «Раньше»/«Готово»).
+  // Без cue('set_end') — звук только на countdown-0. В open-hold сначала
+  // стопаем секундомер (UX: визуально фиксируем elapsed на момент клика).
   const handleFinishEarly = () => {
     if (!usesPerSetGuide) return;
     if (setPhase !== 'work') return;
@@ -149,13 +195,15 @@ const ExerciseRunner = ({
     else setSetPhase('done');
   };
 
-  // RestTimer (auto-started) → onComplete → следующий подход.
+  // RestTimer (auto-started) → onComplete → следующий подход в ready phase
+  // (пациент сам жмёт «Начать подход» — НЕ авто-старт следующего work).
   // cue('rest_end') шлёт сам RestTimer, дублировать не нужно.
   // Reset открытого секундомера на каждый новый подход (no-op в countdown mode).
   const handleRestComplete = useCallback(() => {
     setCurrentSetIndex((idx) => idx + 1);
-    setSetPhase('work');
+    setSetPhase('ready');
     setSetRemaining(ce.duration_seconds || 0);
+    setPrerollCountdown(0);
     setSwRunning(false);
     setSwElapsed(0);
   }, [ce.duration_seconds]);
@@ -368,22 +416,37 @@ const ExerciseRunner = ({
             </div>
           )}
 
-          {/* CP3a: per-set гайд для timed-упражнений. Work-фаза разводит две
-              ветки по auto_complete: countdown (.1) или open-hold count-UP (.2).
-              Класс-имена reuse существующего canon (.sec/.sec-t/.sw/.sw-val/
-              .sw-target/.sw-btn/.sw-go/.sw-stop/.btn/.btn-sk) —
-              новых селекторов и CSS-переменных НЕ добавлено. */}
+          {/* CP3a + CP3c.1: per-set гайд для timed-упражнений. Поведенческая
+              цепочка: ready → preroll → work → (rest →) ready/done. Work-фаза
+              разводит две ветки по auto_complete (countdown CP3a.1 / open-hold
+              CP3a.2). Класс-имена reuse существующего canon (.sec/.sec-t/.sw/
+              .sw-val/.sw-target/.sw-btn/.sw-go/.sw-stop/.btn/.btn-sk/.btn-dn) —
+              новых селекторов и CSS-переменных в CP3c.1 НЕ добавлено
+              (визуальный апгрейд кольца+цвета — CP3c.2). */}
           {usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t">
                 <span data-testid="set-indicator">Подход {currentSetIndex + 1} из {sets}</span>
                 <span className="sw-target">цель: {ce.duration_seconds}с</span>
               </div>
+              {setPhase === 'ready' && (
+                <div className="sw" data-testid="ready-state">
+                  <span className="sw-val">{formatTime(ce.duration_seconds || 0)}</span>
+                  <button type="button" className="btn btn-dn" onClick={handleStartSet} data-testid="start-set-btn">
+                    Начать подход
+                  </button>
+                </div>
+              )}
+              {setPhase === 'preroll' && (
+                <div className="sw">
+                  <span className="sw-val" data-testid="preroll-indicator">{prerollCountdown}</span>
+                </div>
+              )}
               {setPhase === 'work' && isCountdownMode && (
                 <div className="sw">
                   <span className="sw-val" data-testid="set-countdown">{formatTime(setRemaining)}</span>
-                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-early-btn">
-                    Раньше
+                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-btn">
+                    Завершить подход
                   </button>
                 </div>
               )}
@@ -393,8 +456,8 @@ const ExerciseRunner = ({
                   <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)} data-testid="set-stopwatch-toggle">
                     {swRunning ? '⏸' : '▶'}
                   </button>
-                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="set-done-btn">
-                    Готово
+                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-btn">
+                    Завершить подход
                   </button>
                 </div>
               )}
