@@ -11,7 +11,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 12px 0;
+  margin: 20px 0 8px;
 }
 
 .pd-phase-ring svg {
@@ -61,27 +61,33 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
-  margin: 4px auto 8px;
-  max-width: 320px;
+  gap: 12px;
+  margin: 24px auto 16px;
+  max-width: 280px;
   width: 100%;
 }
 
 .pd-phase-btn {
-  /* 4px-сетка: padding 12px вертикально, 16px горизонтально, radius 12px. */
+  /* 4px-сетка: padding 16px вертикально, 24px горизонтально, radius 16px.
+     Полировка после CP3c smoke 2026-05-28 — кнопка была мелкая, плоская
+     и слишком вытянутая (max-width 320px + min-height 48px). */
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  min-height: 48px; /* touch-target */
-  padding: 12px 16px;
+  min-height: 56px; /* увеличенный touch-target — primary action */
+  padding: 16px 24px;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   font-family: 'Manrope', 'Nunito Sans', system-ui, sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.pd-phase-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .pd-phase-btn:disabled {
@@ -93,11 +99,19 @@
 .pd-phase-btn--start {
   background: var(--pd-accent-warm);
   color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.32); /* coral-tinted lift —
+                                                     визуальная глубина,
+                                                     не плоская */
 }
 
 .pd-phase-btn--start:hover:not(:disabled) {
   background: #EA670C; /* one shade darker — не вводим новый токен,
                           просто hover-ramp в той же coral-семье */
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.42);
+}
+
+.pd-phase-btn--start:active:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(249, 115, 22, 0.28);
 }
 
 /* «Завершить подход» — coral-tinted outline. Видимая, но менее доминирующая

@@ -39,8 +39,14 @@
 // .pd-phase-btn--start/--finish (видимые, не ghost). Новые chunks:
 // ui/PhaseRing + PhaseRing.css. Без bump'а пациенты будут видеть
 // плоский CP3a-таймер без гейта и старого стартового звука.
-const CACHE_NAME = 'azarean-v10';
-const API_CACHE = 'azarean-api-v10';
+// v11 (2026-05-28 vol.3) — CP3c polish: «Начать подход» крупнее
+// (56px min-height, 18px font, 16px radius, coral shadow для глубины),
+// больше воздуха между кольцом и actions (20→8 ring margin + 24px
+// actions margin-top), сужен max-width 320→280, gap 8→12. Tap-feedback
+// scale(0.97). Без bump'а PWA-юзеры продолжали бы видеть «вытянутую
+// маленькую плоскую» кнопку из v10.
+const CACHE_NAME = 'azarean-v11';
+const API_CACHE = 'azarean-api-v11';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
