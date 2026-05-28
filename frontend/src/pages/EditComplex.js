@@ -40,9 +40,10 @@ import { CSS } from '@dnd-kit/utilities';
 import s from './EditComplex.module.css';
 import { Skeleton } from '../components/Skeleton';
 import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
+import { validateExerciseRow, normalizeExerciseForPayload, TEMPO_BOUNDS } from '../utils/exerciseValidation';
 
 // Компонент для перетаскиваемого упражнения
-function SortableExercise({ exercise, onRemove, onUpdate }) {
+function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
   const {
     attributes,
     listeners,
@@ -93,13 +94,16 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           value={exercise.reps || ''}
           onChange={(e) => onUpdate(exercise.id, 'reps', e.target.value)}
           min="1"
+          data-testid={`reps-${exercise.id}`}
         />
         <input
           type="number"
-          placeholder="Секунд"
+          placeholder="Время подхода (сек)"
+          title="Длительность одного подхода. При включённом авто-завершении — countdown с сигналом конца."
           value={exercise.duration_seconds || ''}
           onChange={(e) => onUpdate(exercise.id, 'duration_seconds', e.target.value)}
           min="1"
+          data-testid={`duration-${exercise.id}`}
         />
         <input
           type="text"
@@ -109,6 +113,63 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
           className={s.notesInput}
         />
       </div>
+      {/* CP2b: auto_complete + темп (зеркало CreateComplex.SortableExercise). */}
+      <div
+        className={s.exerciseExtra}
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {Number(exercise.duration_seconds) > 0 && (
+          <label
+            className={s.autoCompleteLabel}
+            title="При истечении таймера: завершить подход и автоматически начать отдых (со звуковым сигналом). Выкл — обычный секундомер."
+          >
+            <input
+              type="checkbox"
+              checked={exercise.auto_complete !== false}
+              onChange={(e) => onUpdate(exercise.id, 'auto_complete', e.target.checked)}
+              data-testid={`auto-complete-${exercise.id}`}
+            />
+            <span>Авто-завершение</span>
+          </label>
+        )}
+        <div className={s.tempoGroup} title={`Темп повтора (опционально, всё или ничего). ecc ${TEMPO_BOUNDS.ECC_MIN}–${TEMPO_BOUNDS.ECC_MAX}с / пауза ${TEMPO_BOUNDS.PAUSE_MIN}–${TEMPO_BOUNDS.PAUSE_MAX}с / conc ${TEMPO_BOUNDS.CON_MIN}–${TEMPO_BOUNDS.CON_MAX}с`}>
+          <span className={s.tempoLabel}>Темп:</span>
+          <input
+            type="number"
+            placeholder="ecc"
+            value={exercise.tempo_eccentric_s ?? ''}
+            onChange={(e) => onUpdate(exercise.id, 'tempo_eccentric_s', e.target.value)}
+            min={TEMPO_BOUNDS.ECC_MIN}
+            max={TEMPO_BOUNDS.ECC_MAX}
+            data-testid={`tempo-ecc-${exercise.id}`}
+          />
+          <input
+            type="number"
+            placeholder="пауза"
+            value={exercise.tempo_pause_s ?? ''}
+            onChange={(e) => onUpdate(exercise.id, 'tempo_pause_s', e.target.value)}
+            min={TEMPO_BOUNDS.PAUSE_MIN}
+            max={TEMPO_BOUNDS.PAUSE_MAX}
+            data-testid={`tempo-pause-${exercise.id}`}
+          />
+          <input
+            type="number"
+            placeholder="conc"
+            value={exercise.tempo_concentric_s ?? ''}
+            onChange={(e) => onUpdate(exercise.id, 'tempo_concentric_s', e.target.value)}
+            min={TEMPO_BOUNDS.CON_MIN}
+            max={TEMPO_BOUNDS.CON_MAX}
+            data-testid={`tempo-con-${exercise.id}`}
+          />
+        </div>
+      </div>
+      {errors && (errors.prescription || errors.tempo) && (
+        <div className={s.exerciseErrors} data-testid={`errors-${exercise.id}`}>
+          {errors.prescription && <span>{errors.prescription}</span>}
+          {errors.tempo && <span>{errors.tempo}</span>}
+        </div>
+      )}
       <button
         className={s.removeExerciseBtn}
         onClick={() => onRemove(exercise.id)}
@@ -132,6 +193,8 @@ function EditComplex() {
   const [recommendations, setRecommendations] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
+  // CP2b: inline-ошибки валидации по строкам (см. handleSave / normalize)
+  const [exerciseErrors, setExerciseErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [exercisesLoading, setExercisesLoading] = useState(true);
@@ -192,7 +255,14 @@ function EditComplex() {
           reps: item.reps,
           duration_seconds: item.duration_seconds,
           notes: item.notes,
-          order_number: item.order_number
+          order_number: item.order_number,
+          // CP2b: 4 поля из миграции 20260527. На legacy строках до
+          // применения CP2a backend вернёт auto_complete=true (DEFAULT),
+          // tempo_*=null — нормально для UI (showing as пустые).
+          auto_complete: item.auto_complete !== false,
+          tempo_eccentric_s: item.tempo_eccentric_s ?? '',
+          tempo_pause_s: item.tempo_pause_s ?? '',
+          tempo_concentric_s: item.tempo_concentric_s ?? '',
         }));
 
       setSelectedExercises(formattedExercises);
@@ -235,7 +305,12 @@ function EditComplex() {
       sets: 3,
       reps: 10,
       duration_seconds: 30,
-      notes: ''
+      notes: '',
+      // CP2b: дефолты как в CreateComplex.
+      auto_complete: true,
+      tempo_eccentric_s: '',
+      tempo_pause_s: '',
+      tempo_concentric_s: '',
     }]);
   };
 
@@ -244,11 +319,30 @@ function EditComplex() {
   };
 
   const handleUpdateExercise = (exerciseId, field, value) => {
+    // CP2b: числовые поля — валидация диапазона. auto_complete — boolean
+    // (приходит из onChange checkbox). Темп — числа в [0..30] (CHECK).
+    if (['sets', 'reps', 'duration_seconds',
+         'tempo_eccentric_s', 'tempo_pause_s', 'tempo_concentric_s'].includes(field)) {
+      if (value !== '' && value != null) {
+        const numValue = parseInt(value, 10);
+        if (isNaN(numValue) || numValue < 0 || numValue > 9999) {
+          return;
+        }
+      }
+    }
     setSelectedExercises(selectedExercises.map(exercise =>
       exercise.id === exerciseId
         ? { ...exercise, [field]: value }
         : exercise
     ));
+    // CP2b: очищаем inline-ошибку для этой строки при правке (re-validate на submit).
+    if (exerciseErrors[exerciseId]) {
+      setExerciseErrors((prev) => {
+        const next = { ...prev };
+        delete next[exerciseId];
+        return next;
+      });
+    }
   };
 
   const handleDragEnd = (event) => {
@@ -272,20 +366,33 @@ function EditComplex() {
       return;
     }
 
+    // CP2b: pre-submit валидация (зеркало DB CHECK'ов).
+    const errorsByRow = {};
+    let hasErrors = false;
+    selectedExercises.forEach((ex) => {
+      const e = validateExerciseRow(ex);
+      if (e.prescription || e.tempo) {
+        errorsByRow[ex.id] = e;
+        hasErrors = true;
+      }
+    });
+    setExerciseErrors(errorsByRow);
+    if (hasErrors) {
+      setError('Исправьте ошибки в упражнениях перед сохранением');
+      toast.error('Есть незаполненные подходы или некорректный темп');
+      return;
+    }
+
     try {
       const updateData = {
         title: complexTitle.trim() || null,
         diagnosis_id: diagnosisId || null,
         recommendations: recommendations || null,
-        exercises: selectedExercises.map((ex, index) => ({
-          exercise_id: ex.id,
-          order_number: index + 1,
-          sets: parseInt(ex.sets) || null,
-          reps: parseInt(ex.reps) || null,
-          duration_seconds: parseInt(ex.duration_seconds) || null,
-          rest_seconds: null,
-          notes: ex.notes || null
-        }))
+        // CP2b: shared normalizer (тот же что в CreateComplex). reps:null
+        // для time-only, all-or-nothing для tempo, auto_complete default true.
+        exercises: selectedExercises.map((ex, index) =>
+          normalizeExerciseForPayload(ex, index + 1)
+        ),
       };
 
       await complexes.update(id, updateData);
@@ -448,6 +555,7 @@ function EditComplex() {
                     <SortableExercise
                       key={exercise.id}
                       exercise={exercise}
+                      errors={exerciseErrors[exercise.id]}
                       onRemove={handleRemoveExercise}
                       onUpdate={handleUpdateExercise}
                     />

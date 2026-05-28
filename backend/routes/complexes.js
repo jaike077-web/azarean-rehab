@@ -3,6 +3,46 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 
+// =====================================================
+// CP2a: нормализация полей упражнения перед INSERT в complex_exercises.
+// Семантика:
+//   - sets:   number > 0, default 3
+//   - reps:   number > 0 → int, иначе null. 0/undefined/NaN → null.
+//             (XOR с duration снят, но clean null лучше чем 0 для time-only.)
+//   - durationSeconds: > 0 → int, иначе null. Раньше Math.max(0, ...) писал 0;
+//             теперь NULL для нормальной семантики CHECK chk_ce_has_prescription.
+//   - restSeconds: >= 0, default 30.
+//   - autoComplete: boolean, default true (CP2 решение арка).
+//   - tempo_*: число-или-null. Все-или-ничего — DB CHECK backstop, тут не дублируем.
+// =====================================================
+function normalizeExerciseFields(exercise) {
+  const toIntPositive = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+  };
+  const toIntNonNeg = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+  };
+
+  const setsNum = toIntPositive(exercise.sets);
+  const sets = setsNum != null ? setsNum : 3;
+
+  const restNum = toIntNonNeg(exercise.rest_seconds);
+  const restSeconds = restNum != null ? restNum : 30;
+
+  return {
+    sets,
+    reps: toIntPositive(exercise.reps),
+    durationSeconds: toIntPositive(exercise.duration_seconds),
+    restSeconds,
+    autoComplete: typeof exercise.auto_complete === 'boolean' ? exercise.auto_complete : true,
+    tempoEccentric: toIntPositive(exercise.tempo_eccentric_s),
+    tempoPause: toIntNonNeg(exercise.tempo_pause_s),
+    tempoConcentric: toIntPositive(exercise.tempo_concentric_s),
+  };
+}
+
 // Создать новый комплекс для пациента
 router.post('/', authenticateToken, async (req, res) => {
   const client = await getClient();
@@ -81,20 +121,25 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Добавляем упражнения в комплекс
     for (const exercise of exercises) {
-      const durationSeconds = Math.max(0, Number(exercise.duration_seconds) || 0);
+      const fields = normalizeExerciseFields(exercise);
       await client.query(
-        `INSERT INTO complex_exercises 
-         (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        `INSERT INTO complex_exercises
+         (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes,
+          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           complex.id,
           exercise.exercise_id,
           exercise.order_number,
-          exercise.sets || 3,
-          exercise.reps || 10,
-          durationSeconds,
-          exercise.rest_seconds || 30,
-          exercise.notes
+          fields.sets,
+          fields.reps,
+          fields.durationSeconds,
+          fields.restSeconds,
+          exercise.notes,
+          fields.autoComplete,
+          fields.tempoEccentric,
+          fields.tempoPause,
+          fields.tempoConcentric,
         ]
       );
     }
@@ -116,6 +161,14 @@ router.post('/', authenticateToken, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- CP2c: instructor read round-trip (TZ_..._CP2c_INSTRUCTOR_READ).
+                  -- CP2a добавил эти поля только пациентскому /my-complexes/:id
+                  -- (зеркало patientAuth.js:1482-1485). Без них EditComplex
+                  -- читал undefined → молча затирал auto_complete=false и темп.
+                  'auto_complete', ce.auto_complete,
+                  'tempo_eccentric_s', ce.tempo_eccentric_s,
+                  'tempo_pause_s', ce.tempo_pause_s,
+                  'tempo_concentric_s', ce.tempo_concentric_s,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -319,6 +372,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- CP2c: instructor edit round-trip (питает EditComplex.loadComplexData).
+                  'auto_complete', ce.auto_complete,
+                  'tempo_eccentric_s', ce.tempo_eccentric_s,
+                  'tempo_pause_s', ce.tempo_pause_s,
+                  'tempo_concentric_s', ce.tempo_concentric_s,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -410,20 +468,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     // Добавляем новые упражнения
     for (const exercise of exercises) {
-      const durationSeconds = Math.max(0, Number(exercise.duration_seconds) || 0);
+      const fields = normalizeExerciseFields(exercise);
       await client.query(
-        `INSERT INTO complex_exercises 
-         (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        `INSERT INTO complex_exercises
+         (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes,
+          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
         [
           id,
           exercise.exercise_id,
           exercise.order_number,
-          exercise.sets,
-          exercise.reps,
-          durationSeconds,
-          exercise.rest_seconds,
-          exercise.notes
+          fields.sets,
+          fields.reps,
+          fields.durationSeconds,
+          fields.restSeconds,
+          exercise.notes,
+          fields.autoComplete,
+          fields.tempoEccentric,
+          fields.tempoPause,
+          fields.tempoConcentric,
         ]
       );
     }

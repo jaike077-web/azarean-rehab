@@ -468,6 +468,77 @@
 }
 
 /* =====================================================
+   CP2b: auto_complete + темп + inline errors
+   ===================================================== */
+.exerciseExtra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(8px, 1.5vw, 12px);
+  margin-top: clamp(6px, 1vw, 8px);
+  padding-top: clamp(6px, 1vw, 8px);
+  border-top: 1px dashed var(--color-border);
+  width: 100%;
+  font-size: clamp(11px, 1.7vw, 13px);
+  color: var(--color-text-muted);
+}
+
+.autoCompleteLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.autoCompleteLabel input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.tempoGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tempoLabel {
+  font-weight: 600;
+  color: var(--color-text-subtle);
+}
+
+.tempoGroup input[type="number"] {
+  width: clamp(44px, 7vw, 56px);
+  padding: 6px 4px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  font-size: clamp(11px, 1.7vw, 13px);
+  text-align: center;
+  background: var(--color-bg);
+}
+
+.tempoGroup input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.exerciseErrors {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(220, 38, 38, 0.08);
+  border-left: 3px solid var(--color-danger);
+  border-radius: 4px;
+  font-size: clamp(11px, 1.7vw, 12px);
+  color: var(--color-danger);
+  width: 100%;
+}
+
+/* =====================================================
    REMOVE BUTTON - Адаптивный
    ===================================================== */
 

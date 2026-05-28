@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
+import { useAudioCue } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay } from './ui';
 
 const formatTime = (s) => {
@@ -87,6 +88,77 @@ const ExerciseRunner = ({
     if (swRunning) { swRef.current = setInterval(() => setSwElapsed((s) => s + 1), 1000); }
     return () => clearInterval(swRef.current);
   }, [swRunning]);
+
+  // --- CP3a.1+CP3a.2: per-set гайд для timed-упражнений ---
+  // Узкий unlock LOCKED-раннера. Гайд проводит по подходам внутри карточки:
+  //  - auto_complete!==false (countdown mode, CP3a.1): countdown ВНИЗ →
+  //    cue('set_end') на 0 → авто-старт RestTimer → следующий подход.
+  //  - auto_complete===false (open-hold mode, CP3a.2): открытый count-UP
+  //    секундомер → ручное «Готово» → авто-старт RestTimer → следующий подход.
+  //    Без cue('set_end') (нет авто-завершения, звук только на countdown-0).
+  // Завершение всего упражнения и POST /api/progress — НЕ трогаем (canon LOCKED).
+  // Rep-only (duration_seconds==null/0) → гайд НЕ активен, прежний flow 1:1.
+  const sets = Math.max(1, parseInt(ce.sets, 10) || 1);
+  const usesPerSetGuide = hasDuration;
+  const isCountdownMode = usesPerSetGuide && ce.auto_complete !== false;
+  const isOpenHoldMode = usesPerSetGuide && ce.auto_complete === false;
+  const { cue } = useAudioCue();
+  const cueRef = useRef(cue);
+  useEffect(() => { cueRef.current = cue; }, [cue]);
+  const [currentSetIndex, setCurrentSetIndex] = useState(0);
+  const [setPhase, setSetPhase] = useState('work'); // 'work' | 'rest' | 'done'
+  const [setRemaining, setSetRemaining] = useState(ce.duration_seconds || 0);
+
+  // Сброс per-set state при переходе на новое упражнение.
+  useEffect(() => {
+    setCurrentSetIndex(0);
+    setSetPhase('work');
+    setSetRemaining(ce.duration_seconds || 0);
+  }, [index, ce.duration_seconds]);
+
+  // Тик countdown в work-фазе (ТОЛЬКО countdown mode). На prev<=1 →
+  // cue('set_end') + переход в rest/done. cue зовём через ref чтобы
+  // не пересоздавать interval при смене settings.
+  useEffect(() => {
+    if (!isCountdownMode) return undefined;
+    if (setPhase !== 'work') return undefined;
+    const id = setInterval(() => {
+      setSetRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(id);
+          if (cueRef.current) cueRef.current('set_end');
+          if (currentSetIndex < sets - 1) setSetPhase('rest');
+          else setSetPhase('done');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isCountdownMode, setPhase, currentSetIndex, sets]);
+
+  // Ручной «Раньше» (countdown) / «Готово» (open-hold) — единая семантика
+  // «завершить этот подход вручную». Без cue('set_end') — звук только на
+  // countdown-0. В open-hold сначала стопаем секундомер (UX: визуально
+  // фиксируем elapsed на момент клика).
+  const handleFinishEarly = () => {
+    if (!usesPerSetGuide) return;
+    if (setPhase !== 'work') return;
+    if (isOpenHoldMode) setSwRunning(false);
+    if (currentSetIndex < sets - 1) setSetPhase('rest');
+    else setSetPhase('done');
+  };
+
+  // RestTimer (auto-started) → onComplete → следующий подход.
+  // cue('rest_end') шлёт сам RestTimer, дублировать не нужно.
+  // Reset открытого секундомера на каждый новый подход (no-op в countdown mode).
+  const handleRestComplete = useCallback(() => {
+    setCurrentSetIndex((idx) => idx + 1);
+    setSetPhase('work');
+    setSetRemaining(ce.duration_seconds || 0);
+    setSwRunning(false);
+    setSwElapsed(0);
+  }, [ce.duration_seconds]);
 
   // --- Навигация ---
   const handleCelebrationDone = useCallback(() => {
@@ -296,24 +368,53 @@ const ExerciseRunner = ({
             </div>
           )}
 
-          {/* Stopwatch */}
-          {hasDuration && (
+          {/* CP3a: per-set гайд для timed-упражнений. Work-фаза разводит две
+              ветки по auto_complete: countdown (.1) или open-hold count-UP (.2).
+              Класс-имена reuse существующего canon (.sec/.sec-t/.sw/.sw-val/
+              .sw-target/.sw-btn/.sw-go/.sw-stop/.btn/.btn-sk) —
+              новых селекторов и CSS-переменных НЕ добавлено. */}
+          {usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t">
-                <span>Секундомер</span>
+                <span data-testid="set-indicator">Подход {currentSetIndex + 1} из {sets}</span>
                 <span className="sw-target">цель: {ce.duration_seconds}с</span>
               </div>
-              <div className="sw">
-                <span className="sw-val">{formatTime(swElapsed)}</span>
-                <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)}>
-                  {swRunning ? '⏸' : '▶'}
-                </button>
-              </div>
+              {setPhase === 'work' && isCountdownMode && (
+                <div className="sw">
+                  <span className="sw-val" data-testid="set-countdown">{formatTime(setRemaining)}</span>
+                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-early-btn">
+                    Раньше
+                  </button>
+                </div>
+              )}
+              {setPhase === 'work' && isOpenHoldMode && (
+                <div className="sw">
+                  <span className="sw-val" data-testid="set-stopwatch">{formatTime(swElapsed)}</span>
+                  <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)} data-testid="set-stopwatch-toggle">
+                    {swRunning ? '⏸' : '▶'}
+                  </button>
+                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="set-done-btn">
+                    Готово
+                  </button>
+                </div>
+              )}
+              {setPhase === 'rest' && (
+                <div data-testid="auto-rest-block">
+                  <RestTimer
+                    key={`set-rest-${currentSetIndex}`}
+                    autoStart
+                    defaultSeconds={ce.rest_seconds || 60}
+                    presets={[30, 60, 90, 120]}
+                    onComplete={handleRestComplete}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Rest timer — новый компонент */}
-          {hasRest && (
+          {/* Rest timer (ручной) — для rep-only упражнений с rest_seconds.
+              Прячется когда per-set гайд активен (timed) — там свой авто-rest. */}
+          {hasRest && !usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t" style={{ marginBottom: 8 }}>Таймер отдыха</div>
               <RestTimer

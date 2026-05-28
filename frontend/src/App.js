@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { PatientAuthProvider, usePatientAuth } from './context/PatientAuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AudioProvider } from './pages/PatientDashboard/context/AudioContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PatientSplash from './components/PatientSplash';
 import PatientDashboardSkeleton from './pages/PatientDashboard/PatientDashboardSkeleton';
@@ -227,9 +228,11 @@ function AppRoutes() {
       {/* ========================== */}
       <Route element={
         <PatientAuthProvider>
-          <Suspense fallback={<PatientSplash />}>
-            <Outlet />
-          </Suspense>
+          <AudioProvider>
+            <Suspense fallback={<PatientSplash />}>
+              <Outlet />
+            </Suspense>
+          </AudioProvider>
         </PatientAuthProvider>
       }>
         <Route path="/patient-login" element={<PatientLogin />} />
