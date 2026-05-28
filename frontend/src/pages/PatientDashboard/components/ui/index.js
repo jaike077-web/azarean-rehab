@@ -3,6 +3,9 @@ export { default as ProgressRing } from './ProgressRing';
 export { default as PainScale } from './PainScale';
 export { default as DifficultyScale } from './DifficultyScale';
 export { default as RestTimer } from './RestTimer';
+// CP3c.2: крупное кольцо-таймер для per-set гайда (work/rest/ready phase colors).
+// phaseColor named pure helper — для тестов Rule #37.
+export { default as PhaseRing, phaseColor } from './PhaseRing';
 export { default as Card } from './Card';
 export { default as ChipGroup } from './ChipGroup';
 export { default as TabBar } from './TabBar';

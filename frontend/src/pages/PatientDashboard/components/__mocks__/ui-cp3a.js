@@ -1,12 +1,11 @@
 // =====================================================
-// Mock UI components for CP3a.1 test
-// (TZ_TIMER_AUDIO_TIMESETS_CP3a_RUNNER_COUNTDOWN, Шаг 6 — тесты)
+// Mock UI components for CP3a/CP3c ExerciseRunner tests
+// (TZ_TIMER_AUDIO_TIMESETS_CP3a + TZ_TIMER_RUNNER_UX_REDESIGN)
 //
-// Вынесено из ExerciseRunner.cp3a.test.js потому что babel-parser
-// под jest спотыкается на JSX внутри блок-формы () => { return {...} }
-// фабрики jest.mock. Отдельный файл — самый чистый способ держать
-// функциональный RestTimer-мок (с автоматическим вызовом onComplete
-// под fake-timers) с полноценным JSX.
+// Вынесено из тестов потому что babel-parser под jest спотыкается
+// на JSX внутри блок-формы () => { return {...} } фабрики jest.mock.
+// Отдельный файл — самый чистый способ держать функциональные моки
+// с полноценным JSX.
 // =====================================================
 
 import React from 'react';
@@ -37,3 +36,17 @@ export const RestTimer = ({ autoStart, defaultSeconds, onComplete }) => {
     />
   );
 };
+
+// Mock PhaseRing (CP3c.2): простой div c data-phase + label + valueTestId.
+// SVG-рендеринг реального PhaseRing избыточен для CP3a/c тестов, которые
+// проверяют ТОЛЬКО логику флоу (testid'ы phase-ring/value, data-phase
+// атрибут, текст label). Real PhaseRing покрыт PhaseRing.test.js отдельно.
+export const PhaseRing = ({ phase, label, valueTestId }) => (
+  <div data-testid="phase-ring" data-phase={phase}>
+    <span data-testid={valueTestId}>{label}</span>
+  </div>
+);
+
+// phaseColor — реальный helper тестируется напрямую в PhaseRing.test.js.
+// В CP3a/c integration-тестах helper не используется (флоу-проверки идут
+// через testid/text), re-export тут не нужен.
