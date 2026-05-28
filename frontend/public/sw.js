@@ -33,8 +33,14 @@
 // (CP3a.1/.2). Новые chunks: AudioContext, ExerciseRunner_CP3a, ui-cp3a
 // mocks (только dev). Без bump'а пациенты с открытой PWA продолжат
 // крутить старый count-up секундомер без countdown/звука/авто-rest.
-const CACHE_NAME = 'azarean-v9';
-const API_CACHE = 'azarean-api-v9';
+// v10 (2026-05-28 vol.2) — UX-редизайн раннера CP3c.1+.2: ready-фаза с
+// гейтом «Начать подход», 3-2-1 преролл (count_tick + set_start cue),
+// PhaseRing 170px + цвет фаз (work=coral, rest=teal), новые
+// .pd-phase-btn--start/--finish (видимые, не ghost). Новые chunks:
+// ui/PhaseRing + PhaseRing.css. Без bump'а пациенты будут видеть
+// плоский CP3a-таймер без гейта и старого стартового звука.
+const CACHE_NAME = 'azarean-v10';
+const API_CACHE = 'azarean-api-v10';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
