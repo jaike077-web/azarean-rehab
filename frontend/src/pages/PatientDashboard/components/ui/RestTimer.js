@@ -16,10 +16,13 @@ export default function RestTimer({
   defaultSeconds = 60,
   presets = DEFAULT_PRESETS,
   onComplete,
+  autoStart = false,
 }) {
   const [total, setTotal] = useState(defaultSeconds);
   const [remaining, setRemaining] = useState(defaultSeconds);
-  const [running, setRunning] = useState(false);
+  // CP3a.1: autoStart=true → таймер стартует сразу при mount (per-set
+  // авто-отдых из ExerciseRunner). По умолчанию false — ручной режим (как было).
+  const [running, setRunning] = useState(autoStart);
   const intervalRef = useRef(null);
   const { cue } = useAudioCue();
 
@@ -160,4 +163,5 @@ RestTimer.propTypes = {
   defaultSeconds: PropTypes.number,
   presets: PropTypes.arrayOf(PropTypes.number),
   onComplete: PropTypes.func,
+  autoStart: PropTypes.bool,
 };
