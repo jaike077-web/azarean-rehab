@@ -161,6 +161,14 @@ router.post('/', authenticateToken, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- CP2c: instructor read round-trip (TZ_..._CP2c_INSTRUCTOR_READ).
+                  -- CP2a добавил эти поля только пациентскому /my-complexes/:id
+                  -- (зеркало patientAuth.js:1482-1485). Без них EditComplex
+                  -- читал undefined → молча затирал auto_complete=false и темп.
+                  'auto_complete', ce.auto_complete,
+                  'tempo_eccentric_s', ce.tempo_eccentric_s,
+                  'tempo_pause_s', ce.tempo_pause_s,
+                  'tempo_concentric_s', ce.tempo_concentric_s,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -364,6 +372,11 @@ router.get('/:id', authenticateToken, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- CP2c: instructor edit round-trip (питает EditComplex.loadComplexData).
+                  'auto_complete', ce.auto_complete,
+                  'tempo_eccentric_s', ce.tempo_eccentric_s,
+                  'tempo_pause_s', ce.tempo_pause_s,
+                  'tempo_concentric_s', ce.tempo_concentric_s,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,

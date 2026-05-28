@@ -1,0 +1,161 @@
+// =====================================================
+// TESTS: EditComplex.loadComplexData — CP2c instructor round-trip
+//
+// CP2c (TZ_..._CP2c_INSTRUCTOR_READ) закрывает тихую потерю данных:
+// CP2a расширил только /my-complexes/:id, инструкторский GET /:id
+// возвращал auto_complete/tempo_* как undefined → молча затирал при save.
+//
+// Этот тест — лёгкий smoke на mapping слой:
+// loadComplexData → setSelectedExercises → SortableExercise рендерит
+// checkbox/темп с правильными значениями (НЕ дефолтами).
+//
+// Rule #37: assertions через data-testid, не через .class.
+// =====================================================
+
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+
+// Mock react-router-dom ДО импорта EditComplex — иначе useParams/useNavigate
+// тащат недомонтированный router context.
+jest.mock('react-router-dom', () => ({
+  useParams: () => ({ id: '50' }),
+  useNavigate: () => jest.fn(),
+}));
+
+const EditComplex = require('./EditComplex').default;
+
+// Mock services/api — без реальной сети.
+jest.mock('../services/api', () => ({
+  exercises: { getAll: jest.fn(() => Promise.resolve({ data: [] })) },
+  complexes: {
+    getOne: jest.fn(),
+    update: jest.fn(),
+  },
+}));
+
+// Mock ToastContext.
+jest.mock('../context/ToastContext', () => ({
+  useToast: () => ({
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  }),
+}));
+
+// Mock тяжёлых auxiliary компонентов — они не нужны для теста mapping CP2c
+// и тянут лишние зависимости (AuthContext, и т.д.).
+jest.mock('../components/BackButton', () => () => null);
+jest.mock('../components/Breadcrumbs', () => () => null);
+jest.mock('../components/skeletons/ExerciseCardSkeleton', () => () => null);
+jest.mock('../components/Skeleton', () => ({
+  Skeleton: () => null,
+}));
+
+const { complexes } = require('../services/api');
+
+function renderEditAt() {
+  return render(<EditComplex />);
+}
+
+describe('EditComplex.loadComplexData — CP2c instructor read round-trip', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('auto_complete=false из backend → checkbox unchecked (не дефолтный true)', async () => {
+    complexes.getOne.mockResolvedValue({
+      data: {
+        id: 50,
+        patient_name: 'Вадим',
+        title: 'Time-based',
+        diagnosis_id: null,
+        recommendations: '',
+        exercises: [{
+          exercise: { id: 1, title: 'Присед' },
+          sets: 3,
+          reps: null,
+          duration_seconds: 30,
+          notes: '',
+          auto_complete: false,
+          tempo_eccentric_s: 3,
+          tempo_pause_s: 0,
+          tempo_concentric_s: 3,
+          order_number: 1,
+        }],
+      },
+    });
+
+    renderEditAt();
+
+    // Дожидаемся завершения loadComplexData и рендера строки.
+    await waitFor(() => {
+      expect(screen.getByTestId('auto-complete-1')).toBeInTheDocument();
+    });
+
+    // Главный assert: backend вернул auto_complete=false → checkbox unchecked.
+    // Без CP2c фикса этот тест fail: undefined !== false → checked=true (дефолт).
+    expect(screen.getByTestId('auto-complete-1')).not.toBeChecked();
+  });
+
+  it('темп 3-0-3 из backend → инпуты заполнены значениями БД (не пустые дефолты)', async () => {
+    complexes.getOne.mockResolvedValue({
+      data: {
+        id: 50,
+        patient_name: 'Вадим',
+        exercises: [{
+          exercise: { id: 1, title: 'Присед' },
+          sets: 3,
+          reps: 10,
+          duration_seconds: 30,
+          auto_complete: true,
+          tempo_eccentric_s: 3,
+          tempo_pause_s: 0,
+          tempo_concentric_s: 3,
+        }],
+      },
+    });
+
+    renderEditAt();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('tempo-ecc-1')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('tempo-ecc-1')).toHaveValue(3);
+    expect(screen.getByTestId('tempo-pause-1')).toHaveValue(0);
+    expect(screen.getByTestId('tempo-con-1')).toHaveValue(3);
+  });
+
+  it('legacy строка (auto_complete=true DEFAULT после миграции, темп null) → checkbox checked, темп пустой', async () => {
+    complexes.getOne.mockResolvedValue({
+      data: {
+        id: 50,
+        patient_name: 'Вадим',
+        exercises: [{
+          exercise: { id: 1, title: 'Присед' },
+          sets: 3,
+          reps: 10,
+          duration_seconds: 30,
+          // Legacy строка после миграции 20260527: DEFAULT поставил true для всех existing rows
+          auto_complete: true,
+          tempo_eccentric_s: null,
+          tempo_pause_s: null,
+          tempo_concentric_s: null,
+        }],
+      },
+    });
+
+    renderEditAt();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('auto-complete-1')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('auto-complete-1')).toBeChecked();
+    expect(screen.getByTestId('tempo-ecc-1')).toHaveValue(null);
+    expect(screen.getByTestId('tempo-pause-1')).toHaveValue(null);
+    expect(screen.getByTestId('tempo-con-1')).toHaveValue(null);
+  });
+});

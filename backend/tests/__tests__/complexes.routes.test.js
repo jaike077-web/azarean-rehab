@@ -560,3 +560,127 @@ describe('CP2a — read path: routes/patientAuth.js GET /my-complexes/:id', () =
     expect(patientAuthSrc).toMatch(/'tempo_concentric_s',\s*ce\.tempo_concentric_s/);
   });
 });
+
+// =====================================================
+// CP2c — instructor edit round-trip (TZ_..._CP2c_INSTRUCTOR_READ)
+//
+// CP2b отчёт вскрыл тихую потерю данных: EditComplex.loadComplexData
+// зовёт complexes.getOne → GET /api/complexes/:id, но CP2a расширил
+// только пациентский /my-complexes/:id. Инструктор сохранял auto_complete=
+// false / темп, перезагружал Edit → undefined → молча дефолты → save →
+// затёрто.
+//
+// CP2c закрывает: 4 поля в обоих instructor read-paths (POST after-INSERT
+// fullComplexResult + GET /:id) + round-trip тест.
+// =====================================================
+describe('CP2c — instructor edit round-trip (auto_complete + tempo)', () => {
+  // Локальный mockReset — очищает накопленную mockResolvedValueOnce-очередь
+  // из предыдущих тестов файла. clearAllMocks в глобальном beforeEach
+  // НЕ трогает queue.
+  beforeEach(() => {
+    query.mockReset();
+    // Re-setup auth (глобальный beforeEach уже добавлял, но он съеден reset'ом).
+    query.mockResolvedValueOnce({ rows: [{ is_active: true }] });
+  });
+
+  describe('GET /api/complexes/:id (EditComplex.loadComplexData)', () => {
+    it('SQL json_build_object содержит auto_complete + 3 темп-колонки', async () => {
+      query.mockResolvedValueOnce({
+        rows: [{
+          id: 50, title: 'Тест', patient_id: 14, patient_name: 'Вадим',
+          instructor_name: 'Vadim', derived_title: 'Тест',
+          exercises: [],
+        }],
+      });
+
+      await request(app)
+        .get('/api/complexes/50')
+        .set('Authorization', `Bearer ${instructorToken}`);
+
+      // Mock вызывался дважды: [0]=auth middleware is_active, [1]=сам SELECT
+      const sql = query.mock.calls[1][0];
+      expect(sql).toMatch(/'auto_complete',\s*ce\.auto_complete/);
+      expect(sql).toMatch(/'tempo_eccentric_s',\s*ce\.tempo_eccentric_s/);
+      expect(sql).toMatch(/'tempo_pause_s',\s*ce\.tempo_pause_s/);
+      expect(sql).toMatch(/'tempo_concentric_s',\s*ce\.tempo_concentric_s/);
+    });
+
+    it('round-trip: auto_complete=false + темп 3-0-3 в БД → возвращаются в response', async () => {
+      // Симулируем БД-row которая ВЕРНУЛАСЬ из INSERT — те же значения которые
+      // инструктор ставил в EditComplex.
+      query.mockResolvedValueOnce({
+        rows: [{
+          id: 50,
+          title: 'Time-based комплекс',
+          patient_id: 14,
+          patient_name: 'Вадим',
+          instructor_name: 'Vadim',
+          derived_title: 'Time-based комплекс',
+          exercises: [
+            {
+              id: 100,
+              order_number: 1,
+              sets: 3,
+              reps: null,
+              duration_seconds: 30,
+              rest_seconds: 30,
+              notes: null,
+              auto_complete: false,
+              tempo_eccentric_s: 3,
+              tempo_pause_s: 0,
+              tempo_concentric_s: 3,
+              exercise: { id: 1, title: 'Присед' },
+            },
+          ],
+        }],
+      });
+
+      const res = await request(app)
+        .get('/api/complexes/50')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .expect(200);
+
+      const ex = res.body.data.exercises[0];
+      // Это то что EditComplex.loadComplexData будет mapping'ить — должно
+      // быть достаточно для item.auto_complete !== false → checkbox unchecked
+      // и item.tempo_eccentric_s ?? '' → 3 (не пустая строка).
+      expect(ex.auto_complete).toBe(false);
+      expect(ex.tempo_eccentric_s).toBe(3);
+      expect(ex.tempo_pause_s).toBe(0);
+      expect(ex.tempo_concentric_s).toBe(3);
+      expect(ex.reps).toBeNull();
+      expect(ex.duration_seconds).toBe(30);
+    });
+  });
+
+  describe('POST /api/complexes (after-INSERT fullComplexResult)', () => {
+    it('SQL fullComplexResult json_build_object содержит auto_complete + темп', async () => {
+      // Симулируем минимально-успешный POST flow
+      const client = { query: jest.fn(), release: jest.fn() };
+      client.query.mockImplementation((sql) => {
+        if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') return Promise.resolve();
+        if (/SELECT id FROM patients/i.test(sql)) return Promise.resolve({ rows: [{ id: 14 }] });
+        if (/INSERT INTO complexes/i.test(sql)) return Promise.resolve({ rows: [{ id: 100 }] });
+        return Promise.resolve({ rows: [] });
+      });
+      getClient.mockResolvedValueOnce(client);
+      // Запоминаем SQL который пошёл в top-level `query` для fullComplexResult.
+      query.mockResolvedValueOnce({ rows: [{ id: 100, title: null }] });
+
+      await request(app)
+        .post('/api/complexes')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({
+          patient_id: 14,
+          exercises: [{ exercise_id: 1, order_number: 1, sets: 3, reps: 10 }],
+        });
+
+      // query.mock.calls — [0]: auth, [1]: fullComplexResult SELECT
+      const sql = query.mock.calls[1][0];
+      expect(sql).toMatch(/'auto_complete',\s*ce\.auto_complete/);
+      expect(sql).toMatch(/'tempo_eccentric_s',\s*ce\.tempo_eccentric_s/);
+      expect(sql).toMatch(/'tempo_pause_s',\s*ce\.tempo_pause_s/);
+      expect(sql).toMatch(/'tempo_concentric_s',\s*ce\.tempo_concentric_s/);
+    });
+  });
+});
