@@ -1,0 +1,116 @@
+/* =====================================================
+   PhaseRing — CSS только для таймерной зоны per-set гайда (CP3c.2)
+   -----------------------------------------------------
+   Архитекторская санкция: «no new CSS» снимается ТОЛЬКО на таймерную
+   зону. Используем существующие токены из ../../tokens.css
+   (--pd-accent-warm coral / --pd-primary teal / --pd-neutral-500 /
+   --pd-neutral-200 / --pd-text). Никаких новых hex.
+   ===================================================== */
+
+.pd-phase-ring {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.pd-phase-ring svg {
+  display: block;
+}
+
+.pd-phase-ring-track {
+  stroke: var(--pd-neutral-200, #E5E5E5);
+  transition: stroke 0.25s ease;
+}
+
+.pd-phase-ring-value {
+  font-family: 'Manrope', 'Nunito Sans', system-ui, sans-serif;
+  font-size: 46px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  fill: var(--pd-text, #171C2B);
+}
+
+/* Фаз-цвета progress-кольца — через data-phase селектор.
+   phaseColor() (named pure export) возвращает те же CSS-переменные
+   на JS-уровне для тестов (Rule #37 — JSDOM не ассертит inline-style). */
+.pd-phase-ring-progress {
+  transition: stroke-dashoffset 0.5s linear, stroke 0.25s ease;
+}
+
+.pd-phase-ring[data-phase="preroll"] .pd-phase-ring-progress,
+.pd-phase-ring[data-phase="work"] .pd-phase-ring-progress {
+  stroke: var(--pd-accent-warm); /* coral — активный подход */
+}
+
+.pd-phase-ring[data-phase="rest"] .pd-phase-ring-progress {
+  stroke: var(--pd-primary); /* teal — отдых */
+}
+
+.pd-phase-ring[data-phase="ready"] .pd-phase-ring-progress,
+.pd-phase-ring[data-phase="done"] .pd-phase-ring-progress {
+  stroke: var(--pd-neutral-500, #737373); /* нейтраль — ожидание */
+}
+
+/* =====================================================
+   Действия per-set гайда — кнопки рядом с кольцом
+   (заменяют ghost-белую .btn-sk внутри таймерной зоны).
+   ===================================================== */
+
+.pd-phase-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin: 4px auto 8px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.pd-phase-btn {
+  /* 4px-сетка: padding 12px вертикально, 16px горизонтально, radius 12px. */
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px; /* touch-target */
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Manrope', 'Nunito Sans', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pd-phase-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* «Начать подход» — solid coral. Высокая видимость, не ghost. */
+.pd-phase-btn--start {
+  background: var(--pd-accent-warm);
+  color: #FFFFFF;
+}
+
+.pd-phase-btn--start:hover:not(:disabled) {
+  background: #EA670C; /* one shade darker — не вводим новый токен,
+                          просто hover-ramp в той же coral-семье */
+}
+
+/* «Завершить подход» — coral-tinted outline. Видимая, но менее доминирующая
+   чем primary action. Не белая (фикс п.3 фидбэка). */
+.pd-phase-btn--finish {
+  background: transparent;
+  color: var(--pd-accent-warm);
+  border: 2px solid var(--pd-accent-warm);
+}
+
+.pd-phase-btn--finish:hover:not(:disabled) {
+  background: rgba(249, 115, 22, 0.08); /* coral 8% alpha, не новый токен */
+}
+
+/* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
+   просто помещаем в actions-flex рядом. */

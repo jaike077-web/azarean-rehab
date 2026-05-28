@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import { useAudioCue } from '../context/AudioContext';
-import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay } from './ui';
+import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
 
 const formatTime = (s) => {
   const m = Math.floor(s / 60);
@@ -416,13 +416,12 @@ const ExerciseRunner = ({
             </div>
           )}
 
-          {/* CP3a + CP3c.1: per-set гайд для timed-упражнений. Поведенческая
-              цепочка: ready → preroll → work → (rest →) ready/done. Work-фаза
-              разводит две ветки по auto_complete (countdown CP3a.1 / open-hold
-              CP3a.2). Класс-имена reuse существующего canon (.sec/.sec-t/.sw/
-              .sw-val/.sw-target/.sw-btn/.sw-go/.sw-stop/.btn/.btn-sk/.btn-dn) —
-              новых селекторов и CSS-переменных в CP3c.1 НЕ добавлено
-              (визуальный апгрейд кольца+цвета — CP3c.2). */}
+          {/* CP3a + CP3c: per-set гайд для timed-упражнений. Поведенческая
+              цепочка ready → preroll → work → (rest →) ready/done — CP3c.1.
+              Визуал: крупное PhaseRing 170px + фаз-цвета (work/preroll=coral,
+              rest=teal, ready/done=neutral) — CP3c.2. Новый CSS — только
+              таймерная зона (PhaseRing.css) под существующими токенами
+              (--pd-accent-warm, --pd-primary, --pd-neutral-500). */}
           {usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t">
@@ -430,36 +429,64 @@ const ExerciseRunner = ({
                 <span className="sw-target">цель: {ce.duration_seconds}с</span>
               </div>
               {setPhase === 'ready' && (
-                <div className="sw" data-testid="ready-state">
-                  <span className="sw-val">{formatTime(ce.duration_seconds || 0)}</span>
-                  <button type="button" className="btn btn-dn" onClick={handleStartSet} data-testid="start-set-btn">
-                    Начать подход
-                  </button>
+                <div data-testid="ready-state">
+                  <PhaseRing
+                    phase="ready"
+                    label={formatTime(ce.duration_seconds || 0)}
+                    progress={1}
+                    valueTestId="ready-target"
+                    ariaLabel={`Готов к подходу ${currentSetIndex + 1}, цель ${ce.duration_seconds || 0} секунд`}
+                  />
+                  <div className="pd-phase-actions">
+                    <button type="button" className="pd-phase-btn pd-phase-btn--start" onClick={handleStartSet} data-testid="start-set-btn">
+                      Начать подход
+                    </button>
+                  </div>
                 </div>
               )}
               {setPhase === 'preroll' && (
-                <div className="sw">
-                  <span className="sw-val" data-testid="preroll-indicator">{prerollCountdown}</span>
-                </div>
+                <PhaseRing
+                  phase="preroll"
+                  label={String(prerollCountdown)}
+                  progress={prerollCountdown / 3}
+                  valueTestId="preroll-indicator"
+                  ariaLabel={`Преролл, ${prerollCountdown}`}
+                />
               )}
               {setPhase === 'work' && isCountdownMode && (
-                <div className="sw">
-                  <span className="sw-val" data-testid="set-countdown">{formatTime(setRemaining)}</span>
-                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-btn">
-                    Завершить подход
-                  </button>
-                </div>
+                <>
+                  <PhaseRing
+                    phase="work"
+                    label={formatTime(setRemaining)}
+                    progress={(ce.duration_seconds || 0) > 0 ? setRemaining / ce.duration_seconds : 0}
+                    valueTestId="set-countdown"
+                    ariaLabel={`Подход ${currentSetIndex + 1}, осталось ${setRemaining} секунд`}
+                  />
+                  <div className="pd-phase-actions">
+                    <button type="button" className="pd-phase-btn pd-phase-btn--finish" onClick={handleFinishEarly} data-testid="finish-set-btn">
+                      Завершить подход
+                    </button>
+                  </div>
+                </>
               )}
               {setPhase === 'work' && isOpenHoldMode && (
-                <div className="sw">
-                  <span className="sw-val" data-testid="set-stopwatch">{formatTime(swElapsed)}</span>
-                  <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)} data-testid="set-stopwatch-toggle">
-                    {swRunning ? '⏸' : '▶'}
-                  </button>
-                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-btn">
-                    Завершить подход
-                  </button>
-                </div>
+                <>
+                  <PhaseRing
+                    phase="work"
+                    label={formatTime(swElapsed)}
+                    progress={1}
+                    valueTestId="set-stopwatch"
+                    ariaLabel={`Подход ${currentSetIndex + 1}, прошло ${swElapsed} секунд`}
+                  />
+                  <div className="pd-phase-actions">
+                    <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)} data-testid="set-stopwatch-toggle" aria-label={swRunning ? 'Пауза' : 'Старт'}>
+                      {swRunning ? '⏸' : '▶'}
+                    </button>
+                    <button type="button" className="pd-phase-btn pd-phase-btn--finish" onClick={handleFinishEarly} data-testid="finish-set-btn">
+                      Завершить подход
+                    </button>
+                  </div>
+                </>
               )}
               {setPhase === 'rest' && (
                 <div data-testid="auto-rest-block">
