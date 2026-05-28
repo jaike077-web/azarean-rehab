@@ -27,8 +27,14 @@
 // admin-роуты в SPA + новые frontend chunks (CommandCenter/Attention/Funnel/
 // Segments/Dynamics/Instructors + InstructorModal). Без bump'а админ получит
 // старый bundle без новой главной — урок feedback_sw_cache_bump_required.
-const CACHE_NAME = 'azarean-v8';
-const API_CACHE = 'azarean-api-v8';
+// v9 (2026-05-28) — Audio-арк LIVE: AudioProvider+ProfileScreen sound
+// settings (CP1), instructor authoring auto_complete+tempo (CP2a/b/c),
+// ExerciseRunner per-set гайд для countdown + open-hold с авто-rest
+// (CP3a.1/.2). Новые chunks: AudioContext, ExerciseRunner_CP3a, ui-cp3a
+// mocks (только dev). Без bump'а пациенты с открытой PWA продолжат
+// крутить старый count-up секундомер без countdown/звука/авто-rest.
+const CACHE_NAME = 'azarean-v9';
+const API_CACHE = 'azarean-api-v9';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
