@@ -89,14 +89,19 @@ const ExerciseRunner = ({
     return () => clearInterval(swRef.current);
   }, [swRunning]);
 
-  // --- CP3a.1: per-set countdown-гайд для timed-упражнений с auto_complete=true ---
+  // --- CP3a.1+CP3a.2: per-set гайд для timed-упражнений ---
   // Узкий unlock LOCKED-раннера. Гайд проводит по подходам внутри карточки:
-  // countdown ВНИЗ → cue('set_end') на 0 → авто-старт RestTimer → следующий подход.
+  //  - auto_complete!==false (countdown mode, CP3a.1): countdown ВНИЗ →
+  //    cue('set_end') на 0 → авто-старт RestTimer → следующий подход.
+  //  - auto_complete===false (open-hold mode, CP3a.2): открытый count-UP
+  //    секундомер → ручное «Готово» → авто-старт RestTimer → следующий подход.
+  //    Без cue('set_end') (нет авто-завершения, звук только на countdown-0).
   // Завершение всего упражнения и POST /api/progress — НЕ трогаем (canon LOCKED).
-  // Rep-only (duration_seconds==null/0) или auto_complete===false → гайд НЕ активен,
-  // прежний flow 1:1 (CP3a.2 закроет auto_complete=false с открытым секундомером).
+  // Rep-only (duration_seconds==null/0) → гайд НЕ активен, прежний flow 1:1.
   const sets = Math.max(1, parseInt(ce.sets, 10) || 1);
-  const usesCountdownGuide = hasDuration && ce.auto_complete !== false;
+  const usesPerSetGuide = hasDuration;
+  const isCountdownMode = usesPerSetGuide && ce.auto_complete !== false;
+  const isOpenHoldMode = usesPerSetGuide && ce.auto_complete === false;
   const { cue } = useAudioCue();
   const cueRef = useRef(cue);
   useEffect(() => { cueRef.current = cue; }, [cue]);
@@ -111,10 +116,11 @@ const ExerciseRunner = ({
     setSetRemaining(ce.duration_seconds || 0);
   }, [index, ce.duration_seconds]);
 
-  // Тик countdown в work-фазе. На prev<=1 → cue('set_end') + переход в rest/done.
-  // cue зовём через ref чтобы не пересоздавать interval при смене settings.
+  // Тик countdown в work-фазе (ТОЛЬКО countdown mode). На prev<=1 →
+  // cue('set_end') + переход в rest/done. cue зовём через ref чтобы
+  // не пересоздавать interval при смене settings.
   useEffect(() => {
-    if (!usesCountdownGuide) return undefined;
+    if (!isCountdownMode) return undefined;
     if (setPhase !== 'work') return undefined;
     const id = setInterval(() => {
       setSetRemaining((prev) => {
@@ -129,23 +135,29 @@ const ExerciseRunner = ({
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [usesCountdownGuide, setPhase, currentSetIndex, sets]);
+  }, [isCountdownMode, setPhase, currentSetIndex, sets]);
 
-  // Ручной «Завершить раньше» — без cue('set_end') (звук — только на countdown-0,
-  // зафиксировано для CP3a.2 ручного open-hold тоже).
+  // Ручной «Раньше» (countdown) / «Готово» (open-hold) — единая семантика
+  // «завершить этот подход вручную». Без cue('set_end') — звук только на
+  // countdown-0. В open-hold сначала стопаем секундомер (UX: визуально
+  // фиксируем elapsed на момент клика).
   const handleFinishEarly = () => {
-    if (!usesCountdownGuide) return;
+    if (!usesPerSetGuide) return;
     if (setPhase !== 'work') return;
+    if (isOpenHoldMode) setSwRunning(false);
     if (currentSetIndex < sets - 1) setSetPhase('rest');
     else setSetPhase('done');
   };
 
   // RestTimer (auto-started) → onComplete → следующий подход.
   // cue('rest_end') шлёт сам RestTimer, дублировать не нужно.
+  // Reset открытого секундомера на каждый новый подход (no-op в countdown mode).
   const handleRestComplete = useCallback(() => {
     setCurrentSetIndex((idx) => idx + 1);
     setSetPhase('work');
     setSetRemaining(ce.duration_seconds || 0);
+    setSwRunning(false);
+    setSwElapsed(0);
   }, [ce.duration_seconds]);
 
   // --- Навигация ---
@@ -356,20 +368,33 @@ const ExerciseRunner = ({
             </div>
           )}
 
-          {/* CP3a.1: per-set countdown гайд для timed-упражнений с auto_complete=true.
-              Класс-имена reuse существующего canon (.sec/.sec-t/.sw/.sw-val/.btn/.btn-sk) —
+          {/* CP3a: per-set гайд для timed-упражнений. Work-фаза разводит две
+              ветки по auto_complete: countdown (.1) или open-hold count-UP (.2).
+              Класс-имена reuse существующего canon (.sec/.sec-t/.sw/.sw-val/
+              .sw-target/.sw-btn/.sw-go/.sw-stop/.btn/.btn-sk) —
               новых селекторов и CSS-переменных НЕ добавлено. */}
-          {usesCountdownGuide && (
+          {usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t">
                 <span data-testid="set-indicator">Подход {currentSetIndex + 1} из {sets}</span>
                 <span className="sw-target">цель: {ce.duration_seconds}с</span>
               </div>
-              {setPhase === 'work' && (
+              {setPhase === 'work' && isCountdownMode && (
                 <div className="sw">
                   <span className="sw-val" data-testid="set-countdown">{formatTime(setRemaining)}</span>
                   <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="finish-set-early-btn">
                     Раньше
+                  </button>
+                </div>
+              )}
+              {setPhase === 'work' && isOpenHoldMode && (
+                <div className="sw">
+                  <span className="sw-val" data-testid="set-stopwatch">{formatTime(swElapsed)}</span>
+                  <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)} data-testid="set-stopwatch-toggle">
+                    {swRunning ? '⏸' : '▶'}
+                  </button>
+                  <button type="button" className="btn btn-sk" onClick={handleFinishEarly} data-testid="set-done-btn">
+                    Готово
                   </button>
                 </div>
               )}
@@ -387,25 +412,9 @@ const ExerciseRunner = ({
             </div>
           )}
 
-          {/* Stopwatch — открытый count-UP. Прячется когда per-set гайд активен.
-              Существующий блок (1:1) — backward-compatible для CP3a.2 (auto_complete=false). */}
-          {hasDuration && !usesCountdownGuide && (
-            <div className="sec">
-              <div className="sec-t">
-                <span>Секундомер</span>
-                <span className="sw-target">цель: {ce.duration_seconds}с</span>
-              </div>
-              <div className="sw">
-                <span className="sw-val">{formatTime(swElapsed)}</span>
-                <button type="button" className={`sw-btn ${swRunning ? 'sw-stop' : 'sw-go'}`} onClick={() => setSwRunning(!swRunning)}>
-                  {swRunning ? '⏸' : '▶'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Rest timer (ручной) — прячется когда per-set гайд активен (там свой авто-rest). */}
-          {hasRest && !usesCountdownGuide && (
+          {/* Rest timer (ручной) — для rep-only упражнений с rest_seconds.
+              Прячется когда per-set гайд активен (timed) — там свой авто-rest. */}
+          {hasRest && !usesPerSetGuide && (
             <div className="sec">
               <div className="sec-t" style={{ marginBottom: 8 }}>Таймер отдыха</div>
               <RestTimer
