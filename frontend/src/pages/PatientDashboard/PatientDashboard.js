@@ -13,6 +13,7 @@ import ProfileScreen from './components/ProfileScreen';
 import MeasurementsScreen from './components/MeasurementsScreen';
 import { TabBar, AvatarBtn } from './components/ui';
 import usePatientAvatarBlob from './hooks/usePatientAvatarBlob';
+import useUrlState from '../../hooks/useUrlState';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -23,6 +24,20 @@ const NAV = [
   { id: 5, Icon: Ruler, label: 'Замеры' },
   { id: 3, Icon: MessageCircle, label: 'Связь' },
 ];
+
+// Индекс = номер экрана (см. switch в renderScreen). Слаг — человекочитаемый
+// сегмент URL (?screen=diary), чтобы F5 / «назад-вперёд» / ссылки работали.
+// Порядок строго по case'ам switch'а, НЕ по визуальному порядку NAV.
+const SCREENS = ['home', 'roadmap', 'diary', 'contact', 'exercises', 'measurements'];
+
+// Опции useUrlState вынесены на модульный уровень — стабильная ссылка, чтобы
+// setScreen не пересоздавался каждый рендер. В state экран — целое 0..5,
+// parse маппит слаг→индекс, serialize индекс→слаг.
+const SCREEN_URL_OPTS = {
+  valid: [0, 1, 2, 3, 4, 5],
+  parse: (slug) => { const i = SCREENS.indexOf(slug); return i === -1 ? 0 : i; },
+  serialize: (n) => SCREENS[n] ?? 'home',
+};
 
 const StreakBadge = ({ days, best, atRisk }) => {
   let statusText = '';
@@ -48,7 +63,9 @@ const StreakBadge = ({ days, best, atRisk }) => {
 export { StreakBadge };
 
 export default function PatientDashboard() {
-  const [screen, setScreen] = useState(0);
+  // Экран хранится в URL (?screen=diary) — F5 не сбрасывает, работают
+  // «назад/вперёд». В state это по-прежнему целое 0..5 (switch не трогаем).
+  const [screen, setScreen] = useUrlState('screen', 0, SCREEN_URL_OPTS);
   const [screenParams, setScreenParams] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);

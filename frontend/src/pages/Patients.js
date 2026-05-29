@@ -363,7 +363,7 @@ function Patients() {
     {
       icon: <LayoutDashboard size={16} />,
       label: 'Главная',
-      path: '/dashboard?home=1',
+      path: '/dashboard?tab=home',
     },
     {
       icon: <Users size={16} />,
@@ -373,7 +373,7 @@ function Patients() {
 />
 
 <div className={s.backButtonWrapper}>
-  <BackButton to="/dashboard?home=1" label="На главную" />
+  <BackButton to="/dashboard?tab=home" label="На главную" />
 </div>
 
 
