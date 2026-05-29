@@ -80,8 +80,10 @@
   align-items: stretch;
   gap: 12px;
   /* DA2: full-width в .sec (parent сам имеет padding); снят max-width:280
-     и horizontal auto margin. Кнопки растягиваются на ширину таймер-зоны. */
-  margin: 24px 0 16px;
+     и horizontal auto margin. Кнопки растягиваются на ширину таймер-зоны.
+     DA2.x (2026-05-29): margin-top 24→32 — унификация gap во всех фазах
+     (ready/work выровнены с rest, который имел 32 через DA1 override). */
+  margin: 32px 0 16px;
   width: 100%;
 }
 
@@ -162,14 +164,10 @@
   background: #0B7E72; /* one shade darker, в той же teal-семье — не новый токен */
 }
 
-/* DA1: внутри rest-блока actions получают больше воздуха сверху —
-   RestTimer-контролы (Reset/Pause круги) после DA1 subdued, но всё
-   равно отдельный «остров»; skip-кнопка не должна прилипать к ним.
-   Целим селектор по data-testid auto-rest-block, чтобы не задеть
-   spacing actions в ready/work-фазах (там 24px — норм для PhaseRing). */
-[data-testid="auto-rest-block"] .pd-phase-actions {
-  margin-top: 32px;
-}
+/* DA2.x: override для auto-rest-block снят — база .pd-phase-actions
+   теперь сама даёт margin-top: 32px во всех фазах. DA1-история сохранена
+   в комментарии выше для paper trail (специальный селектор был нужен
+   когда ready/work имели 24px, rest — 32px). */
 
 /* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
    просто помещаем в actions-flex рядом. */
