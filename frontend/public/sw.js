@@ -101,8 +101,15 @@
 // сбрасывает, работают «назад/вперёд», экран шарится ссылкой). Новый
 // hooks/useUrlState.js + правки PatientDashboard/Dashboard/Patients →
 // новый JS-бандл, нужен bump для инвалидации старого кэша у PWA-юзеров.
-const CACHE_NAME = 'azarean-v19';
-const API_CACHE = 'azarean-api-v19';
+// v20 (2026-05-29 vol.9) — WARN pre-end бипы: cue('count_tick') когда
+// отсчёт достигает 10 и 5 секунд в work-countdown (auto_complete=true) и
+// в rest-таймере (авто per-set + ручной preset). Count-up (open-hold) и
+// фазы ≤5с молчат. set_end/rest_end на 0 — без изменений. Правки
+// ExerciseRunner.js + ui/RestTimer.js (новый JS-бандл) — нужен bump,
+// иначе PWA-юзеры не получат предупреждающие бипы. (Архитектор писал TZ
+// на базе SW v18; v19 уже занят URL-роутингом PR #71 → этот bump v19→v20.)
+const CACHE_NAME = 'azarean-v20';
+const API_CACHE = 'azarean-api-v20';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

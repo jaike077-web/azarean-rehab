@@ -217,8 +217,10 @@ describe('CP3a.1 — countdown ветка (через ready-гейт)', () => {
     expect(screen.queryByTestId('rest-timer')).not.toBeInTheDocument();
     expect(screen.queryByTestId('set-countdown')).not.toBeInTheDocument();
 
-    // Дополнительно: преролл-cue\'ы скопились
-    expect(countCueCalls('count_tick')).toBe(9); // 3 подхода × 3 tick
+    // Дополнительно: преролл-cue\'ы + WARN-бипы скопились.
+    // На каждый 30с-подход: 3 преролл-tick + 2 WARN-tick (отсчёт достигает
+    // 10 и 5) = 5. 3 подхода × 5 = 15. (WARN добавлен 2026-05-29.)
+    expect(countCueCalls('count_tick')).toBe(15);
     expect(countCueCalls('set_start')).toBe(3);
   });
 

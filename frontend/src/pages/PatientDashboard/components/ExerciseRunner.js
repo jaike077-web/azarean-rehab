@@ -166,6 +166,14 @@ const ExerciseRunner = ({
   // Тик countdown в work-фазе (ТОЛЬКО countdown mode). На prev<=1 →
   // cue('set_end') + переход в rest/done. cue зовём через ref чтобы
   // не пересоздавать interval при смене settings.
+  //
+  // WARN (2026-05-29): pre-end предупреждение cue('count_tick'), когда отсчёт
+  // ДОСТИГАЕТ 10 и 5 секунд (next === 10 / next === 5 — тот же принцип, что
+  // set_end ассоциирован с «0», который он производит). Монотонный отсчёт
+  // пересекает каждое значение ровно один раз → guard не нужен. Уважает
+  // mute/volume (gate внутри cue). Фаза ≤10с не даёт 10-бип, ≤5с — ни одного
+  // (стартовое значение не проходит через updater). Count-up (open-hold) сюда
+  // не заходит — isCountdownMode=false. set_end на 0 — без изменений.
   useEffect(() => {
     if (!isCountdownMode) return undefined;
     if (setPhase !== 'work') return undefined;
@@ -178,7 +186,9 @@ const ExerciseRunner = ({
           else setSetPhase('done');
           return 0;
         }
-        return prev - 1;
+        const next = prev - 1;
+        if (cueRef.current && (next === 10 || next === 5)) cueRef.current('count_tick');
+        return next;
       });
     }, 1000);
     return () => clearInterval(id);

@@ -136,3 +136,70 @@ describe('RestTimer — DA2 presets prop + ring size', () => {
     expect(svg.getAttribute('height')).toBe('170');
   });
 });
+
+// =====================================================
+// WARN — pre-end count_tick (2026-05-29)
+//
+// cue('count_tick') когда отдых ДОСТИГАЕТ 10 и 5 секунд. count_tick = 600 Hz
+// (1 осциллятор), rest_end = 880 Hz (1 осциллятор). Проверяем последовательность
+// частот в порядке создания осцилляторов: [тик10, тик5, rest_end] = [600,600,880].
+// Один общий AudioContext (lazy, кэшируется в ctxRef) → все осцилляторы на
+// lastMockCtx.createOscillator. Покрывает авто per-set rest и ручной preset
+// (один и тот же компонент/эффект).
+// =====================================================
+describe('RestTimer — WARN pre-end count_tick', () => {
+  const oscFreqs = () =>
+    lastMockCtx.createOscillator.mock.results.map((r) => r.value.frequency.value);
+
+  it('rest 12с: тик 10 + тик 5 + rest_end → осцилляторы [600, 600, 880]', () => {
+    const { getByLabelText } = renderTimer({ defaultSeconds: 12 });
+    fireEvent.click(getByLabelText('Старт'));
+    act(() => {
+      jest.advanceTimersByTime(12500);
+    });
+    expect(oscFreqs()).toEqual([600, 600, 880]);
+  });
+
+  it('rest 7с: только тик 5 + rest_end → [600, 880] (10-бип НЕ звучит)', () => {
+    const { getByLabelText } = renderTimer({ defaultSeconds: 7 });
+    fireEvent.click(getByLabelText('Старт'));
+    act(() => {
+      jest.advanceTimersByTime(7500);
+    });
+    expect(oscFreqs()).toEqual([600, 880]);
+  });
+
+  it('rest 4с: 0 warning-бипов, только rest_end → [880]', () => {
+    const { getByLabelText } = renderTimer({ defaultSeconds: 4 });
+    fireEvent.click(getByLabelText('Старт'));
+    act(() => {
+      jest.advanceTimersByTime(4500);
+    });
+    expect(oscFreqs()).toEqual([880]);
+  });
+
+  it('autoStart per-set rest 12с: тик 10 + тик 5 + rest_end (без ручного Старт)', () => {
+    render(
+      <AudioProvider>
+        <RestTimer autoStart defaultSeconds={12} onComplete={jest.fn()} />
+      </AudioProvider>,
+    );
+    act(() => {
+      jest.advanceTimersByTime(12500);
+    });
+    expect(oscFreqs()).toEqual([600, 600, 880]);
+  });
+
+  it('звук выключен: WARN-бипы не звучат (AudioContext не создаётся вообще)', () => {
+    localStorage.setItem(
+      'azarean_audio',
+      JSON.stringify({ enabled: false, volume: 0.6 }),
+    );
+    const { getByLabelText } = renderTimer({ defaultSeconds: 12 });
+    fireEvent.click(getByLabelText('Старт'));
+    act(() => {
+      jest.advanceTimersByTime(12500);
+    });
+    expect(mockCtxCtor).toHaveBeenCalledTimes(0);
+  });
+});
