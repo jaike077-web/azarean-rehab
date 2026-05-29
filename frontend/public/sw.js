@@ -76,8 +76,13 @@
 //   * Унификация колец: RestTimer 200→170 (= PhaseRing для консистентности фаз)
 // JSX: новый testid phase-label / phase-context-label (заменили set-indicator),
 // логика advance/submit/POST не тронуты.
-const CACHE_NAME = 'azarean-v15';
-const API_CACHE = 'azarean-api-v15';
+// v16 (2026-05-29 vol.5) — DA2.x узкий spacing fix: gap кольцо↔кнопка
+// унифицирован 24→32 во всех фазах (.pd-phase-actions margin-top).
+// DA1 override на [data-testid="auto-rest-block"] снят — стал дублем
+// базы. Без bump'а пациенты продолжат видеть «прилипшую» кнопку из v15
+// в ready/work фазах (rest уже имел 32 через DA1 override).
+const CACHE_NAME = 'azarean-v16';
+const API_CACHE = 'azarean-api-v16';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
