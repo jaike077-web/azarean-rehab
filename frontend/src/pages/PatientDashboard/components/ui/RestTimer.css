@@ -63,23 +63,34 @@
   transform: scale(0.9);
 }
 
+/* DA1: RestTimer контролы (Reset/Play/Pause) — subdued teal-tint круги.
+   До DA1 main был solid teal с shadow, pause — warning yellow с shadow.
+   После DA1 они визуально де-акцентированы (это всего лишь модификаторы
+   отдыхающего таймера), уступая место solid-skip-кнопке как forward-action.
+   Цвета (E1F5EE bg / 9FE1CB border / 0F6E56 icon) — точечный набор для
+   DA1, в tokens.css не переносим (узкий пасс, не системное расширение
+   палитры). Мельче: reset 44→40, main 56→44. */
 .pd-rest-timer-ctrl--reset {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--pd-neutral-100, #F5F5F5);
-  color: var(--pd-neutral-600, #525252);
+  background: #E1F5EE;
+  border: 1px solid #9FE1CB;
+  color: #0F6E56;
 }
 
 .pd-rest-timer-ctrl--main {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: var(--pd-primary, #0D9488);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  background: #E1F5EE;
+  border: 1px solid #9FE1CB;
+  color: #0F6E56;
+  /* box-shadow убран — де-акцент */
 }
 .pd-rest-timer-ctrl--pause {
-  background: var(--pd-warning, #F59E0B);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  /* DA1: pause тоже subdued teal-tint (был warning yellow + shadow) */
+  background: #E1F5EE;
+  border-color: #9FE1CB;
+  color: #0F6E56;
 }
