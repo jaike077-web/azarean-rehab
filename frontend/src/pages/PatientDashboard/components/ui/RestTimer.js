@@ -17,6 +17,7 @@ export default function RestTimer({
   presets = DEFAULT_PRESETS,
   onComplete,
   autoStart = false,
+  hidePresets = false,
 }) {
   const [total, setTotal] = useState(defaultSeconds);
   const [remaining, setRemaining] = useState(defaultSeconds);
@@ -26,8 +27,9 @@ export default function RestTimer({
   const intervalRef = useRef(null);
   const { cue } = useAudioCue();
 
-  // SVG circle params
-  const size = 200;
+  // DA2: SVG ring 200→170 — консистентность с PhaseRing (тот же размер на всех
+  // фазах). Цифра 48px остаётся, вмещается в 170.
+  const size = 170;
   const strokeWidth = 8;
   const center = size / 2;
   const radius = center - strokeWidth / 2;
@@ -80,19 +82,23 @@ export default function RestTimer({
 
   return (
     <div className="pd-rest-timer">
-      {/* Presets */}
-      <div className="pd-rest-timer-presets">
-        {presets.map(sec => (
-          <button
-            key={sec}
-            type="button"
-            className={`pd-rest-timer-preset ${total === sec ? 'pd-rest-timer-preset--active' : ''}`}
-            onClick={() => handlePreset(sec)}
-          >
-            {sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec}с`}
-          </button>
-        ))}
-      </div>
+      {/* DA2: presets скрыты в auto-rest (per-set фиксированный rest_seconds —
+          presets избыточны). Остаются для ручного rep-only режима. Код
+          presets НЕ удалён, только скрыт через prop — easy revert. */}
+      {!hidePresets && (
+        <div className="pd-rest-timer-presets">
+          {presets.map(sec => (
+            <button
+              key={sec}
+              type="button"
+              className={`pd-rest-timer-preset ${total === sec ? 'pd-rest-timer-preset--active' : ''}`}
+              onClick={() => handlePreset(sec)}
+            >
+              {sec >= 60 ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : `${sec}с`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Circular timer */}
       <div className="pd-rest-timer-ring">
@@ -164,4 +170,5 @@ RestTimer.propTypes = {
   presets: PropTypes.arrayOf(PropTypes.number),
   onComplete: PropTypes.func,
   autoStart: PropTypes.bool,
+  hidePresets: PropTypes.bool,
 };

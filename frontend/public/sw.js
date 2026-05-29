@@ -67,8 +67,17 @@
 //   * PhaseRing цифра — tabular-nums (анти-джиттер при счёте)
 // CSS-only (PhaseRing.css + RestTimer.css), ExerciseRunner.js не тронут.
 // Без bump'а PWA продолжат видеть pre-DA1 палитру и outline-skip из v13.
-const CACHE_NAME = 'azarean-v14';
-const API_CACHE = 'azarean-api-v14';
+// v15 (2026-05-29 vol.4) — DA2 добивка таймер-зоны под language-эталон:
+//   * Контекстная шапка (phase-label testid): ready→«цель M:SS»,
+//     countdown→«осталось», open-hold→«удержание», rest→«ОТДЫХ» + «до подхода N+1»
+//   * Presets 30s/1:00/1:30/2:00 в auto-rest скрыты (hidePresets prop),
+//     остаются только в рep-only ручном режиме
+//   * Кнопки full-width: снят max-width:280 в .pd-phase-actions
+//   * Унификация колец: RestTimer 200→170 (= PhaseRing для консистентности фаз)
+// JSX: новый testid phase-label / phase-context-label (заменили set-indicator),
+// логика advance/submit/POST не тронуты.
+const CACHE_NAME = 'azarean-v15';
+const API_CACHE = 'azarean-api-v15';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

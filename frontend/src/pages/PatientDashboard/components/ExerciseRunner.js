@@ -422,11 +422,29 @@ const ExerciseRunner = ({
               rest=teal, ready/done=neutral) — CP3c.2. Новый CSS — только
               таймерная зона (PhaseRing.css) под существующими токенами
               (--pd-accent-warm, --pd-primary, --pd-neutral-500). */}
-          {usesPerSetGuide && (
+          {usesPerSetGuide && (() => {
+            // DA2: контекстная шапка. Top = «ПОДХОД N ИЗ M» (work/ready/preroll/done)
+            // или «ОТДЫХ» (rest). Right context — фаз-зависимый:
+            //   ready/preroll/done → «цель M:SS» (formatTime, не «155с»)
+            //   countdown work     → «осталось»
+            //   open-hold work     → «удержание»
+            //   rest               → «до подхода N+1»
+            // CSS .pd-runner .sec-t уже text-transform: uppercase — case в JSX
+            // natural, отображение CAPS через CSS. testid phase-label заменил CP3a/d set-indicator.
+            const topLabel = setPhase === 'rest'
+              ? 'Отдых'
+              : `Подход ${currentSetIndex + 1} из ${sets}`;
+            const contextLabel = (() => {
+              if (setPhase === 'rest') return `до подхода ${currentSetIndex + 2}`;
+              if (setPhase === 'work' && isCountdownMode) return 'осталось';
+              if (setPhase === 'work' && isOpenHoldMode) return 'удержание';
+              return `цель ${formatTime(ce.duration_seconds || 0)}`;
+            })();
+            return (
             <div className="sec">
               <div className="sec-t">
-                <span data-testid="set-indicator">Подход {currentSetIndex + 1} из {sets}</span>
-                <span className="sw-target">цель: {ce.duration_seconds}с</span>
+                <span data-testid="phase-label">{topLabel}</span>
+                <span className="sw-target" data-testid="phase-context-label">{contextLabel}</span>
               </div>
               {setPhase === 'ready' && (
                 <div data-testid="ready-state">
@@ -493,6 +511,7 @@ const ExerciseRunner = ({
                   <RestTimer
                     key={`set-rest-${currentSetIndex}`}
                     autoStart
+                    hidePresets
                     defaultSeconds={ce.rest_seconds || 60}
                     presets={[30, 60, 90, 120]}
                     onComplete={handleRestComplete}
@@ -512,7 +531,8 @@ const ExerciseRunner = ({
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Rest timer (ручной) — для rep-only упражнений с rest_seconds.
               Прячется когда per-set гайд активен (timed) — там свой авто-rest. */}
