@@ -114,30 +114,40 @@
   box-shadow: 0 2px 6px rgba(249, 115, 22, 0.28);
 }
 
+/* CP3e: outline-семья (finish + skip-rest) — shared селектор делит ВСЮ
+   геометрию через .pd-phase-btn base + общий outline-treatment здесь.
+   Различие модификаторов сведено к цвету (color + border-color + hover bg).
+   До CP3e skip-rest дублировал свойства как отдельный модификатор —
+   архитектор увидел «bolted-on» вид на iPhone, попросил явную семью. */
+.pd-phase-btn--finish,
+.pd-phase-btn--skip-rest {
+  background: transparent;
+  border-width: 2px;
+  border-style: solid;
+}
+
 /* «Завершить подход» — coral-tinted outline. Видимая, но менее доминирующая
    чем primary action. Не белая (фикс п.3 фидбэка). */
 .pd-phase-btn--finish {
-  background: transparent;
   color: var(--pd-accent-warm);
-  border: 2px solid var(--pd-accent-warm);
+  border-color: var(--pd-accent-warm);
 }
 
 .pd-phase-btn--finish:hover:not(:disabled) {
   background: rgba(249, 115, 22, 0.08); /* coral 8% alpha, не новый токен */
 }
 
-/* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
-   просто помещаем в actions-flex рядом. */
-
 /* CP3d: «Пропустить отдых» — teal-tinted outline в тон rest-кольца
-   (--pd-primary). Видимая, но менее доминирующая чем primary action.
-   Минимальный стиль, без полировки — дизайн-проход отложен. */
+   (--pd-primary). Сестра «Завершить подход» — 1:1 геометрия через
+   общий outline-блок выше, отличается только цветом. */
 .pd-phase-btn--skip-rest {
-  background: transparent;
   color: var(--pd-primary);
-  border: 2px solid var(--pd-primary);
+  border-color: var(--pd-primary);
 }
 
 .pd-phase-btn--skip-rest:hover:not(:disabled) {
   background: rgba(13, 148, 136, 0.08); /* teal 8% alpha, не новый токен */
 }
+
+/* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
+   просто помещаем в actions-flex рядом. */
