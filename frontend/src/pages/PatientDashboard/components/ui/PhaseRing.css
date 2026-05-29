@@ -81,9 +81,12 @@
   gap: 12px;
   /* DA2: full-width в .sec (parent сам имеет padding); снят max-width:280
      и horizontal auto margin. Кнопки растягиваются на ширину таймер-зоны.
-     DA2.x (2026-05-29): margin-top 24→32 — унификация gap во всех фазах
-     (ready/work выровнены с rest, который имел 32 через DA1 override). */
-  margin: 32px 0 16px;
+     DA2.x (2026-05-29): margin-top 24→32 — унификация gap во всех фазах.
+     DA2.y (2026-05-29 v2): 32→48 — на iPhone gap 32 + collapse с PhaseRing
+     margin-bottom 8 = 32 visible, юзер видит «прилипшую». 48 даёт явный
+     визуальный воздух кольцо↔кнопка вне зависимости от margin-collapse
+     с .pd-phase-ring margin-bottom. */
+  margin: 48px 0 16px;
   width: 100%;
 }
 

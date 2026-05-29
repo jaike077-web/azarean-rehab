@@ -81,8 +81,11 @@
 // DA1 override на [data-testid="auto-rest-block"] снят — стал дублем
 // базы. Без bump'а пациенты продолжат видеть «прилипшую» кнопку из v15
 // в ready/work фазах (rest уже имел 32 через DA1 override).
-const CACHE_NAME = 'azarean-v16';
-const API_CACHE = 'azarean-api-v16';
+// v17 (2026-05-29 vol.6) — DA2.y: gap 32 → 48 после смоука v16. На iPhone
+// 32 + margin-collapse с .pd-phase-ring margin-bottom 8 → visible 32px
+// юзер всё ещё видел «прилипшую». 48 даёт однозначный визуальный воздух.
+const CACHE_NAME = 'azarean-v17';
+const API_CACHE = 'azarean-api-v17';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
