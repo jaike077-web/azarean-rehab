@@ -5,20 +5,31 @@
    зону. Используем существующие токены из ../../tokens.css
    (--pd-accent-warm coral / --pd-primary teal / --pd-neutral-500 /
    --pd-neutral-200 / --pd-text). Никаких новых hex.
+
+   DA2.z (2026-05-29): ВСЕ селекторы префиксаны .pd-runner для bump
+   specificity (0,1,0)→(0,2,0). PatientDashboard.css:2278 содержит
+   universal reset из LOCKED ExerciseRunner v4 iOS-эталона:
+     .pd-runner * { margin: 0; padding: 0; box-sizing: border-box; }
+   с той же specificity (0,1,0). Reset загружается позже в каскаде →
+   побеждает по cascade order, обнуляет margin/padding всех .pd-phase-*.
+   Workflow root cause investigation: w1dibjuew (high confidence).
+   Префикс .pd-runner перебивает reset и для margin/padding-правил,
+   и (как страховка) для всех остальных правил этого файла —
+   консистентный scope, защита от future reset-расширений.
    ===================================================== */
 
-.pd-phase-ring {
+.pd-runner .pd-phase-ring {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 20px 0 8px;
 }
 
-.pd-phase-ring svg {
+.pd-runner .pd-phase-ring svg {
   display: block;
 }
 
-.pd-phase-ring-track {
+.pd-runner .pd-phase-ring-track {
   stroke: var(--pd-neutral-200, #E5E5E5);
   transition: stroke 0.25s ease, opacity 0.25s ease;
 }
@@ -27,12 +38,12 @@
    coral-семьи», но без активной дуги), opacity 0.20 для де-акцента.
    Прогресс-дуга для ready скрыта ниже — кольцо рендерится «пустым»
    ожидающим контуром. */
-.pd-phase-ring[data-phase="ready"] .pd-phase-ring-track {
+.pd-runner .pd-phase-ring[data-phase="ready"] .pd-phase-ring-track {
   stroke: var(--pd-accent-warm);
   opacity: 0.20;
 }
 
-.pd-phase-ring-value {
+.pd-runner .pd-phase-ring-value {
   font-family: 'Manrope', 'Nunito Sans', system-ui, sans-serif;
   font-size: 46px;
   font-weight: 700;
@@ -45,27 +56,27 @@
 /* Фаз-цвета progress-кольца — через data-phase селектор.
    phaseColor() (named pure export) возвращает те же CSS-переменные
    на JS-уровне для тестов (Rule #37 — JSDOM не ассертит inline-style). */
-.pd-phase-ring-progress {
+.pd-runner .pd-phase-ring-progress {
   transition: stroke-dashoffset 0.5s linear, stroke 0.25s ease;
 }
 
-.pd-phase-ring[data-phase="preroll"] .pd-phase-ring-progress,
-.pd-phase-ring[data-phase="work"] .pd-phase-ring-progress {
+.pd-runner .pd-phase-ring[data-phase="preroll"] .pd-phase-ring-progress,
+.pd-runner .pd-phase-ring[data-phase="work"] .pd-phase-ring-progress {
   stroke: var(--pd-accent-warm); /* coral — активный подход */
 }
 
-.pd-phase-ring[data-phase="rest"] .pd-phase-ring-progress {
+.pd-runner .pd-phase-ring[data-phase="rest"] .pd-phase-ring-progress {
   stroke: var(--pd-primary); /* teal — отдых */
 }
 
-.pd-phase-ring[data-phase="done"] .pd-phase-ring-progress {
+.pd-runner .pd-phase-ring[data-phase="done"] .pd-phase-ring-progress {
   stroke: var(--pd-neutral-500, #737373); /* нейтраль — ожидание */
 }
 
 /* DA1: ready — БЕЗ progress-дуги. Только coral track (см. .pd-phase-ring-track
    override выше). Progress-circle полностью скрыт, чтобы не было видимой
    «серой полоски» поверх coral-tinted track'а. */
-.pd-phase-ring[data-phase="ready"] .pd-phase-ring-progress {
+.pd-runner .pd-phase-ring[data-phase="ready"] .pd-phase-ring-progress {
   display: none;
 }
 
@@ -74,7 +85,7 @@
    (заменяют ghost-белую .btn-sk внутри таймерной зоны).
    ===================================================== */
 
-.pd-phase-actions {
+.pd-runner .pd-phase-actions {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -84,13 +95,16 @@
      DA2.x (2026-05-29): margin-top 24→32 — унификация gap во всех фазах.
      DA2.y (2026-05-29 v2): 32→48 — на iPhone gap 32 + collapse с PhaseRing
      margin-bottom 8 = 32 visible, юзер видит «прилипшую». 48 даёт явный
-     визуальный воздух кольцо↔кнопка вне зависимости от margin-collapse
-     с .pd-phase-ring margin-bottom. */
+     визуальный воздух кольцо↔кнопка вне зависимости от margin-collapse.
+     DA2.z (2026-05-29 v3): префикс .pd-runner — bump specificity для
+     перебивки universal reset из PatientDashboard.css:2278. До DA2.z
+     ВСЕ margin'ы 24/32/48 на .pd-phase-actions без префикса зануливались
+     reset'ом, поэтому смоук ничего не показывал. */
   margin: 48px 0 16px;
   width: 100%;
 }
 
-.pd-phase-btn {
+.pd-runner .pd-phase-btn {
   /* 4px-сетка: padding 16px вертикально, 24px горизонтально, radius 16px.
      Полировка после CP3c smoke 2026-05-28 — кнопка была мелкая, плоская
      и слишком вытянутая (max-width 320px + min-height 48px). */
@@ -109,17 +123,17 @@
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
-.pd-phase-btn:active:not(:disabled) {
+.pd-runner .pd-phase-btn:active:not(:disabled) {
   transform: scale(0.97);
 }
 
-.pd-phase-btn:disabled {
+.pd-runner .pd-phase-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* «Начать подход» — solid coral. Высокая видимость, не ghost. */
-.pd-phase-btn--start {
+.pd-runner .pd-phase-btn--start {
   background: var(--pd-accent-warm);
   color: #FFFFFF;
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.32); /* coral-tinted lift —
@@ -127,13 +141,13 @@
                                                      не плоская */
 }
 
-.pd-phase-btn--start:hover:not(:disabled) {
+.pd-runner .pd-phase-btn--start:hover:not(:disabled) {
   background: #EA670C; /* one shade darker — не вводим новый токен,
                           просто hover-ramp в той же coral-семье */
   box-shadow: 0 6px 16px rgba(249, 115, 22, 0.42);
 }
 
-.pd-phase-btn--start:active:not(:disabled) {
+.pd-runner .pd-phase-btn--start:active:not(:disabled) {
   box-shadow: 0 2px 6px rgba(249, 115, 22, 0.28);
 }
 
@@ -141,13 +155,13 @@
    не доминирующая: «закончи если готов, но не торопись»). После DA1
    единственная outline-кнопка в семье — finish/skip расщеплены обратно:
    skip теперь solid teal как forward-action (см. ниже). */
-.pd-phase-btn--finish {
+.pd-runner .pd-phase-btn--finish {
   background: transparent;
   color: var(--pd-accent-warm);
   border: 2px solid var(--pd-accent-warm);
 }
 
-.pd-phase-btn--finish:hover:not(:disabled) {
+.pd-runner .pd-phase-btn--finish:hover:not(:disabled) {
   background: rgba(249, 115, 22, 0.08); /* coral 8% alpha, не новый токен */
 }
 
@@ -156,14 +170,14 @@
    вперёд), finish = «я закончу раньше» (клинически тихая). До DA1 обе
    были outline; после прод-смоука стало ясно что rest-иерархия теряла
    forward-сигнал среди subdued RestTimer-контролов. */
-.pd-phase-btn--skip-rest {
+.pd-runner .pd-phase-btn--skip-rest {
   background: var(--pd-primary);
   color: #FFFFFF;
   /* border нет — base .pd-phase-btn { border: none } наследуется,
      CP3e unified-блок снят. */
 }
 
-.pd-phase-btn--skip-rest:hover:not(:disabled) {
+.pd-runner .pd-phase-btn--skip-rest:hover:not(:disabled) {
   background: #0B7E72; /* one shade darker, в той же teal-семье — не новый токен */
 }
 

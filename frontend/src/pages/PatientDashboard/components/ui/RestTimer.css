@@ -1,4 +1,17 @@
-.pd-rest-timer {
+/* =====================================================
+   RestTimer — таймер отдыха (per-set авто + рep-only ручной)
+
+   DA2.z (2026-05-29): все селекторы префиксаны .pd-runner для bump
+   specificity (0,1,0)→(0,2,0). PatientDashboard.css:2278 содержит
+   universal reset из LOCKED ExerciseRunner v4 iOS-эталона:
+     .pd-runner * { margin: 0; padding: 0; box-sizing: border-box; }
+   с той же specificity. Reset зануляет padding (16px) у .pd-rest-timer,
+   у presets (0 16px) и т.д. Префикс .pd-runner перебивает — все
+   правила этого файла теперь corretly применяются.
+   Workflow root cause: w1dibjuew (high confidence).
+   ===================================================== */
+
+.pd-runner .pd-rest-timer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -7,14 +20,14 @@
 }
 
 /* Presets */
-.pd-rest-timer-presets {
+.pd-runner .pd-rest-timer-presets {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.pd-rest-timer-preset {
+.pd-runner .pd-rest-timer-preset {
   height: 36px;
   padding: 0 16px;
   border-radius: 9999px;
@@ -28,29 +41,29 @@
   transition: all 150ms ease-out;
   -webkit-tap-highlight-color: transparent;
 }
-.pd-rest-timer-preset--active {
+.pd-runner .pd-rest-timer-preset--active {
   background: var(--pd-primary, #0D9488);
   border-color: var(--pd-primary, #0D9488);
   color: #fff;
   font-weight: 600;
 }
-.pd-rest-timer-preset:active {
+.pd-runner .pd-rest-timer-preset:active {
   transform: scale(0.95);
 }
 
 /* Ring */
-.pd-rest-timer-ring {
+.pd-runner .pd-rest-timer-ring {
   position: relative;
 }
 
 /* Controls */
-.pd-rest-timer-controls {
+.pd-runner .pd-rest-timer-controls {
   display: flex;
   gap: 16px;
   align-items: center;
 }
 
-.pd-rest-timer-ctrl {
+.pd-runner .pd-rest-timer-ctrl {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,7 +72,7 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform 150ms ease-out;
 }
-.pd-rest-timer-ctrl:active {
+.pd-runner .pd-rest-timer-ctrl:active {
   transform: scale(0.9);
 }
 
@@ -70,7 +83,7 @@
    Цвета (E1F5EE bg / 9FE1CB border / 0F6E56 icon) — точечный набор для
    DA1, в tokens.css не переносим (узкий пасс, не системное расширение
    палитры). Мельче: reset 44→40, main 56→44. */
-.pd-rest-timer-ctrl--reset {
+.pd-runner .pd-rest-timer-ctrl--reset {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -79,7 +92,7 @@
   color: #0F6E56;
 }
 
-.pd-rest-timer-ctrl--main {
+.pd-runner .pd-rest-timer-ctrl--main {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -88,7 +101,7 @@
   color: #0F6E56;
   /* box-shadow убран — де-акцент */
 }
-.pd-rest-timer-ctrl--pause {
+.pd-runner .pd-rest-timer-ctrl--pause {
   /* DA1: pause тоже subdued teal-tint (был warning yellow + shadow) */
   background: #E1F5EE;
   border-color: #9FE1CB;

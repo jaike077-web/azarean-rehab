@@ -84,8 +84,20 @@
 // v17 (2026-05-29 vol.6) — DA2.y: gap 32 → 48 после смоука v16. На iPhone
 // 32 + margin-collapse с .pd-phase-ring margin-bottom 8 → visible 32px
 // юзер всё ещё видел «прилипшую». 48 даёт однозначный визуальный воздух.
-const CACHE_NAME = 'azarean-v17';
-const API_CACHE = 'azarean-api-v17';
+// v18 (2026-05-29 vol.7) — DA2.z: ROOT CAUSE найден через multi-agent
+// workflow w1dibjuew. PatientDashboard.css:2278 содержит universal reset
+// `.pd-runner * { margin: 0; padding: 0; box-sizing: border-box }` из
+// LOCKED ExerciseRunner v4 iOS-эталона. Specificity (0,1,0) равна
+// .pd-phase-actions, но reset загружается ПОЗЖЕ в каскаде → побеждает.
+// Все margin'ы (24/32/48) на .pd-phase-actions без префикса зануливались.
+// Fix: префикс .pd-runner на ВСЕ селекторы в PhaseRing.css и RestTimer.css
+// → bump specificity (0,1,0)→(0,2,0). Перебивает reset во всех правилах.
+// Тем самым воздух кольцо↔кнопка, paddings RestTimer'а и presets, паддинг
+// .pd-phase-btn — всё применяется впервые с момента CP3c (когда добавили
+// .pd-runner * reset, видимо). До v18 пациенты видели прилипшие кнопки
+// в ready/work/rest, нулевой padding кнопок, и .pd-rest-timer без paddings.
+const CACHE_NAME = 'azarean-v18';
+const API_CACHE = 'azarean-api-v18';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
