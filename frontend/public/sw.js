@@ -45,8 +45,15 @@
 // actions margin-top), сужен max-width 320→280, gap 8→12. Tap-feedback
 // scale(0.97). Без bump'а PWA-юзеры продолжали бы видеть «вытянутую
 // маленькую плоскую» кнопку из v10.
-const CACHE_NAME = 'azarean-v11';
-const API_CACHE = 'azarean-api-v11';
+// v12 (2026-05-29) — CP3d skip-rest: в rest-фазе появилась teal-outline
+// кнопка «Пропустить отдых» (data-testid=skip-rest-btn). onClick
+// переиспользует существующий handleRestComplete → phase=ready(k+1) +
+// очистка rest-таймера. Ручной skip НЕ играет cue('rest_end') (звук
+// живёт внутри RestTimer setInterval — при unmount через смену setPhase
+// callback не запускается). POST не дёргается. Без bump'а пациенты с
+// открытой PWA продолжат ждать полный отдых даже если готовы раньше.
+const CACHE_NAME = 'azarean-v12';
+const API_CACHE = 'azarean-api-v12';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

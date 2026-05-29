@@ -497,6 +497,18 @@ const ExerciseRunner = ({
                     presets={[30, 60, 90, 120]}
                     onComplete={handleRestComplete}
                   />
+                  {/* CP3d: skip-rest — переиспользует handleRestComplete (та же
+                      транзишн, что авто-конец отдыха). cue('rest_end') живёт
+                      ВНУТРИ RestTimer setInterval (срабатывает только на
+                      remaining=0); смена setPhase('ready') разворачивает
+                      RestTimer → clearInterval → callback не запустится → skip
+                      не играет звук (ручной финал, следующий сигнал — «Начать
+                      подход»). POST не дёргается, progress_logs не трогаем. */}
+                  <div className="pd-phase-actions">
+                    <button type="button" className="pd-phase-btn pd-phase-btn--skip-rest" onClick={handleRestComplete} data-testid="skip-rest-btn">
+                      Пропустить отдых
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
