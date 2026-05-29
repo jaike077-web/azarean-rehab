@@ -109,7 +109,7 @@ afterEach(() => {
 describe('CP3c.1 — ready-гейт + 3-2-1 преролл + set_start + единая кнопка', () => {
   it('Initial state — ready: countdown/sw НЕ показаны, есть «Начать подход»', () => {
     renderRunner();
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 1 из 3');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 1 из 3');
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
     expect(screen.getByTestId('start-set-btn')).toHaveTextContent(/Начать подход/i);
     // Отсчёт/секундомер ещё не активны
@@ -173,7 +173,7 @@ describe('CP3c.1 — ready-гейт + 3-2-1 преролл + set_start + еди�
     // Авто-rest 60s
     act(() => { jest.advanceTimersByTime(60000); });
     // Подход 2 — снова ready, НЕ авто work
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 2 из 2');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 2 из 2');
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
     expect(screen.getByTestId('start-set-btn')).toBeInTheDocument();
     expect(screen.queryByTestId('set-countdown')).not.toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('CP3a.1 — countdown ветка (через ready-гейт)', () => {
 
     // Rest 1 → Set 2 ready
     act(() => { jest.advanceTimersByTime(60000); });
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 2 из 3');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 2 из 3');
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
 
     // Set 2
@@ -208,7 +208,7 @@ describe('CP3a.1 — countdown ветка (через ready-гейт)', () => {
 
     // Rest 2 → Set 3 ready
     act(() => { jest.advanceTimersByTime(60000); });
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 3 из 3');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 3 из 3');
 
     // Set 3 (последний) — rest НЕ стартует
     startCurrentSet();
@@ -266,7 +266,7 @@ describe('CP3a.1 — countdown ветка (через ready-гейт)', () => {
 
   it('Anti-regression rep-only: duration_seconds=null → гайд НЕ активен (ready-state нет, кнопок нет)', () => {
     renderRunner({ duration_seconds: null, reps: 10 });
-    expect(screen.queryByTestId('set-indicator')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('phase-label')).not.toBeInTheDocument();
     expect(screen.queryByTestId('ready-state')).not.toBeInTheDocument();
     expect(screen.queryByTestId('start-set-btn')).not.toBeInTheDocument();
     expect(screen.queryByTestId('set-countdown')).not.toBeInTheDocument();
@@ -279,7 +279,7 @@ describe('CP3a.2 — open-hold ветка (через ready-гейт)', () => {
   it('Open-hold UI после старта: sw на 0:00, toggle, единая кнопка «Завершить подход»', () => {
     renderRunner({ auto_complete: false });
     startCurrentSet();
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 1 из 3');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 1 из 3');
     expect(screen.getByTestId('set-stopwatch')).toHaveTextContent('0:00');
     expect(screen.getByTestId('set-stopwatch-toggle')).toBeInTheDocument();
     expect(screen.getByTestId('finish-set-btn')).toHaveTextContent(/Завершить подход/i);
@@ -303,7 +303,7 @@ describe('CP3a.2 — open-hold ветка (через ready-гейт)', () => {
 
     // Rest 1 → Set 2 ready
     act(() => { jest.advanceTimersByTime(60000); });
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 2 из 2');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 2 из 2');
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
 
     // Set 2: старт → sw на 0:00 (сброшен)
@@ -374,11 +374,11 @@ describe('CP3a.2 — open-hold ветка (через ready-гейт)', () => {
     );
 
     // A set 1: старт → 0:20 countdown → ручное «Завершить» → rest → ready 2
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 1 из 2');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 1 из 2');
     startCurrentSet();
     fireEvent.click(screen.getByTestId('finish-set-btn'));
     act(() => { jest.advanceTimersByTime(30000); }); // rest
-    expect(screen.getByTestId('set-indicator')).toHaveTextContent('Подход 2 из 2');
+    expect(screen.getByTestId('phase-label')).toHaveTextContent('Подход 2 из 2');
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
   });
 });

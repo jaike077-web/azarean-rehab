@@ -79,8 +79,9 @@
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
-  margin: 24px auto 16px;
-  max-width: 280px;
+  /* DA2: full-width в .sec (parent сам имеет padding); снят max-width:280
+     и horizontal auto margin. Кнопки растягиваются на ширину таймер-зоны. */
+  margin: 24px 0 16px;
   width: 100%;
 }
 

@@ -116,3 +116,23 @@ describe('RestTimer — CP1 audio consumer', () => {
     expect(mockCtxCtor).toHaveBeenCalledTimes(0);
   });
 });
+
+describe('RestTimer — DA2 presets prop + ring size', () => {
+  it('hidePresets=true: presets контейнер скрыт', () => {
+    const { container } = renderTimer({ hidePresets: true });
+    expect(container.querySelector('.pd-rest-timer-presets')).toBeNull();
+  });
+
+  it('hidePresets=false (default): presets контейнер виден', () => {
+    const { container } = renderTimer();
+    expect(container.querySelector('.pd-rest-timer-presets')).not.toBeNull();
+  });
+
+  it('SVG ring size = 170 (DA2: консистентность с PhaseRing)', () => {
+    const { container } = renderTimer();
+    const svg = container.querySelector('.pd-rest-timer-ring svg');
+    expect(svg).not.toBeNull();
+    expect(svg.getAttribute('width')).toBe('170');
+    expect(svg.getAttribute('height')).toBe('170');
+  });
+});
