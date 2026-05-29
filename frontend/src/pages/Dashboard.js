@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useUrlState from '../hooks/useUrlState';
 import Patients from './Patients';
 import CreateComplex from './CreateComplex';
 import MyComplexes from './MyComplexes';
@@ -38,11 +39,26 @@ import ThemeToggle from '../components/ThemeToggle';
 // Wave 3 C5.1 — admin landing. НЕ lazy (Dashboard и сам критичный, не lazy).
 import CommandCenter from './CommandCenter/CommandCenter';
 
+// Вкладки дашборда. Вынесены на модульный уровень — стабильные ссылки для
+// useUrlState (иначе setActiveTab пересоздавался бы каждый рендер).
+// 'exercises' тут НЕТ намеренно: это отдельный роут /exercises
+// (handleExercisesClick → navigate), а не таб.
+const BASE_TABS = ['home', 'patients', 'progress', 'complexes', 'my-complexes', 'diagnoses', 'import', 'trash'];
+const ADMIN_TABS = ['admin-stats', 'admin-users', 'admin-audit', 'admin-content', 'admin-system'];
+const ALL_TABS = [...BASE_TABS, ...ADMIN_TABS];
+
 function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState('home');
+
+  // Активная вкладка хранится в URL (?tab=patients) — F5 не сбрасывает,
+  // работают «назад/вперёд», на вкладку можно дать ссылку. Гард по роли:
+  // инструктор не попадёт на admin-вкладку по прямой ссылке (?tab=admin-stats
+  // откатится на home). ProtectedRoute рендерит Dashboard только после загрузки
+  // user (см. App.js) → user.role доступен уже на первом рендере, гард не
+  // «мигает». VALID_TABS — стабильная ссылка (ALL_TABS либо BASE_TABS).
+  const VALID_TABS = user?.role === 'admin' ? ALL_TABS : BASE_TABS;
+  const [activeTab, setActiveTab] = useUrlState('tab', 'home', { valid: VALID_TABS });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState(null);
 
@@ -53,13 +69,6 @@ function Dashboard() {
       .catch(() => { if (alive) setStats(null); });
     return () => { alive = false; };
   }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('home') === '1') {
-      setActiveTab('home');
-    }
-  }, [location.search]);
 
   // Закрываем меню при изменении размера окна
   useEffect(() => {

@@ -96,8 +96,13 @@
 // .pd-phase-btn — всё применяется впервые с момента CP3c (когда добавили
 // .pd-runner * reset, видимо). До v18 пациенты видели прилипшие кнопки
 // в ready/work/rest, нулевой padding кнопок, и .pd-rest-timer без paddings.
-const CACHE_NAME = 'azarean-v18';
-const API_CACHE = 'azarean-api-v18';
+// v19 (2026-05-29 vol.8) — URL-state роутинг: текущий экран пациента
+// (?screen=) и вкладка инструктора (?tab=) сохраняются в URL (F5 не
+// сбрасывает, работают «назад/вперёд», экран шарится ссылкой). Новый
+// hooks/useUrlState.js + правки PatientDashboard/Dashboard/Patients →
+// новый JS-бандл, нужен bump для инвалидации старого кэша у PWA-юзеров.
+const CACHE_NAME = 'azarean-v19';
+const API_CACHE = 'azarean-api-v19';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
