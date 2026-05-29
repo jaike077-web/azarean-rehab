@@ -128,3 +128,16 @@
 
 /* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
    просто помещаем в actions-flex рядом. */
+
+/* CP3d: «Пропустить отдых» — teal-tinted outline в тон rest-кольца
+   (--pd-primary). Видимая, но менее доминирующая чем primary action.
+   Минимальный стиль, без полировки — дизайн-проход отложен. */
+.pd-phase-btn--skip-rest {
+  background: transparent;
+  color: var(--pd-primary);
+  border: 2px solid var(--pd-primary);
+}
+
+.pd-phase-btn--skip-rest:hover:not(:disabled) {
+  background: rgba(13, 148, 136, 0.08); /* teal 8% alpha, не новый токен */
+}
