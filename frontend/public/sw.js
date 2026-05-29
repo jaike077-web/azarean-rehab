@@ -52,8 +52,13 @@
 // живёт внутри RestTimer setInterval — при unmount через смену setPhase
 // callback не запускается). POST не дёргается. Без bump'а пациенты с
 // открытой PWA продолжат ждать полный отдых даже если готовы раньше.
-const CACHE_NAME = 'azarean-v12';
-const API_CACHE = 'azarean-api-v12';
+// v13 (2026-05-29 vol.2) — CP3e skip-кнопка в семью: refactor PhaseRing.css
+// в unified outline-селектор (--finish + --skip-rest делят геометрию через
+// общий shared блок, различие сведено к цвету). До v13 архитектор увидел
+// «bolted-on» вид на iPhone. CSS-only, без JS/логики. Без bump'а PWA
+// продолжат видеть старую визуально-расходящуюся кнопку из v12.
+const CACHE_NAME = 'azarean-v13';
+const API_CACHE = 'azarean-api-v13';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
