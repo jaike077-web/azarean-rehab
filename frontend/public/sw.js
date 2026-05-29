@@ -57,8 +57,18 @@
 // общий shared блок, различие сведено к цвету). До v13 архитектор увидел
 // «bolted-on» вид на iPhone. CSS-only, без JS/логики. Без bump'а PWA
 // продолжат видеть старую визуально-расходящуюся кнопку из v12.
-const CACHE_NAME = 'azarean-v13';
-const API_CACHE = 'azarean-api-v13';
+// v14 (2026-05-29 vol.3) — DA1 раннер таймер-зона по утверждённому макету:
+//   * ready-кольцо приглушённо-коралл track (opacity 0.20) + БЕЗ progress-дуги
+//   * RestTimer контролы (Reset/Pause/Play) → subdued teal-tint круги мельче,
+//     без shadow (де-акцент)
+//   * skip-rest расщеплён с finish: skip = solid teal forward-action,
+//     finish = тихая outline coral (клинически тихая)
+//   * rest-actions gap 24→32 (skip не прилипает к subdued RestTimer-контролам)
+//   * PhaseRing цифра — tabular-nums (анти-джиттер при счёте)
+// CSS-only (PhaseRing.css + RestTimer.css), ExerciseRunner.js не тронут.
+// Без bump'а PWA продолжат видеть pre-DA1 палитру и outline-skip из v13.
+const CACHE_NAME = 'azarean-v14';
+const API_CACHE = 'azarean-api-v14';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

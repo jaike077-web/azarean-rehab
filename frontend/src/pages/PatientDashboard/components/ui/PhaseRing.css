@@ -20,13 +20,24 @@
 
 .pd-phase-ring-track {
   stroke: var(--pd-neutral-200, #E5E5E5);
-  transition: stroke 0.25s ease;
+  transition: stroke 0.25s ease, opacity 0.25s ease;
+}
+
+/* DA1: ready-фаза — приглушённо-коралл track (анонс «это упражнение
+   coral-семьи», но без активной дуги), opacity 0.20 для де-акцента.
+   Прогресс-дуга для ready скрыта ниже — кольцо рендерится «пустым»
+   ожидающим контуром. */
+.pd-phase-ring[data-phase="ready"] .pd-phase-ring-track {
+  stroke: var(--pd-accent-warm);
+  opacity: 0.20;
 }
 
 .pd-phase-ring-value {
   font-family: 'Manrope', 'Nunito Sans', system-ui, sans-serif;
   font-size: 46px;
   font-weight: 700;
+  /* DA1: tabular-nums явно (RestTimer уже имел inline style; здесь — анти-джиттер
+     при счёте, чтобы ширина цифр не плясала при смене 1/4/7/8). */
   font-variant-numeric: tabular-nums;
   fill: var(--pd-text, #171C2B);
 }
@@ -47,9 +58,15 @@
   stroke: var(--pd-primary); /* teal — отдых */
 }
 
-.pd-phase-ring[data-phase="ready"] .pd-phase-ring-progress,
 .pd-phase-ring[data-phase="done"] .pd-phase-ring-progress {
   stroke: var(--pd-neutral-500, #737373); /* нейтраль — ожидание */
+}
+
+/* DA1: ready — БЕЗ progress-дуги. Только coral track (см. .pd-phase-ring-track
+   override выше). Progress-circle полностью скрыт, чтобы не было видимой
+   «серой полоски» поверх coral-tinted track'а. */
+.pd-phase-ring[data-phase="ready"] .pd-phase-ring-progress {
+  display: none;
 }
 
 /* =====================================================
@@ -114,39 +131,43 @@
   box-shadow: 0 2px 6px rgba(249, 115, 22, 0.28);
 }
 
-/* CP3e: outline-семья (finish + skip-rest) — shared селектор делит ВСЮ
-   геометрию через .pd-phase-btn base + общий outline-treatment здесь.
-   Различие модификаторов сведено к цвету (color + border-color + hover bg).
-   До CP3e skip-rest дублировал свойства как отдельный модификатор —
-   архитектор увидел «bolted-on» вид на iPhone, попросил явную семью. */
-.pd-phase-btn--finish,
-.pd-phase-btn--skip-rest {
-  background: transparent;
-  border-width: 2px;
-  border-style: solid;
-}
-
-/* «Завершить подход» — coral-tinted outline. Видимая, но менее доминирующая
-   чем primary action. Не белая (фикс п.3 фидбэка). */
+/* DA1: «Завершить подход» — клинически ТИХАЯ outline coral (намеренно
+   не доминирующая: «закончи если готов, но не торопись»). После DA1
+   единственная outline-кнопка в семье — finish/skip расщеплены обратно:
+   skip теперь solid teal как forward-action (см. ниже). */
 .pd-phase-btn--finish {
+  background: transparent;
   color: var(--pd-accent-warm);
-  border-color: var(--pd-accent-warm);
+  border: 2px solid var(--pd-accent-warm);
 }
 
 .pd-phase-btn--finish:hover:not(:disabled) {
   background: rgba(249, 115, 22, 0.08); /* coral 8% alpha, не новый токен */
 }
 
-/* CP3d: «Пропустить отдых» — teal-tinted outline в тон rest-кольца
-   (--pd-primary). Сестра «Завершить подход» — 1:1 геометрия через
-   общий outline-блок выше, отличается только цветом. */
+/* DA1: «Пропустить отдых» — solid teal forward-action. Расщепление
+   с finish сознательное: skip = «я готов идти дальше» (активный шаг
+   вперёд), finish = «я закончу раньше» (клинически тихая). До DA1 обе
+   были outline; после прод-смоука стало ясно что rest-иерархия теряла
+   forward-сигнал среди subdued RestTimer-контролов. */
 .pd-phase-btn--skip-rest {
-  color: var(--pd-primary);
-  border-color: var(--pd-primary);
+  background: var(--pd-primary);
+  color: #FFFFFF;
+  /* border нет — base .pd-phase-btn { border: none } наследуется,
+     CP3e unified-блок снят. */
 }
 
 .pd-phase-btn--skip-rest:hover:not(:disabled) {
-  background: rgba(13, 148, 136, 0.08); /* teal 8% alpha, не новый токен */
+  background: #0B7E72; /* one shade darker, в той же teal-семье — не новый токен */
+}
+
+/* DA1: внутри rest-блока actions получают больше воздуха сверху —
+   RestTimer-контролы (Reset/Pause круги) после DA1 subdued, но всё
+   равно отдельный «остров»; skip-кнопка не должна прилипать к ним.
+   Целим селектор по data-testid auto-rest-block, чтобы не задеть
+   spacing actions в ready/work-фазах (там 24px — норм для PhaseRing). */
+[data-testid="auto-rest-block"] .pd-phase-actions {
+  margin-top: 32px;
 }
 
 /* Стопвоч-toggle (open-hold mode ▶/⏸) — sw-btn остаётся как был (canon),
