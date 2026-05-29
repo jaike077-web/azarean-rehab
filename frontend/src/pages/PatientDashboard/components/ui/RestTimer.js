@@ -56,7 +56,15 @@ export default function RestTimer({
             onComplete?.();
             return 0;
           }
-          return prev - 1;
+          // WARN (2026-05-29): pre-end бип cue('count_tick'), когда отдых
+          // ДОСТИГАЕТ 10 и 5 секунд (как авто per-set rest, так и ручной
+          // preset — оба обратные отсчёты с известным концом). Тот же
+          // принцип, что rest_end на «0». Монотонный отсчёт → один раз на
+          // порог. rest <10с не даёт 10-бип, <5с — ни одного. Молчит при
+          // azarean_audio.enabled=false (gate внутри cue).
+          const next = prev - 1;
+          if (next === 10 || next === 5) cue('count_tick');
+          return next;
         });
       }, 1000);
     }
