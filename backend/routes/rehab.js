@@ -1575,6 +1575,375 @@ router.delete('/programs/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// =====================================================
+// ARC-CYCLE AC2: CRUD блоков программы (микроцикл-слой)
+// program_blocks (gymnastics плоский / training микроцикл) + program_block_complexes (дни).
+// Инструктор (authenticateToken, Bearer JWT). Ownership через rehab_programs.created_by.
+// Цель живёт на блоке (write-path). Без requireSameOrigin (Bearer, не cookie).
+// =====================================================
+
+const BLOCK_TYPES = ['gymnastics', 'training'];
+const SMALLINT_MAX = 32767; // верхняя граница SMALLINT-колонок (target_*, position) — чистый 400 вместо 500
+
+// Валидация цели блока — зеркало chk_block_cadence (миграция 20260531):
+// всё-NULL или всё-задано + min>=1, max>=min + per-type unit (gymnastics→'day', training→'week').
+// Возвращает { ok:true, target:{min,max,unit} } либо { ok:false, message }.
+function validateBlockTarget(body, blockType) {
+  const { target_min, target_max, target_unit } = body;
+  const anySet = target_min != null || target_max != null || target_unit != null;
+  if (!anySet) return { ok: true, target: { min: null, max: null, unit: null } };
+
+  const min = parseInt(target_min, 10);
+  const max = parseInt(target_max, 10);
+  if (!Number.isInteger(min) || !Number.isInteger(max) || typeof target_unit !== 'string') {
+    return { ok: false, message: 'Цель: target_min, target_max, target_unit задаются вместе' };
+  }
+  if (min < 1 || max < min || max > SMALLINT_MAX) {
+    return { ok: false, message: `Цель: target_min >= 1, target_max в диапазоне [target_min, ${SMALLINT_MAX}]` };
+  }
+  const expectedUnit = blockType === 'gymnastics' ? 'day' : 'week';
+  if (target_unit !== expectedUnit) {
+    return { ok: false, message: `Цель: для «${blockType}» единица должна быть «${expectedUnit}»` };
+  }
+  return { ok: true, target: { min, max, unit: target_unit } };
+}
+
+// Нормализация дней блока из body.complexes.
+// gymnastics → day_index = null (плоский набор, доступен ежедневно);
+// training → day_index обязателен (>=1, день ротации).
+// Возвращает { ok:true, days:[{complex_id, day_index, label, position}] } либо { ok:false, message }.
+function normalizeBlockComplexes(complexes, blockType) {
+  if (!Array.isArray(complexes) || complexes.length === 0) {
+    return { ok: false, message: 'Список комплексов (complexes) обязателен и не пуст' };
+  }
+  const days = [];
+  for (let i = 0; i < complexes.length; i++) {
+    const c = complexes[i] || {};
+    const complexId = parseInt(c.complex_id, 10);
+    if (!Number.isInteger(complexId)) {
+      return { ok: false, message: 'Каждый элемент complexes должен иметь числовой complex_id' };
+    }
+    let dayIndex = null;
+    if (blockType === 'training') {
+      dayIndex = parseInt(c.day_index, 10);
+      if (!Number.isInteger(dayIndex) || dayIndex < 1) {
+        return { ok: false, message: 'Для тренировки каждый комплекс должен иметь day_index >= 1' };
+      }
+    }
+    const posParsed = parseInt(c.position, 10);
+    days.push({
+      complex_id: complexId,
+      day_index: dayIndex,
+      label: (typeof c.label === 'string' && c.label.trim()) || null,
+      // clamp в [0, SMALLINT_MAX] — position косметический (порядок), мусор не должен ронять в 500.
+      position: Math.min(Math.max(Number.isInteger(posParsed) ? posParsed : i, 0), SMALLINT_MAX),
+    });
+  }
+  // Дубль complex_id в одном блоке нарушит UNIQUE(block_id, complex_id) — чистый 400 заранее.
+  const ids = days.map((d) => d.complex_id);
+  if (new Set(ids).size !== ids.length) {
+    return { ok: false, message: 'Комплекс не может повторяться в одном блоке' };
+  }
+  // Инвариант арка: дни тренировки нумеруются подряд с 1 (1, 2, 3, …).
+  // Это согласует current_day_index (= значение day_index), PUT-clamp [1, numDays] и
+  // advance-формулу AC4 (current % numDays) + 1 — все они предполагают плотный диапазон 1..N.
+  // distinct day_index гарантированно = {1..maxDay}, иначе указатель ротации укажет на пустой день.
+  if (blockType === 'training') {
+    const distinct = [...new Set(days.map((d) => d.day_index))];
+    const maxDay = Math.max(...distinct);
+    if (distinct.length !== maxDay) {
+      return { ok: false, message: 'Дни тренировки должны нумероваться подряд с 1 (1, 2, 3, …)' };
+    }
+  }
+  return { ok: true, days };
+}
+
+// Проверка, что все complex_id принадлежат ПАЦИЕНТУ программы и активны.
+// Строго patient_id (НЕ instructor_id-OR): комплекс назначается конкретному пациенту
+// (complexes.patient_id NOT NULL), и блок программы пациента Y не должен принимать комплекс,
+// назначенный другому пациенту X — иначе латентная cross-patient утечка контента при резолве
+// блоков в раннер (AC3+). Кто создал комплекс (instructor_id) — для принадлежности неважно.
+// Возвращает true если все уникальные id прошли, иначе false.
+async function allComplexesAllowed(complexIds, patientId) {
+  const uniqueIds = [...new Set(complexIds)];
+  const result = await query(
+    `SELECT id FROM complexes
+      WHERE id = ANY($1::int[]) AND is_active = true AND patient_id = $2`,
+    [uniqueIds, patientId]
+  );
+  return result.rows.length === uniqueIds.length;
+}
+
+/**
+ * GET /api/rehab/programs/:id/blocks
+ * Блоки программы + вложенные комплексы (дни). Только активные блоки.
+ */
+router.get('/programs/:id/blocks', authenticateToken, async (req, res) => {
+  try {
+    const programId = parseInt(req.params.id, 10);
+    if (isNaN(programId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id программы' });
+    }
+    const owner = await query(
+      'SELECT id FROM rehab_programs WHERE id = $1 AND created_by = $2',
+      [programId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
+    }
+    const result = await query(
+      `SELECT b.id, b.block_type, b.title, b.position,
+              b.target_min, b.target_max, b.target_unit,
+              b.current_day_index, b.is_active,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'id', pbc.id,
+                    'complex_id', pbc.complex_id,
+                    'day_index', pbc.day_index,
+                    'label', pbc.label,
+                    'position', pbc.position,
+                    'complex_title', c.title
+                  ) ORDER BY pbc.day_index NULLS FIRST, pbc.position, pbc.id
+                ) FILTER (WHERE pbc.id IS NOT NULL),
+                '[]'::json
+              ) AS complexes
+         FROM program_blocks b
+         LEFT JOIN program_block_complexes pbc ON pbc.block_id = b.id
+         LEFT JOIN complexes c ON c.id = pbc.complex_id
+        WHERE b.program_id = $1 AND b.is_active = true
+        GROUP BY b.id
+        ORDER BY b.position, b.id`,
+      [programId]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Ошибка получения блоков:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения блоков' });
+  }
+});
+
+/**
+ * POST /api/rehab/programs/:id/blocks
+ * Создать блок + дни (junction). Транзакция. Цель → write-path на блок.
+ */
+router.post('/programs/:id/blocks', authenticateToken, async (req, res) => {
+  const programId = parseInt(req.params.id, 10);
+  const { block_type, title, position } = req.body;
+
+  // Валидация тела (без БД) → 400 ДО открытия транзакции.
+  if (!BLOCK_TYPES.includes(block_type)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'block_type должен быть gymnastics или training' });
+  }
+  const targetCheck = validateBlockTarget(req.body, block_type);
+  if (!targetCheck.ok) {
+    return res.status(400).json({ error: 'Validation Error', message: targetCheck.message });
+  }
+  const daysCheck = normalizeBlockComplexes(req.body.complexes, block_type);
+  if (!daysCheck.ok) {
+    return res.status(400).json({ error: 'Validation Error', message: daysCheck.message });
+  }
+  const { target } = targetCheck;
+  const { days } = daysCheck;
+
+  let client;
+  try {
+    // Ownership программы + patient_id (через query, ДО транзакции — ранние return без ROLLBACK).
+    const owner = await query(
+      'SELECT id, patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2',
+      [programId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
+    }
+    const patientId = owner.rows[0].patient_id;
+
+    // Все complex_id допустимы (пациента программы ИЛИ инструктора, активны).
+    const ok = await allComplexesAllowed(days.map((d) => d.complex_id), patientId);
+    if (!ok) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некоторые комплексы не найдены, не активны или не принадлежат пациенту программы',
+      });
+    }
+
+    // current_day_index — только для training (= минимальный день, обычно 1); current_day_started_at = NOW().
+    const currentDayIndex = block_type === 'training'
+      ? Math.min(...days.map((d) => d.day_index))
+      : null;
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
+    const blockPosition = Math.min(Math.max(Number.isInteger(parseInt(position, 10)) ? parseInt(position, 10) : 0, 0), SMALLINT_MAX);
+
+    client = await getClient();
+    await client.query('BEGIN');
+
+    const blockResult = await client.query(
+      `INSERT INTO program_blocks
+         (program_id, block_type, title, position, target_min, target_max, target_unit,
+          current_day_index, current_day_started_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+               CASE WHEN $8 IS NOT NULL THEN NOW() ELSE NULL END)
+       RETURNING *`,
+      [programId, block_type, normalizedTitle, blockPosition, target.min, target.max, target.unit, currentDayIndex]
+    );
+    const block = blockResult.rows[0];
+
+    for (const d of days) {
+      await client.query(
+        `INSERT INTO program_block_complexes (block_id, complex_id, day_index, label, position)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [block.id, d.complex_id, d.day_index, d.label, d.position]
+      );
+    }
+
+    await client.query('COMMIT');
+    logAudit(req, 'CREATE', 'program_block', block.id, {
+      patientId,
+      details: { block_type, days: days.length },
+    });
+    res.status(201).json({ data: { ...block, complexes: days }, message: 'Блок создан' });
+  } catch (error) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) { /* noop */ } }
+    console.error('Ошибка создания блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания блока' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+/**
+ * PUT /api/rehab/blocks/:blockId
+ * Обновить блок + пересобрать дни (DELETE + INSERT). block_type immutable.
+ * Для training — clamp current_day_index в [1, число дней].
+ */
+router.put('/blocks/:blockId', authenticateToken, async (req, res) => {
+  const blockId = parseInt(req.params.blockId, 10);
+  if (isNaN(blockId)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id блока' });
+  }
+
+  let client;
+  try {
+    // Ownership через JOIN на программу + получаем block_type (immutable), current_day_index, patient_id.
+    const owner = await query(
+      `SELECT b.id, b.block_type, b.current_day_index, p.patient_id
+         FROM program_blocks b
+         JOIN rehab_programs p ON p.id = b.program_id
+        WHERE b.id = $1 AND p.created_by = $2 AND b.is_active = true`,
+      [blockId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
+    }
+    const blockType = owner.rows[0].block_type;
+    const patientId = owner.rows[0].patient_id;
+    const currentDayIndex = owner.rows[0].current_day_index;
+
+    // Валидация тела против зафиксированного block_type.
+    const targetCheck = validateBlockTarget(req.body, blockType);
+    if (!targetCheck.ok) {
+      return res.status(400).json({ error: 'Validation Error', message: targetCheck.message });
+    }
+    const daysCheck = normalizeBlockComplexes(req.body.complexes, blockType);
+    if (!daysCheck.ok) {
+      return res.status(400).json({ error: 'Validation Error', message: daysCheck.message });
+    }
+    const { target } = targetCheck;
+    const { days } = daysCheck;
+
+    const ok = await allComplexesAllowed(days.map((d) => d.complex_id), patientId);
+    if (!ok) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некоторые комплексы не найдены, не активны или не принадлежат пациенту программы',
+      });
+    }
+
+    const { title, position } = req.body;
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
+    const blockPosition = Math.min(Math.max(Number.isInteger(parseInt(position, 10)) ? parseInt(position, 10) : 0, 0), SMALLINT_MAX);
+
+    client = await getClient();
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE program_blocks
+          SET title = $2, position = $3, target_min = $4, target_max = $5, target_unit = $6,
+              updated_at = NOW()
+        WHERE id = $1`,
+      [blockId, normalizedTitle, blockPosition, target.min, target.max, target.unit]
+    );
+
+    await client.query('DELETE FROM program_block_complexes WHERE block_id = $1', [blockId]);
+    for (const d of days) {
+      await client.query(
+        `INSERT INTO program_block_complexes (block_id, complex_id, day_index, label, position)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [blockId, d.complex_id, d.day_index, d.label, d.position]
+      );
+    }
+
+    // Clamp указателя ротации для training (дни могли сократиться при пересборке).
+    // Контигуозность 1..N гарантирована normalizeBlockComplexes → numDays = maxDay = валидный домен [1, numDays].
+    if (blockType === 'training') {
+      const numDays = new Set(days.map((d) => d.day_index)).size;
+      const base = Number.isInteger(currentDayIndex) && currentDayIndex >= 1 ? currentDayIndex : 1;
+      const clamped = Math.min(base, numDays); // вышли за границу → к последнему существующему дню, НЕ сброс в 1
+      if (clamped !== currentDayIndex) {
+        await client.query(
+          'UPDATE program_blocks SET current_day_index = $2, current_day_started_at = NOW() WHERE id = $1',
+          [blockId, clamped]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    logAudit(req, 'UPDATE', 'program_block', blockId, {
+      patientId,
+      details: { days: days.length },
+    });
+    res.json({ data: { id: blockId }, message: 'Блок обновлён' });
+  } catch (error) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) { /* noop */ } }
+    console.error('Ошибка обновления блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления блока' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+/**
+ * DELETE /api/rehab/blocks/:blockId
+ * Мягкое удаление блока (is_active=false). Ownership через JOIN на программу.
+ */
+router.delete('/blocks/:blockId', authenticateToken, async (req, res) => {
+  try {
+    const blockId = parseInt(req.params.blockId, 10);
+    if (isNaN(blockId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id блока' });
+    }
+    const result = await query(
+      `UPDATE program_blocks b
+          SET is_active = false, updated_at = NOW()
+         FROM rehab_programs p
+        WHERE b.id = $1 AND b.program_id = p.id AND p.created_by = $2 AND b.is_active = true
+        RETURNING b.id, p.patient_id`,
+      [blockId, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
+    }
+    logAudit(req, 'DELETE', 'program_block', blockId, {
+      patientId: result.rows[0].patient_id,
+      details: {},
+    });
+    res.json({ data: { id: blockId }, message: 'Блок удалён' });
+  } catch (error) {
+    console.error('Ошибка удаления блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления блока' });
+  }
+});
+
 /**
  * GET /api/rehab/programs/:id/stuck-status
  * Wave 1 #1.09: инструкторская сторона stuck detection.
