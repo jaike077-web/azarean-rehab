@@ -108,8 +108,14 @@
 // ExerciseRunner.js + ui/RestTimer.js (новый JS-бандл) — нужен bump,
 // иначе PWA-юзеры не получат предупреждающие бипы. (Архитектор писал TZ
 // на базе SW v18; v19 уже занят URL-роутингом PR #71 → этот bump v19→v20.)
-const CACHE_NAME = 'azarean-v20';
-const API_CACHE = 'azarean-api-v20';
+// v21 (2026-05-31) — ARC-CYCLE AC5: пациентский D2-UI микроцикла. ExercisesScreen
+// парсит getMyExercises mode='blocks' → две секции (гимнастика ежедневно / тренировка
+// текущий день) + handleComplete → POST /my/training/advance на границе раннера.
+// HomeScreen: done-чипы gymnasticsDoneToday/trainingDoneToday. api: advanceTraining().
+// Новый JS-бандл + CSS (.pd-block-meta/.pd-home-hero-chip) — нужен bump, иначе
+// PWA-юзеры видят старый ExercisesScreen без блоков и без advance-дня.
+const CACHE_NAME = 'azarean-v21';
+const API_CACHE = 'azarean-api-v21';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

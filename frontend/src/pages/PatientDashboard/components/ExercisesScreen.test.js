@@ -5,7 +5,7 @@ import { rehab, patientAuth, progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 
 jest.mock('../../../services/api', () => ({
-  rehab: { getMyExercises: jest.fn() },
+  rehab: { getMyExercises: jest.fn(), advanceTraining: jest.fn() },
   patientAuth: { getMyComplexes: jest.fn(), getMyComplex: jest.fn() },
   progressPatient: { create: jest.fn(), getByExercise: jest.fn() },
 }));
@@ -79,6 +79,61 @@ describe('ExercisesScreen v2', () => {
       });
       expect(screen.getByTestId('complex-card-20')).toBeInTheDocument();
       expect(screen.queryByTestId('complex-card-10')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('ARC-CYCLE AC5 — D2 (blocks mode)', () => {
+    it('рендерит секции гимнастики и тренировки с днём ротации', async () => {
+      rehab.getMyExercises.mockResolvedValue({
+        data: {
+          mode: 'blocks',
+          program_id: 7,
+          program_title: 'Прог',
+          gymnastics: {
+            block_id: 10, title: 'Гимн', target: { min: 1, max: 2, unit: 'day' },
+            complexes: [{ complex_id: 63, complex_title: 'Зарядка', exercise_count: 4 }],
+          },
+          training: {
+            block_id: 11, title: 'Трен', target: { min: 2, max: 3, unit: 'week' },
+            current_day_index: 2, num_days: 3, day_label: 'День Б',
+            complexes: [{ complex_id: 64, complex_title: 'Силовая', exercise_count: 5 }],
+          },
+          legacy: null,
+        },
+      });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [] });
+
+      render(<ExercisesScreen />);
+
+      await waitFor(() => expect(screen.getByTestId('gymnastics-section')).toBeInTheDocument());
+      expect(screen.getByTestId('training-section')).toBeInTheDocument();
+      expect(screen.getByTestId('gym-complex-63')).toBeInTheDocument();
+      expect(screen.getByTestId('training-complex-64')).toBeInTheDocument();
+      // «День Б · День 2 из 3»
+      expect(screen.getByTestId('training-day-label')).toHaveTextContent('День Б');
+      expect(screen.getByTestId('training-day-label')).toHaveTextContent('День 2 из 3');
+      // в blocks-режиме нет legacy-hero
+      expect(screen.queryByTestId('start-today-btn')).not.toBeInTheDocument();
+    });
+
+    it('только гимнастика → секция тренировки не рендерится', async () => {
+      rehab.getMyExercises.mockResolvedValue({
+        data: {
+          mode: 'blocks', program_id: 7,
+          gymnastics: {
+            block_id: 10, target: { min: null, max: null, unit: null },
+            complexes: [{ complex_id: 63, complex_title: 'Зарядка', exercise_count: 2 }],
+          },
+          training: null,
+          legacy: null,
+        },
+      });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [] });
+
+      render(<ExercisesScreen />);
+
+      await waitFor(() => expect(screen.getByTestId('gymnastics-section')).toBeInTheDocument());
+      expect(screen.queryByTestId('training-section')).not.toBeInTheDocument();
     });
   });
 

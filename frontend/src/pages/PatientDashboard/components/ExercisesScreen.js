@@ -107,6 +107,28 @@ const ExercisesScreen = ({ screenParams }) => {
     setComplexExercises([]);
   };
 
+  // ARC-CYCLE AC5: завершение раннера. Если закрыт комплекс ТЕКУЩЕГО тренировочного
+  // дня — продвигаем день (advance) ДО рефетча, чтобы секция показала следующий день
+  // («закрыл А → Б»). session_id — тот же, что раннер слал в POST /progress (мы его
+  // сгенерировали в openComplex). Advance дёргается из РОДИТЕЛЯ, НЕ из LOCKED раннера.
+  // best-effort: при сбое advance lazy-on-GET догонит на следующем GET /my/exercises.
+  const handleComplete = useCallback(async () => {
+    const training = todayComplex?.mode === 'blocks' ? todayComplex.training : null;
+    const isTrainingComplex = training?.complexes?.some((c) => c.complex_id === selectedComplexId);
+    if (training?.block_id && isTrainingComplex && sessionId) {
+      try {
+        await rehab.advanceTraining({ block_id: training.block_id, session_id: sessionId });
+      } catch {
+        /* lazy advance-on-GET догонит */
+      }
+    }
+    setView('list');
+    setSelectedComplexId(null);
+    setSelectedExercise(null);
+    setComplexExercises([]);
+    await loadAll();
+  }, [todayComplex, selectedComplexId, sessionId, loadAll]);
+
   const openRunner = (complexExercise, allExercises) => {
     setSelectedExercise(complexExercise);
     setComplexExercises(Array.isArray(allExercises) ? allExercises : [complexExercise]);
@@ -129,7 +151,7 @@ const ExercisesScreen = ({ screenParams }) => {
         startExerciseId={selectedExercise?.exercise?.id}
         sessionId={sessionId}
         onBack={backToList}
-        onComplete={backToList}
+        onComplete={handleComplete}
       />
     );
   }
@@ -159,12 +181,45 @@ const ExercisesScreen = ({ screenParams }) => {
     );
   }
 
-  // "Другие" комплексы = всё из myComplexes КРОМЕ сегодняшнего
-  const otherComplexes = todayComplex
-    ? myComplexes.filter((c) => c.id !== todayComplex.complex_id)
-    : myComplexes;
+  // ── ARC-CYCLE AC5: D2-разбор ответа /my/exercises ──
+  // mode='blocks' → две секции (гимнастика + тренировка). Иначе (mode='legacy' или
+  // старая плоская форма без mode) → legacy одиночный комплекс (прежнее поведение).
+  // Boolean(...) — иначе && вернёт объект блока, а не true; legacy ниже опирается на !isBlocks.
+  const isBlocks = todayComplex?.mode === 'blocks' && Boolean(todayComplex.gymnastics || todayComplex.training);
+  const gymnastics = isBlocks ? todayComplex.gymnastics : null;
+  const training = isBlocks ? todayComplex.training : null;
+  const legacy = !isBlocks ? todayComplex : null;
 
-  const hasAnything = todayComplex || myComplexes.length > 0;
+  // «Другие комплексы» = myComplexes минус показанные в блоках/сегодняшнем
+  const blockComplexIds = new Set([
+    ...(gymnastics?.complexes || []).map((c) => c.complex_id),
+    ...(training?.complexes || []).map((c) => c.complex_id),
+  ]);
+  const otherComplexes = isBlocks
+    ? myComplexes.filter((c) => !blockComplexIds.has(c.id))
+    : (legacy?.complex_id ? myComplexes.filter((c) => c.id !== legacy.complex_id) : myComplexes);
+
+  const hasAnything = isBlocks || Boolean(legacy?.complex_id) || myComplexes.length > 0;
+
+  // Карточка комплекса блока (gymnastics-набор / training-день) — запуск раннера.
+  const renderBlockCard = (c, testid) => (
+    <button
+      key={c.complex_id}
+      onClick={() => openComplex(c.complex_id)}
+      className="pd-complex-card"
+      data-testid={testid}
+    >
+      <div className="pd-complex-card-icon"><Dumbbell size={20} /></div>
+      <div className="pd-complex-card-body">
+        <div className="pd-complex-card-title">{c.complex_title || c.diagnosis_name || 'Комплекс'}</div>
+        <div className="pd-complex-card-meta">
+          {c.instructor_name ? `${c.instructor_name} · ` : ''}
+          {c.exercise_count || 0} упражнений
+        </div>
+      </div>
+      <ChevronRight size={18} className="pd-complex-card-chevron" />
+    </button>
+  );
 
   return (
     <div className="pd-exercises-screen">
@@ -183,8 +238,42 @@ const ExercisesScreen = ({ screenParams }) => {
         </div>
       )}
 
-      {todayComplex && (
-        // State A — сегодняшний комплекс (hero)
+      {/* D2 — Гимнастика (ежедневно) */}
+      {gymnastics && gymnastics.complexes?.length > 0 && (
+        <section data-testid="gymnastics-section">
+          <h2 className="pd-screen-subtitle">Гимнастика (ежедневно)</h2>
+          {gymnastics.target?.min != null && (
+            <div className="pd-block-meta" data-testid="gymnastics-target">
+              Цель: {gymnastics.target.min}–{gymnastics.target.max} раз/день
+            </div>
+          )}
+          <div className="pd-complex-list">
+            {gymnastics.complexes.map((c) => renderBlockCard(c, `gym-complex-${c.complex_id}`))}
+          </div>
+        </section>
+      )}
+
+      {/* D2 — Тренировка (микроцикл, текущий день ротации) */}
+      {training && training.complexes?.length > 0 && (
+        <section data-testid="training-section">
+          <h2 className="pd-screen-subtitle">Тренировка</h2>
+          <div className="pd-block-meta" data-testid="training-day-label">
+            {training.day_label ? `${training.day_label} · ` : ''}
+            День {training.current_day_index} из {training.num_days}
+          </div>
+          {training.target?.min != null && (
+            <div className="pd-block-meta" data-testid="training-target">
+              Цель: {training.target.min}–{training.target.max} раз/неделю
+            </div>
+          )}
+          <div className="pd-complex-list">
+            {training.complexes.map((c) => renderBlockCard(c, `training-complex-${c.complex_id}`))}
+          </div>
+        </section>
+      )}
+
+      {/* Legacy — одиночный комплекс (нет блоков). Прежний hero 1:1. */}
+      {legacy?.complex_id && (
         <Card variant="hero" className="pd-today-card" gradient="var(--pd-gradient-primary, linear-gradient(135deg, #0D9488, #06B6D4))">
           <div className="pd-today-badge">
             <Dumbbell size={18} />
@@ -192,11 +281,11 @@ const ExercisesScreen = ({ screenParams }) => {
           </div>
           <h2 className="pd-today-title">Ваш комплекс на сегодня</h2>
           <p className="pd-today-sub">
-            {todayComplex.complex_title || todayComplex.program_title || 'Комплекс упражнений'}
-            {todayComplex.exercise_count ? ` · ${todayComplex.exercise_count} упражнений` : ''}
+            {legacy.complex_title || legacy.program_title || 'Комплекс упражнений'}
+            {legacy.exercise_count ? ` · ${legacy.exercise_count} упражнений` : ''}
           </p>
           <button
-            onClick={() => openComplex(todayComplex.complex_id)}
+            onClick={() => openComplex(legacy.complex_id)}
             className="pd-today-btn"
             data-testid="start-today-btn"
           >
@@ -212,7 +301,7 @@ const ExercisesScreen = ({ screenParams }) => {
       {otherComplexes.length > 0 && (
         <>
           <h2 className="pd-screen-subtitle">
-            {todayComplex ? 'Другие комплексы' : 'Мои комплексы'}
+            {(isBlocks || legacy?.complex_id) ? 'Другие комплексы' : 'Мои комплексы'}
           </h2>
           <div className="pd-complex-list">
             {otherComplexes.map((c) => (

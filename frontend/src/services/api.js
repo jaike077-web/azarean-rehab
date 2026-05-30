@@ -466,6 +466,10 @@ export const rehab = {
   getDashboard: () => patientApi.get('/rehab/my/dashboard'),
   getMyProgram: () => patientApi.get('/rehab/my/program'),
   getMyExercises: () => patientApi.get('/rehab/my/exercises'),
+  // ARC-CYCLE AC5: продвижение тренировочного дня. Вызывается из ExercisesScreen
+  // на границе завершения раннера (НЕ из LOCKED раннера). { block_id, session_id }.
+  // Идемпотентно на бэке через last_advanced_session_id.
+  advanceTraining: (data) => patientApi.post('/rehab/my/training/advance', data),
 
   // Фазы (публичные). Wave 1 #1.04: тип обязателен, дефолт 'acl' убран.
   // Caller обязан передать program_type из активной программы пациента.

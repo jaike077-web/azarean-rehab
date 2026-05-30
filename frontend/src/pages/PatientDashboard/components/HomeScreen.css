@@ -229,6 +229,27 @@
   font-weight: 700;
 }
 
+/* ARC-CYCLE AC5: чипы «сделано сегодня» по блокам (на тёмном hero — translucent). */
+.pd-home-hero-blockchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pd-home-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 /* ===== Общая карточка (PGIC, next-visit, progress) ===== */
 .pd-home-card {
   background: var(--pd-color-white);
