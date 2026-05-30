@@ -15,6 +15,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -98,6 +99,9 @@ function getAudioCtor() {
 export function AudioProvider({ children }) {
   const [settings, setSettingsState] = useState(readStoredSettings);
   const ctxRef = useRef(null);
+  // CA4: кеш декодированных кастом-буферов { [cue]: { buffer|'failed', sig } }.
+  // sig = uploaded_at → ре-декод только при смене файла.
+  const buffersRef = useRef({});
   // Custom Audio (CA3): override-метаданные. НЕ грузим на mount — провайдер
   // оборачивает и login-страницы (там бы 401). Тянем по запросу consumer'а
   // (MyAudioSounds на mount, в CA4 — предекод при входе в раннер).
@@ -145,6 +149,31 @@ export function AudioProvider({ children }) {
     (name) => {
       // no-op при выключенном звуке — НЕ создаём осциллятор вообще.
       if (!settings.enabled) return;
+      // CA4: кастом-буфер пациента (если декодирован) → AudioBufferSourceNode
+      // через тот же разблокированный контекст. НЕ new Audio() — iOS-инвариант
+      // (таймерный cue вне жеста; HTMLAudioElement.play() заблокировался бы).
+      // Контекст создаём ТОЛЬКО когда реально есть что играть (буфер или cfg),
+      // чтобы неизвестный cue не плодил AudioContext (как было до CA4).
+      const entry = buffersRef.current[name];
+      const buf = entry && entry.buffer;
+      if (buf && buf !== 'failed') {
+        const bufCtx = ensureContext();
+        if (!bufCtx) return;
+        try {
+          const now = typeof bufCtx.currentTime === 'number' ? bufCtx.currentTime : 0;
+          const gain = bufCtx.createGain();
+          gain.gain.value = settings.volume;
+          const node = bufCtx.createBufferSource();
+          node.buffer = buf;
+          node.connect(gain);
+          gain.connect(bufCtx.destination);
+          node.start(now);
+          return;
+        } catch {
+          /* буфер-путь упал → стандартный тон ниже */
+        }
+      }
+      // Стандартный тон (CP1) — без изменений.
       const cfg = getCueConfig(name);
       if (!cfg) return;
       const ctx = ensureContext();
@@ -202,6 +231,47 @@ export function AudioProvider({ children }) {
       setOverridesLoading(false);
     }
   }, []);
+
+  // CA4: декод одного override в AudioBuffer (кеш в buffersRef). Тот же
+  // AudioContext, что осциллятор — decodeAudioData работает и на suspended
+  // контексте (playback в cue() — позже, после unlock). Битый файл / decode-fail
+  // → помечаем 'failed' → cue падает на стандартный тон (не крэшим).
+  const decodeOverride = useCallback(async (ov) => {
+    const cueName = ov && ov.cue_name;
+    if (!cueName) return;
+    const sig = ov.uploaded_at || '';
+    const existing = buffersRef.current[cueName];
+    if (existing && existing.sig === sig && existing.buffer !== 'failed') return;
+    const ctx = ensureContext();
+    if (!ctx || typeof ctx.decodeAudioData !== 'function') return;
+    try {
+      const res = await patientAuth.fetchSoundBlob(cueName);
+      const blob = res && res.data;
+      if (!blob || typeof blob.arrayBuffer !== 'function') {
+        buffersRef.current[cueName] = { buffer: 'failed', sig };
+        return;
+      }
+      const arr = await blob.arrayBuffer();
+      // decodeAudioData: promise-форма (iOS 14.3+) ИЛИ callback-форма — поддержим обе.
+      const buffer = await new Promise((resolve, reject) => {
+        const p = ctx.decodeAudioData(arr, resolve, reject);
+        if (p && typeof p.then === 'function') p.then(resolve, reject);
+      });
+      buffersRef.current[cueName] = { buffer, sig };
+    } catch {
+      buffersRef.current[cueName] = { buffer: 'failed', sig };
+    }
+  }, [ensureContext]);
+
+  // Предекод при смене списка override'ов: декодируем актуальные, выкидываем
+  // буферы для удалённых cue. Идемпотентно (decodeOverride скипает по sig).
+  useEffect(() => {
+    const present = new Set(overrides.map((o) => o.cue_name));
+    Object.keys(buffersRef.current).forEach((c) => {
+      if (!present.has(c)) delete buffersRef.current[c];
+    });
+    overrides.forEach((o) => { decodeOverride(o); });
+  }, [overrides, decodeOverride]);
 
   const value = useMemo(
     () => ({ cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides }),

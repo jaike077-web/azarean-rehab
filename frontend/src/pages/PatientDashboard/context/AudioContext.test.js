@@ -6,25 +6,34 @@
 // =====================================================
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
   AudioProvider,
   useAudioCue,
   useAudioSettings,
+  useAudioOverrides,
   getCueConfig,
 } from './AudioContext';
 
-// AudioProvider импортирует services/api (overrides, CA3). Реальный axios v1 —
+// AudioProvider импортирует services/api (overrides, CA3/CA4). Реальный axios v1 —
 // ESM, jest не трансформит node_modules → мокаем api (как везде в проекте).
-// listSounds здесь не дёргается (refreshOverrides зовёт только MyAudioSounds).
 jest.mock('../../../services/api', () => ({
-  patientAuth: { listSounds: jest.fn(() => Promise.resolve({ data: [] })) },
+  patientAuth: {
+    listSounds: jest.fn(() => Promise.resolve({ data: [] })),
+    fetchSoundBlob: jest.fn(() => Promise.resolve({
+      data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) },
+    })),
+  },
 }));
+const { patientAuth } = require('../../../services/api');
 
 // ---- Mock Web Audio API ----
 const oscInstances = [];
 const gainInstances = [];
+// CA4: фейковый декодированный буфер + флаг «decode упал» (для fallback-теста).
+const FAKE_AUDIO_BUFFER = { duration: 1, __fakeBuffer: true };
+let mockDecodeShouldFail = false;
 
 function createMockAudioContext() {
   return {
@@ -56,6 +65,12 @@ function createMockAudioContext() {
       connect: jest.fn(),
       start: jest.fn(),
     })),
+    // CA4: decodeAudioData (promise-форма). Управляемо через mockDecodeShouldFail.
+    decodeAudioData: jest.fn(() => (
+      mockDecodeShouldFail
+        ? Promise.reject(new Error('decode fail'))
+        : Promise.resolve(FAKE_AUDIO_BUFFER)
+    )),
     resume: jest.fn(),
     close: jest.fn(),
   };
@@ -66,10 +81,15 @@ let audioCtxCtor;
 beforeEach(() => {
   oscInstances.length = 0;
   gainInstances.length = 0;
+  mockDecodeShouldFail = false;
   audioCtxCtor = jest.fn(() => createMockAudioContext());
   global.AudioContext = audioCtxCtor;
   delete global.webkitAudioContext;
   localStorage.clear();
+  patientAuth.listSounds.mockResolvedValue({ data: [] });
+  patientAuth.fetchSoundBlob.mockResolvedValue({
+    data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) },
+  });
 });
 
 afterEach(() => {
@@ -292,5 +312,64 @@ describe('peak gain = settings.volume × cfg.gain', () => {
     fireEvent.click(getByTestId('vol50'));
     fireEvent.click(getByTestId('cue-rest'));
     expect(gainInstances[0].gain.value).toBeCloseTo(0.15);
+  });
+});
+
+// =====================================================
+// CA4 — cue-playback кастомного буфера (override → AudioBufferSourceNode)
+// =====================================================
+function CA4Consumer() {
+  const { cue } = useAudioCue();
+  const { refresh } = useAudioOverrides();
+  return (
+    <div>
+      <button data-testid="ca4-refresh" type="button" onClick={() => refresh()}>refresh</button>
+      <button data-testid="ca4-cue" type="button" onClick={() => cue('set_end')}>cue</button>
+    </div>
+  );
+}
+
+// Прокачать микротаски декода (fetch → arrayBuffer → decodeAudioData → buffersRef).
+const flushDecode = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+
+describe('CA4 — cue-playback кастомного буфера', () => {
+  it('override декодирован → cue играет AudioBufferSourceNode, осциллятор НЕ вызван', async () => {
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.decodeAudioData).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    expect(ctx.createBufferSource).toHaveBeenCalledTimes(1);
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+  });
+
+  it('нет override → cue падает на осциллятор (стандартный тон)', async () => {
+    patientAuth.listSounds.mockResolvedValue({ data: [] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled(); // set_end = двухтон
+    expect(ctx.createBufferSource).not.toHaveBeenCalled();
+  });
+
+  it('decode-fail → cue падает на осциллятор (не крэшит)', async () => {
+    mockDecodeShouldFail = true;
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(ctx.createBufferSource).not.toHaveBeenCalled();
   });
 });
