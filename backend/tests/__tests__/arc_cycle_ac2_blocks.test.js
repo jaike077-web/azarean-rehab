@@ -213,6 +213,27 @@ describe('ARC-CYCLE AC2 — CRUD блоков программы', () => {
       expect(insertBlock[1][1]).toBe('training');
       expect(insertBlock[1][7]).toBe(1); // current_day_index = min(day_index)
     });
+
+    it('INSERT блока кастует $8::smallint в CASE (защита от 42P08 на untyped-параметре)', async () => {
+      // Регресс: node-postgres шлёт параметры без OID. $8 в «CASE WHEN $8 IS NOT NULL»
+      // без каста → Postgres не выводит тип → 42P08 «не удалось определить тип данных $8»
+      // → 500 на создании ЛЮБОГО блока. Mock-тесты SQL против схемы не гоняют, поэтому
+      // sanity-grep что каст на месте. (Найдено живым smoke 2026-05-30, до этого все 11
+      // AC2-тестов зелёные при сломанном INSERT.)
+      query
+        .mockResolvedValueOnce(AUTH_OK)
+        .mockResolvedValueOnce({ rows: [{ id: 1, patient_id: 14 }] })
+        .mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      const client = makeClient();
+      getClient.mockResolvedValue(client);
+      await request(app)
+        .post('/api/rehab/programs/1/blocks')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ block_type: 'gymnastics', complexes: [{ complex_id: 10 }] })
+        .expect(201);
+      const insertBlock = client.query.mock.calls.find((c) => /INSERT INTO program_blocks/i.test(c[0]));
+      expect(insertBlock[0]).toMatch(/\$8::smallint IS NOT NULL/);
+    });
   });
 
   // ─── PUT /blocks/:blockId ───

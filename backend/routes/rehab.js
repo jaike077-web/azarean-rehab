@@ -1778,11 +1778,15 @@ router.post('/programs/:id/blocks', authenticateToken, async (req, res) => {
     await client.query('BEGIN');
 
     const blockResult = await client.query(
+      // $8::smallint в CASE — ОБЯЗАТЕЛЬНЫЙ каст. node-postgres шлёт параметры без OID
+      // (untyped), и $8 в «IS NOT NULL» не даёт Postgres контекста типа → ошибка парсинга
+      // 42P08 «не удалось определить тип данных параметра $8» → 500 на создании ЛЮБОГО блока.
+      // Каст фиксирует тип в этой позиции. Не убирать (mock-тесты SQL против схемы не гоняют).
       `INSERT INTO program_blocks
          (program_id, block_type, title, position, target_min, target_max, target_unit,
           current_day_index, current_day_started_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
-               CASE WHEN $8 IS NOT NULL THEN NOW() ELSE NULL END)
+               CASE WHEN $8::smallint IS NOT NULL THEN NOW() ELSE NULL END)
        RETURNING *`,
       [programId, block_type, normalizedTitle, blockPosition, target.min, target.max, target.unit, currentDayIndex]
     );
