@@ -49,6 +49,13 @@ jest.mock('../../services/api', () => ({
     createPhaseCriterion: jest.fn(),
     updateCriterion: jest.fn(),
     deleteCriterion: jest.fn(),
+    getAudioPresets: jest.fn().mockResolvedValue({ data: [] }),
+    createAudioPreset: jest.fn(),
+    updateAudioPreset: jest.fn(),
+    deleteAudioPreset: jest.fn(),
+    fetchAudioPresetBlob: jest.fn(),
+    getAudioCueDefaults: jest.fn().mockResolvedValue({ data: [] }),
+    setAudioCueDefault: jest.fn(),
     getSystemInfo: jest.fn(),
   },
   templates: {
@@ -105,7 +112,15 @@ jest.mock('./AdminAuditLogs.module.css', () => new Proxy({}, { get: (_, prop) =>
 jest.mock('./AdminContent.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
 jest.mock('./AdminSystem.module.css', () => new Proxy({}, { get: (_, prop) => String(prop) }));
 
+// AdminContent (AudioPresetsTab) тянет validateAudioFile из PatientDashboard utils —
+// мокаем, чтобы не дёргать real <audio>/URL probe в JSDOM (Rule #37, axios-ESM-free pure util).
+jest.mock('../PatientDashboard/utils/validateAudioFile', () => ({
+  __esModule: true,
+  default: jest.fn(() => Promise.resolve({ ok: true })),
+}));
+
 const { admin } = require('../../services/api');
+const mockValidateAudioFile = require('../PatientDashboard/utils/validateAudioFile').default;
 
 // =====================================================
 // AdminStats
@@ -416,6 +431,107 @@ describe('PainLocationsTab', () => {
 
     await waitFor(() => {
       expect(mockToast.error).toHaveBeenCalledWith(expect.stringMatching(/используется в 5/));
+    });
+  });
+});
+
+// =====================================================
+// AudioPresetsTab (Custom Audio AA4)
+// =====================================================
+describe('AudioPresetsTab', () => {
+  const mockPresets = [
+    { id: 1, name: 'Бип', mime_type: 'audio/mpeg', size_bytes: 8000, duration_ms: 1200, original_filename: 'beep.mp3', is_active: true, usage_count: 0 },
+    { id: 2, name: 'Гонг', mime_type: 'audio/wav', size_bytes: 12000, duration_ms: 3000, original_filename: 'gong.wav', is_active: true, usage_count: 2 },
+  ];
+  const mockDefaults = [
+    { cue_name: 'count_tick', preset_id: null, is_locked: false, preset_name: null, preset_is_active: null },
+    { cue_name: 'set_start', preset_id: 1, is_locked: true, preset_name: 'Бип', preset_is_active: true },
+    { cue_name: 'set_end', preset_id: null, is_locked: false, preset_name: null, preset_is_active: null },
+    { cue_name: 'rest_end', preset_id: null, is_locked: false, preset_name: null, preset_is_active: null },
+  ];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // react-scripts ставит resetMocks:true (внутренний CRA-дефолт) → реализации фабрики
+    // стираются перед каждым тестом — ре-арм нужных моков здесь.
+    admin.getPhases.mockResolvedValue({ data: [] });
+    admin.getAudioPresets.mockResolvedValue({ data: mockPresets });
+    admin.getAudioCueDefaults.mockResolvedValue({ data: mockDefaults });
+    mockValidateAudioFile.mockResolvedValue({ ok: true });
+  });
+
+  const openAudioTab = async () => {
+    await act(async () => { render(<AdminContent />); });
+    await act(async () => { fireEvent.click(screen.getByText('Звуки')); });
+    await waitFor(() => expect(admin.getAudioPresets).toHaveBeenCalled());
+  };
+
+  it('renders tab button in navigation', async () => {
+    await act(async () => { render(<AdminContent />); });
+    expect(screen.getByText('Звуки')).toBeInTheDocument();
+  });
+
+  it('switches to audio tab and renders preset rows + дом-карту', async () => {
+    await openAudioTab();
+    // «Бип»/«Гонг» встречаются и в таблице, и в опциях дом-карты → getAllByText.
+    await waitFor(() => expect(screen.getAllByText('Бип').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('Гонг').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('cue-default-select-count_tick')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-default-select-rest_end')).toBeInTheDocument();
+  });
+
+  it('дом-карта pre-fill: set_start = пресет 1 + lock', async () => {
+    await openAudioTab();
+    await waitFor(() => expect(screen.getByTestId('cue-default-select-set_start')).toBeInTheDocument());
+    expect(screen.getByTestId('cue-default-select-set_start')).toHaveValue('1');
+    expect(screen.getByTestId('cue-default-lock-set_start')).toBeChecked();
+  });
+
+  it('смена дом-карты зовёт setAudioCueDefault с cue/preset_id/lock', async () => {
+    await openAudioTab();
+    admin.setAudioCueDefault.mockResolvedValueOnce({ data: {} });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('cue-default-select-count_tick'), { target: { value: '2' } });
+    });
+    await waitFor(() => {
+      expect(admin.setAudioCueDefault).toHaveBeenCalledWith('count_tick', { preset_id: 2, is_locked: false });
+    });
+  });
+
+  it('«Добавить звук» → форма → upload шлёт FormData с name+file', async () => {
+    await openAudioTab();
+    admin.createAudioPreset.mockResolvedValueOnce({ data: { id: 3 } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Добавить звук/i }));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/Название/), { target: { value: 'Новый' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('preset-upload-input'), {
+        target: { files: [new File([new Uint8Array([0xff, 0xfb, 0x90, 0x00])], 'x.mp3', { type: 'audio/mpeg' })] },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^Сохранить/ }));
+    });
+    await waitFor(() => expect(admin.createAudioPreset).toHaveBeenCalledTimes(1));
+    const fd = admin.createAudioPreset.mock.calls[0][0];
+    expect(fd).toBeInstanceOf(FormData);
+    expect(fd.get('name')).toBe('Новый');
+    expect(fd.get('file')).toBeTruthy();
+  });
+
+  it('delete 409 → error toast «используется»', async () => {
+    await openAudioTab();
+    admin.deleteAudioPreset.mockRejectedValueOnce({
+      response: { status: 409, data: { message: 'Пресет используется в 3 местах' } },
+    });
+    const delBtns = screen.getAllByTitle('Удалить');
+    await act(async () => { fireEvent.click(delBtns[0]); });
+    await act(async () => { fireEvent.click(screen.getByText('Confirm')); });
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(expect.stringMatching(/используется в 3/));
     });
   });
 });

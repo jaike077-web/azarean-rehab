@@ -438,6 +438,23 @@ router.get('/:id', authenticateToken, async (req, res) => {
                   JOIN exercises ex ON ex.id = sub.exercise_id
                 )
               ) AS derived_title,
+              -- AA3/AA4: raw cue-привязки звуков комплекса для pre-fill секции
+              -- «Звуки комплекса» в EditComplex. Скалярный подзапрос (не задет GROUP BY).
+              -- preset_name/preset_is_active — для отображения уже выбранного (в т.ч.
+              -- ставшего неактивным) пресета; resolution в раннер — отдельно (audio_cues
+              -- в /my-complexes/:id). Отсутствие строки cue = наследование дом-карты.
+              (
+                SELECT COALESCE(json_agg(json_build_object(
+                  'cue_name', ccs.cue_name,
+                  'preset_id', ccs.preset_id,
+                  'is_locked', ccs.is_locked,
+                  'preset_name', ap.name,
+                  'preset_is_active', ap.is_active
+                ) ORDER BY ccs.cue_name), '[]'::json)
+                FROM complex_cue_sounds ccs
+                LEFT JOIN audio_presets ap ON ap.id = ccs.preset_id
+                WHERE ccs.complex_id = c.id
+              ) AS cue_sounds,
               json_agg(
                 json_build_object(
                   'id', ce.id,

@@ -151,6 +151,42 @@ describe('GET /api/complexes/:id — derived_title', () => {
   });
 });
 
+describe('AA4 — GET /api/complexes/:id возвращает cue_sounds (pre-fill EditComplex)', () => {
+  it('SQL содержит подзапрос complex_cue_sounds + cue_sounds пробрасывается в response', async () => {
+    query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 5,
+          title: 'Тест',
+          patient_id: 14,
+          patient_name: 'Вадим',
+          instructor_name: 'Vadim',
+          derived_title: 'Тест',
+          cue_sounds: [
+            { cue_name: 'set_start', preset_id: 7, is_locked: true, preset_name: 'Гонг', preset_is_active: true },
+          ],
+          exercises: [],
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .get('/api/complexes/5')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .expect(200);
+
+    // SQL содержит cue-подзапрос (calls[0]=auth is_active, calls[1]=сам SELECT)
+    const sql = query.mock.calls[1][0];
+    expect(sql).toMatch(/FROM complex_cue_sounds ccs/);
+    expect(sql).toMatch(/'cue_name',\s*ccs\.cue_name/);
+    expect(sql).toMatch(/'preset_id',\s*ccs\.preset_id/);
+    // response пробрасывает cue_sounds для pre-fill секции «Звуки комплекса»
+    expect(res.body.data.cue_sounds).toEqual([
+      { cue_name: 'set_start', preset_id: 7, is_locked: true, preset_name: 'Гонг', preset_is_active: true },
+    ]);
+  });
+});
+
 describe('GET /api/complexes/patient/:patient_id — derived_title', () => {
   it('возвращает derived_title для каждого комплекса пациента', async () => {
     query.mockResolvedValueOnce({

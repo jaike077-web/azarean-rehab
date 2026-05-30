@@ -1,0 +1,60 @@
+/* =====================================================
+   ComplexCueSounds (AA4) — секция «Звуки комплекса»
+   ===================================================== */
+
+.cueSoundsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cueSoundsHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0 0 4px;
+}
+
+.cueSoundsRow {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(200px, 1.6fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.cueSoundsLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.cueSoundsSection select {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--color-text);
+  min-height: 44px;
+  width: 100%;
+}
+
+.cueSoundsLock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .cueSoundsRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+}

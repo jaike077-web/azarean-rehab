@@ -660,6 +660,24 @@ export const admin = {
     getDynamics:    (params = {}) => api.get('/admin/command-center/dynamics', { params }),
   },
 
+  // Custom Audio (AA4) — библиотека пресетов + дом-карта cue (admin-only glob).
+  // createAudioPreset/updateAudioPreset принимают уже готовый FormData (caller строит).
+  // Content-Type: undefined → axios v1 сам выставит multipart boundary (как uploadAvatar),
+  // иначе instance-default application/json блокирует авто-детект FormData. PUT принимает
+  // FormData даже для name-only правки (multer парсит текстовые поля).
+  getAudioPresets: (params = {}) => api.get('/admin/audio-presets', { params }),
+  createAudioPreset: (formData) => api.post('/admin/audio-presets', formData, {
+    headers: { 'Content-Type': undefined },
+  }),
+  updateAudioPreset: (id, formData) => api.put(`/admin/audio-presets/${id}`, formData, {
+    headers: { 'Content-Type': undefined },
+  }),
+  deleteAudioPreset: (id) => api.delete(`/admin/audio-presets/${id}`),
+  fetchAudioPresetBlob: (id) =>
+    api.get(`/admin/audio-presets/${id}/file`, { responseType: 'blob' }),
+  getAudioCueDefaults: () => api.get('/admin/audio-cue-defaults'),
+  setAudioCueDefault: (cue, body) => api.put(`/admin/audio-cue-defaults/${cue}`, body),
+
   // Система
   getSystemInfo: () => api.get('/admin/system'),
 };

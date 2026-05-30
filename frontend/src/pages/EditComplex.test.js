@@ -25,12 +25,17 @@ jest.mock('react-router-dom', () => ({
 
 const EditComplex = require('./EditComplex').default;
 
-// Mock services/api — без реальной сети.
+// Mock services/api — без реальной сети. admin.* нужны для AA4 audio-секции
+// (EditComplex дёргает getAudioPresets/getAudioCueDefaults только если user.role==='admin').
 jest.mock('../services/api', () => ({
   exercises: { getAll: jest.fn(() => Promise.resolve({ data: [] })) },
   complexes: {
     getOne: jest.fn(),
     update: jest.fn(),
+  },
+  admin: {
+    getAudioPresets: jest.fn(() => Promise.resolve({ data: [] })),
+    getAudioCueDefaults: jest.fn(() => Promise.resolve({ data: [] })),
   },
 }));
 
@@ -44,6 +49,14 @@ jest.mock('../context/ToastContext', () => ({
   }),
 }));
 
+// Mock AuthContext — AA4 секция «Звуки комплекса» под admin-гейтом.
+// Мутабельный mockUser (prefix "mock" → разрешён в hoisted-фабрике); дефолт
+// instructor, чтобы существующие CP2c тесты НЕ рендерили audio-секцию.
+let mockUser = { id: 1, role: 'instructor' };
+jest.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ user: mockUser }),
+}));
+
 // Mock тяжёлых auxiliary компонентов — они не нужны для теста mapping CP2c
 // и тянут лишние зависимости (AuthContext, и т.д.).
 jest.mock('../components/BackButton', () => () => null);
@@ -53,7 +66,7 @@ jest.mock('../components/Skeleton', () => ({
   Skeleton: () => null,
 }));
 
-const { complexes } = require('../services/api');
+const { complexes, admin, exercises } = require('../services/api');
 
 function renderEditAt() {
   return render(<EditComplex />);
@@ -62,6 +75,7 @@ function renderEditAt() {
 describe('EditComplex.loadComplexData — CP2c instructor read round-trip', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUser = { id: 1, role: 'instructor' }; // CP2c: не-admin → audio-секция скрыта
   });
 
   it('auto_complete=false из backend → checkbox unchecked (не дефолтный true)', async () => {
@@ -157,5 +171,38 @@ describe('EditComplex.loadComplexData — CP2c instructor read round-trip', () =
     expect(screen.getByTestId('tempo-ecc-1')).toHaveValue(null);
     expect(screen.getByTestId('tempo-pause-1')).toHaveValue(null);
     expect(screen.getByTestId('tempo-con-1')).toHaveValue(null);
+  });
+});
+
+describe('EditComplex — AA4 audio cue pre-fill (admin)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUser = { id: 1, role: 'admin' };
+    complexes.getOne.mockResolvedValue({
+      data: {
+        id: 50,
+        patient_name: 'Вадим',
+        title: 'С звуками',
+        exercises: [{
+          exercise: { id: 1, title: 'Присед' },
+          sets: 3, reps: 10, duration_seconds: 30, auto_complete: true,
+        }],
+        cue_sounds: [
+          { cue_name: 'set_start', preset_id: 1, is_locked: true, preset_name: 'Гонг', preset_is_active: true },
+        ],
+      },
+    });
+    admin.getAudioPresets.mockResolvedValue({ data: [{ id: 1, name: 'Гонг', is_active: true }] });
+    admin.getAudioCueDefaults.mockResolvedValue({ data: [] });
+    exercises.getAll.mockResolvedValue({ data: [] });
+  });
+
+  it('секция рендерится для admin и pre-fill из cue_sounds (set_start=пресет 1 + lock)', async () => {
+    renderEditAt();
+    await waitFor(() => expect(screen.getByTestId('cue-sound-select-set_start')).toBeInTheDocument());
+    expect(screen.getByTestId('cue-sound-select-set_start')).toHaveValue('1');
+    expect(screen.getByTestId('cue-sound-lock-set_start')).toBeChecked();
+    // непривязанные cue — inherit
+    expect(screen.getByTestId('cue-sound-select-count_tick')).toHaveValue('inherit');
   });
 });

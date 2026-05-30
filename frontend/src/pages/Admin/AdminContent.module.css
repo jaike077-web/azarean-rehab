@@ -602,3 +602,33 @@
   margin-top: 2px;
 }
 
+/* === Custom Audio AA4 — вкладка «Звуки» (дом-карта) === */
+
+.audioMapTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 28px 0 6px;
+}
+
+.audioMapHint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+  max-width: 640px;
+}
+
+.audioInlineSelect {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-text);
+  cursor: pointer;
+  min-width: 220px;
+}
+
