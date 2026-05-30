@@ -316,6 +316,12 @@ export const rehabPrograms = {
   create: (data) => api.post('/rehab/programs', data),
   update: (id, data) => api.put(`/rehab/programs/${id}`, data),
   delete: (id) => api.delete(`/rehab/programs/${id}`),
+  // ARC-CYCLE AC3: блоки программы (микроцикл). Инструктор, api (Bearer).
+  // К AC2-эндпоинтам: GET/POST /rehab/programs/:id/blocks, PUT/DELETE /rehab/blocks/:blockId.
+  getProgramBlocks: (programId) => api.get(`/rehab/programs/${programId}/blocks`),
+  createBlock: (programId, data) => api.post(`/rehab/programs/${programId}/blocks`, data),
+  updateBlock: (blockId, data) => api.put(`/rehab/blocks/${blockId}`, data),
+  deleteBlock: (blockId) => api.delete(`/rehab/blocks/${blockId}`),
 };
 
 // =====================================================
