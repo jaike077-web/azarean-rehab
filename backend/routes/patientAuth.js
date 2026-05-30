@@ -16,7 +16,8 @@ const path = require('path');
 const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { registerValidator, loginValidator } = require('../middleware/validators');
-const { avatarUpload, processAvatar } = require('../middleware/upload');
+const { avatarUpload, processAvatar, audioSoundUpload } = require('../middleware/upload');
+const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
@@ -1395,6 +1396,187 @@ router.get('/avatar', authenticatePatient, async (req, res) => {
   } catch (error) {
     console.error('Patient get-avatar error:', error);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении аватара' });
+  }
+});
+
+// =====================================================
+// Custom Audio (CA2) — звуковые override'ы раннер-cue'ов
+// Зеркало avatar-аплоада (Rule #25, meta drift #26): тот же роутер
+// /api/patient-auth, requireSameOrigin на mount, authenticatePatient per-route,
+// memoryStorage multer, ownership через patient_id, serve через sendFile с
+// containment-guard. БЕЗ транскода — MP3/WAV пишутся как есть (decision #2).
+// Хранилище: backend/uploads/sounds/{pid}_{cue}.{ext} (детерминированное имя,
+// один override на (pid,cue)). file_path — серверная деталь, в JSON не отдаём.
+// =====================================================
+
+const SOUNDS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds');
+
+// POST /audio-sounds — загрузка override'а (multipart: file + cue_name)
+router.post('/audio-sounds', authenticatePatient, (req, res, next) => {
+  audioSoundUpload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          error: 'File Too Large',
+          message: 'Максимальный размер файла — 512 КБ',
+        });
+      }
+      return res.status(400).json({
+        error: 'Upload Error',
+        message: err.message || 'Ошибка при загрузке файла',
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const cueName = req.body && req.body.cue_name;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный звуковой cue',
+      });
+    }
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Файл не выбран',
+      });
+    }
+    // Авторитетная проверка по magic-bytes (mime/ext не доверяем).
+    const detected = detectAudioType(req.file.buffer);
+    if (!detected) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Файл не является MP3 или WAV',
+      });
+    }
+    const { mime, ext } = AUDIO_TYPE_META[detected];
+    const patientId = req.patient.id;
+
+    // Удаляем прежний файл этого (pid,cue) — любой ext (mp3↔wav).
+    const existing = await query(
+      `SELECT file_path FROM patient_audio_overrides WHERE patient_id = $1 AND cue_name = $2`,
+      [patientId, cueName]
+    );
+    const oldPath = existing.rows[0] && existing.rows[0].file_path;
+    if (oldPath) {
+      const oldAbs = path.join(__dirname, '..', oldPath);
+      if (fs.existsSync(oldAbs)) {
+        try { fs.unlinkSync(oldAbs); } catch (_) { /* best-effort */ }
+      }
+    }
+
+    // Детерминированное имя {pid}_{cue}.{ext}; один override на (pid,cue).
+    const filename = `${patientId}_${cueName}.${ext}`;
+    fs.writeFileSync(path.join(SOUNDS_DIR, filename), req.file.buffer);
+    const filePath = `/uploads/sounds/${filename}`;
+    const originalName = (req.file.originalname || '').slice(0, 255) || null;
+
+    const upserted = await query(
+      `INSERT INTO patient_audio_overrides
+         (patient_id, cue_name, file_path, mime_type, size_bytes, original_filename, uploaded_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (patient_id, cue_name) DO UPDATE SET
+         file_path = EXCLUDED.file_path,
+         mime_type = EXCLUDED.mime_type,
+         size_bytes = EXCLUDED.size_bytes,
+         original_filename = EXCLUDED.original_filename,
+         uploaded_at = NOW()
+       RETURNING cue_name, mime_type, size_bytes, original_filename, uploaded_at`,
+      [patientId, cueName, filePath, mime, req.file.size, originalName]
+    );
+
+    // SELECT-allowlist: file_path НЕ отдаём (серверная деталь).
+    res.json({ data: upserted.rows[0], message: 'Звук загружен' });
+  } catch (error) {
+    console.error('Patient audio upload error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при загрузке звука' });
+  }
+});
+
+// GET /audio-sounds — список override'ов текущего пациента (allowlist-поля)
+router.get('/audio-sounds', authenticatePatient, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT cue_name, mime_type, size_bytes, original_filename, uploaded_at
+       FROM patient_audio_overrides
+       WHERE patient_id = $1
+       ORDER BY cue_name`,
+      [req.patient.id]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Patient audio list error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении списка звуков' });
+  }
+});
+
+// GET /audio-sounds/:cue/file — auth-gated стрим файла (только владельцу)
+router.get('/audio-sounds/:cue/file', authenticatePatient, async (req, res) => {
+  try {
+    const cueName = req.params.cue;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный звуковой cue' });
+    }
+    const result = await query(
+      `SELECT file_path, mime_type FROM patient_audio_overrides
+       WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    const row = result.rows[0];
+    if (!row || !row.file_path) {
+      return res.status(404).json({ error: 'Not Found', message: 'Звук не загружен' });
+    }
+
+    // Защита от traversal — берём только basename и проверяем containment.
+    const filename = path.basename(row.file_path);
+    const filePath = path.resolve(SOUNDS_DIR, filename);
+    if (!filePath.startsWith(SOUNDS_DIR + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+
+    // Имя файла детерминированное (контент меняется при re-upload) → no-cache,
+    // ревалидация по etag/lastModified (sendFile), без stale-after-reupload.
+    res.set('Cache-Control', 'private, no-cache');
+    res.type(row.mime_type || 'application/octet-stream');
+    return res.sendFile(filePath);
+  } catch (error) {
+    console.error('Patient audio serve error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении звука' });
+  }
+});
+
+// DELETE /audio-sounds/:cue — удалить override (файл + строка), идемпотентно
+router.delete('/audio-sounds/:cue', authenticatePatient, async (req, res) => {
+  try {
+    const cueName = req.params.cue;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный звуковой cue' });
+    }
+    const result = await query(
+      `SELECT file_path FROM patient_audio_overrides
+       WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    const filePath = result.rows[0] && result.rows[0].file_path;
+    if (filePath) {
+      const abs = path.join(__dirname, '..', filePath);
+      if (fs.existsSync(abs)) {
+        try { fs.unlinkSync(abs); } catch (_) { /* best-effort */ }
+      }
+    }
+    await query(
+      `DELETE FROM patient_audio_overrides WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    res.json({ message: 'Звук удалён' });
+  } catch (error) {
+    console.error('Patient audio delete error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при удалении звука' });
   }
 });
 
