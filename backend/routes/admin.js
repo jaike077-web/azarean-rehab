@@ -5,6 +5,12 @@ const { query } = require('../database/db');
 const { testConnection } = require('../database/db');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const config = require('../config/config');
+const path = require('path');
+const fs = require('fs');
+// Custom Audio (AA2): переиспользуем CA2-multer (cue-агностичен: 512КБ memoryStorage
+// + audio MIME) и magic-byte хелперы — НЕ дублируем (meta drift #26).
+const { audioSoundUpload } = require('../middleware/upload');
+const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
 
 // Все эндпоинты требуют admin-доступ
 router.use(authenticateToken, requireAdmin);
@@ -1517,6 +1523,322 @@ router.delete('/pain-locations/:code', async (req, res) => {
   } catch (error) {
     console.error('Admin delete pain-location error:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления локации' });
+  }
+});
+
+// =====================================================
+// КОНТЕНТ: AUDIO PRESETS (Custom Audio AA2 — админ-библиотека звуков)
+// Зеркало CA2-аплоада (meta drift #26): memoryStorage multer (audioSoundUpload,
+// 512КБ + audio MIME), magic-byte детект, delete-before-write, SELECT-allowlist
+// (file_path в JSON не отдаём). Хранилище: uploads/sounds/presets/{id}.{ext}.
+// Библиотека cue-агностична (один пресет назначается на любой cue в AA3/AA4).
+// FK ON DELETE RESTRICT → удаление используемого пресета = 409 (деактивируй).
+// =====================================================
+
+const PRESETS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds', 'presets');
+// 4 cue в UI дом-карты (tempo_tick — резерв, decision #8).
+const AUDIO_CUE_UI = ['count_tick', 'set_start', 'set_end', 'rest_end'];
+// usage_count пресета = ссылки из дом-карты + per-комплекс привязок (для 409 + UI).
+const PRESET_USAGE_SQL =
+  `(SELECT COUNT(*) FROM audio_cue_defaults d WHERE d.preset_id = ap.id)::int
+  + (SELECT COUNT(*) FROM complex_cue_sounds c WHERE c.preset_id = ap.id)::int`;
+
+// Обёртка multer с обработкой LIMIT_FILE_SIZE (зеркало CA2 POST /audio-sounds).
+function audioPresetMulter(req, res, next) {
+  audioSoundUpload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File Too Large', message: 'Максимальный размер файла — 512 КБ' });
+      }
+      return res.status(400).json({ error: 'Upload Error', message: err.message || 'Ошибка при загрузке файла' });
+    }
+    next();
+  });
+}
+
+// GET /api/admin/audio-presets — библиотека (allowlist + usage_count, без file_path)
+router.get('/audio-presets', async (req, res) => {
+  try {
+    const { is_active } = req.query;
+    const params = [];
+    let where = '';
+    if (is_active !== undefined) {
+      params.push(is_active === 'true' || is_active === true);
+      where = `WHERE ap.is_active = $1`;
+    }
+    const result = await query(
+      `SELECT ap.id, ap.name, ap.mime_type, ap.size_bytes, ap.duration_ms,
+              ap.original_filename, ap.is_active, ap.created_at, ap.updated_at,
+              ${PRESET_USAGE_SQL} AS usage_count
+       FROM audio_presets ap
+       ${where}
+       ORDER BY ap.name, ap.id`,
+      params
+    );
+    res.json({ data: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Admin get audio-presets error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения пресетов' });
+  }
+});
+
+// POST /api/admin/audio-presets — загрузить пресет (multipart: file + name [+ duration_ms])
+router.post('/audio-presets', audioPresetMulter, async (req, res) => {
+  try {
+    const name = ((req.body && req.body.name) || '').trim();
+    if (!name || name.length > 120) {
+      return res.status(400).json({ error: 'Validation Error', message: 'name обязателен (1..120 символов)' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Файл не выбран' });
+    }
+    // Авторитетная проверка по magic-bytes (mime/ext не доверяем).
+    const detected = detectAudioType(req.file.buffer);
+    if (!detected) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Файл не является MP3 или WAV' });
+    }
+    const { mime, ext } = AUDIO_TYPE_META[detected];
+    const durationMs = req.body.duration_ms != null && /^\d+$/.test(String(req.body.duration_ms))
+      ? parseInt(req.body.duration_ms, 10) : null;
+    const originalName = (req.file.originalname || '').slice(0, 255) || null;
+
+    // Резервируем id из sequence → детерминированное имя presets/{id}.{ext}.
+    const seq = await query("SELECT nextval('audio_presets_id_seq') AS id");
+    const id = seq.rows[0].id;
+
+    fs.mkdirSync(PRESETS_DIR, { recursive: true });
+    const filename = `${id}.${ext}`;
+    fs.writeFileSync(path.join(PRESETS_DIR, filename), req.file.buffer);
+    const filePath = `/uploads/sounds/presets/${filename}`;
+
+    try {
+      const ins = await query(
+        `INSERT INTO audio_presets
+           (id, name, file_path, mime_type, size_bytes, duration_ms, original_filename, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, name, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
+        [id, name, filePath, mime, req.file.size, durationMs, originalName, req.user.id]
+      );
+      await logAudit(req, 'CREATE', 'audio_preset', id, { name, mime_type: mime, size_bytes: req.file.size });
+      res.status(201).json({ data: ins.rows[0], message: 'Пресет создан' });
+    } catch (insErr) {
+      // INSERT упал → не оставляем orphan-файл.
+      try { fs.unlinkSync(path.join(PRESETS_DIR, filename)); } catch (_) { /* best-effort */ }
+      throw insErr;
+    }
+  } catch (error) {
+    console.error('Admin create audio-preset error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания пресета' });
+  }
+});
+
+// PUT /api/admin/audio-presets/:id — обновить name / is_active [+ опц. заменить файл]
+router.put('/audio-presets/:id', audioPresetMulter, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный id' });
+    }
+    const existing = await query('SELECT id, file_path FROM audio_presets WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пресет не найден' });
+    }
+
+    const { name, is_active } = req.body;
+    if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0 || name.length > 120)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'name длина 1..120' });
+    }
+
+    const sets = [];
+    const params = [];
+    let idx = 1;
+    if (name !== undefined) { sets.push(`name = $${idx++}`); params.push(name.trim()); }
+    if (is_active !== undefined) {
+      sets.push(`is_active = $${idx++}`);
+      params.push(is_active === 'true' || is_active === true);
+    }
+
+    // Опциональная замена файла (ext мог смениться mp3↔wav → удаляем старый).
+    if (req.file) {
+      const detected = detectAudioType(req.file.buffer);
+      if (!detected) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Файл не является MP3 или WAV' });
+      }
+      const { mime, ext } = AUDIO_TYPE_META[detected];
+      const oldPath = existing.rows[0].file_path;
+      if (oldPath) {
+        // path.resolve(PRESETS_DIR, basename) — cwd/OS-независимо (как GET serve);
+        // path.join(__dirname,'..',abs) даёт drive-relative «C:uploads\…» на Windows.
+        const oldAbs = path.resolve(PRESETS_DIR, path.basename(oldPath));
+        if (fs.existsSync(oldAbs)) { try { fs.unlinkSync(oldAbs); } catch (_) { /* best-effort */ } }
+      }
+      fs.mkdirSync(PRESETS_DIR, { recursive: true });
+      const filename = `${id}.${ext}`;
+      fs.writeFileSync(path.join(PRESETS_DIR, filename), req.file.buffer);
+      const durationMs = req.body.duration_ms != null && /^\d+$/.test(String(req.body.duration_ms))
+        ? parseInt(req.body.duration_ms, 10) : null;
+      const originalName = (req.file.originalname || '').slice(0, 255) || null;
+      sets.push(`file_path = $${idx++}`); params.push(`/uploads/sounds/presets/${filename}`);
+      sets.push(`mime_type = $${idx++}`); params.push(mime);
+      sets.push(`size_bytes = $${idx++}`); params.push(req.file.size);
+      sets.push(`duration_ms = $${idx++}`); params.push(durationMs);
+      sets.push(`original_filename = $${idx++}`); params.push(originalName);
+    }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Нет полей для обновления' });
+    }
+    sets.push(`updated_at = NOW()`);
+    params.push(id);
+
+    const result = await query(
+      `UPDATE audio_presets SET ${sets.join(', ')} WHERE id = $${idx}
+       RETURNING id, name, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
+      params
+    );
+    await logAudit(req, 'UPDATE', 'audio_preset', id, { name, is_active, file_replaced: !!req.file });
+    res.json({ data: result.rows[0], message: 'Пресет обновлён' });
+  } catch (error) {
+    console.error('Admin update audio-preset error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления пресета' });
+  }
+});
+
+// GET /api/admin/audio-presets/:id/file — стрим файла (preview), containment-guard
+router.get('/audio-presets/:id/file', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный id' });
+    }
+    const result = await query('SELECT file_path, mime_type FROM audio_presets WHERE id = $1', [id]);
+    const row = result.rows[0];
+    if (!row || !row.file_path) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пресет не найден' });
+    }
+    // Защита от traversal — basename + containment.
+    const filename = path.basename(row.file_path);
+    const filePath = path.resolve(PRESETS_DIR, filename);
+    if (!filePath.startsWith(PRESETS_DIR + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+    res.set('Cache-Control', 'private, no-cache');
+    res.type(row.mime_type || 'application/octet-stream');
+    return res.sendFile(filePath);
+  } catch (error) {
+    console.error('Admin serve audio-preset error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения файла пресета' });
+  }
+});
+
+// DELETE /api/admin/audio-presets/:id — hard delete если 0 ссылок; иначе 409 (деактивируй).
+router.delete('/audio-presets/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный id' });
+    }
+    const usage = await query(
+      `SELECT (SELECT COUNT(*) FROM audio_cue_defaults WHERE preset_id = $1)::int
+            + (SELECT COUNT(*) FROM complex_cue_sounds WHERE preset_id = $1)::int AS cnt`,
+      [id]
+    );
+    const cnt = usage.rows[0]?.cnt ?? 0;
+    if (cnt > 0) {
+      return res.status(409).json({
+        error: 'Conflict',
+        message: `Пресет используется в ${cnt} местах. Деактивируйте (is_active=false) вместо удаления.`
+      });
+    }
+    const existing = await query('SELECT file_path FROM audio_presets WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пресет не найден' });
+    }
+    const filePath = existing.rows[0].file_path;
+    if (filePath) {
+      // path.resolve(PRESETS_DIR, basename) — cwd/OS-независимо (как GET serve).
+      const abs = path.resolve(PRESETS_DIR, path.basename(filePath));
+      if (fs.existsSync(abs)) { try { fs.unlinkSync(abs); } catch (_) { /* best-effort */ } }
+    }
+    await query('DELETE FROM audio_presets WHERE id = $1', [id]);
+    await logAudit(req, 'DELETE', 'audio_preset', id, {});
+    res.json({ data: { id }, message: 'Пресет удалён' });
+  } catch (error) {
+    console.error('Admin delete audio-preset error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления пресета' });
+  }
+});
+
+// =====================================================
+// AUDIO CUE DEFAULTS (AA2) — глобальная дом-карта cue → пресет (+lock)
+// 4 UI-cue (tempo_tick резерв). Отсутствие строки = стандартный тон CP1.
+// =====================================================
+
+// GET /api/admin/audio-cue-defaults — текущая дом-карта (4 UI-cue)
+router.get('/audio-cue-defaults', async (req, res) => {
+  try {
+    const rows = await query(
+      `SELECT d.cue_name, d.preset_id, d.is_locked,
+              ap.name AS preset_name, ap.is_active AS preset_is_active
+       FROM audio_cue_defaults d
+       LEFT JOIN audio_presets ap ON ap.id = d.preset_id`
+    );
+    const byCue = {};
+    rows.rows.forEach((r) => { byCue[r.cue_name] = r; });
+    const data = AUDIO_CUE_UI.map((cue) => byCue[cue] || {
+      cue_name: cue, preset_id: null, is_locked: false, preset_name: null, preset_is_active: null,
+    });
+    res.json({ data });
+  } catch (error) {
+    console.error('Admin get audio-cue-defaults error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения дом-карты звуков' });
+  }
+});
+
+// PUT /api/admin/audio-cue-defaults/:cue — назначить пресет на cue (+lock). UPSERT.
+// preset_id=null = «стандартный тон» (можно залочить → пациент не перебьёт).
+router.put('/audio-cue-defaults/:cue', async (req, res) => {
+  try {
+    const cue = req.params.cue;
+    if (!isValidCueName(cue)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный звуковой cue' });
+    }
+    let { preset_id } = req.body;
+    const isLocked = req.body.is_locked === true || req.body.is_locked === 'true';
+
+    if (preset_id !== null && preset_id !== undefined && preset_id !== '') {
+      const pid = parseInt(preset_id, 10);
+      if (!Number.isInteger(pid)) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Некорректный preset_id' });
+      }
+      const exists = await query('SELECT id FROM audio_presets WHERE id = $1 AND is_active = TRUE', [pid]);
+      if (exists.rows.length === 0) {
+        return res.status(400).json({ error: 'Validation Error', message: 'Пресет не найден или неактивен' });
+      }
+      preset_id = pid;
+    } else {
+      preset_id = null;
+    }
+
+    const result = await query(
+      `INSERT INTO audio_cue_defaults (cue_name, preset_id, is_locked, updated_by, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (cue_name) DO UPDATE SET
+         preset_id = EXCLUDED.preset_id,
+         is_locked = EXCLUDED.is_locked,
+         updated_by = EXCLUDED.updated_by,
+         updated_at = NOW()
+       RETURNING cue_name, preset_id, is_locked, updated_at`,
+      [cue, preset_id, isLocked, req.user.id]
+    );
+    await logAudit(req, 'UPSERT', 'audio_cue_default', null, { cue_name: cue, preset_id, is_locked: isLocked });
+    res.json({ data: result.rows[0], message: 'Дом-карта обновлена' });
+  } catch (error) {
+    console.error('Admin upsert audio-cue-default error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления дом-карты' });
   }
 });
 
