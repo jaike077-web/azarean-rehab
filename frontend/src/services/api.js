@@ -445,6 +445,16 @@ patientAuth.fetchAvatarBlob = (cacheKey) => {
 };
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
 patientAuth.getMyComplex = (id) => patientApi.get(`/patient-auth/my-complexes/${id}`);
+// Custom Audio (CA2/CA3): override'ы звуковых cue'ов раннера.
+// uploadSound — FormData (file + cue_name), Content-Type: undefined как у avatar
+// (чтобы axios v1 сам выставил multipart boundary, не instance-default json).
+patientAuth.listSounds = () => patientApi.get('/patient-auth/audio-sounds');
+patientAuth.uploadSound = (formData) => patientApi.post('/patient-auth/audio-sounds', formData, {
+  headers: { 'Content-Type': undefined },
+});
+patientAuth.deleteSound = (cue) => patientApi.delete(`/patient-auth/audio-sounds/${cue}`);
+patientAuth.fetchSoundBlob = (cue) =>
+  patientApi.get(`/patient-auth/audio-sounds/${cue}/file`, { responseType: 'blob' });
 patientAuth.getOAuthProviders = () => patientApi.get('/patient-auth/oauth/providers');
 
 // Прогресс пациента — отдельный объект, использует patientApi (cookie + JWT)

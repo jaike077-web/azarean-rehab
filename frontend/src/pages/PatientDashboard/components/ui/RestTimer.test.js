@@ -14,6 +14,12 @@ import '@testing-library/jest-dom';
 import RestTimer from './RestTimer';
 import { AudioProvider } from '../../context/AudioContext';
 
+// AudioProvider импортирует services/api (overrides, CA3) → реальный axios v1
+// (ESM) не парсится jest'ом в node_modules. Мокаем api (inert тут).
+jest.mock('../../../../services/api', () => ({
+  patientAuth: { listSounds: jest.fn(() => Promise.resolve({ data: [] })) },
+}));
+
 // Mock Web Audio API — JSDOM не имеет AudioContext.
 let mockCtxCtor;
 let lastMockCtx;

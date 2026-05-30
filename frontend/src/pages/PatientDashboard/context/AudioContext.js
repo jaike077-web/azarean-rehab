@@ -20,6 +20,7 @@ import React, {
   useState,
 } from 'react';
 import PropTypes from 'prop-types';
+import { patientAuth } from '../../../services/api';
 
 const STORAGE_KEY = 'azarean_audio';
 const DEFAULT_SETTINGS = { enabled: true, volume: 0.6 };
@@ -82,6 +83,11 @@ const AudioCueContext = createContext({
   prime: () => {},
   settings: DEFAULT_SETTINGS,
   setSettings: () => {},
+  // Custom Audio (CA3): список override'ов пациента (метаданные per cue).
+  // CA4 повесит сюда же декод-в-буфер. Дефолты безопасны без провайдера.
+  overrides: [],
+  overridesLoading: false,
+  refreshOverrides: () => {},
 });
 
 function getAudioCtor() {
@@ -92,6 +98,11 @@ function getAudioCtor() {
 export function AudioProvider({ children }) {
   const [settings, setSettingsState] = useState(readStoredSettings);
   const ctxRef = useRef(null);
+  // Custom Audio (CA3): override-метаданные. НЕ грузим на mount — провайдер
+  // оборачивает и login-страницы (там бы 401). Тянем по запросу consumer'а
+  // (MyAudioSounds на mount, в CA4 — предекод при входе в раннер).
+  const [overrides, setOverrides] = useState([]);
+  const [overridesLoading, setOverridesLoading] = useState(false);
 
   // Lazy-construct AudioContext. Возвращает null если браузер не поддерживает
   // или конструктор кинул (например, до user-gesture в некоторых окружениях).
@@ -178,9 +189,23 @@ export function AudioProvider({ children }) {
     });
   }, []);
 
+  // Тянет список override'ов пациента. Best-effort: нет сессии / сеть → тихо
+  // оставляем текущее (custom-звуки просто не применятся, fallback на тон).
+  const refreshOverrides = useCallback(async () => {
+    setOverridesLoading(true);
+    try {
+      const res = await patientAuth.listSounds();
+      setOverrides(Array.isArray(res && res.data) ? res.data : []);
+    } catch {
+      /* best-effort */
+    } finally {
+      setOverridesLoading(false);
+    }
+  }, []);
+
   const value = useMemo(
-    () => ({ cue, prime, settings, setSettings }),
-    [cue, prime, settings, setSettings],
+    () => ({ cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides }),
+    [cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides],
   );
 
   return <AudioCueContext.Provider value={value}>{children}</AudioCueContext.Provider>;
@@ -201,4 +226,19 @@ export function useAudioCue() {
 // для кнопки «Проверить звук».
 export function useAudioSettings() {
   return useContext(AudioCueContext);
+}
+
+// Custom Audio (CA3): override-метаданные пациента + рефреш.
+// hasOverride/getOverride — производные хелперы для UI и (CA4) cue-пути.
+export function useAudioOverrides() {
+  const { overrides, overridesLoading, refreshOverrides } = useContext(AudioCueContext);
+  const hasOverride = useCallback(
+    (cueName) => overrides.some((o) => o.cue_name === cueName),
+    [overrides],
+  );
+  const getOverride = useCallback(
+    (cueName) => overrides.find((o) => o.cue_name === cueName) || null,
+    [overrides],
+  );
+  return { overrides, loading: overridesLoading, refresh: refreshOverrides, hasOverride, getOverride };
 }

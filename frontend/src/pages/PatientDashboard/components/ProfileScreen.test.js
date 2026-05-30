@@ -16,6 +16,11 @@ jest.mock('../../../services/api', () => ({
     deleteAvatar: jest.fn(),
     fetchAvatarBlob: jest.fn(() => Promise.resolve({ data: new Blob(['x'], { type: 'image/jpeg' }) })),
     changePassword: jest.fn(),
+    // Custom Audio (CA3) — MyAudioSounds дёргает listSounds на mount.
+    listSounds: jest.fn(() => Promise.resolve({ data: [] })),
+    uploadSound: jest.fn(() => Promise.resolve({ data: {} })),
+    deleteSound: jest.fn(() => Promise.resolve({ data: null })),
+    fetchSoundBlob: jest.fn(() => Promise.resolve({ data: new Blob(['x'], { type: 'audio/mpeg' }) })),
   },
   rehab: {
     getTelegramStatus: jest.fn(() => Promise.resolve({ data: { linked: false } })),

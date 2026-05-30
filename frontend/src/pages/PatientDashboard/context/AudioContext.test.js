@@ -15,6 +15,13 @@ import {
   getCueConfig,
 } from './AudioContext';
 
+// AudioProvider импортирует services/api (overrides, CA3). Реальный axios v1 —
+// ESM, jest не трансформит node_modules → мокаем api (как везде в проекте).
+// listSounds здесь не дёргается (refreshOverrides зовёт только MyAudioSounds).
+jest.mock('../../../services/api', () => ({
+  patientAuth: { listSounds: jest.fn(() => Promise.resolve({ data: [] })) },
+}));
+
 // ---- Mock Web Audio API ----
 const oscInstances = [];
 const gainInstances = [];
