@@ -1410,6 +1410,10 @@ router.get('/avatar', authenticatePatient, async (req, res) => {
 // =====================================================
 
 const SOUNDS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds');
+// AA3: каталог админ-пресетов (под тем же symlink'ом). Зеркало admin.js PRESETS_DIR.
+const PRESETS_DIR = path.resolve(SOUNDS_DIR, 'presets');
+// AA3: 4 UI-cue для resolution дом-карты/привязок в my-complexes/:id.
+const AUDIO_CUE_UI = ['count_tick', 'set_start', 'set_end', 'rest_end'];
 
 // POST /audio-sounds — загрузка override'а (multipart: file + cue_name)
 router.post('/audio-sounds', authenticatePatient, (req, res, next) => {
@@ -1580,6 +1584,50 @@ router.delete('/audio-sounds/:cue', authenticatePatient, async (req, res) => {
   }
 });
 
+// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3).
+// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента (защита от
+// enumeration). Только активные. Containment-guard + private no-cache (как CA2).
+router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный id' });
+    }
+    const result = await query(
+      `SELECT ap.file_path, ap.mime_type
+         FROM audio_presets ap
+        WHERE ap.id = $1 AND ap.is_active = TRUE AND (
+          EXISTS (SELECT 1 FROM audio_cue_defaults d WHERE d.preset_id = ap.id)
+          OR EXISTS (
+            SELECT 1 FROM complex_cue_sounds ccs
+              JOIN complexes c ON c.id = ccs.complex_id
+             WHERE ccs.preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+        )`,
+      [id, req.patient.id]
+    );
+    const row = result.rows[0];
+    if (!row || !row.file_path) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пресет не найден' });
+    }
+    // Защита от traversal — basename + containment.
+    const filename = path.basename(row.file_path);
+    const filePath = path.resolve(PRESETS_DIR, filename);
+    if (!filePath.startsWith(PRESETS_DIR + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+    res.set('Cache-Control', 'private, no-cache');
+    res.type(row.mime_type || 'application/octet-stream');
+    return res.sendFile(filePath);
+  } catch (error) {
+    console.error('Patient audio-preset serve error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении звука программы' });
+  }
+});
+
 // =====================================================
 // GET /my-complexes — Список всех активных комплексов пациента
 // Используется новым ExercisesScreen для раздела "Все мои комплексы".
@@ -1707,6 +1755,41 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
       ? row.exercises
       : [];
 
+    // AA3: resolved звуки программы per cue (для раннер-resolution AA5).
+    // Источник: complex binding (incl preset_id=null=«явный тон») ?? дом-карта ?? тон.
+    // best-effort: если аудио-инфра отсутствует/сбой — отдаём тон-cue (раннер на CP1-тон).
+    let audio_cues = AUDIO_CUE_UI.map((c) => ({ cue_name: c, preset_id: null, is_locked: false, sig: null }));
+    try {
+      const [bindings, defaults] = await Promise.all([
+        query('SELECT cue_name, preset_id, is_locked FROM complex_cue_sounds WHERE complex_id = $1', [complexId]),
+        query('SELECT cue_name, preset_id, is_locked FROM audio_cue_defaults'),
+      ]);
+      const bindMap = {}; bindings.rows.forEach((r) => { bindMap[r.cue_name] = r; });
+      const defMap = {}; defaults.rows.forEach((r) => { defMap[r.cue_name] = r; });
+      const presetIds = [...new Set(
+        [...bindings.rows, ...defaults.rows].map((r) => r.preset_id).filter((p) => p != null)
+      )];
+      const presetMap = {};
+      if (presetIds.length) {
+        const pres = await query('SELECT id, is_active, updated_at FROM audio_presets WHERE id = ANY($1)', [presetIds]);
+        pres.rows.forEach((p) => { presetMap[p.id] = p; });
+      }
+      audio_cues = AUDIO_CUE_UI.map((cue) => {
+        const src = bindMap[cue] || defMap[cue] || null;
+        if (!src) return { cue_name: cue, preset_id: null, is_locked: false, sig: null };
+        let presetId = src.preset_id;
+        let sig = null;
+        if (presetId != null) {
+          const p = presetMap[presetId];
+          if (!p || !p.is_active) { presetId = null; } // неактивный пресет → тон
+          else { sig = p.updated_at; }
+        }
+        return { cue_name: cue, preset_id: presetId, is_locked: !!src.is_locked, sig };
+      });
+    } catch (audioErr) {
+      console.error('my-complexes audio_cues resolve error:', audioErr.message);
+    }
+
     res.json({
       data: {
         id: row.id,
@@ -1718,6 +1801,7 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
         instructor_name: row.instructor_name,
         created_at: row.created_at,
         exercises,
+        audio_cues,
       }
     });
   } catch (error) {
