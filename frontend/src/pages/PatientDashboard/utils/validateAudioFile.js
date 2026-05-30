@@ -4,14 +4,15 @@
 // Named pure helper (Rule #37). Проверки:
 //   - расширение .mp3/.wav + mime (если задан браузером);
 //   - размер ≤ 512 КБ (524288 б) — decision #4;
-//   - длительность ≤ 5 сек — decision #3 (клиентский чек).
+//   - длительность ≤ 10 сек — клиентский чек (Vadim 2026-05-30: 5→10, чтобы
+//     влезала короткая голосовая фраза, не только бип).
 // Длительность измеряется через <audio>.duration (probeDuration инъектируется
 // для тестов — Rule #37). probe-fail НЕ блокирует: серверный лимит размера —
 // жёсткий бэкстоп, длительность best-effort.
 // =====================================================
 
 export const MAX_AUDIO_BYTES = 524288; // 512 КБ
-export const MAX_AUDIO_DURATION_S = 5;
+export const MAX_AUDIO_DURATION_S = 10;
 const ALLOWED_EXT = ['mp3', 'wav'];
 const ALLOWED_MIME = [
   'audio/mpeg', 'audio/mp3',
@@ -71,7 +72,7 @@ export default async function validateAudioFile(file, probeDuration = probeDurat
     return { ok: true };
   }
   if (typeof duration === 'number' && Number.isFinite(duration) && duration > MAX_AUDIO_DURATION_S) {
-    return { ok: false, error: 'Звук длиннее 5 секунд' };
+    return { ok: false, error: 'Звук длиннее 10 секунд' };
   }
   return { ok: true };
 }

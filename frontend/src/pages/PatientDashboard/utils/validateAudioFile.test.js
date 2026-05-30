@@ -56,14 +56,18 @@ describe('validateAudioFile — async с probe', () => {
     expect(res.error).toMatch(/MP3 или WAV/);
   });
 
-  it('длительность 6с (> 5) → ошибка длительности', async () => {
-    await expect(validateAudioFile(f(), probe(6))).resolves.toEqual({
-      ok: false, error: 'Звук длиннее 5 секунд',
+  it('длительность 11с (> 10) → ошибка длительности', async () => {
+    await expect(validateAudioFile(f(), probe(11))).resolves.toEqual({
+      ok: false, error: 'Звук длиннее 10 секунд',
     });
   });
 
-  it('ровно 5с → ok (граница)', async () => {
-    await expect(validateAudioFile(f(), probe(5))).resolves.toEqual({ ok: true });
+  it('ровно 10с → ok (граница)', async () => {
+    await expect(validateAudioFile(f(), probe(10))).resolves.toEqual({ ok: true });
+  });
+
+  it('7с (бывшая граница 5) → теперь ok', async () => {
+    await expect(validateAudioFile(f(), probe(7))).resolves.toEqual({ ok: true });
   });
 
   it('probe упал (не измерили) → ok (best-effort, бэкстоп — размер на сервере)', async () => {

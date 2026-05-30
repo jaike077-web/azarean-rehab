@@ -202,7 +202,7 @@ export default function MyAudioSounds() {
         })}
       </div>
       <div className="pd-profile-section-hint">
-        Свой звук на сигнал в тренировке (MP3 или WAV, до 5 секунд и 512 КБ).
+        Свой звук на сигнал в тренировке (MP3 или WAV, до 10 секунд и 512 КБ).
         Действует на всех ваших устройствах.
       </div>
     </div>
