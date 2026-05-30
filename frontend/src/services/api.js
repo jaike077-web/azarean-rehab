@@ -455,6 +455,10 @@ patientAuth.uploadSound = (formData) => patientApi.post('/patient-auth/audio-sou
 patientAuth.deleteSound = (cue) => patientApi.delete(`/patient-auth/audio-sounds/${cue}`);
 patientAuth.fetchSoundBlob = (cue) =>
   patientApi.get(`/patient-auth/audio-sounds/${cue}/file`, { responseType: 'blob' });
+// AA5: program-пресет (дом-карта / звук комплекса) — scoped serve (AA3).
+// Для предекода в раннере (loadProgramCues). Blob, как fetchSoundBlob.
+patientAuth.fetchProgramPresetBlob = (presetId) =>
+  patientApi.get(`/patient-auth/audio-presets/${presetId}/file`, { responseType: 'blob' });
 patientAuth.getOAuthProviders = () => patientApi.get('/patient-auth/oauth/providers');
 
 // Прогресс пациента — отдельный объект, использует patientApi (cookie + JWT)

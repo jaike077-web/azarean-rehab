@@ -24,7 +24,7 @@ const ExercisesScreen = ({ screenParams }) => {
   // CP1: prime AudioContext в user-gesture (тап «Начать тренировку»)
   // — обязательно для iOS PWA, иначе RestTimer cue будет молчать
   // на проде (контекст создан, но в state='suspended').
-  const { prime } = useAudioCue();
+  const { prime, loadProgramCues } = useAudioCue();
 
   // Данные
   const [todayComplex, setTodayComplex] = useState(null); // из rehab.getMyExercises
@@ -77,6 +77,11 @@ const ExercisesScreen = ({ screenParams }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenParams]);
 
+  // AA5: сбросить program-ярус звуков при уходе со всего экрана упражнений
+  // (bottom-nav на Diary/Home). backToList покрывает выход из раннера в список;
+  // этот cleanup — размонтирование экрана. loadProgramCues стабилен (контекст-useMemo).
+  useEffect(() => () => { loadProgramCues(null); }, [loadProgramCues]);
+
   // Открытие комплекса → сразу Runner (минуя ComplexDetailView)
   const openComplex = async (id) => {
     setSelectedComplexId(id);
@@ -87,6 +92,10 @@ const ExercisesScreen = ({ screenParams }) => {
     try {
       const res = await patientAuth.getMyComplex(id);
       const data = res.data;
+      // AA5: предекод привязок звуков комплекса (program-ярус). Не блокируем рендер
+      // раннера — мета ставится синхронно, буферы декодятся фоном (cue падает на тон
+      // пока не готовы). prime() уже выше в user-gesture-цепочке.
+      loadProgramCues(data.audio_cues);
       if (data.exercises?.length > 0) {
         setComplexExercises(data.exercises);
         setSelectedExercise(data.exercises[0]);
@@ -105,6 +114,8 @@ const ExercisesScreen = ({ screenParams }) => {
     setSelectedComplexId(null);
     setSelectedExercise(null);
     setComplexExercises([]);
+    // AA5: сброс program-яруса звуков на выходе из раннера (смена комплекса).
+    loadProgramCues(null);
   };
 
   const openRunner = (complexExercise, allExercises) => {
