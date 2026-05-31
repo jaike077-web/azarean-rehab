@@ -1,6 +1,7 @@
 // =====================================================
-// TEST: FunnelPanel (Wave 3 C5.2)
+// TEST: FunnelPanel (Wave 3 C5.2 + ARC-CYCLE AC7)
 // Pure props consumer — без api mock'а.
+// AC7: воронка = 4 стадии (без «Соблюдает»); приверженность — ДВЕ оси раздельно.
 // =====================================================
 
 import React from 'react';
@@ -16,13 +17,16 @@ const fullSummary = {
     registered: 8,
     active_program: 5,
     active: 3,
-    adhering: 1,
+  },
+  adherence: {
+    gymnastics: { adhering: 2, no_target: 1 }, // withTarget = 5 - 1 = 4 → "2 из 4"
+    training: { adhering: 0, no_target: 5 },    // withTarget = 5 - 5 = 0 → "—"
   },
   funnel_gaps: { registered_no_active_program: 3 },
 };
 
-describe('FunnelPanel — Wave 3 C5.2', () => {
-  test('рендерит 5 стадий с числами', () => {
+describe('FunnelPanel — Wave 3 C5.2 + AC7', () => {
+  test('рендерит 4 стадии воронки (без «Соблюдает»)', () => {
     render(<FunnelPanel summary={fullSummary} loading={false} error={null} onRetry={() => {}} />);
 
     expect(screen.getByText('Воронка онбординга')).toBeInTheDocument();
@@ -30,14 +34,35 @@ describe('FunnelPanel — Wave 3 C5.2', () => {
     expect(screen.getByText('Зарегистрирован')).toBeInTheDocument();
     expect(screen.getByText('Активная программа')).toBeInTheDocument();
     expect(screen.getByText('Активен')).toBeInTheDocument();
-    expect(screen.getByText('Соблюдает')).toBeInTheDocument();
-    // Значения
+    // AC7: «Соблюдает» больше НЕ стадия воронки
+    expect(screen.queryByText('Соблюдает')).not.toBeInTheDocument();
+    // Значения стадий
     expect(screen.getByText('10')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    // adhering=1 и funnel_gaps=3 — оба числа могут встретиться, главное «Соблюдает» ниже
-    const ones = screen.queryAllByText('1');
-    expect(ones.length).toBeGreaterThanOrEqual(1);
+  });
+
+  test('AC7: приверженность — две оси раздельно (Rule #34)', () => {
+    render(<FunnelPanel summary={fullSummary} loading={false} error={null} onRetry={() => {}} />);
+
+    expect(screen.getByText('Приверженность')).toBeInTheDocument();
+    expect(screen.getByTestId('funnel-adherence')).toBeInTheDocument();
+
+    const gym = screen.getByTestId('adherence-gymnastics');
+    expect(gym).toHaveTextContent('Гимнастика');
+    expect(gym).toHaveTextContent('2 из 4');
+
+    const train = screen.getByTestId('adherence-training');
+    expect(train).toHaveTextContent('Тренировка');
+    // training полностью no_target → «—», а не «0 из 0»
+    expect(train).toHaveTextContent('—');
+  });
+
+  test('AC7: нет summary.adherence → блок приверженности скрыт (defensive)', () => {
+    const noAdh = { funnel: { ...fullSummary.funnel }, funnel_gaps: { registered_no_active_program: 0 } };
+    render(<FunnelPanel summary={noAdh} loading={false} error={null} onRetry={() => {}} />);
+    expect(screen.queryByTestId('funnel-adherence')).not.toBeInTheDocument();
+    // воронка всё равно рендерится
+    expect(screen.getByText('Активен')).toBeInTheDocument();
   });
 
   test('gap-callout появляется при registered_no_active_program > 0', () => {
@@ -53,6 +78,7 @@ describe('FunnelPanel — Wave 3 C5.2', () => {
   test('gap-callout скрыт при registered_no_active_program === 0', () => {
     const summary = {
       funnel: { ...fullSummary.funnel },
+      adherence: fullSummary.adherence,
       funnel_gaps: { registered_no_active_program: 0 },
     };
     render(<FunnelPanel summary={summary} loading={false} error={null} onRetry={() => {}} />);
@@ -64,14 +90,16 @@ describe('FunnelPanel — Wave 3 C5.2', () => {
 
   test('empty state при funnel.created === 0', () => {
     const summary = {
-      funnel: { created: 0, registered: 0, active_program: 0, active: 0, adhering: 0 },
+      funnel: { created: 0, registered: 0, active_program: 0, active: 0 },
+      adherence: { gymnastics: { adhering: 0, no_target: 0 }, training: { adhering: 0, no_target: 0 } },
       funnel_gaps: { registered_no_active_program: 0 },
     };
     render(<FunnelPanel summary={summary} loading={false} error={null} onRetry={() => {}} />);
 
     expect(screen.getByText('Пока нет заведённых пациентов')).toBeInTheDocument();
-    // Стадии не рендерятся
+    // Стадии и приверженность не рендерятся
     expect(screen.queryByText('Заведён')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('funnel-adherence')).not.toBeInTheDocument();
   });
 
   test('loading state показывает скелетоны, не данные', () => {

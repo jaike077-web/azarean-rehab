@@ -114,8 +114,11 @@
 // HomeScreen: done-чипы gymnasticsDoneToday/trainingDoneToday. api: advanceTraining().
 // Новый JS-бандл + CSS (.pd-block-meta/.pd-home-hero-chip) — нужен bump, иначе
 // PWA-юзеры видят старый ExercisesScreen без блоков и без advance-дня.
-const CACHE_NAME = 'azarean-v21';
-const API_CACHE = 'azarean-api-v21';
+// v22 (2026-05-31) — ARC-CYCLE AC7: командный центр, ДВЕ оси адхеренса раздельно.
+// FunnelPanel убрал стадию «Соблюдает» → блок «Приверженность» (Гимнастика/Тренировка);
+// InstructorModal +две оси; новый adherenceAxis.js. Новый JS-бандл (только admin-страница).
+const CACHE_NAME = 'azarean-v22';
+const API_CACHE = 'azarean-api-v22';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
