@@ -43,6 +43,16 @@ function makeRow(overrides = {}) {
     days_since: null,
     expected_gap_days: 7,
     sessions: 0,
+    // ARC-CYCLE AC6: дефолт — legacy-программа без блоков (обе блок-оси пусты).
+    has_blocks: false,
+    has_gym_block: false,
+    gym_target_min: null,
+    gym_target_unit: null,
+    gym_sessions: 0,
+    has_train_block: false,
+    train_target_min: null,
+    train_target_unit: null,
+    train_sessions: 0,
     program_age_days: 30, // не grace
     ...overrides,
   };
@@ -72,7 +82,9 @@ describe('GET /api/admin/command-center — воронка', () => {
     expect(f.created).toBeGreaterThanOrEqual(f.registered);
     expect(f.registered).toBeGreaterThanOrEqual(f.active_program);
     expect(f.active_program).toBeGreaterThanOrEqual(f.active);
-    expect(f.active).toBeGreaterThanOrEqual(f.adhering);
+    // ARC-CYCLE AC6: funnel.adhering убран — адхеренс теперь две оси раздельно
+    // (data.adherence.{gymnastics,training}, Rule #34). Воронка кончается на active.
+    expect(f.adhering).toBeUndefined();
   });
 
   it('registered без активной программы → funnel_gaps.registered_no_active_program', async () => {
@@ -257,8 +269,12 @@ describe('GET /api/admin/command-center — сегменты (cadence-relative)'
   });
 });
 
-describe('GET /api/admin/command-center — адхеренс (session-grained, anti-175%)', () => {
-  it('target=2/week, window=7, sessions=3 → adhering=true (считается 3 сессии, не строки)', async () => {
+// ── ARC-CYCLE AC6: legacy-программа (без блоков) — старая единственная ось
+// маршрутизируется по unit: 'week'→training-ось, 'day'→gymnastics-ось. Это
+// anti-regression — в проде c.target_* без write-path (всегда NULL → legacy
+// всегда no_target). Блок-оси покрыты отдельным файлом arc_cycle_ac6_*.test.js.
+describe('GET /api/admin/command-center — адхеренс legacy-оси (session-grained, anti-175%)', () => {
+  it('legacy target=2/week, window=7, sessions=3 → training.adhering=1 (3 сессии, не строки)', async () => {
     // expected_min = 2 * (7/7) = 2; threshold = 0.6*2 = 1.2; 3 >= 1.2 → true.
     query.mockResolvedValueOnce({
       rows: [
@@ -273,11 +289,12 @@ describe('GET /api/admin/command-center — адхеренс (session-grained, a
     const res = await request(app)
       .get('/api/admin/command-center?period=7d')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.body.data.funnel.adhering).toBe(1);
+    expect(res.body.data.adherence.training.adhering).toBe(1);
+    expect(res.body.data.adherence.gymnastics.adhering).toBe(0);
     expect(res.body.data.adherence_window_days).toBe(7);
   });
 
-  it('target=3/week, window=7, sessions=1 → НЕ adhering (1 < 0.6*3=1.8)', async () => {
+  it('legacy target=3/week, window=7, sessions=1 → НЕ adhering (1 < 0.6*3=1.8)', async () => {
     query.mockResolvedValueOnce({
       rows: [
         makeRow({
@@ -290,10 +307,11 @@ describe('GET /api/admin/command-center — адхеренс (session-grained, a
     const res = await request(app)
       .get('/api/admin/command-center?period=7d')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.body.data.funnel.adhering).toBe(0);
+    expect(res.body.data.adherence.training.adhering).toBe(0);
+    expect(res.body.data.adherence.training.no_target).toBe(0); // цель есть → не no_target
   });
 
-  it('target=1/day, window=30, sessions=20 → adhering=true (20 >= 0.6*30=18)', async () => {
+  it('legacy target=1/day, window=30, sessions=20 → gymnastics.adhering=1 (20 >= 0.6*30=18)', async () => {
     query.mockResolvedValueOnce({
       rows: [
         makeRow({
@@ -306,10 +324,11 @@ describe('GET /api/admin/command-center — адхеренс (session-grained, a
     const res = await request(app)
       .get('/api/admin/command-center?period=30d')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.body.data.funnel.adhering).toBe(1);
+    expect(res.body.data.adherence.gymnastics.adhering).toBe(1);
+    expect(res.body.data.adherence.training.adhering).toBe(0);
   });
 
-  it('target_min=NULL → не adhering, попадает в no_target_set', async () => {
+  it('target_min=NULL → обе оси no_target, попадает в no_target_set', async () => {
     query.mockResolvedValueOnce({
       rows: [
         makeRow({
@@ -321,7 +340,10 @@ describe('GET /api/admin/command-center — адхеренс (session-grained, a
     const res = await request(app)
       .get('/api/admin/command-center')
       .set('Authorization', `Bearer ${adminToken}`);
-    expect(res.body.data.funnel.adhering).toBe(0);
+    expect(res.body.data.adherence.gymnastics.adhering).toBe(0);
+    expect(res.body.data.adherence.training.adhering).toBe(0);
+    expect(res.body.data.adherence.gymnastics.no_target).toBe(1);
+    expect(res.body.data.adherence.training.no_target).toBe(1);
     expect(res.body.data.segments_note.no_target_set).toBe(1);
   });
 
