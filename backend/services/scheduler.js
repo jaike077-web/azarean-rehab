@@ -3,9 +3,16 @@
 // Cron-задачи для напоминаний через Telegram
 // =====================================================
 
+const fs = require('fs');
+const path = require('path');
 const { query } = require('../database/db');
 const { sendTelegramMessage } = require('./telegramBot');
 const { checkStuckPhases } = require('./stuckDetection');
+
+// AA6: каталог пациентских аудио-override'ов (зеркало SOUNDS_DIR в patientAuth.js).
+// path.resolve(SOUNDS_DIR, basename) — cwd/OS-независимо + containment (ТЗ §5: НЕ
+// path.join(__dirname,'..',file_path) — на Windows даёт drive-relative).
+const SOUNDS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds');
 
 let cronJobs = [];
 
@@ -220,6 +227,26 @@ async function processPatientDeletionQueue() {
           JSON.stringify({ queue_id: row.id }),
         ]
       );
+
+      // AA6 (GDPR): физически удалить файлы пациентских аудио-override'ов ДО
+      // CASCADE-удаления строк (после DELETE patients строки patient_audio_overrides
+      // уйдут каскадом, а пути к файлам станут недоступны → orphan-файлы). Best-effort:
+      // ошибка чтения/fs НЕ блокирует hard-delete пациента (152-ФЗ право на удаление
+      // важнее, чем гарантия очистки файла; orphan безопасен — звук-эффект, не PII).
+      // complex_cue_sounds комплексов пациента уйдут CASCADE'ом от complexes; их пресет-
+      // файлы общие (admin-owned) — НЕ трогаем.
+      try {
+        const soundsRes = await query(
+          `SELECT file_path FROM patient_audio_overrides WHERE patient_id = $1`,
+          [row.patient_id]
+        );
+        for (const s of soundsRes.rows) {
+          if (!s.file_path) continue;
+          // path.resolve(SOUNDS_DIR, basename) — cross-platform + containment (ТЗ §5).
+          const abs = path.resolve(SOUNDS_DIR, path.basename(s.file_path));
+          try { if (fs.existsSync(abs)) fs.unlinkSync(abs); } catch (_) { /* best-effort */ }
+        }
+      } catch (_) { /* best-effort — не блокируем hard-delete */ }
 
       // Hard delete — CASCADE убирает complexes, progress_logs, diary, и т.д.
       // patient_deletion_queue запись тоже cascade'ится (FK ON DELETE CASCADE).

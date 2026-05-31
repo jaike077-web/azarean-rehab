@@ -691,6 +691,7 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       messagesRes,
       notifRes,
       auditRes,
+      audioOverridesRes,
     ] = await Promise.all([
       // 1. Профиль (allowlist полей — без password_hash, lockout, и т.п.)
       query(
@@ -798,6 +799,16 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
           LIMIT 1000`,
         [patientId]
       ),
+      // 12. Custom Audio (AA6/CA5): пациентские override-звуки cue'ов раннера.
+      // Allowlist — file_path НЕ отдаём (даём download_url на /audio-sounds/:cue/file).
+      // Админ-пресеты НЕ персональные данные пациента — не экспортируем.
+      query(
+        `SELECT cue_name, mime_type, size_bytes, original_filename, uploaded_at
+           FROM patient_audio_overrides
+          WHERE patient_id = $1
+          ORDER BY cue_name`,
+        [patientId]
+      ),
     ]);
 
     if (profileRes.rows.length === 0) {
@@ -835,6 +846,17 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       photos: photosByEntryId[d.id] || [],
     }));
 
+    // AA6: пациентские аудио-override'ы — file_path не отдаём, даём download_url
+    // на auth-gated стрим (как фото дневника).
+    const audioOverrides = audioOverridesRes.rows.map((o) => ({
+      cue_name: o.cue_name,
+      mime_type: o.mime_type,
+      size_bytes: o.size_bytes,
+      original_filename: o.original_filename,
+      uploaded_at: o.uploaded_at,
+      download_url: `/api/patient-auth/audio-sounds/${o.cue_name}/file`,
+    }));
+
     const exportData = {
       _meta: {
         exported_at: new Date().toISOString(),
@@ -852,6 +874,7 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       messages: messagesRes.rows,
       notification_settings: notifRes.rows[0] || null,
       audit_logs: auditRes.rows,
+      audio_overrides: audioOverrides,
     };
 
     // Audit самого факта экспорта (fire-and-forget)
