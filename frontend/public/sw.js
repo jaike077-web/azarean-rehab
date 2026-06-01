@@ -117,8 +117,11 @@
 // v22 (2026-05-31) — ARC-CYCLE AC7: командный центр, ДВЕ оси адхеренса раздельно.
 // FunnelPanel убрал стадию «Соблюдает» → блок «Приверженность» (Гимнастика/Тренировка);
 // InstructorModal +две оси; новый adherenceAxis.js. Новый JS-бандл (только admin-страница).
-const CACHE_NAME = 'azarean-v22';
-const API_CACHE = 'azarean-api-v22';
+// v23 (2026-06-01) — ARC-CYCLE smoke-fix: редактор блоков. Селектор показывает ВСЕ
+// комплексы пациента (не только текущего инструктора — фикс потери дня после
+// переназначения); CSS .blockRow min-width:0 (фикс распирания модалки длинным option).
+const CACHE_NAME = 'azarean-v23';
+const API_CACHE = 'azarean-api-v23';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

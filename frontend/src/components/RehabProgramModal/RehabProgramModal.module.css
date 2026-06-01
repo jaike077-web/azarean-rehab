@@ -545,6 +545,7 @@
 .blockRow {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
 }
@@ -552,6 +553,14 @@
 .blockRow select,
 .blockRow input {
   flex: 1;
+  /* критично: без min-width:0 длинный <option> («День Б — сила (демо ARC)»)
+     распирает flex-контейнер шире модалки → горизонтальный скролл + обрезка метки. */
+  min-width: 0;
+}
+
+/* Селектору комплекса больше места под имя, чем текстовой метке дня. */
+.blockRow select {
+  flex: 1.6 1 140px;
 }
 
 .blockDayLabel {
