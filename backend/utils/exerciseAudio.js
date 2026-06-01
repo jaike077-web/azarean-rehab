@@ -63,8 +63,15 @@ function normalizeExerciseAudio(exercise) {
 }
 
 /**
- * Валидация набора preset id для exercise-привязки: каждый должен существовать,
- * быть активным И kind='track'. Пустой набор → ok. Один плохой → ok:false.
+ * Валидация набора preset id для exercise-привязки: каждый должен существовать
+ * И быть kind='track'. Пустой набор → ok. Один плохой → ok:false.
+ *
+ * НЕ требуем is_active: гейт активности — на РЕЗОЛВЕ (read, пациент): неактивный
+ * пресет → нет звука. На WRITE проверяем только существование + тип, чтобы
+ * round-trip-сохранение упражнения/комплекса со ставшей неактивной привязкой
+ * НЕ падало 400 (UI предлагает выбрать только активные; неактивная остаётся
+ * лишь как унаследованное значение). Удаление пресета → SET NULL (FK) — висячих
+ * ссылок нет.
  * @param {Function} query — db.query
  * @param {Array<number|null>} ids
  * @returns {Promise<{ok:boolean, error?:string}>}
@@ -73,13 +80,13 @@ async function validateTrackPresetIds(query, ids) {
   const unique = [...new Set((ids || []).filter((p) => p != null))];
   if (unique.length === 0) return { ok: true };
   const found = await query(
-    "SELECT id FROM audio_presets WHERE id = ANY($1) AND is_active = TRUE AND kind = 'track'",
+    "SELECT id FROM audio_presets WHERE id = ANY($1) AND kind = 'track'",
     [unique]
   );
   const okIds = new Set(found.rows.map((r) => r.id));
   const bad = unique.find((p) => !okIds.has(p));
   if (bad !== undefined) {
-    return { ok: false, error: `Аудио-пресет ${bad} не найден, неактивен или не является треком` };
+    return { ok: false, error: `Аудио-пресет ${bad} не найден или не является треком` };
   }
   return { ok: true };
 }

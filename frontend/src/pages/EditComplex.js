@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises, complexes, admin } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ComplexCueSounds from '../components/ComplexCueSounds';
+import ExerciseAudioControl from '../components/ExerciseAudioControl';
 import useAudioPreview from '../hooks/useAudioPreview';
 import { emptyCueState, cueStateFromBindings, buildCueSoundsPayload } from '../utils/audioCues';
 import BackButton from '../components/BackButton';
@@ -48,7 +49,8 @@ import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
 import { validateExerciseRow, normalizeExerciseForPayload, TEMPO_BOUNDS } from '../utils/exerciseValidation';
 
 // Компонент для перетаскиваемого упражнения
-function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
+function SortableExercise({ exercise, errors, onRemove, onUpdate, onUpdateAudio, trackPresets, isAdmin, onPreviewTrack }) {
+  const stop = (e) => e.stopPropagation();
   const {
     attributes,
     listeners,
@@ -169,6 +171,17 @@ function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
           />
         </div>
       </div>
+      {/* EA4: трек-звук упражнения (admin-only). stopPropagation — карта целиком draggable. */}
+      {isAdmin && (
+        <div onPointerDown={stop} onClick={stop}>
+          <ExerciseAudioControl
+            row={exercise}
+            presets={trackPresets}
+            onChange={(patch) => onUpdateAudio(exercise.id, patch)}
+            onPreview={onPreviewTrack}
+          />
+        </div>
+      )}
       {errors && (errors.prescription || errors.tempo) && (
         <div className={s.exerciseErrors} data-testid={`errors-${exercise.id}`}>
           {errors.prescription && <span>{errors.prescription}</span>}
@@ -276,6 +289,12 @@ function EditComplex() {
           tempo_eccentric_s: item.tempo_eccentric_s ?? '',
           tempo_pause_s: item.tempo_pause_s ?? '',
           tempo_concentric_s: item.tempo_concentric_s ?? '',
+          // EA4: per-комплекс override звука + дефолт библиотеки (для метки «наследовать»).
+          audio_preset_id: item.audio_preset_id ?? null,
+          audio_loop: item.audio_loop === true,
+          audio_off: item.audio_off === true,
+          lib_audio_preset_id: item.lib_audio_preset_id ?? null,
+          lib_audio_loop: item.lib_audio_loop === true,
         }));
 
       setSelectedExercises(formattedExercises);
@@ -301,6 +320,11 @@ function EditComplex() {
   }, []);
 
   const previewPreset = useAudioPreview(); // прослушка звука в секции «Звуки комплекса»
+  const previewTrack = useAudioPreview();  // прослушка трека в per-упражнение контроле (EA4)
+
+  // EA4: библиотека содержит cue + track — разводим по kind.
+  const cuePresets = useMemo(() => audioPresets.filter((p) => p.kind !== 'track'), [audioPresets]);
+  const trackPresets = useMemo(() => audioPresets.filter((p) => p.kind === 'track'), [audioPresets]);
 
   // AA4: библиотека пресетов + дом-карта для секции «Звуки комплекса» (admin-only).
   useEffect(() => {
@@ -357,6 +381,12 @@ function EditComplex() {
       tempo_eccentric_s: '',
       tempo_pause_s: '',
       tempo_concentric_s: '',
+      // EA4: звук — дефолт библиотеки в lib_*, override пуст (наследуем).
+      lib_audio_preset_id: exercise.audio_preset_id ?? null,
+      lib_audio_loop: exercise.audio_loop ?? false,
+      audio_preset_id: null,
+      audio_loop: false,
+      audio_off: false,
     }]);
   };
 
@@ -389,6 +419,13 @@ function EditComplex() {
         return next;
       });
     }
+  };
+
+  // EA4: батч-патч audio-полей строки (функциональный setState — несколько полей сразу).
+  const handleUpdateExerciseAudio = (exerciseId, patch) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e))
+    );
   };
 
   const handleDragEnd = (event) => {
@@ -593,7 +630,7 @@ function EditComplex() {
             <ComplexCueSounds
               cueState={cueState}
               onChange={handleCueChange}
-              presets={audioPresets}
+              presets={cuePresets}
               defaults={audioDefaults}
               onPreview={previewPreset}
             />
@@ -629,6 +666,10 @@ function EditComplex() {
                       errors={exerciseErrors[exercise.id]}
                       onRemove={handleRemoveExercise}
                       onUpdate={handleUpdateExercise}
+                      onUpdateAudio={handleUpdateExerciseAudio}
+                      trackPresets={trackPresets}
+                      isAdmin={isAdmin}
+                      onPreviewTrack={previewTrack}
                     />
                   ))}
                 </div>

@@ -61,9 +61,10 @@ describe('validateTrackPresetIds', () => {
     const q = jest.fn().mockResolvedValue({ rows: [{ id: 5 }, { id: 9 }] });
     const r = await validateTrackPresetIds(q, [5, 9, null, 5]);
     expect(r).toEqual({ ok: true });
-    // дедуп: уникальные [5,9]; SQL фильтрует kind='track' AND is_active.
+    // дедуп: уникальные [5,9]; SQL фильтрует kind='track' (is_active НЕ требуем —
+    // гейт активности на резолве, чтобы round-trip не падал 400).
     expect(q.mock.calls[0][0]).toMatch(/kind = 'track'/);
-    expect(q.mock.calls[0][0]).toMatch(/is_active = TRUE/);
+    expect(q.mock.calls[0][0]).not.toMatch(/is_active/);
     expect(q.mock.calls[0][1]).toEqual([[5, 9]]);
   });
 

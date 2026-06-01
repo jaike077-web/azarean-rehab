@@ -120,8 +120,10 @@
 // v23 (2026-06-01) — UI-фиксы: восстановлены стили модалки «Состав комплекса»
 // (MyComplexes — потеряны при CSS Modules миграции) + кнопка прослушки ▶ звука
 // в дом-карте и секции «Звуки комплекса» (общий хук useAudioPreview). Новый бандл.
-const CACHE_NAME = 'azarean-v23';
-const API_CACHE = 'azarean-api-v23';
+// EA4: admin-UI привязки трек-звука к упражнению (ExerciseModal + per-row контрол
+// в редакторе комплекса + вкладка «Треки» в Звуках). Новый бандл.
+const CACHE_NAME = 'azarean-v24';
+const API_CACHE = 'azarean-api-v24';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

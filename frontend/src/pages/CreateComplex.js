@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
 import useAudioPreview from '../hooks/useAudioPreview';
 import ComplexCueSounds from '../components/ComplexCueSounds';
+import ExerciseAudioControl from '../components/ExerciseAudioControl';
 import { emptyCueState, buildCueSoundsPayload } from '../utils/audioCues';
 import {
   DndContext,
@@ -42,7 +43,7 @@ import TemplateSelector from '../components/TemplateSelector';
 import { validateExerciseRow, normalizeExerciseForPayload, TEMPO_BOUNDS } from '../utils/exerciseValidation';
 
 // Компонент для перетаскиваемого упражнения
-const SortableExercise = React.memo(function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
+const SortableExercise = React.memo(function SortableExercise({ exercise, errors, onRemove, onUpdate, onUpdateAudio, trackPresets, isAdmin, onPreviewTrack }) {
   const {
     attributes,
     listeners,
@@ -180,6 +181,17 @@ const SortableExercise = React.memo(function SortableExercise({ exercise, errors
           />
         </div>
       </div>
+      {/* EA4: трек-звук упражнения (admin-only — пресеты под admin-glob). */}
+      {isAdmin && (
+        <div onClick={handleInputClick} onPointerDown={handleInputClick}>
+          <ExerciseAudioControl
+            row={exercise}
+            presets={trackPresets}
+            onChange={(patch) => onUpdateAudio(exercise.id, patch)}
+            onPreview={onPreviewTrack}
+          />
+        </div>
+      )}
       {errors && (errors.prescription || errors.tempo) && (
         <div className={s.exerciseErrors} data-testid={`errors-${exercise.id}`}>
           {errors.prescription && <span>{errors.prescription}</span>}
@@ -205,6 +217,7 @@ function CreateComplex() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const previewPreset = useAudioPreview(); // прослушка звука в секции «Звуки комплекса»
+  const previewTrack = useAudioPreview();  // прослушка трека в per-упражнение контроле (EA4)
   const [step, setStep] = useState(1);
   const [patientsList, setPatientsList] = useState([]);
   const [diagnosesList, setDiagnosesList] = useState([]);
@@ -315,6 +328,11 @@ function CreateComplex() {
     });
   }, [exercisesList, searchTerm, categoryFilter]);
 
+  // EA4: библиотека пресетов теперь содержит и cue, и track — разводим по kind.
+  // Cue-секция показывает только cue-пресеты, per-упражнение трек — только track.
+  const cuePresets = useMemo(() => audioPresets.filter((p) => p.kind !== 'track'), [audioPresets]);
+  const trackPresets = useMemo(() => audioPresets.filter((p) => p.kind === 'track'), [audioPresets]);
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over) return;
@@ -345,6 +363,13 @@ function CreateComplex() {
       tempo_eccentric_s: '',
       tempo_pause_s: '',
       tempo_concentric_s: '',
+      // EA4: звук упражнения. Дефолт библиотеки фиксируем в lib_* (для метки
+      // «наследовать»); override по умолчанию пуст (наследуем дефолт библиотеки).
+      lib_audio_preset_id: exercise.audio_preset_id ?? null,
+      lib_audio_loop: exercise.audio_loop ?? false,
+      audio_preset_id: null,
+      audio_loop: false,
+      audio_off: false,
       order_number: selectedExercises.length + 1
     }]);
     toast.success('Упражнение добавлено');
@@ -382,6 +407,14 @@ function CreateComplex() {
         return next;
       });
     }
+  };
+
+  // EA4: батч-патч audio-полей строки (3-way селектор меняет 2-3 поля сразу).
+  // Функциональный setState — безопасно при нескольких полях в одном патче.
+  const updateExerciseAudio = (exerciseId, patch) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e))
+    );
   };
 
   const handleSubmit = async () => {
@@ -483,6 +516,12 @@ function CreateComplex() {
         tempo_eccentric_s: '',
         tempo_pause_s: '',
         tempo_concentric_s: '',
+        // EA4: звук — как в addExercise (lib_* для метки, override пуст=наследуем).
+        lib_audio_preset_id: exercise.audio_preset_id ?? null,
+        lib_audio_loop: exercise.audio_loop ?? false,
+        audio_preset_id: null,
+        audio_loop: false,
+        audio_off: false,
       }));
 
       const existingIds = new Set(selectedExercises.map((item) => item.id));
@@ -723,7 +762,7 @@ function CreateComplex() {
               <ComplexCueSounds
                 cueState={cueState}
                 onChange={setCueState}
-                presets={audioPresets}
+                presets={cuePresets}
                 defaults={audioDefaults}
                 onPreview={previewPreset}
               />
@@ -815,6 +854,10 @@ function CreateComplex() {
                         errors={exerciseErrors[exercise.id]}
                         onRemove={removeExercise}
                         onUpdate={updateExercise}
+                        onUpdateAudio={updateExerciseAudio}
+                        trackPresets={trackPresets}
+                        isAdmin={isAdmin}
+                        onPreviewTrack={previewTrack}
                       />
                     ))}
                   </div>

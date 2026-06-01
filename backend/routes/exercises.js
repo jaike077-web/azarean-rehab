@@ -93,6 +93,8 @@ router.get('/', authenticateToken, async (req, res) => {
         absolute_contraindications,
         red_flags,
         safe_with_inflammation,  -- Wave 0 commit 05: бейдж в ExerciseCard
+        audio_preset_id,         -- EA4: дефолт трек-звука (round-trip в ExerciseModal)
+        audio_loop,
         is_active,
         created_at,
         updated_at

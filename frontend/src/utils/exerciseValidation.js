@@ -8,6 +8,8 @@
 // Pure functions (Rule #37) — тестируются отдельно через jest.
 // =====================================================
 
+import { buildExerciseAudioPayload } from './exerciseAudio';
+
 /**
  * Возвращает int если value — конечное число > 0, иначе null.
  * Защита от строки 'abc' / undefined / 0 / отрицательных значений.
@@ -121,5 +123,7 @@ export function normalizeExerciseForPayload(exercise, orderNumber) {
     tempo_eccentric_s: allTempoValid ? eccN : null,
     tempo_pause_s: allTempoValid ? pauseN : null,
     tempo_concentric_s: allTempoValid ? conN : null,
+    // EA4: звук упражнения (трек) per-row. off → preset/loop обнуляются.
+    ...buildExerciseAudioPayload(exercise),
   };
 }
