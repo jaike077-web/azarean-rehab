@@ -6,18 +6,42 @@
 // =====================================================
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
   AudioProvider,
   useAudioCue,
   useAudioSettings,
+  useAudioOverrides,
   getCueConfig,
 } from './AudioContext';
+
+// AudioProvider импортирует services/api (overrides, CA3/CA4). Реальный axios v1 —
+// ESM, jest не трансформит node_modules → мокаем api (как везде в проекте).
+jest.mock('../../../services/api', () => ({
+  patientAuth: {
+    listSounds: jest.fn(() => Promise.resolve({ data: [] })),
+    // patient blob = ArrayBuffer(8) → decode тегирует буфер __src:'patient'
+    fetchSoundBlob: jest.fn(() => Promise.resolve({
+      data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) },
+    })),
+    // AA5: program-пресет blob = ArrayBuffer(16) → decode тегирует __src:'program'
+    fetchProgramPresetBlob: jest.fn(() => Promise.resolve({
+      data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(16)) },
+    })),
+  },
+}));
+const { patientAuth } = require('../../../services/api');
 
 // ---- Mock Web Audio API ----
 const oscInstances = [];
 const gainInstances = [];
+// AA5: captured AudioBufferSourceNode'ы — буфер тегирован __src ('patient'|'program')
+// чтобы доказать КАКОЙ ярус проиграл (различить приоритет, не только «буфер vs тон»).
+const bufferSourceInstances = [];
+// CA4: фейковый декодированный буфер + флаг «decode упал» (для fallback-теста).
+const FAKE_AUDIO_BUFFER = { duration: 1, __fakeBuffer: true };
+let mockDecodeShouldFail = false;
 
 function createMockAudioContext() {
   return {
@@ -44,11 +68,19 @@ function createMockAudioContext() {
       return gain;
     }),
     createBuffer: jest.fn(() => ({})),
-    createBufferSource: jest.fn(() => ({
-      buffer: null,
-      connect: jest.fn(),
-      start: jest.fn(),
-    })),
+    createBufferSource: jest.fn(() => {
+      const node = { buffer: null, connect: jest.fn(), start: jest.fn() };
+      bufferSourceInstances.push(node);
+      return node;
+    }),
+    // CA4/AA5: decodeAudioData (promise-форма). Управляемо через mockDecodeShouldFail.
+    // Тегируем результат по byteLength входа: 16=program, иначе patient — чтобы тест
+    // мог доказать, КАКОЙ ярус проиграл (node.buffer.__src).
+    decodeAudioData: jest.fn((arr) => (
+      mockDecodeShouldFail
+        ? Promise.reject(new Error('decode fail'))
+        : Promise.resolve({ ...FAKE_AUDIO_BUFFER, __src: arr && arr.byteLength === 16 ? 'program' : 'patient' })
+    )),
     resume: jest.fn(),
     close: jest.fn(),
   };
@@ -59,10 +91,19 @@ let audioCtxCtor;
 beforeEach(() => {
   oscInstances.length = 0;
   gainInstances.length = 0;
+  bufferSourceInstances.length = 0;
+  mockDecodeShouldFail = false;
   audioCtxCtor = jest.fn(() => createMockAudioContext());
   global.AudioContext = audioCtxCtor;
   delete global.webkitAudioContext;
   localStorage.clear();
+  patientAuth.listSounds.mockResolvedValue({ data: [] });
+  patientAuth.fetchSoundBlob.mockResolvedValue({
+    data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) },
+  });
+  patientAuth.fetchProgramPresetBlob.mockResolvedValue({
+    data: { arrayBuffer: () => Promise.resolve(new ArrayBuffer(16)) },
+  });
 });
 
 afterEach(() => {
@@ -285,5 +326,188 @@ describe('peak gain = settings.volume × cfg.gain', () => {
     fireEvent.click(getByTestId('vol50'));
     fireEvent.click(getByTestId('cue-rest'));
     expect(gainInstances[0].gain.value).toBeCloseTo(0.15);
+  });
+});
+
+// =====================================================
+// CA4 — cue-playback кастомного буфера (override → AudioBufferSourceNode)
+// =====================================================
+function CA4Consumer() {
+  const { cue } = useAudioCue();
+  const { refresh } = useAudioOverrides();
+  return (
+    <div>
+      <button data-testid="ca4-refresh" type="button" onClick={() => refresh()}>refresh</button>
+      <button data-testid="ca4-cue" type="button" onClick={() => cue('set_end')}>cue</button>
+    </div>
+  );
+}
+
+// Прокачать микротаски декода (fetch → arrayBuffer → decodeAudioData → buffersRef).
+const flushDecode = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+
+describe('CA4 — cue-playback кастомного буфера', () => {
+  it('override декодирован → cue играет AudioBufferSourceNode, осциллятор НЕ вызван', async () => {
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.decodeAudioData).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    expect(ctx.createBufferSource).toHaveBeenCalledTimes(1);
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+  });
+
+  it('нет override → cue падает на осциллятор (стандартный тон)', async () => {
+    patientAuth.listSounds.mockResolvedValue({ data: [] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled(); // set_end = двухтон
+    expect(ctx.createBufferSource).not.toHaveBeenCalled();
+  });
+
+  it('decode-fail → cue падает на осциллятор (не крэшит)', async () => {
+    mockDecodeShouldFail = true;
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    const { getByTestId } = render(<AudioProvider><CA4Consumer /></AudioProvider>);
+    await act(async () => { fireEvent.click(getByTestId('ca4-refresh')); });
+    await flushDecode();
+
+    fireEvent.click(getByTestId('ca4-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(ctx.createBufferSource).not.toHaveBeenCalled();
+  });
+});
+
+// =====================================================
+// AA5 — program cue-resolution (2-ярусный буфер + приоритет §2.2)
+// locked-program → patient → unlocked-program → стандартный тон
+// =====================================================
+function AA5Consumer() {
+  const { cue, loadProgramCues } = useAudioCue();
+  const { refresh } = useAudioOverrides();
+  return (
+    <div>
+      <button data-testid="aa5-refresh" type="button" onClick={() => refresh()}>refresh</button>
+      <button data-testid="aa5-cue" type="button" onClick={() => cue('set_end')}>cue</button>
+      <button data-testid="aa5-locked-preset" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: 7, is_locked: true, sig: 's1' }])}>locked preset</button>
+      <button data-testid="aa5-unlocked-preset" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: 7, is_locked: false, sig: 's1' }])}>unlocked preset</button>
+      <button data-testid="aa5-unlocked-preset-s2" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: 9, is_locked: false, sig: 's2' }])}>unlocked preset s2</button>
+      <button data-testid="aa5-locked-tone" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: true, sig: 's1' }])}>locked tone</button>
+      <button data-testid="aa5-clear" type="button" onClick={() => loadProgramCues(null)}>clear</button>
+    </div>
+  );
+}
+
+// Какой ярус реально проиграл (по тегу декодированного буфера); null = стандартный тон.
+const playedSrc = () => {
+  const n = bufferSourceInstances.find((x) => x.buffer && x.buffer.__src);
+  return n ? n.buffer.__src : null;
+};
+
+describe('AA5 — program cue-resolution (приоритет §2.2)', () => {
+  const renderAA5 = () => render(<AudioProvider><AA5Consumer /></AudioProvider>);
+  const loadPatientOverride = async (getByTestId) => {
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    await act(async () => { fireEvent.click(getByTestId('aa5-refresh')); });
+    await flushDecode();
+  };
+
+  it('locked-program пресет → играет PROGRAM-буфер (перебивает patient override)', async () => {
+    const { getByTestId } = renderAA5();
+    await loadPatientOverride(getByTestId);
+    await act(async () => { fireEvent.click(getByTestId('aa5-locked-preset')); });
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+    expect(playedSrc()).toBe('program');
+  });
+
+  it('locked-program пресет, decode-fail программы → ТОН (patient НЕ перебивает lock)', async () => {
+    const { getByTestId } = renderAA5();
+    await loadPatientOverride(getByTestId);
+    patientAuth.fetchProgramPresetBlob.mockRejectedValue(new Error('net'));
+    await act(async () => { fireEvent.click(getByTestId('aa5-locked-preset')); });
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(playedSrc()).toBeNull();
+  });
+
+  it('locked-program «явный тон» (preset_id=null) → ТОН, patient НЕ перебивает', async () => {
+    const { getByTestId } = renderAA5();
+    await loadPatientOverride(getByTestId);
+    await act(async () => { fireEvent.click(getByTestId('aa5-locked-tone')); });
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(playedSrc()).toBeNull();
+  });
+
+  it('unlocked-program + patient override → играет PATIENT (приоритет #2 > #3)', async () => {
+    const { getByTestId } = renderAA5();
+    await loadPatientOverride(getByTestId);
+    await act(async () => { fireEvent.click(getByTestId('aa5-unlocked-preset')); });
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+    expect(playedSrc()).toBe('patient');
+  });
+
+  it('unlocked-program без patient → играет PROGRAM', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('aa5-unlocked-preset')); });
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).not.toHaveBeenCalled();
+    expect(playedSrc()).toBe('program');
+  });
+
+  it('нет program, нет patient → стандартный ТОН (CP1 регресс-гард)', async () => {
+    const { getByTestId } = renderAA5();
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(ctx.createBufferSource).not.toHaveBeenCalled();
+  });
+
+  it('смена sig пресета инвалидирует program-буфер → в окне ре-декода cue ТОН (не старый пресет)', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('aa5-unlocked-preset')); }); // preset 7, sig s1
+    await flushDecode();                                                            // буфер s1 декодирован
+    // Привязка сменилась на preset 9 / sig s2; подвешиваем fetch s2 (никогда не резолвится),
+    // чтобы поймать ОКНО ре-декода: старый буфер должен быть инвалидирован → тон, не stale.
+    patientAuth.fetchProgramPresetBlob.mockReturnValueOnce(new Promise(() => {}));
+    await act(async () => { fireEvent.click(getByTestId('aa5-unlocked-preset-s2')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    // sig-инвалидация удалила старый буфер preset 7 → играет тон, не stale пресет 7.
+    expect(playedSrc()).toBeNull();
+    expect(ctx.createOscillator).toHaveBeenCalled();
+  });
+
+  it('loadProgramCues(null) сбрасывает program-ярус → cue ТОН', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('aa5-unlocked-preset')); });
+    await flushDecode();
+    await act(async () => { fireEvent.click(getByTestId('aa5-clear')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    const ctx = audioCtxCtor.mock.results[0].value;
+    expect(ctx.createOscillator).toHaveBeenCalled();
+    expect(playedSrc()).toBeNull();
   });
 });

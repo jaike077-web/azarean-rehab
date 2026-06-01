@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { admin, templates as complexTemplatesApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight, AlertTriangle, MapPin, Ruler, MessageCircleQuestion, UserCheck } from 'lucide-react';
+import { Database, Plus, Pencil, Trash2, X, BookOpen, Lightbulb, Video, Layers, ChevronDown, ChevronRight, AlertTriangle, MapPin, Ruler, MessageCircleQuestion, UserCheck, Volume2, Play } from 'lucide-react';
 import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
 import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
+import validateAudioFile from '../PatientDashboard/utils/validateAudioFile';
+import { AUDIO_CUE_UI, CUE_LABELS } from '../../utils/audioCues';
 
 // =====================================================
 // Суб-таб: Фазы
@@ -2010,6 +2012,367 @@ function PainLocationForm({ initial, programTypes, onSave, onClose }) {
 }
 
 // =====================================================
+// Суб-таб: Звуки (Custom Audio AA4) — библиотека пресетов + дом-карта cue
+// =====================================================
+function formatPresetMime(mime) {
+  if (!mime) return '—';
+  if (mime.includes('wav') || mime.includes('wave')) return 'WAV';
+  if (mime.includes('mpeg') || mime.includes('mp3')) return 'MP3';
+  return mime;
+}
+
+function formatPresetBytes(bytes) {
+  if (bytes == null) return '—';
+  return `${Math.round(bytes / 1024)} КБ`;
+}
+
+function formatPresetDuration(ms) {
+  if (ms == null) return '—';
+  return `${(ms / 1000).toFixed(1)} с`;
+}
+
+function AudioPresetsTab() {
+  const [presets, setPresets] = useState([]);
+  const [defaults, setDefaults] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
+  const [savingCue, setSavingCue] = useState(null);
+  const toast = useToast();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [pRes, dRes] = await Promise.all([
+        admin.getAudioPresets(),
+        admin.getAudioCueDefaults(),
+      ]);
+      setPresets(pRes.data || []);
+      setDefaults(dRes.data || []);
+    } catch {
+      toast.error('Ошибка загрузки звуков');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSavePreset = async (formData) => {
+    try {
+      if (editing) {
+        await admin.updateAudioPreset(editing.id, formData);
+        toast.success('Пресет обновлён');
+      } else {
+        await admin.createAudioPreset(formData);
+        toast.success('Пресет создан');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      await admin.deleteAudioPreset(deleteItem.id);
+      toast.success('Пресет удалён');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления');
+    }
+    setDeleteItem(null);
+  };
+
+  // Preview — ЖЕСТ (не cue-путь раннера), поэтому new Audio() допустим
+  // (iOS-инвариант запрещает new Audio только в cue-инфраструктуре AudioContext).
+  // Bearer не уходит на raw <audio src>, поэтому грузим blob.
+  const handlePreview = async (preset) => {
+    let url = null;
+    try {
+      const res = await admin.fetchAudioPresetBlob(preset.id);
+      url = URL.createObjectURL(res.data);
+      const audio = new Audio(url);
+      audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ } };
+      await audio.play();
+    } catch {
+      // play() reject / ошибка загрузки — освобождаем objectURL (иначе утечка) + тост.
+      if (url) { try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ } }
+      toast.error('Не удалось воспроизвести');
+    }
+  };
+
+  const handleSetDefault = async (cue, presetId, isLocked) => {
+    try {
+      setSavingCue(cue);
+      await admin.setAudioCueDefault(cue, { preset_id: presetId, is_locked: isLocked });
+      toast.success('Дом-карта обновлена');
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    } finally {
+      setSavingCue(null);
+    }
+  };
+
+  if (loading) return <TableSkeleton rows={4} columns={7} />;
+
+  return (
+    <div>
+      {/* Библиотека пресетов */}
+      <div className={s.contentHeader}>
+        <span>{presets.length} пресетов</span>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Добавить звук
+        </button>
+      </div>
+      {presets.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><Volume2 size={48} strokeWidth={1.8} /></div>
+            <h3>Нет звуков</h3>
+            <p>Загрузите MP3/WAV (≤512 КБ, ≤10 сек), чтобы назначать их на события раннера</p>
+          </div>
+        </div>
+      )}
+      {presets.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Формат</th>
+                <th>Размер</th>
+                <th>Длит.</th>
+                <th>Использований</th>
+                <th>Активен</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {presets.map((p) => (
+                <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
+                  <td className={s.tdName}>{p.name}</td>
+                  <td>{formatPresetMime(p.mime_type)}</td>
+                  <td>{formatPresetBytes(p.size_bytes)}</td>
+                  <td>{formatPresetDuration(p.duration_ms)}</td>
+                  <td>{p.usage_count ?? 0}</td>
+                  <td>{p.is_active ? '✅' : '❌'}</td>
+                  <td className={s.tdActions}>
+                    <button className={s.adminActionBtn} onClick={() => handlePreview(p)} title="Прослушать">
+                      <Play size={14} strokeWidth={1.8} />
+                    </button>
+                    <button className={s.adminActionBtn} onClick={() => setEditing(p)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      className={`${s.adminActionBtn} ${s.btnDanger}`}
+                      onClick={() => setDeleteItem(p)}
+                      title="Удалить"
+                    >
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Дом-карта: дефолтный звук на каждый cue (для всех комплексов без явной привязки) */}
+      <h3 className={s.audioMapTitle}>
+        <Volume2 size={18} strokeWidth={1.8} /> Дом-карта звуков
+      </h3>
+      <p className={s.audioMapHint}>
+        Звук по умолчанию для всех комплексов. «Запретить менять» — пациент не сможет
+        переопределить своим звуком. Точечно перебивается в конкретном комплексе.
+      </p>
+      <div className={s.adminTableWrap}>
+        <table className={s.adminTable}>
+          <thead>
+            <tr>
+              <th>Событие</th>
+              <th>Звук</th>
+              <th>Запретить пациенту менять</th>
+            </tr>
+          </thead>
+          <tbody>
+            {AUDIO_CUE_UI.map((cue) => {
+              const d = defaults.find((row) => row.cue_name === cue) || { preset_id: null, is_locked: false };
+              const selValue = d.preset_id != null ? String(d.preset_id) : '';
+              return (
+                <tr key={cue}>
+                  <td className={s.tdName}>{CUE_LABELS[cue]}</td>
+                  <td>
+                    <select
+                      className={s.audioInlineSelect}
+                      data-testid={`cue-default-select-${cue}`}
+                      aria-label={`Звук для «${CUE_LABELS[cue]}»`}
+                      value={selValue}
+                      disabled={savingCue === cue}
+                      onChange={(e) => handleSetDefault(
+                        cue,
+                        e.target.value === '' ? null : Number(e.target.value),
+                        !!d.is_locked,
+                      )}
+                    >
+                      <option value="">Стандартный тон</option>
+                      {presets.map((p) => (
+                        <option key={p.id} value={String(p.id)}>
+                          {p.is_active ? p.name : `${p.name} (неактивен)`}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      data-testid={`cue-default-lock-${cue}`}
+                      aria-label={`Запретить менять «${CUE_LABELS[cue]}»`}
+                      checked={!!d.is_locked}
+                      disabled={savingCue === cue}
+                      onChange={(e) => handleSetDefault(cue, d.preset_id ?? null, e.target.checked)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {(editing || creating) && (
+        <AudioPresetForm
+          initial={editing}
+          onSave={handleSavePreset}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Удаление пресета"
+        message={`Удалить пресет "${deleteItem?.name}"? Заблокируется, если используется в дом-карте или комплексах — тогда деактивируйте.`}
+        confirmText="Удалить"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+function AudioPresetForm({ initial, onSave, onClose }) {
+  const isEdit = !!initial;
+  const toast = useToast();
+  const [name, setName] = useState('');
+  const [isActive, setIsActive] = useState(true);
+  const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [fileError, setFileError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (initial) {
+      setName(initial.name || '');
+      setIsActive(!!initial.is_active);
+    }
+  }, [initial]);
+
+  const handleFile = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) { setFile(null); setFileName(''); return; }
+    const v = await validateAudioFile(f);
+    if (!v.ok) {
+      setFile(null);
+      setFileName('');
+      setFileError(v.error);
+      toast.error('Файл не подходит', v.error);
+      return;
+    }
+    setFile(f);
+    setFileName(f.name);
+    setFileError('');
+  };
+
+  const submit = async () => {
+    if (!name.trim()) { toast.error('Укажите название'); return; }
+    if (!isEdit && !file) { toast.error('Выберите файл (MP3/WAV)'); return; }
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('name', name.trim());
+      if (file) fd.append('file', file);
+      if (isEdit) fd.append('is_active', isActive ? 'true' : 'false');
+      await onSave(fd);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
+      <div className={s.adminModal}>
+        <div className={s.adminModalHeader}>
+          <h3>{isEdit ? 'Редактировать звук' : 'Добавить звук'}</h3>
+          <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
+        </div>
+        <div className={s.adminModalForm}>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="audio-preset-name">Название</label>
+            <input
+              id="audio-preset-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Гонг / Голос: старт"
+              maxLength={120}
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label htmlFor="audio-preset-file">
+              {isEdit ? 'Заменить файл (опционально)' : 'Файл MP3/WAV (≤512 КБ, ≤10 сек)'}
+            </label>
+            <input
+              id="audio-preset-file"
+              data-testid="preset-upload-input"
+              type="file"
+              accept=".mp3,.wav,audio/mpeg,audio/wav"
+              onChange={handleFile}
+            />
+            {fileName && <small>Выбран: {fileName}</small>}
+            {fileError && <div className={s.adminFormError}>{fileError}</div>}
+            {isEdit && !fileName && <small>Оставьте пустым, чтобы не менять звук.</small>}
+          </div>
+          {isEdit && (
+            <div className={s.adminFormGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />{' '}
+                Активен
+              </label>
+            </div>
+          )}
+          <div className={s.adminModalActions}>
+            <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
+            <button className={s.adminBtnPrimary} disabled={saving} onClick={submit}>
+              {saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
 // Хелперы
 // =====================================================
 function parseTextArray(text) {
@@ -2042,6 +2405,7 @@ function AdminContent() {
         <button className={`${s.contentTab} ${tab === 'tips' ? s.active : ''}`} onClick={() => setTab('tips')}>Советы</button>
         <button className={`${s.contentTab} ${tab === 'videos' ? s.active : ''}`} onClick={() => setTab('videos')}>Видео</button>
         <button className={`${s.contentTab} ${tab === 'pain-locations' ? s.active : ''}`} onClick={() => setTab('pain-locations')}>Локации боли</button>
+        <button className={`${s.contentTab} ${tab === 'audio' ? s.active : ''}`} onClick={() => setTab('audio')}>Звуки</button>
       </div>
 
       {tab === 'program-types' && <ProgramTypesTab />}
@@ -2050,6 +2414,7 @@ function AdminContent() {
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}
       {tab === 'pain-locations' && <PainLocationsTab />}
+      {tab === 'audio' && <AudioPresetsTab />}
     </div>
   );
 }

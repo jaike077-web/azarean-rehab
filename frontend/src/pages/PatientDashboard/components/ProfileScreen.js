@@ -33,6 +33,7 @@ import {
 import usePatientAvatarBlob from '../hooks/usePatientAvatarBlob';
 import ThemeToggle from '../../../components/ThemeToggle';
 import { useAudioSettings } from '../context/AudioContext';
+import MyAudioSounds from './MyAudioSounds';
 import './ProfileScreen.css';
 
 // Tab id для Contact (см. NAV в PatientDashboard.js)
@@ -950,6 +951,9 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                 Сигнал конца отдыха в тренировке. Настройка действует на этом устройстве.
               </div>
             </div>
+
+            {/* ===== Мои звуки (CA3 — кастомные звуки cue'ов раннера) ===== */}
+            <MyAudioSounds />
 
             {/* ===== Мои данные (152-ФЗ право доступа + право удаления) ===== */}
             <div className="pd-profile-section">

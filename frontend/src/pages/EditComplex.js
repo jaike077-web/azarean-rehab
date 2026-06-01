@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { exercises, complexes } from '../services/api';
+import { exercises, complexes, admin } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import ComplexCueSounds from '../components/ComplexCueSounds';
+import { emptyCueState, cueStateFromBindings, buildCueSoundsPayload } from '../utils/audioCues';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
@@ -24,7 +27,8 @@ import {
   Search,
   Save,
   Check,
-  X
+  X,
+  Volume2
 } from 'lucide-react';
 
 
@@ -182,10 +186,12 @@ function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
 }
 
 function EditComplex() {
-  const toast = useToast(); 
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
-  
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState('');
   const [complexTitle, setComplexTitle] = useState('');
@@ -193,6 +199,12 @@ function EditComplex() {
   const [recommendations, setRecommendations] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
+  // AA4: «Звуки комплекса» (admin-only). cueDirty гейтит отправку:
+  // omit cue_sounds = сохранить привязки; send (даже []) = replace.
+  const [cueState, setCueState] = useState(emptyCueState());
+  const [cueDirty, setCueDirty] = useState(false);
+  const [audioPresets, setAudioPresets] = useState([]);
+  const [audioDefaults, setAudioDefaults] = useState([]);
   // CP2b: inline-ошибки валидации по строкам (см. handleSave / normalize)
   const [exerciseErrors, setExerciseErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
@@ -266,6 +278,11 @@ function EditComplex() {
         }));
 
       setSelectedExercises(formattedExercises);
+
+      // AA4: pre-fill секции «Звуки комплекса» из raw-привязок (cue_sounds от GET /:id).
+      // cueDirty сбрасываем — нетронутая секция не отправит cue_sounds (сохранит привязки).
+      setCueState(cueStateFromBindings(complexData.cue_sounds));
+      setCueDirty(false);
     } catch (err) {
       console.error('Ошибка загрузки комплекса:', err);
       setError('Не удалось загрузить комплекс');
@@ -281,6 +298,32 @@ function EditComplex() {
   useEffect(() => {
     loadExercises();
   }, []);
+
+  // AA4: библиотека пресетов + дом-карта для секции «Звуки комплекса» (admin-only).
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pRes, dRes] = await Promise.all([
+          admin.getAudioPresets(),
+          admin.getAudioCueDefaults(),
+        ]);
+        if (cancelled) return;
+        setAudioPresets(pRes.data || []);
+        setAudioDefaults(dRes.data || []);
+      } catch {
+        /* секция деградирует — не блокер редактирования */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin]);
+
+  // AA4: пометить секцию звуков «грязной» при любом изменении (для omit-vs-send семантики).
+  const handleCueChange = (next) => {
+    setCueState(next);
+    setCueDirty(true);
+  };
 
   const loadExercises = async () => {
     try {
@@ -395,12 +438,21 @@ function EditComplex() {
         ),
       };
 
+      // AA4: cue_sounds шлём только если админ тронул секцию (replace; [] = очистка→наследование).
+      // Не тронули секцию — omit, чтобы backend сохранил существующие привязки.
+      if (isAdmin && cueDirty) {
+        updateData.cue_sounds = buildCueSoundsPayload(cueState);
+      }
+
       await complexes.update(id, updateData);
       toast.success('Комплекс успешно обновлён! ✓');
       navigate('/my-complexes');
     } catch (err) {
       console.error('Ошибка обновления комплекса:', err);
-      setError('Не удалось обновить комплекс');
+      // AA4: пробрасываем серверное сообщение (зеркало CreateComplex) — иначе 400 от
+      // валидации cue_sounds («Пресет не найден или неактивен», «Дубль cue_name»)
+      // показывался бы как недиагностируемый generic-текст.
+      setError(err.response?.data?.message || 'Не удалось обновить комплекс');
     }
   };
 
@@ -528,6 +580,21 @@ function EditComplex() {
             rows="4"
           />
         </div>
+
+        {isAdmin && (
+          <div className={s.formSection}>
+            <h3>
+              <Volume2 size={20} />
+              <span>Звуки комплекса</span>
+            </h3>
+            <ComplexCueSounds
+              cueState={cueState}
+              onChange={handleCueChange}
+              presets={audioPresets}
+              defaults={audioDefaults}
+            />
+          </div>
+        )}
 
         <div className={s.formSection}>
           <h3>

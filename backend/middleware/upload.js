@@ -205,8 +205,44 @@ const processMeasurementPhoto = async (req, res, next) => {
   }
 };
 
+// =====================================================
+// Звуки раннер-cue'ов (Custom Audio CA2)
+// Отличие от фото: БЕЗ транскода (decision #2 — MP3/WAV пишутся как есть).
+// memoryStorage → magic-byte валидация + raw-запись делаются в роуте.
+// Hard-лимит 512 КБ (decision #4). Подкаталог создаётся идемпотентно
+// (переживает деплой через symlink uploads → data/uploads, как avatars).
+// =====================================================
+
+const soundsDir = path.join(__dirname, '../uploads/sounds');
+if (!fs.existsSync(soundsDir)) {
+  fs.mkdirSync(soundsDir, { recursive: true });
+}
+
+// Первичный (дешёвый) фильтр по mime — авторитетная проверка по magic-bytes
+// в роуте (detectAudioType). Список щедрый: браузеры шлют разные wav-mime.
+const AUDIO_MIME_WHITELIST = [
+  'audio/mpeg', 'audio/mp3',
+  'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave',
+];
+const audioFilter = (_req, file, cb) => {
+  if (AUDIO_MIME_WHITELIST.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Неверный формат файла. Разрешены: MP3, WAV'), false);
+  }
+};
+
+const audioSoundUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: audioFilter,
+  limits: {
+    fileSize: 512 * 1024, // 512 КБ (524288 б), hard — decision #4
+  },
+});
+
 module.exports = {
   avatarUpload, processAvatar,
   diaryPhotoUpload, processDiaryPhoto,
   measurementPhotoUpload, processMeasurementPhoto,
+  audioSoundUpload,
 };

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { patients, diagnoses, exercises, complexes, templates } from '../services/api';
+import { patients, diagnoses, exercises, complexes, templates, admin } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
+import ComplexCueSounds from '../components/ComplexCueSounds';
+import { emptyCueState, buildCueSoundsPayload } from '../utils/audioCues';
 import {
   DndContext,
   closestCenter,
@@ -198,10 +201,16 @@ const SortableExercise = React.memo(function SortableExercise({ exercise, errors
 
 function CreateComplex() {
   const toast = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [step, setStep] = useState(1);
   const [patientsList, setPatientsList] = useState([]);
   const [diagnosesList, setDiagnosesList] = useState([]);
   const [exercisesList, setExercisesList] = useState([]);
+  // AA4: «Звуки комплекса» (admin-only — библиотека пресетов admin-glob).
+  const [cueState, setCueState] = useState(emptyCueState());
+  const [audioPresets, setAudioPresets] = useState([]);
+  const [audioDefaults, setAudioDefaults] = useState([]);
   
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [complexTitle, setComplexTitle] = useState('');
@@ -254,6 +263,27 @@ function CreateComplex() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // AA4: библиотека пресетов + дом-карта для секции «Звуки комплекса».
+  // Только для админа — эндпоинты под admin-glob; ошибка не блокирует создание.
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pRes, dRes] = await Promise.all([
+          admin.getAudioPresets(),
+          admin.getAudioCueDefaults(),
+        ]);
+        if (cancelled) return;
+        setAudioPresets(pRes.data || []);
+        setAudioDefaults(dRes.data || []);
+      } catch {
+        /* секция деградирует — не блокер создания комплекса */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin]);
 
   const loadData = async () => {
     try {
@@ -396,6 +426,13 @@ function CreateComplex() {
         ),
       };
 
+      // AA4: привязки звуков (только админ). Пустой payload не шлём —
+      // backend POST применяет привязки лишь при непустом массиве (наследование дом-карты).
+      if (isAdmin) {
+        const cuePayload = buildCueSoundsPayload(cueState);
+        if (cuePayload.length > 0) complexData.cue_sounds = cuePayload;
+      }
+
       await complexes.create(complexData);
       setStep(4);
       toast.success('Комплекс успешно создан!');
@@ -416,6 +453,7 @@ function CreateComplex() {
     setRecommendations('');
     setWarnings('');
     setSelectedExercises([]);
+    setCueState(emptyCueState());
     setError('');
   };
 
@@ -676,6 +714,18 @@ function CreateComplex() {
               onChange={(e) => setWarnings(e.target.value)}
             />
           </div>
+
+          {isAdmin && (
+            <div className={s.formGroup}>
+              <label>Звуки комплекса</label>
+              <ComplexCueSounds
+                cueState={cueState}
+                onChange={setCueState}
+                presets={audioPresets}
+                defaults={audioDefaults}
+              />
+            </div>
+          )}
 
           <div className={s.stepButtons}>
             <button className={s.btnSecondary} onClick={() => setStep(1)}>

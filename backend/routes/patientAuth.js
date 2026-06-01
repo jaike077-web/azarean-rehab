@@ -16,7 +16,8 @@ const path = require('path');
 const fs = require('fs');
 const { authenticatePatient } = require('../middleware/patientAuth');
 const { registerValidator, loginValidator } = require('../middleware/validators');
-const { avatarUpload, processAvatar } = require('../middleware/upload');
+const { avatarUpload, processAvatar, audioSoundUpload } = require('../middleware/upload');
+const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
@@ -690,6 +691,7 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       messagesRes,
       notifRes,
       auditRes,
+      audioOverridesRes,
     ] = await Promise.all([
       // 1. Профиль (allowlist полей — без password_hash, lockout, и т.п.)
       query(
@@ -797,6 +799,16 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
           LIMIT 1000`,
         [patientId]
       ),
+      // 12. Custom Audio (AA6/CA5): пациентские override-звуки cue'ов раннера.
+      // Allowlist — file_path НЕ отдаём (даём download_url на /audio-sounds/:cue/file).
+      // Админ-пресеты НЕ персональные данные пациента — не экспортируем.
+      query(
+        `SELECT cue_name, mime_type, size_bytes, original_filename, uploaded_at
+           FROM patient_audio_overrides
+          WHERE patient_id = $1
+          ORDER BY cue_name`,
+        [patientId]
+      ),
     ]);
 
     if (profileRes.rows.length === 0) {
@@ -834,6 +846,17 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       photos: photosByEntryId[d.id] || [],
     }));
 
+    // AA6: пациентские аудио-override'ы — file_path не отдаём, даём download_url
+    // на auth-gated стрим (как фото дневника).
+    const audioOverrides = audioOverridesRes.rows.map((o) => ({
+      cue_name: o.cue_name,
+      mime_type: o.mime_type,
+      size_bytes: o.size_bytes,
+      original_filename: o.original_filename,
+      uploaded_at: o.uploaded_at,
+      download_url: `/api/patient-auth/audio-sounds/${o.cue_name}/file`,
+    }));
+
     const exportData = {
       _meta: {
         exported_at: new Date().toISOString(),
@@ -851,6 +874,7 @@ router.get('/me/data-export', authenticatePatient, async (req, res) => {
       messages: messagesRes.rows,
       notification_settings: notifRes.rows[0] || null,
       audit_logs: auditRes.rows,
+      audio_overrides: audioOverrides,
     };
 
     // Audit самого факта экспорта (fire-and-forget)
@@ -1399,6 +1423,235 @@ router.get('/avatar', authenticatePatient, async (req, res) => {
 });
 
 // =====================================================
+// Custom Audio (CA2) — звуковые override'ы раннер-cue'ов
+// Зеркало avatar-аплоада (Rule #25, meta drift #26): тот же роутер
+// /api/patient-auth, requireSameOrigin на mount, authenticatePatient per-route,
+// memoryStorage multer, ownership через patient_id, serve через sendFile с
+// containment-guard. БЕЗ транскода — MP3/WAV пишутся как есть (decision #2).
+// Хранилище: backend/uploads/sounds/{pid}_{cue}.{ext} (детерминированное имя,
+// один override на (pid,cue)). file_path — серверная деталь, в JSON не отдаём.
+// =====================================================
+
+const SOUNDS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds');
+// AA3: каталог админ-пресетов (под тем же symlink'ом). Зеркало admin.js PRESETS_DIR.
+const PRESETS_DIR = path.resolve(SOUNDS_DIR, 'presets');
+// AA3: 4 UI-cue для resolution дом-карты/привязок в my-complexes/:id.
+const AUDIO_CUE_UI = ['count_tick', 'set_start', 'set_end', 'rest_end'];
+
+// POST /audio-sounds — загрузка override'а (multipart: file + cue_name)
+router.post('/audio-sounds', authenticatePatient, (req, res, next) => {
+  audioSoundUpload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          error: 'File Too Large',
+          message: 'Максимальный размер файла — 512 КБ',
+        });
+      }
+      return res.status(400).json({
+        error: 'Upload Error',
+        message: err.message || 'Ошибка при загрузке файла',
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const cueName = req.body && req.body.cue_name;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некорректный звуковой cue',
+      });
+    }
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Файл не выбран',
+      });
+    }
+    // Авторитетная проверка по magic-bytes (mime/ext не доверяем).
+    const detected = detectAudioType(req.file.buffer);
+    if (!detected) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Файл не является MP3 или WAV',
+      });
+    }
+    const { mime, ext } = AUDIO_TYPE_META[detected];
+    const patientId = req.patient.id;
+
+    // Удаляем прежний файл этого (pid,cue) — любой ext (mp3↔wav).
+    const existing = await query(
+      `SELECT file_path FROM patient_audio_overrides WHERE patient_id = $1 AND cue_name = $2`,
+      [patientId, cueName]
+    );
+    const oldPath = existing.rows[0] && existing.rows[0].file_path;
+    if (oldPath) {
+      const oldAbs = path.join(__dirname, '..', oldPath);
+      if (fs.existsSync(oldAbs)) {
+        try { fs.unlinkSync(oldAbs); } catch (_) { /* best-effort */ }
+      }
+    }
+
+    // Детерминированное имя {pid}_{cue}.{ext}; один override на (pid,cue).
+    const filename = `${patientId}_${cueName}.${ext}`;
+    fs.writeFileSync(path.join(SOUNDS_DIR, filename), req.file.buffer);
+    const filePath = `/uploads/sounds/${filename}`;
+    const originalName = (req.file.originalname || '').slice(0, 255) || null;
+
+    const upserted = await query(
+      `INSERT INTO patient_audio_overrides
+         (patient_id, cue_name, file_path, mime_type, size_bytes, original_filename, uploaded_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       ON CONFLICT (patient_id, cue_name) DO UPDATE SET
+         file_path = EXCLUDED.file_path,
+         mime_type = EXCLUDED.mime_type,
+         size_bytes = EXCLUDED.size_bytes,
+         original_filename = EXCLUDED.original_filename,
+         uploaded_at = NOW()
+       RETURNING cue_name, mime_type, size_bytes, original_filename, uploaded_at`,
+      [patientId, cueName, filePath, mime, req.file.size, originalName]
+    );
+
+    // SELECT-allowlist: file_path НЕ отдаём (серверная деталь).
+    res.json({ data: upserted.rows[0], message: 'Звук загружен' });
+  } catch (error) {
+    console.error('Patient audio upload error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при загрузке звука' });
+  }
+});
+
+// GET /audio-sounds — список override'ов текущего пациента (allowlist-поля)
+router.get('/audio-sounds', authenticatePatient, async (req, res) => {
+  try {
+    const result = await query(
+      `SELECT cue_name, mime_type, size_bytes, original_filename, uploaded_at
+       FROM patient_audio_overrides
+       WHERE patient_id = $1
+       ORDER BY cue_name`,
+      [req.patient.id]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Patient audio list error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении списка звуков' });
+  }
+});
+
+// GET /audio-sounds/:cue/file — auth-gated стрим файла (только владельцу)
+router.get('/audio-sounds/:cue/file', authenticatePatient, async (req, res) => {
+  try {
+    const cueName = req.params.cue;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный звуковой cue' });
+    }
+    const result = await query(
+      `SELECT file_path, mime_type FROM patient_audio_overrides
+       WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    const row = result.rows[0];
+    if (!row || !row.file_path) {
+      return res.status(404).json({ error: 'Not Found', message: 'Звук не загружен' });
+    }
+
+    // Защита от traversal — берём только basename и проверяем containment.
+    const filename = path.basename(row.file_path);
+    const filePath = path.resolve(SOUNDS_DIR, filename);
+    if (!filePath.startsWith(SOUNDS_DIR + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+
+    // Имя файла детерминированное (контент меняется при re-upload) → no-cache,
+    // ревалидация по etag/lastModified (sendFile), без stale-after-reupload.
+    res.set('Cache-Control', 'private, no-cache');
+    res.type(row.mime_type || 'application/octet-stream');
+    return res.sendFile(filePath);
+  } catch (error) {
+    console.error('Patient audio serve error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении звука' });
+  }
+});
+
+// DELETE /audio-sounds/:cue — удалить override (файл + строка), идемпотентно
+router.delete('/audio-sounds/:cue', authenticatePatient, async (req, res) => {
+  try {
+    const cueName = req.params.cue;
+    if (!isValidCueName(cueName)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный звуковой cue' });
+    }
+    const result = await query(
+      `SELECT file_path FROM patient_audio_overrides
+       WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    const filePath = result.rows[0] && result.rows[0].file_path;
+    if (filePath) {
+      const abs = path.join(__dirname, '..', filePath);
+      if (fs.existsSync(abs)) {
+        try { fs.unlinkSync(abs); } catch (_) { /* best-effort */ }
+      }
+    }
+    await query(
+      `DELETE FROM patient_audio_overrides WHERE patient_id = $1 AND cue_name = $2`,
+      [req.patient.id, cueName]
+    );
+    res.json({ message: 'Звук удалён' });
+  } catch (error) {
+    console.error('Patient audio delete error:', error);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при удалении звука' });
+  }
+});
+
+// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3).
+// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента (защита от
+// enumeration). Только активные. Containment-guard + private no-cache (как CA2).
+router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный id' });
+    }
+    const result = await query(
+      `SELECT ap.file_path, ap.mime_type
+         FROM audio_presets ap
+        WHERE ap.id = $1 AND ap.is_active = TRUE AND (
+          EXISTS (SELECT 1 FROM audio_cue_defaults d WHERE d.preset_id = ap.id)
+          OR EXISTS (
+            SELECT 1 FROM complex_cue_sounds ccs
+              JOIN complexes c ON c.id = ccs.complex_id
+             WHERE ccs.preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+        )`,
+      [id, req.patient.id]
+    );
+    const row = result.rows[0];
+    if (!row || !row.file_path) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пресет не найден' });
+    }
+    // Защита от traversal — basename + containment.
+    const filename = path.basename(row.file_path);
+    const filePath = path.resolve(PRESETS_DIR, filename);
+    if (!filePath.startsWith(PRESETS_DIR + path.sep)) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Некорректный путь' });
+    }
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Not Found', message: 'Файл не найден' });
+    }
+    res.set('Cache-Control', 'private, no-cache');
+    res.type(row.mime_type || 'application/octet-stream');
+    return res.sendFile(filePath);
+  } catch (error) {
+    console.error('Patient audio-preset serve error:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка при получении звука программы' });
+  }
+});
+
+// =====================================================
 // GET /my-complexes — Список всех активных комплексов пациента
 // Используется новым ExercisesScreen для раздела "Все мои комплексы".
 // =====================================================
@@ -1525,6 +1778,41 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
       ? row.exercises
       : [];
 
+    // AA3: resolved звуки программы per cue (для раннер-resolution AA5).
+    // Источник: complex binding (incl preset_id=null=«явный тон») ?? дом-карта ?? тон.
+    // best-effort: если аудио-инфра отсутствует/сбой — отдаём тон-cue (раннер на CP1-тон).
+    let audio_cues = AUDIO_CUE_UI.map((c) => ({ cue_name: c, preset_id: null, is_locked: false, sig: null }));
+    try {
+      const [bindings, defaults] = await Promise.all([
+        query('SELECT cue_name, preset_id, is_locked FROM complex_cue_sounds WHERE complex_id = $1', [complexId]),
+        query('SELECT cue_name, preset_id, is_locked FROM audio_cue_defaults'),
+      ]);
+      const bindMap = {}; bindings.rows.forEach((r) => { bindMap[r.cue_name] = r; });
+      const defMap = {}; defaults.rows.forEach((r) => { defMap[r.cue_name] = r; });
+      const presetIds = [...new Set(
+        [...bindings.rows, ...defaults.rows].map((r) => r.preset_id).filter((p) => p != null)
+      )];
+      const presetMap = {};
+      if (presetIds.length) {
+        const pres = await query('SELECT id, is_active, updated_at FROM audio_presets WHERE id = ANY($1)', [presetIds]);
+        pres.rows.forEach((p) => { presetMap[p.id] = p; });
+      }
+      audio_cues = AUDIO_CUE_UI.map((cue) => {
+        const src = bindMap[cue] || defMap[cue] || null;
+        if (!src) return { cue_name: cue, preset_id: null, is_locked: false, sig: null };
+        let presetId = src.preset_id;
+        let sig = null;
+        if (presetId != null) {
+          const p = presetMap[presetId];
+          if (!p || !p.is_active) { presetId = null; } // неактивный пресет → тон
+          else { sig = p.updated_at; }
+        }
+        return { cue_name: cue, preset_id: presetId, is_locked: !!src.is_locked, sig };
+      });
+    } catch (audioErr) {
+      console.error('my-complexes audio_cues resolve error:', audioErr.message);
+    }
+
     res.json({
       data: {
         id: row.id,
@@ -1536,6 +1824,7 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
         instructor_name: row.instructor_name,
         created_at: row.created_at,
         exercises,
+        audio_cues,
       }
     });
   } catch (error) {

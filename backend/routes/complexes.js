@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+// Custom Audio (AA3): валидация cue'ов привязки звуков к комплексу.
+const { isValidCueName } = require('../utils/audioFile');
 
 // =====================================================
 // CP2a: нормализация полей упражнения перед INSERT в complex_exercises.
@@ -43,6 +45,61 @@ function normalizeExerciseFields(exercise) {
   };
 }
 
+// =====================================================
+// Custom Audio (AA3): привязка звуков к cue'ам комплекса.
+// cue_sounds: [{ cue_name, preset_id|null, is_locked }]. Отсутствие cue в
+// массиве = наследовать дом-карту; preset_id=null = «явный тон»; дубли cue
+// запрещены (иначе UNIQUE(complex_id,cue_name)). Pure-валидатор (Rule #37).
+// =====================================================
+function validateCueSoundsStructure(cueSounds) {
+  if (cueSounds === undefined) return { ok: true }; // не передан → не трогаем привязки
+  if (!Array.isArray(cueSounds)) return { ok: false, error: 'cue_sounds должен быть массивом' };
+  const seen = new Set();
+  for (const cs of cueSounds) {
+    if (!cs || typeof cs !== 'object') {
+      return { ok: false, error: 'Каждый cue_sound — объект {cue_name, preset_id, is_locked}' };
+    }
+    if (!isValidCueName(cs.cue_name)) {
+      return { ok: false, error: `Некорректный cue_name: ${cs.cue_name}` };
+    }
+    if (seen.has(cs.cue_name)) {
+      return { ok: false, error: `Дубль cue_name: ${cs.cue_name}` };
+    }
+    seen.add(cs.cue_name);
+    if (cs.preset_id !== null && cs.preset_id !== undefined && !Number.isInteger(cs.preset_id)) {
+      return { ok: false, error: `preset_id должен быть целым или null (cue ${cs.cue_name})` };
+    }
+  }
+  return { ok: true };
+}
+
+// Применяет привязки в ТЕКУЩЕЙ транзакции (client). Структура уже провалидирована.
+// replace=true (PUT) — полная замена привязок комплекса (даже [] → очистка → наследование).
+// Возвращает { ok } / { ok:false, error } при невалидном (несущ./неактивном) preset_id.
+async function applyCueSoundBindings(client, complexId, cueSounds, replace) {
+  const presetIds = [...new Set(cueSounds.map((cs) => cs.preset_id).filter((p) => p != null))];
+  if (presetIds.length) {
+    const found = await client.query(
+      'SELECT id FROM audio_presets WHERE id = ANY($1) AND is_active = TRUE',
+      [presetIds]
+    );
+    const okIds = new Set(found.rows.map((r) => r.id));
+    const bad = presetIds.find((p) => !okIds.has(p));
+    if (bad !== undefined) return { ok: false, error: `Пресет ${bad} не найден или неактивен` };
+  }
+  if (replace) {
+    await client.query('DELETE FROM complex_cue_sounds WHERE complex_id = $1', [complexId]);
+  }
+  for (const cs of cueSounds) {
+    await client.query(
+      `INSERT INTO complex_cue_sounds (complex_id, cue_name, preset_id, is_locked)
+       VALUES ($1, $2, $3, $4)`,
+      [complexId, cs.cue_name, cs.preset_id ?? null, !!cs.is_locked]
+    );
+  }
+  return { ok: true };
+}
+
 // Создать новый комплекс для пациента
 router.post('/', authenticateToken, async (req, res) => {
   const client = await getClient();
@@ -57,7 +114,8 @@ router.post('/', authenticateToken, async (req, res) => {
       diagnosis_note,
       recommendations,
       warnings,
-      exercises
+      exercises,
+      cue_sounds
     } = req.body;
 
     // Валидация
@@ -78,6 +136,13 @@ router.post('/', authenticateToken, async (req, res) => {
           message: 'Каждое упражнение должно содержать exercise_id и order_number'
         });
       }
+    }
+
+    // AA3: структурная валидация cue_sounds (если передан).
+    const cueValid = validateCueSoundsStructure(cue_sounds);
+    if (!cueValid.ok) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Validation Error', message: cueValid.error });
     }
 
     // Проверяем что пациент принадлежит этому инструктору (FOR UPDATE предотвращает race condition)
@@ -142,6 +207,16 @@ router.post('/', authenticateToken, async (req, res) => {
           fields.tempoConcentric,
         ]
       );
+    }
+
+    // AA3: привязка звуков к cue'ам (если передана непустая). Отсутствие cue в
+    // массиве = наследовать дом-карту; preset_id=null = «явный тон».
+    if (Array.isArray(cue_sounds) && cue_sounds.length > 0) {
+      const applied = await applyCueSoundBindings(client, complex.id, cue_sounds, false);
+      if (!applied.ok) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Validation Error', message: applied.error });
+      }
     }
 
     await client.query('COMMIT');
@@ -363,6 +438,23 @@ router.get('/:id', authenticateToken, async (req, res) => {
                   JOIN exercises ex ON ex.id = sub.exercise_id
                 )
               ) AS derived_title,
+              -- AA3/AA4: raw cue-привязки звуков комплекса для pre-fill секции
+              -- «Звуки комплекса» в EditComplex. Скалярный подзапрос (не задет GROUP BY).
+              -- preset_name/preset_is_active — для отображения уже выбранного (в т.ч.
+              -- ставшего неактивным) пресета; resolution в раннер — отдельно (audio_cues
+              -- в /my-complexes/:id). Отсутствие строки cue = наследование дом-карты.
+              (
+                SELECT COALESCE(json_agg(json_build_object(
+                  'cue_name', ccs.cue_name,
+                  'preset_id', ccs.preset_id,
+                  'is_locked', ccs.is_locked,
+                  'preset_name', ap.name,
+                  'preset_is_active', ap.is_active
+                ) ORDER BY ccs.cue_name), '[]'::json)
+                FROM complex_cue_sounds ccs
+                LEFT JOIN audio_presets ap ON ap.id = ccs.preset_id
+                WHERE ccs.complex_id = c.id
+              ) AS cue_sounds,
               json_agg(
                 json_build_object(
                   'id', ce.id,
@@ -429,7 +521,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
   
   try {
     const { id } = req.params;
-    const { title, diagnosis_id, recommendations, warnings, exercises } = req.body;
+    const { title, diagnosis_id, recommendations, warnings, exercises, cue_sounds } = req.body;
 
     await client.query('BEGIN');
 
@@ -445,6 +537,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
         error: 'Not Found',
         message: 'Комплекс не найден'
       });
+    }
+
+    // AA3: структурная валидация cue_sounds (если передан).
+    const cueValid = validateCueSoundsStructure(cue_sounds);
+    if (!cueValid.ok) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Validation Error', message: cueValid.error });
     }
 
     // Обновляем комплекс. title опционален — пустая строка → NULL → derived_title fallback.
@@ -489,6 +588,15 @@ router.put('/:id', authenticateToken, async (req, res) => {
           fields.tempoConcentric,
         ]
       );
+    }
+
+    // AA3: replace привязок звуков (если cue_sounds передан — даже [] → очистка → наследование).
+    if (cue_sounds !== undefined) {
+      const applied = await applyCueSoundBindings(client, id, cue_sounds, true);
+      if (!applied.ok) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ error: 'Validation Error', message: applied.error });
+      }
     }
 
     await client.query('COMMIT');

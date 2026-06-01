@@ -64,7 +64,8 @@ function setupQueriesForExport(opts = {}) {
     .mockResolvedValueOnce({ rows: opts.messages || [] })  // 9. messages
     .mockResolvedValueOnce({ rows: opts.notifications ? [opts.notifications] : [] })  // 10. notification_settings
     .mockResolvedValueOnce({ rows: opts.auditLogs || [] })  // 11. audit_logs
-    // 12. INSERT audit_logs (DATA_EXPORT) — fire-and-forget
+    .mockResolvedValueOnce({ rows: opts.audioOverrides || [] })  // 12. patient_audio_overrides (AA6)
+    // 13. INSERT audit_logs (DATA_EXPORT) — fire-and-forget
     .mockResolvedValueOnce({ rowCount: 1 });
 }
 
@@ -77,8 +78,8 @@ describe('GET /api/patient-auth/me/data-export', () => {
   it('returns 404 если patient не найден', async () => {
     // 1-й query (profile) возвращает пустой результат
     query.mockResolvedValueOnce({ rows: [] });
-    // Остальные 10 параллельных тоже отрабатывают (Promise.all не короткозамыкается)
-    for (let i = 0; i < 10; i++) {
+    // Остальные 11 параллельных тоже отрабатывают (Promise.all не короткозамыкается)
+    for (let i = 0; i < 11; i++) {
       query.mockResolvedValueOnce({ rows: [] });
     }
     const res = await request(app)
@@ -101,6 +102,14 @@ describe('GET /api/patient-auth/me/data-export', () => {
       messages: [{ id: 1, sender_type: 'patient', sender_id: 14, body: 'привет' }],
       notifications: { exercise_reminders: true, reminder_time: '09:00', timezone: 'Asia/Yekaterinburg' },
       auditLogs: [{ id: 1, action: 'OAUTH_LOGIN', entity_type: 'patient', created_at: '2026-04-29T08:00:00Z' }],
+      audioOverrides: [{
+        cue_name: 'set_end',
+        file_path: '/uploads/sounds/14_set_end.mp3',
+        mime_type: 'audio/mpeg',
+        size_bytes: 8000,
+        original_filename: 'beep.mp3',
+        uploaded_at: '2026-05-30T10:00:00Z',
+      }],
     });
 
     const res = await request(app)
@@ -131,6 +140,12 @@ describe('GET /api/patient-auth/me/data-export', () => {
     expect(res.body.messages).toHaveLength(1);
     expect(res.body.notification_settings).toBeDefined();
     expect(res.body.audit_logs).toHaveLength(1);
+    // AA6: пациентские аудио-override'ы — download_url есть, file_path НЕ утекает
+    expect(res.body.audio_overrides).toHaveLength(1);
+    expect(res.body.audio_overrides[0].cue_name).toBe('set_end');
+    expect(res.body.audio_overrides[0].download_url).toBe('/api/patient-auth/audio-sounds/set_end/file');
+    expect(res.body.audio_overrides[0].file_path).toBeUndefined();
+    expect(res.body.audio_overrides[0].original_filename).toBe('beep.mp3');
   });
 
   it('content-type + content-disposition выставляет файл-скачивание', async () => {
@@ -177,8 +192,8 @@ describe('GET /api/patient-auth/me/data-export', () => {
       .get('/api/patient-auth/me/data-export')
       .set('Authorization', `Bearer ${validToken}`);
 
-    // 12-й query (после 11 SELECT'ов) — наш INSERT в audit_logs
-    const auditCall = query.mock.calls[11];
+    // 13-й query (после 12 SELECT'ов, incl audio_overrides) — наш INSERT в audit_logs
+    const auditCall = query.mock.calls[12];
     expect(auditCall).toBeDefined();
     expect(auditCall[0]).toContain('INSERT INTO audit_logs');
     const params = auditCall[1];

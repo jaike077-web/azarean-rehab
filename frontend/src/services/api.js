@@ -445,6 +445,20 @@ patientAuth.fetchAvatarBlob = (cacheKey) => {
 };
 patientAuth.getMyComplexes = () => patientApi.get('/patient-auth/my-complexes');
 patientAuth.getMyComplex = (id) => patientApi.get(`/patient-auth/my-complexes/${id}`);
+// Custom Audio (CA2/CA3): override'ы звуковых cue'ов раннера.
+// uploadSound — FormData (file + cue_name), Content-Type: undefined как у avatar
+// (чтобы axios v1 сам выставил multipart boundary, не instance-default json).
+patientAuth.listSounds = () => patientApi.get('/patient-auth/audio-sounds');
+patientAuth.uploadSound = (formData) => patientApi.post('/patient-auth/audio-sounds', formData, {
+  headers: { 'Content-Type': undefined },
+});
+patientAuth.deleteSound = (cue) => patientApi.delete(`/patient-auth/audio-sounds/${cue}`);
+patientAuth.fetchSoundBlob = (cue) =>
+  patientApi.get(`/patient-auth/audio-sounds/${cue}/file`, { responseType: 'blob' });
+// AA5: program-пресет (дом-карта / звук комплекса) — scoped serve (AA3).
+// Для предекода в раннере (loadProgramCues). Blob, как fetchSoundBlob.
+patientAuth.fetchProgramPresetBlob = (presetId) =>
+  patientApi.get(`/patient-auth/audio-presets/${presetId}/file`, { responseType: 'blob' });
 patientAuth.getOAuthProviders = () => patientApi.get('/patient-auth/oauth/providers');
 
 // Прогресс пациента — отдельный объект, использует patientApi (cookie + JWT)
@@ -649,6 +663,24 @@ export const admin = {
     getAttention:   (params = {}) => api.get('/admin/command-center/attention', { params }),
     getDynamics:    (params = {}) => api.get('/admin/command-center/dynamics', { params }),
   },
+
+  // Custom Audio (AA4) — библиотека пресетов + дом-карта cue (admin-only glob).
+  // createAudioPreset/updateAudioPreset принимают уже готовый FormData (caller строит).
+  // Content-Type: undefined → axios v1 сам выставит multipart boundary (как uploadAvatar),
+  // иначе instance-default application/json блокирует авто-детект FormData. PUT принимает
+  // FormData даже для name-only правки (multer парсит текстовые поля).
+  getAudioPresets: (params = {}) => api.get('/admin/audio-presets', { params }),
+  createAudioPreset: (formData) => api.post('/admin/audio-presets', formData, {
+    headers: { 'Content-Type': undefined },
+  }),
+  updateAudioPreset: (id, formData) => api.put(`/admin/audio-presets/${id}`, formData, {
+    headers: { 'Content-Type': undefined },
+  }),
+  deleteAudioPreset: (id) => api.delete(`/admin/audio-presets/${id}`),
+  fetchAudioPresetBlob: (id) =>
+    api.get(`/admin/audio-presets/${id}/file`, { responseType: 'blob' }),
+  getAudioCueDefaults: () => api.get('/admin/audio-cue-defaults'),
+  setAudioCueDefault: (cue, body) => api.put(`/admin/audio-cue-defaults/${cue}`, body),
 
   // Система
   getSystemInfo: () => api.get('/admin/system'),

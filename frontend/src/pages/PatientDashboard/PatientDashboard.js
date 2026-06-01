@@ -14,6 +14,7 @@ import MeasurementsScreen from './components/MeasurementsScreen';
 import { TabBar, AvatarBtn } from './components/ui';
 import usePatientAvatarBlob from './hooks/usePatientAvatarBlob';
 import useUrlState from '../../hooks/useUrlState';
+import { useAudioOverrides } from './context/AudioContext';
 import './PatientDashboard.css';
 
 const NAV = [
@@ -83,6 +84,12 @@ export default function PatientDashboard() {
   const { patient, logout: ctxLogout } = usePatientAuth();
   const initial = (patient?.full_name || '?').trim().charAt(0).toUpperCase() || '?';
   const avatarSrc = usePatientAvatarBlob(patient?.avatar_url);
+
+  // CA4: предзагрузка кастом-звуков пациента при входе в ЛК. AudioProvider
+  // живёт выше (App.js) и переживает навигацию → к моменту раннера буферы
+  // декодированы, кастом играет с первого cue. Best-effort (нет сети → тон).
+  const { refresh: refreshAudioOverrides } = useAudioOverrides();
+  useEffect(() => { refreshAudioOverrides(); }, [refreshAudioOverrides]);
 
   useEffect(() => {
     const disclaimerAccepted = localStorage.getItem('patient_disclaimer_accepted');

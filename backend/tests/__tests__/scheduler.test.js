@@ -22,6 +22,7 @@ jest.mock('node-cron', () => ({
   schedule: jest.fn().mockReturnValue({ stop: jest.fn() }),
 }));
 
+const fs = require('fs');
 const { query } = require('../../database/db');
 const { sendTelegramMessage } = require('../../services/telegramBot');
 
@@ -209,13 +210,13 @@ describe('processPatientDeletionQueue', () => {
         { id: 2, patient_id: 200 },
       ],
     });
-    // Per patient: INSERT audit + DELETE patient → 4 queries
-    query.mockResolvedValue({ rowCount: 1 });
+    // Per patient: INSERT audit + SELECT audio-overrides (AA6) + DELETE patient → 3 queries
+    query.mockResolvedValue({ rows: [] });
 
     await processPatientDeletionQueue();
 
-    // 1 SELECT + 2 × (INSERT audit + DELETE patient) = 5 queries
-    expect(query).toHaveBeenCalledTimes(5);
+    // 1 SELECT due + 2 × (INSERT audit + SELECT audio-overrides + DELETE patient) = 7 queries
+    expect(query).toHaveBeenCalledTimes(7);
 
     const auditCalls = query.mock.calls.filter(([sql]) => /audit_logs/i.test(sql));
     expect(auditCalls).toHaveLength(2);
@@ -238,11 +239,13 @@ describe('processPatientDeletionQueue', () => {
         { id: 2, patient_id: 200 },
       ],
     });
-    // patient 100: audit ok, DELETE падает
+    // patient 100: audit ok, audio-overrides select ok, DELETE падает
     query.mockResolvedValueOnce({ rowCount: 1 });  // audit для 100
+    query.mockResolvedValueOnce({ rows: [] });     // AA6: audio-overrides select 100
     query.mockRejectedValueOnce(new Error('FK constraint'));  // DELETE 100 fails
-    // patient 200: audit ok, DELETE ok
+    // patient 200: audit ok, audio-overrides select ok, DELETE ok
     query.mockResolvedValueOnce({ rowCount: 1 });  // audit для 200
+    query.mockResolvedValueOnce({ rows: [] });     // AA6: audio-overrides select 200
     query.mockResolvedValueOnce({ rowCount: 1 });  // DELETE 200
 
     // Не должно throw
@@ -253,5 +256,62 @@ describe('processPatientDeletionQueue', () => {
       /DELETE FROM patients WHERE id/i.test(sql)
     );
     expect(deleteCalls).toHaveLength(2);
+  });
+});
+
+// =====================================================
+// processPatientDeletionQueue — AA6 GDPR: unlink аудио-override файлов
+// =====================================================
+describe('processPatientDeletionQueue — AA6 audio-override unlink', () => {
+  let existsSpy;
+  let unlinkSpy;
+
+  beforeEach(() => {
+    // mockReset — сбрасываем leftover queue/impl из предыдущих describe (clearAllMocks не трогает queue).
+    query.mockReset();
+    existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    unlinkSpy = jest.spyOn(fs, 'unlinkSync').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    existsSpy.mockRestore();
+    unlinkSpy.mockRestore();
+  });
+
+  it('unlink файлов override ДО DELETE patient', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1, patient_id: 14 }] })  // due
+      .mockResolvedValueOnce({ rows: [] })                           // audit insert
+      .mockResolvedValueOnce({ rows: [                               // audio-overrides select
+        { file_path: '/uploads/sounds/14_set_end.mp3' },
+        { file_path: '/uploads/sounds/14_rest_end.wav' },
+      ] })
+      .mockResolvedValueOnce({ rows: [] });                          // DELETE patients
+
+    await processPatientDeletionQueue();
+
+    expect(unlinkSpy).toHaveBeenCalledTimes(2);
+    expect(unlinkSpy).toHaveBeenCalledWith(expect.stringContaining('14_set_end.mp3'));
+    expect(unlinkSpy).toHaveBeenCalledWith(expect.stringContaining('14_rest_end.wav'));
+
+    const sqls = query.mock.calls.map(([sql]) => sql);
+    const idxSelect = sqls.findIndex((s) => /patient_audio_overrides/i.test(s));
+    const idxDelete = sqls.findIndex((s) => /DELETE FROM patients/i.test(s));
+    expect(idxSelect).toBeGreaterThanOrEqual(0);
+    expect(idxDelete).toBeGreaterThan(idxSelect); // unlink-SELECT прошёл ДО DELETE patient
+  });
+
+  it('best-effort: ошибка чтения override-файлов НЕ блокирует hard-delete', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 1, patient_id: 14 }] })  // due
+      .mockResolvedValueOnce({ rows: [] })                           // audit insert
+      .mockRejectedValueOnce(new Error('db down'))                   // audio-overrides select падает
+      .mockResolvedValueOnce({ rows: [] });                          // DELETE patients всё равно
+
+    await expect(processPatientDeletionQueue()).resolves.toBeUndefined();
+
+    const deleteCalls = query.mock.calls.filter(([sql]) => /DELETE FROM patients/i.test(sql));
+    expect(deleteCalls).toHaveLength(1);
+    expect(unlinkSpy).not.toHaveBeenCalled();
   });
 });

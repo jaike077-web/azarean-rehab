@@ -108,8 +108,11 @@
 // ExerciseRunner.js + ui/RestTimer.js (новый JS-бандл) — нужен bump,
 // иначе PWA-юзеры не получат предупреждающие бипы. (Архитектор писал TZ
 // на базе SW v18; v19 уже занят URL-роутингом PR #71 → этот bump v19→v20.)
-const CACHE_NAME = 'azarean-v20';
-const API_CACHE = 'azarean-api-v20';
+// v21 (2026-05-31) — Custom Audio админ-слой AA4/AA5: вкладка «Звуки» в
+// AdminContent, секция «Звуки комплекса» в Create/EditComplex, средний
+// слой cue-resolution в AudioContext (program-ярус). Новый JS-бандл → bump.
+const CACHE_NAME = 'azarean-v21';
+const API_CACHE = 'azarean-api-v21';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
