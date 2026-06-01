@@ -117,8 +117,11 @@
 // ротации День А/Б; командный центр с ДВУМЯ осями адхеренса (FunnelPanel
 // «Приверженность» + InstructorModal); редактор блоков (селектор ВСЕХ комплексов
 // пациента, фикс потери дня). Новый JS-бандл (admin + patient).
-const CACHE_NAME = 'azarean-v22';
-const API_CACHE = 'azarean-api-v22';
+// v23 (2026-06-01) — UI-фиксы: восстановлены стили модалки «Состав комплекса»
+// (MyComplexes — потеряны при CSS Modules миграции) + кнопка прослушки ▶ звука
+// в дом-карте и секции «Звуки комплекса» (общий хук useAudioPreview). Новый бандл.
+const CACHE_NAME = 'azarean-v23';
+const API_CACHE = 'azarean-api-v23';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

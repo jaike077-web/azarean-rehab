@@ -632,3 +632,10 @@
   min-width: 220px;
 }
 
+/* Ячейка дом-карты: селект + кнопка прослушки в один ряд */
+.audioCueCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

@@ -19,9 +19,35 @@
 
 .cueSoundsRow {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(200px, 1.6fr) auto;
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 1.4fr) auto auto;
   gap: 10px;
   align-items: center;
+}
+
+/* Кнопка прослушки выбранного звука (рядом с селектом) */
+.cueSoundsPreview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.cueSoundsPreview:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.cueSoundsPreview:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .cueSoundsLabel {

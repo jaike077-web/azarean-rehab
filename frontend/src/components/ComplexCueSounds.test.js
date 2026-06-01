@@ -64,4 +64,32 @@ describe('ComplexCueSounds', () => {
     render(<ComplexCueSounds cueState={emptyCueState()} onChange={() => {}} presets={presets} defaults={defaults} />);
     expect(screen.getByTestId('cue-sound-select-count_tick')).toHaveTextContent('Старый (неактивен)');
   });
+
+  it('без onPreview кнопка прослушки ▶ не рендерится', () => {
+    render(<ComplexCueSounds cueState={emptyCueState()} onChange={() => {}} presets={presets} defaults={defaults} />);
+    expect(screen.queryByTestId('cue-sound-preview-set_start')).not.toBeInTheDocument();
+  });
+
+  it('▶ для выбранного пресета зовёт onPreview с его id', () => {
+    const onPreview = jest.fn();
+    const state = { ...emptyCueState(), set_start: { sel: '2', locked: false } };
+    render(<ComplexCueSounds cueState={state} onChange={() => {}} presets={presets} defaults={defaults} onPreview={onPreview} />);
+    fireEvent.click(screen.getByTestId('cue-sound-preview-set_start'));
+    expect(onPreview).toHaveBeenCalledWith(2);
+  });
+
+  it('▶ при inherit с дом-дефолтом зовёт onPreview с preset_id дефолта', () => {
+    const onPreview = jest.fn();
+    render(<ComplexCueSounds cueState={emptyCueState()} onChange={() => {}} presets={presets} defaults={defaults} onPreview={onPreview} />);
+    fireEvent.click(screen.getByTestId('cue-sound-preview-set_start'));
+    expect(onPreview).toHaveBeenCalledWith(1);
+  });
+
+  it('▶ disabled при tone и при inherit без дом-дефолта, активна при inherit с дефолтом', () => {
+    const state = { ...emptyCueState(), set_end: { sel: 'tone', locked: false } };
+    render(<ComplexCueSounds cueState={state} onChange={() => {}} presets={presets} defaults={defaults} onPreview={() => {}} />);
+    expect(screen.getByTestId('cue-sound-preview-count_tick')).toBeDisabled(); // inherit без дефолта
+    expect(screen.getByTestId('cue-sound-preview-set_end')).toBeDisabled();    // tone
+    expect(screen.getByTestId('cue-sound-preview-set_start')).not.toBeDisabled(); // inherit с дефолтом
+  });
 });

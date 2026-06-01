@@ -3,6 +3,7 @@ import { patients, diagnoses, exercises, complexes, templates, admin } from '../
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useModalOverlayClose } from '../hooks/useModalOverlayClose';
+import useAudioPreview from '../hooks/useAudioPreview';
 import ComplexCueSounds from '../components/ComplexCueSounds';
 import { emptyCueState, buildCueSoundsPayload } from '../utils/audioCues';
 import {
@@ -203,6 +204,7 @@ function CreateComplex() {
   const toast = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const previewPreset = useAudioPreview(); // прослушка звука в секции «Звуки комплекса»
   const [step, setStep] = useState(1);
   const [patientsList, setPatientsList] = useState([]);
   const [diagnosesList, setDiagnosesList] = useState([]);
@@ -723,6 +725,7 @@ function CreateComplex() {
                 onChange={setCueState}
                 presets={audioPresets}
                 defaults={audioDefaults}
+                onPreview={previewPreset}
               />
             </div>
           )}

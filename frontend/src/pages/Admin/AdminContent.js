@@ -6,6 +6,7 @@ import { TableSkeleton } from '../../components/Skeleton';
 import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
 import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
+import useAudioPreview from '../../hooks/useAudioPreview';
 import validateAudioFile from '../PatientDashboard/utils/validateAudioFile';
 import { AUDIO_CUE_UI, CUE_LABELS } from '../../utils/audioCues';
 
@@ -2090,21 +2091,9 @@ function AudioPresetsTab() {
 
   // Preview — ЖЕСТ (не cue-путь раннера), поэтому new Audio() допустим
   // (iOS-инвариант запрещает new Audio только в cue-инфраструктуре AudioContext).
-  // Bearer не уходит на raw <audio src>, поэтому грузим blob.
-  const handlePreview = async (preset) => {
-    let url = null;
-    try {
-      const res = await admin.fetchAudioPresetBlob(preset.id);
-      url = URL.createObjectURL(res.data);
-      const audio = new Audio(url);
-      audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ } };
-      await audio.play();
-    } catch {
-      // play() reject / ошибка загрузки — освобождаем objectURL (иначе утечка) + тост.
-      if (url) { try { URL.revokeObjectURL(url); } catch (_) { /* ignore */ } }
-      toast.error('Не удалось воспроизвести');
-    }
-  };
+  // Bearer не уходит на raw <audio src>, поэтому хук грузит blob.
+  // Единый хук с удержанием ссылки + стоп-предыдущего (библиотека + дом-карта).
+  const previewPreset = useAudioPreview();
 
   const handleSetDefault = async (cue, presetId, isLocked) => {
     try {
@@ -2163,7 +2152,7 @@ function AudioPresetsTab() {
                   <td>{p.usage_count ?? 0}</td>
                   <td>{p.is_active ? '✅' : '❌'}</td>
                   <td className={s.tdActions}>
-                    <button className={s.adminActionBtn} onClick={() => handlePreview(p)} title="Прослушать">
+                    <button className={s.adminActionBtn} onClick={() => previewPreset(p.id)} title="Прослушать">
                       <Play size={14} strokeWidth={1.8} />
                     </button>
                     <button className={s.adminActionBtn} onClick={() => setEditing(p)} title="Редактировать">
@@ -2209,25 +2198,38 @@ function AudioPresetsTab() {
                 <tr key={cue}>
                   <td className={s.tdName}>{CUE_LABELS[cue]}</td>
                   <td>
-                    <select
-                      className={s.audioInlineSelect}
-                      data-testid={`cue-default-select-${cue}`}
-                      aria-label={`Звук для «${CUE_LABELS[cue]}»`}
-                      value={selValue}
-                      disabled={savingCue === cue}
-                      onChange={(e) => handleSetDefault(
-                        cue,
-                        e.target.value === '' ? null : Number(e.target.value),
-                        !!d.is_locked,
-                      )}
-                    >
-                      <option value="">Стандартный тон</option>
-                      {presets.map((p) => (
-                        <option key={p.id} value={String(p.id)}>
-                          {p.is_active ? p.name : `${p.name} (неактивен)`}
-                        </option>
-                      ))}
-                    </select>
+                    <div className={s.audioCueCell}>
+                      <select
+                        className={s.audioInlineSelect}
+                        data-testid={`cue-default-select-${cue}`}
+                        aria-label={`Звук для «${CUE_LABELS[cue]}»`}
+                        value={selValue}
+                        disabled={savingCue === cue}
+                        onChange={(e) => handleSetDefault(
+                          cue,
+                          e.target.value === '' ? null : Number(e.target.value),
+                          !!d.is_locked,
+                        )}
+                      >
+                        <option value="">Стандартный тон</option>
+                        {presets.map((p) => (
+                          <option key={p.id} value={String(p.id)}>
+                            {p.is_active ? p.name : `${p.name} (неактивен)`}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={s.adminActionBtn}
+                        data-testid={`cue-default-preview-${cue}`}
+                        title="Прослушать выбранный звук"
+                        aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
+                        disabled={d.preset_id == null || savingCue === cue}
+                        onClick={() => previewPreset(d.preset_id)}
+                      >
+                        <Play size={14} strokeWidth={1.8} />
+                      </button>
+                    </div>
                   </td>
                   <td>
                     <input

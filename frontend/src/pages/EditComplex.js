@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { exercises, complexes, admin } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ComplexCueSounds from '../components/ComplexCueSounds';
+import useAudioPreview from '../hooks/useAudioPreview';
 import { emptyCueState, cueStateFromBindings, buildCueSoundsPayload } from '../utils/audioCues';
 import BackButton from '../components/BackButton';
 import Breadcrumbs from '../components/Breadcrumbs';
@@ -299,6 +300,8 @@ function EditComplex() {
     loadExercises();
   }, []);
 
+  const previewPreset = useAudioPreview(); // прослушка звука в секции «Звуки комплекса»
+
   // AA4: библиотека пресетов + дом-карта для секции «Звуки комплекса» (admin-only).
   useEffect(() => {
     if (!isAdmin) return undefined;
@@ -592,6 +595,7 @@ function EditComplex() {
               onChange={handleCueChange}
               presets={audioPresets}
               defaults={audioDefaults}
+              onPreview={previewPreset}
             />
           </div>
         )}

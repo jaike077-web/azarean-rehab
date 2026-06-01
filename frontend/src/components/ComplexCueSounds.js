@@ -16,11 +16,13 @@
 // =====================================================
 
 import React from 'react';
-import { Volume2 } from 'lucide-react';
+import { Volume2, Play } from 'lucide-react';
 import { AUDIO_CUE_UI, CUE_LABELS } from '../utils/audioCues';
 import s from './ComplexCueSounds.module.css';
 
-function ComplexCueSounds({ cueState, onChange, presets = [], defaults = [] }) {
+// onPreview(presetId) — опц. колбэк прослушки (родитель прокидывает useAudioPreview).
+// Кнопка ▶ рендерится только если onPreview передан (тесты без него не меняются).
+function ComplexCueSounds({ cueState, onChange, presets = [], defaults = [], onPreview }) {
   const setRow = (cue, patch) =>
     onChange({ ...cueState, [cue]: { ...(cueState[cue] || { sel: 'inherit', locked: false }), ...patch } });
 
@@ -41,6 +43,13 @@ function ComplexCueSounds({ cueState, onChange, presets = [], defaults = [] }) {
         // показываем fallback-опцию, чтобы <select> не отображал чужое значение.
         const selKnown = row.sel === 'inherit' || row.sel === 'tone'
           || presets.some((p) => String(p.id) === row.sel);
+        // Эффективный пресет для прослушки: tone → нет; inherit → дом-звук cue
+        // (может быть тон → нет); конкретный пресет → его id.
+        const previewId = row.sel === 'tone'
+          ? null
+          : row.sel === 'inherit'
+            ? (def && def.preset_id != null ? def.preset_id : null)
+            : Number(row.sel);
         return (
           <div key={cue} className={s.cueSoundsRow}>
             <label className={s.cueSoundsLabel} htmlFor={`cue-sound-select-${cue}`}>
@@ -61,6 +70,19 @@ function ComplexCueSounds({ cueState, onChange, presets = [], defaults = [] }) {
                 </option>
               ))}
             </select>
+            {onPreview && (
+              <button
+                type="button"
+                className={s.cueSoundsPreview}
+                data-testid={`cue-sound-preview-${cue}`}
+                title="Прослушать выбранный звук"
+                aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
+                disabled={previewId == null}
+                onClick={() => onPreview(previewId)}
+              >
+                <Play size={14} strokeWidth={1.8} />
+              </button>
+            )}
             <label className={s.cueSoundsLock}>
               <input
                 type="checkbox"
