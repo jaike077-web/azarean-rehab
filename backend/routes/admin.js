@@ -1538,6 +1538,10 @@ router.delete('/pain-locations/:code', async (req, res) => {
 const PRESETS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds', 'presets');
 // 4 cue в UI дом-карты (tempo_tick — резерв, decision #8).
 const AUDIO_CUE_UI = ['count_tick', 'set_start', 'set_end', 'rest_end'];
+
+// CT2: валидация/нормализация tone_config (редактор «Стандартного тона»). Pure
+// helper в utils/audioTone.js (Rule #37 — тестируется отдельно; фронт CT4 зеркалит).
+const { validateToneConfig } = require('../utils/audioTone');
 // usage_count пресета = ВСЕ ссылки (для 409-on-delete + UI):
 //   cue-привязки (AA): дом-карта + per-комплекс cue;
 //   track-привязки (EA): дефолт упражнения (exercises) + per-комплекс (complex_exercises).
@@ -1808,7 +1812,7 @@ router.delete('/audio-presets/:id', async (req, res) => {
 router.get('/audio-cue-defaults', async (req, res) => {
   try {
     const rows = await query(
-      `SELECT d.cue_name, d.preset_id, d.is_locked,
+      `SELECT d.cue_name, d.preset_id, d.is_locked, d.tone_config,
               ap.name AS preset_name, ap.is_active AS preset_is_active
        FROM audio_cue_defaults d
        LEFT JOIN audio_presets ap ON ap.id = d.preset_id`
@@ -1816,7 +1820,8 @@ router.get('/audio-cue-defaults', async (req, res) => {
     const byCue = {};
     rows.rows.forEach((r) => { byCue[r.cue_name] = r; });
     const data = AUDIO_CUE_UI.map((cue) => byCue[cue] || {
-      cue_name: cue, preset_id: null, is_locked: false, preset_name: null, preset_is_active: null,
+      cue_name: cue, preset_id: null, is_locked: false, tone_config: null,
+      preset_name: null, preset_is_active: null,
     });
     res.json({ data });
   } catch (error) {
@@ -1836,6 +1841,24 @@ router.put('/audio-cue-defaults/:cue', async (req, res) => {
     let { preset_id } = req.body;
     const isLocked = req.body.is_locked === true || req.body.is_locked === 'true';
 
+    // CT2: tone_config обновляем ТОЛЬКО если ключ присутствует в теле — иначе
+    // тоггл lock / смена пресета (которые шлют тело без tone_config) затёрли бы
+    // кастомный тон. tone_config=null/''/undefined в теле = сброс на стандартный тон.
+    const hasToneConfig = Object.prototype.hasOwnProperty.call(req.body, 'tone_config');
+    let toneConfig = null; // нормализованный объект ИЛИ null (сброс), значим лишь при hasToneConfig
+    if (hasToneConfig) {
+      const raw = req.body.tone_config;
+      if (raw === null || raw === undefined || raw === '') {
+        toneConfig = null;
+      } else {
+        const v = validateToneConfig(raw);
+        if (!v.ok) {
+          return res.status(400).json({ error: 'Validation Error', message: v.error });
+        }
+        toneConfig = v.value;
+      }
+    }
+
     if (preset_id !== null && preset_id !== undefined && preset_id !== '') {
       const pid = parseInt(preset_id, 10);
       if (!Number.isInteger(pid)) {
@@ -1850,18 +1873,26 @@ router.put('/audio-cue-defaults/:cue', async (req, res) => {
       preset_id = null;
     }
 
+    // $5 = JSON тона (или null), $6 = флаг «трогать ли tone_config» (CASE ниже).
+    // На INSERT новой строки при отсутствии ключа $5=null → tone_config=NULL (дефолт).
+    // На UPDATE при отсутствии ключа CASE сохраняет существующий tone_config.
+    const toneJson = hasToneConfig && toneConfig !== null ? JSON.stringify(toneConfig) : null;
     const result = await query(
-      `INSERT INTO audio_cue_defaults (cue_name, preset_id, is_locked, updated_by, updated_at)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO audio_cue_defaults (cue_name, preset_id, is_locked, tone_config, updated_by, updated_at)
+       VALUES ($1, $2, $3, $5::jsonb, $4, NOW())
        ON CONFLICT (cue_name) DO UPDATE SET
          preset_id = EXCLUDED.preset_id,
          is_locked = EXCLUDED.is_locked,
+         tone_config = CASE WHEN $6::boolean THEN EXCLUDED.tone_config ELSE audio_cue_defaults.tone_config END,
          updated_by = EXCLUDED.updated_by,
          updated_at = NOW()
-       RETURNING cue_name, preset_id, is_locked, updated_at`,
-      [cue, preset_id, isLocked, req.user.id]
+       RETURNING cue_name, preset_id, is_locked, tone_config, updated_at`,
+      [cue, preset_id, isLocked, req.user.id, toneJson, hasToneConfig]
     );
-    await logAudit(req, 'UPSERT', 'audio_cue_default', null, { cue_name: cue, preset_id, is_locked: isLocked });
+    await logAudit(req, 'UPSERT', 'audio_cue_default', null, {
+      cue_name: cue, preset_id, is_locked: isLocked,
+      ...(hasToneConfig ? { tone_config: toneConfig } : {}),
+    });
     res.json({ data: result.rows[0], message: 'Дом-карта обновлена' });
   } catch (error) {
     console.error('Admin upsert audio-cue-default error:', error.message);

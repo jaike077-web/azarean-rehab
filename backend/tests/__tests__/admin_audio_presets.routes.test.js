@@ -308,6 +308,20 @@ describe('GET /api/admin/audio-cue-defaults', () => {
     expect(byCue.rest_end.preset_id).toBeNull(); // дефолт
     expect(byCue.rest_end.is_locked).toBe(false);
   });
+
+  it('CT2: отдаёт tone_config (заданный + null-дефолт)', async () => {
+    authOk();
+    query.mockResolvedValueOnce({ rows: [
+      { cue_name: 'set_start', preset_id: null, is_locked: false,
+        tone_config: { frequencies: [880], durationMs: 200, type: 'square' },
+        preset_name: null, preset_is_active: null },
+    ] });
+    const res = await admin(request(app).get('/api/admin/audio-cue-defaults'));
+    expect(res.status).toBe(200);
+    const byCue = Object.fromEntries(res.body.data.map((d) => [d.cue_name, d]));
+    expect(byCue.set_start.tone_config).toEqual({ frequencies: [880], durationMs: 200, type: 'square' });
+    expect(byCue.rest_end.tone_config).toBeNull(); // дефолтная строка
+  });
 });
 
 describe('PUT /api/admin/audio-cue-defaults/:cue', () => {
@@ -355,6 +369,59 @@ describe('PUT /api/admin/audio-cue-defaults/:cue', () => {
     const res = await admin(request(app).put('/api/admin/audio-cue-defaults/bad_cue'))
       .send({ preset_id: null });
     expect(res.status).toBe(400);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  // ── CT2: tone_config (редактор «Стандартного тона») ──────────────────────
+  it('CT2: валидный tone_config (preset_id=null) → 200, UPSERT с CASE + JSON в параметрах', async () => {
+    authOk();
+    query.mockResolvedValueOnce({ rows: [{ cue_name: 'set_start', preset_id: null, is_locked: false,
+      tone_config: { frequencies: [880], durationMs: 200, type: 'square' }, updated_at: new Date() }] });
+    const res = await admin(request(app).put('/api/admin/audio-cue-defaults/set_start'))
+      .send({ preset_id: null, is_locked: false, tone_config: { frequencies: [880], durationMs: 200, type: 'square' } });
+    expect(res.status).toBe(200);
+    // UPSERT — call index 1 (preset_id=null пропускает SELECT-проверку пресета)
+    const upsert = query.mock.calls[1];
+    expect(upsert[0]).toMatch(/tone_config = CASE WHEN \$6::boolean/);
+    expect(upsert[0]).toMatch(/RETURNING[\s\S]*tone_config/);
+    expect(upsert[1][4]).toBe(JSON.stringify({ frequencies: [880], durationMs: 200, type: 'square' })); // $5 toneJson
+    expect(upsert[1][5]).toBe(true); // $6 hasToneConfig
+    // audit включает tone_config
+    const audit = query.mock.calls.find((c) => /INSERT INTO audit_logs/.test(c[0]));
+    expect(audit[1][1]).toBe('UPSERT');
+  });
+
+  it('CT2: tone_config=null (сброс на стандартный тон) → 200, $5=null $6=true', async () => {
+    authOk();
+    query.mockResolvedValueOnce({ rows: [{ cue_name: 'set_start', preset_id: null, is_locked: false, tone_config: null, updated_at: new Date() }] });
+    const res = await admin(request(app).put('/api/admin/audio-cue-defaults/set_start'))
+      .send({ preset_id: null, tone_config: null });
+    expect(res.status).toBe(200);
+    expect(query.mock.calls[1][1][4]).toBeNull(); // $5 toneJson
+    expect(query.mock.calls[1][1][5]).toBe(true); // $6 hasToneConfig (явный сброс)
+  });
+
+  it('CT2: тело без tone_config (тоггл lock) → $6=false (тон сохраняется через CASE-ветку)', async () => {
+    authOk();
+    query.mockResolvedValueOnce({ rows: [{ cue_name: 'set_start', preset_id: null, is_locked: true, tone_config: { frequencies: [880], durationMs: 200, type: 'sine' }, updated_at: new Date() }] });
+    const res = await admin(request(app).put('/api/admin/audio-cue-defaults/set_start'))
+      .send({ preset_id: null, is_locked: true });
+    expect(res.status).toBe(200);
+    expect(query.mock.calls[1][1][4]).toBeNull(); // $5 toneJson (нечего слать)
+    expect(query.mock.calls[1][1][5]).toBe(false); // $6 hasToneConfig — НЕ трогаем tone_config
+  });
+
+  it.each([
+    ['частота вне диапазона', { frequencies: [5], durationMs: 200, type: 'sine' }],
+    ['длительность вне диапазона', { frequencies: [880], durationMs: 9000, type: 'sine' }],
+    ['форма волны не из списка', { frequencies: [880], durationMs: 200, type: 'custom' }],
+    ['frequencies пустой', { frequencies: [], durationMs: 200, type: 'sine' }],
+  ])('CT2: невалидный tone_config (%s) → 400, без UPSERT', async (_label, tc) => {
+    authOk();
+    const res = await admin(request(app).put('/api/admin/audio-cue-defaults/set_start'))
+      .send({ preset_id: null, tone_config: tc });
+    expect(res.status).toBe(400);
+    // только auth-query — валидация тона ДО любых записей
     expect(query).toHaveBeenCalledTimes(1);
   });
 });
