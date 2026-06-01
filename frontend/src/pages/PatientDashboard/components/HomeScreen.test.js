@@ -399,4 +399,25 @@ describe('HomeScreen v12', () => {
       expect(screen.queryByText(/пропустил вчера/i)).not.toBeInTheDocument();
     });
   });
+
+  // ARC-CYCLE AC5 — позитивные чипы выполненных блоков (осознанная асимметрия #7).
+  describe('Block done chips (gymnasticsDoneToday / trainingDoneToday)', () => {
+    it('показывает чип «Гимнастика» при gymnasticsDoneToday=true', () => {
+      setup({ dashboardData: { ...mockDashboardData, gymnasticsDoneToday: true, trainingDoneToday: false } });
+      expect(screen.getByTestId('home-block-chips')).toBeInTheDocument();
+      expect(screen.getByTestId('chip-gym-done')).toBeInTheDocument();
+      expect(screen.queryByTestId('chip-training-done')).not.toBeInTheDocument();
+    });
+
+    it('показывает чип «Тренировка» при trainingDoneToday=true', () => {
+      setup({ dashboardData: { ...mockDashboardData, gymnasticsDoneToday: false, trainingDoneToday: true } });
+      expect(screen.getByTestId('chip-training-done')).toBeInTheDocument();
+      expect(screen.queryByTestId('chip-gym-done')).not.toBeInTheDocument();
+    });
+
+    it('без блоков (поля null) чипы не рендерятся', () => {
+      setup({ dashboardData: { ...mockDashboardData, gymnasticsDoneToday: null, trainingDoneToday: null } });
+      expect(screen.queryByTestId('home-block-chips')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -125,7 +125,13 @@ export default function HomeScreen({
 
   if (dashboardData === null || dashboardData === undefined) return <LoadingSkeleton />;
 
-  const { program, phase, streak, tip, diaryFilledToday, exercisesDoneToday, lastDiary, nextVisit } = dashboardData;
+  const {
+    program, phase, streak, tip, diaryFilledToday, exercisesDoneToday, lastDiary, nextVisit,
+    // ARC-CYCLE AC5: раздельные сигналы блоков (осознанная асимметрия, решение #7).
+    // null без блоков; boolean в blocks-режиме. Показываем только позитивные чипы (✓),
+    // чтобы не вводить в заблуждение «не сделано» при отсутствующем типе блока.
+    gymnasticsDoneToday, trainingDoneToday,
+  } = dashboardData;
   if (!program) return <EmptyState goTo={goTo} />;
 
   // «Готово» на hero-CTA = упражнения сделаны сегодня. После комплекса hero
@@ -267,6 +273,25 @@ export default function HomeScreen({
             </span>
             <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
           </button>
+
+          {/* ARC-CYCLE AC5: чипы блоков, выполненных сегодня (позитивный сигнал, без
+              «не сделано» — гимнастика и тренировка как отдельные оси, решение #7). */}
+          {(gymnasticsDoneToday === true || trainingDoneToday === true) && (
+            <div className="pd-home-hero-blockchips" data-testid="home-block-chips">
+              {gymnasticsDoneToday === true && (
+                <span className="pd-home-hero-chip" data-testid="chip-gym-done">
+                  <Check size={11} color="#fff" strokeWidth={3} aria-hidden="true" />
+                  Гимнастика
+                </span>
+              )}
+              {trainingDoneToday === true && (
+                <span className="pd-home-hero-chip" data-testid="chip-training-done">
+                  <Check size={11} color="#fff" strokeWidth={3} aria-hidden="true" />
+                  Тренировка
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

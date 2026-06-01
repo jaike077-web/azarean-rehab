@@ -2329,19 +2329,48 @@ function classifySegment(row) {
   return 'dormant'; // (ceilingAtRisk, 30]
 }
 
-// Адхеренс per patient. Только если target_min задан (есть цель для оценки).
-// Формула: sessions >= 0.6 * (target_min * units_in_window).
-// `target_unit='day'`  → 1 unit/день, units_in_window = window_days
-// `target_unit='week'` → 1 unit/неделя, units_in_window = window_days / 7
-function isAdhering(row, windowDays) {
-  if (row.target_min == null || row.target_unit == null) return null; // no target
-  const unitsInWindow =
-    row.target_unit === 'day'
-      ? windowDays
-      : windowDays / 7;
-  const expectedMin = row.target_min * unitsInWindow;
-  const threshold = 0.6 * expectedMin;
-  return (row.sessions || 0) >= threshold;
+// Адхеренс per axis. Только если target_min задан (есть цель для оценки).
+// Формула: sessions >= 0.6 * (target_min * units_in_window). Пороги заморожены.
+// unit='day'  → 1 unit/день, units_in_window = window_days
+// unit='week' → 1 unit/неделя, units_in_window = window_days / 7
+// Возвращает true/false, либо null если цели нет (no_target).
+function adheresAxis(targetMin, unit, sessions, windowDays) {
+  if (targetMin == null || unit == null) return null; // no target
+  const unitsInWindow = unit === 'day' ? windowDays : windowDays / 7;
+  const threshold = 0.6 * (targetMin * unitsInWindow);
+  return (sessions || 0) >= threshold;
+}
+
+// ── ARC-CYCLE AC6: ДВА показателя адхеренса РАЗДЕЛЬНО (Rule #34, НЕ пулим). ──
+// Источник цели/сессий по оси:
+//   • блок-программа → ось питается соответствующим блоком (gymnastics/training);
+//   • legacy-программа (без блоков) → старая единственная ось c.target_* по unit:
+//     unit='day' питает gymnastics-ось, unit='week' — training-ось. В проде
+//     c.target_* без write-path (всегда NULL → legacy всегда no_target) — это
+//     anti-regression: legacy-пациент остаётся no_target, как и до арка.
+//
+// Гимнастика = дневная дисциплина: sessions = distinct-дни активности
+// (gym_sessions = COUNT(DISTINCT completed_at::date) в SQL). unit всегда 'day'.
+function isAdheringGymnastics(row, windowDays) {
+  if (row.has_gym_block) {
+    return adheresAxis(row.gym_target_min, row.gym_target_unit, row.gym_sessions, windowDays);
+  }
+  if (!row.has_blocks && row.target_unit === 'day') {
+    return adheresAxis(row.target_min, row.target_unit, row.sessions, windowDays);
+  }
+  return null; // нет gym-оси у этого пациента
+}
+
+// Тренировка = счёт закрытых тренировок: sessions = distinct session_id
+// (train_sessions = COUNT(DISTINCT session_id) в SQL, anti-175%). unit всегда 'week'.
+function isAdheringTraining(row, windowDays) {
+  if (row.has_train_block) {
+    return adheresAxis(row.train_target_min, row.train_target_unit, row.train_sessions, windowDays);
+  }
+  if (!row.has_blocks && row.target_unit === 'week') {
+    return adheresAxis(row.target_min, row.target_unit, row.sessions, windowDays);
+  }
+  return null; // нет training-оси у этого пациента
 }
 
 // Shared per-patient state SQL — потребляется обоими endpoint'ами:
@@ -2395,6 +2424,59 @@ const PER_PATIENT_STATE_SQL = `
             AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
      GROUP BY ap.patient_id
   ),
+  -- ── ARC-CYCLE AC6: блок-оси адхеренса. Один gymnastics + один training блок
+  -- на активную программу (DISTINCT ON по position,id — зеркало AC4 find()). ──
+  -- EXISTS-гейт по комплексам: пустой блок (без program_block_complexes) — это
+  -- мисконфигурация, ось НЕ существует (→ no_target, а не ложное «не соблюдает»).
+  -- Заодно убирает спорный gap=1 у пустого gym-блока (нечего делать ежедневно).
+  gym_block AS (
+    SELECT DISTINCT ON (b.program_id)
+           b.program_id, b.id AS block_id,
+           b.target_min AS gym_target_min, b.target_unit AS gym_target_unit
+      FROM program_blocks b
+      JOIN active_program ap ON ap.program_id = b.program_id
+     WHERE b.is_active = true AND b.block_type = 'gymnastics'
+       AND EXISTS (SELECT 1 FROM program_block_complexes pbc WHERE pbc.block_id = b.id)
+     ORDER BY b.program_id, b.position, b.id
+  ),
+  train_block AS (
+    SELECT DISTINCT ON (b.program_id)
+           b.program_id, b.id AS block_id,
+           b.target_min AS train_target_min, b.target_unit AS train_target_unit
+      FROM program_blocks b
+      JOIN active_program ap ON ap.program_id = b.program_id
+     WHERE b.is_active = true AND b.block_type = 'training'
+       AND EXISTS (SELECT 1 FROM program_block_complexes pbc WHERE pbc.block_id = b.id)
+     ORDER BY b.program_id, b.position, b.id
+  ),
+  -- Гимнастика = дневная дисциплина → distinct-дни активности (НЕ строки, НЕ сессии).
+  gym_sessions AS (
+    SELECT ap.patient_id,
+           COUNT(DISTINCT pl.completed_at::date) AS sessions
+      FROM active_program ap
+      JOIN gym_block gb ON gb.program_id = ap.program_id
+      JOIN program_block_complexes pbc ON pbc.block_id = gb.block_id
+      LEFT JOIN progress_logs pl
+             ON pl.complex_id = pbc.complex_id
+            AND pl.completed = true
+            AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
+     GROUP BY ap.patient_id
+  ),
+  -- Тренировка = счёт закрытых тренировок по ВСЕМ комплексам блока (все дни цикла) →
+  -- distinct session_id (anti-175%, Rule #34).
+  train_sessions AS (
+    SELECT ap.patient_id,
+           COUNT(DISTINCT pl.session_id)
+             FILTER (WHERE pl.session_id IS NOT NULL) AS sessions
+      FROM active_program ap
+      JOIN train_block tb ON tb.program_id = ap.program_id
+      JOIN program_block_complexes pbc ON pbc.block_id = tb.block_id
+      LEFT JOIN progress_logs pl
+             ON pl.complex_id = pbc.complex_id
+            AND pl.completed = true
+            AND pl.completed_at >= (CURRENT_DATE - ($2::int - 1))
+     GROUP BY ap.patient_id
+  ),
   unanswered AS (
     SELECT rp.patient_id, last_msg.last_msg_at AS last_patient_msg_at
       FROM (
@@ -2414,10 +2496,25 @@ const PER_PATIENT_STATE_SQL = `
     (b.password_hash IS NOT NULL) AS is_registered,
     (ap.patient_id IS NOT NULL)   AS has_active_program,
     c.target_min, c.target_unit,
+    -- ── ARC-CYCLE AC6: блок-оси (NULL у legacy-программ без блоков). ──
+    (gb.program_id IS NOT NULL) AS has_gym_block,
+    gb.gym_target_min, gb.gym_target_unit,
+    COALESCE(gs.sessions, 0)::int AS gym_sessions,
+    (tb.program_id IS NOT NULL) AS has_train_block,
+    tb.train_target_min, tb.train_target_unit,
+    COALESCE(ts.sessions, 0)::int AS train_sessions,
+    (gb.program_id IS NOT NULL OR tb.program_id IS NOT NULL) AS has_blocks,
     sp.last_activity_date::text   AS last_activity_date,
     CASE WHEN sp.last_activity_date IS NULL THEN NULL
          ELSE (CURRENT_DATE - sp.last_activity_date)::int END AS days_since,
+    -- expected_gap_days: блоки → gymnastics=1 (день) ИНАЧЕ training=ceil(7/min)
+    -- ИНАЧЕ legacy c.target_* по unit (anti-regression). Только источник gap —
+    -- пороги classifySegment не сдвигаются (Rule из ТЗ AC6 §6.3).
     CASE
+      WHEN gb.program_id IS NOT NULL THEN 1
+      WHEN tb.program_id IS NOT NULL AND tb.train_target_min > 0
+           THEN CEIL(7.0 / tb.train_target_min)::int
+      WHEN tb.program_id IS NOT NULL THEN 7
       WHEN c.target_unit = 'day'  AND c.target_min > 0 THEN 1
       WHEN c.target_unit = 'week' AND c.target_min > 0
            THEN CEIL(7.0 / c.target_min)::int
@@ -2443,6 +2540,10 @@ const PER_PATIENT_STATE_SQL = `
   FROM base b
   LEFT JOIN active_program     ap ON ap.patient_id = b.id
   LEFT JOIN complexes          c  ON c.id = ap.complex_id
+  LEFT JOIN gym_block          gb ON gb.program_id = ap.program_id
+  LEFT JOIN train_block        tb ON tb.program_id = ap.program_id
+  LEFT JOIN gym_sessions       gs ON gs.patient_id = b.id
+  LEFT JOIN train_sessions     ts ON ts.patient_id = b.id
   LEFT JOIN streak_pick        sp ON sp.patient_id = b.id
   LEFT JOIN sessions_in_window siw ON siw.patient_id = b.id
   LEFT JOIN unanswered         un ON un.patient_id = b.id
@@ -2463,11 +2564,15 @@ router.get('/command-center', async (req, res) => {
       (r) => r.is_registered && !r.has_active_program
     ).length;
 
-    // Сегменты + адхеренс — только среди has_active_program
+    // Сегменты + адхеренс — только среди has_active_program.
+    // ── ARC-CYCLE AC6: ДВА показателя адхеренса РАЗДЕЛЬНО (Rule #34, НЕ пулим). ──
     const segments = { active: 0, at_risk: 0, dormant: 0, churned: 0 };
     let active_count = 0;
-    let adhering_count = 0;
-    let no_target_set = 0;
+    const adherence = {
+      gymnastics: { adhering: 0, no_target: 0 },
+      training: { adhering: 0, no_target: 0 },
+    };
+    let no_target_set = 0; // нет цели НИ НА ОДНОЙ оси (anti-regression для legacy)
 
     for (const r of rows) {
       if (!r.has_active_program) continue;
@@ -2475,12 +2580,15 @@ router.get('/command-center', async (req, res) => {
       segments[segment] += 1;
       if (segment === 'active') active_count += 1;
 
-      const adheres = isAdhering(r, adherence_window_days);
-      if (adheres === null) {
-        no_target_set += 1;
-      } else if (adheres) {
-        adhering_count += 1;
-      }
+      const gymA = isAdheringGymnastics(r, adherence_window_days);
+      if (gymA === null) adherence.gymnastics.no_target += 1;
+      else if (gymA) adherence.gymnastics.adhering += 1;
+
+      const trainA = isAdheringTraining(r, adherence_window_days);
+      if (trainA === null) adherence.training.no_target += 1;
+      else if (trainA) adherence.training.adhering += 1;
+
+      if (gymA === null && trainA === null) no_target_set += 1;
     }
 
     return res.json({
@@ -2493,8 +2601,8 @@ router.get('/command-center', async (req, res) => {
           registered,
           active_program,
           active: active_count,
-          adhering: adhering_count,
         },
+        adherence,
         funnel_gaps: { registered_no_active_program },
         segments,
         segments_note: { no_target_set },
@@ -2531,6 +2639,11 @@ router.get('/command-center/instructors', async (req, res) => {
           caseload: 0, no_program: 0,
           active: 0, at_risk: 0, dormant: 0, churned: 0,
           unanswered: 0, red_flags: 0, stuck: 0,
+          // ── ARC-CYCLE AC6: две оси адхеренса per-instructor (для модалки AC7). ──
+          adherence: {
+            gymnastics: { adhering: 0, no_target: 0 },
+            training: { adhering: 0, no_target: 0 },
+          },
         });
       }
       const acc = byInstructor.get(instId);
@@ -2544,6 +2657,15 @@ router.get('/command-center/instructors', async (req, res) => {
       } else {
         const segment = classifySegment(r);
         acc[segment] += 1;
+
+        // Адхеренс по двум осям РАЗДЕЛЬНО — только среди онбордингованных (Rule #34).
+        const gymA = isAdheringGymnastics(r, adherence_window_days);
+        if (gymA === null) acc.adherence.gymnastics.no_target += 1;
+        else if (gymA) acc.adherence.gymnastics.adhering += 1;
+
+        const trainA = isAdheringTraining(r, adherence_window_days);
+        if (trainA === null) acc.adherence.training.no_target += 1;
+        else if (trainA) acc.adherence.training.adhering += 1;
       }
 
       // Флаги внимания — считаем для ВСЕХ пациентов инструктора, не только
@@ -2669,6 +2791,24 @@ router.get('/command-center/dynamics', async (req, res) => {
          WHERE rp.is_active = true AND rp.status = 'active'
          ORDER BY rp.patient_id, rp.created_at DESC
       ),
+      -- ── ARC-CYCLE AC6: комплексы для динамики адхеренса. Блок-программа → ВСЕ
+      -- комплексы активных блоков (gym+train, единый объём тренировок, distinct
+      -- session_id). legacy (нет активных блоков) → rehab_programs.complex_id
+      -- (прежнее поведение 1:1, anti-regression). ──
+      program_complex_ids AS (
+        SELECT ap.patient_id, pbc.complex_id
+          FROM active_program ap
+          JOIN program_blocks b ON b.program_id = ap.program_id AND b.is_active = true
+          JOIN program_block_complexes pbc ON pbc.block_id = b.id
+        UNION
+        SELECT ap.patient_id, ap.complex_id
+          FROM active_program ap
+         WHERE ap.complex_id IS NOT NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM program_blocks b
+              WHERE b.program_id = ap.program_id AND b.is_active = true
+           )
+      ),
       pain_halves AS (
         SELECT
           ap.patient_id,
@@ -2706,8 +2846,9 @@ router.get('/command-center/dynamics', async (req, res) => {
               AND pl.session_id IS NOT NULL
           ) AS sessions_second
         FROM active_program ap
+        LEFT JOIN program_complex_ids pci ON pci.patient_id = ap.patient_id
         LEFT JOIN progress_logs pl
-               ON pl.complex_id = ap.complex_id
+               ON pl.complex_id = pci.complex_id
               AND pl.completed = true
               AND pl.completed_at::date >= CURRENT_DATE - ($2::int - 1)
               AND pl.completed_at::date <= CURRENT_DATE

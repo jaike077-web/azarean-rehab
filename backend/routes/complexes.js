@@ -624,6 +624,23 @@ router.get('/patient/:patient_id', authenticateToken, async (req, res) => {
   try {
     const { patient_id } = req.params;
 
+    // Доступ к пациенту: админ — любой; инструктор — свои (created_by) ИЛИ назначенные
+    // (assigned_instructor_id). Гард на IDOR, заменяет неявный instructor-фильтр ниже.
+    const access = await query(
+      `SELECT 1 FROM patients
+        WHERE id = $1
+          AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2)`,
+      [patient_id, req.user.id, req.user.role]
+    );
+    if (access.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Пациент не найден' });
+    }
+
+    // ВСЕ активные комплексы ПАЦИЕНТА (НЕ только текущего инструктора). Раньше фильтр
+    // `c.instructor_id = $2` прятал комплексы, созданные другим инструктором (напр. после
+    // переназначения пациента — Wave 3): редактор программы/блоков их не видел, а селектор
+    // в legacy/BlockEditor показывал «— Выберите комплекс —» и при сейве терял день.
+    // Принадлежность комплекса = patient_id (как валидирует AC2 allComplexesAllowed).
     const result = await query(
       `SELECT c.*,
               d.name as diagnosis_name,
@@ -645,10 +662,10 @@ router.get('/patient/:patient_id', authenticateToken, async (req, res) => {
        FROM complexes c
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN complex_exercises ce ON c.id = ce.complex_id
-       WHERE c.patient_id = $1 AND c.instructor_id = $2 AND c.is_active = true
+       WHERE c.patient_id = $1 AND c.is_active = true
        GROUP BY c.id, d.name
        ORDER BY c.created_at DESC`,
-      [patient_id, req.user.id]
+      [patient_id]
     );
 
     res.json({
@@ -658,9 +675,9 @@ router.get('/patient/:patient_id', authenticateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Ошибка получения комплексов пациента:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Server Error',
-      message: 'Ошибка при получении комплексов' 
+      message: 'Ошибка при получении комплексов'
     });
   }
 });

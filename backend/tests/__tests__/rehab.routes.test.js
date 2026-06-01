@@ -211,7 +211,11 @@ describe('GET /api/rehab/my/exercises', () => {
   });
 
   it('should return exercise data with valid token', async () => {
-    query.mockResolvedValueOnce({ rows: [fixtures.mockExerciseRow] });
+    // AC4: /my/exercises сперва ищет активную программу + блоки. Нет блоков → legacy-путь.
+    // Поля legacy дублируются на верхний уровень (обратная совместимость), + mode/gymnastics/training.
+    query.mockResolvedValueOnce({ rows: [{ id: 1, title: 'ACL Rehab' }] }); // активная программа
+    query.mockResolvedValueOnce({ rows: [] });                              // блоки — нет → legacy
+    query.mockResolvedValueOnce({ rows: [fixtures.mockExerciseRow] });      // legacy комплекс
 
     const response = await request(app)
       .get('/api/rehab/my/exercises')
@@ -219,6 +223,9 @@ describe('GET /api/rehab/my/exercises', () => {
       .expect(200);
 
     expect(response.body).toHaveProperty('data');
+    expect(response.body.data).toHaveProperty('mode', 'legacy');
+    expect(response.body.data).toHaveProperty('gymnastics', null);
+    expect(response.body.data).toHaveProperty('training', null);
     expect(response.body.data).toHaveProperty('program_id', 1);
     expect(response.body.data).toHaveProperty('complex_id', 10);
     expect(response.body.data).not.toHaveProperty('access_token');
@@ -230,7 +237,8 @@ describe('GET /api/rehab/my/exercises', () => {
   });
 
   it('should return 404 when no active program', async () => {
-    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [] }); // активная программа — нет (блоки пропускаются)
+    query.mockResolvedValueOnce({ rows: [] }); // legacy комплекс — нет → 404
 
     const response = await request(app)
       .get('/api/rehab/my/exercises')
@@ -302,6 +310,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
     query.mockResolvedValueOnce({ rows: [] }); // today diary check
     query.mockResolvedValueOnce({ rows: [] }); // today progress check (exercisesDoneToday)
+    query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4 block-done
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
@@ -368,6 +377,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] });
     query.mockResolvedValueOnce({ rows: [] });
     query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4 block-done
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
@@ -403,6 +413,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
     query.mockResolvedValueOnce({ rows: [] });                   // today diary
     query.mockResolvedValueOnce({ rows: [] });                   // exercisesDoneToday
+    query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4 block-done
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
@@ -443,6 +454,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [shoulderTip] }); // tip
     query.mockResolvedValueOnce({ rows: [] });           // today diary
     query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4 block-done
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')

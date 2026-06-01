@@ -6,6 +6,7 @@ import useConfirm from '../../hooks/useConfirm';
 import ConfirmModal from '../ConfirmModal';
 import { formatDate } from '../../utils/dateUtils';
 import ComplexSelector from './ComplexSelector';
+import BlockEditor from './BlockEditor';
 import s from './RehabProgramModal.module.css';
 
 /**
@@ -227,6 +228,10 @@ function EditForm({ patient, program, complexes, onSaved, onClose, onDeleted }) 
           <> · Текущая фаза начата: {formatDate(program.phase_started_at)}</>
         )}
       </p>
+
+      {/* ARC-CYCLE AC3: редактор блоков (микроцикл). Управляет блоками независимо
+          от PUT программы — все его кнопки type="button" (внутри этой <form>). */}
+      <BlockEditor programId={program.id} complexes={complexes} />
 
       <div className={s.rehabProgramFooter}>
         <button

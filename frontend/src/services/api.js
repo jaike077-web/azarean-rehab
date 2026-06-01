@@ -316,6 +316,12 @@ export const rehabPrograms = {
   create: (data) => api.post('/rehab/programs', data),
   update: (id, data) => api.put(`/rehab/programs/${id}`, data),
   delete: (id) => api.delete(`/rehab/programs/${id}`),
+  // ARC-CYCLE AC3: блоки программы (микроцикл). Инструктор, api (Bearer).
+  // К AC2-эндпоинтам: GET/POST /rehab/programs/:id/blocks, PUT/DELETE /rehab/blocks/:blockId.
+  getProgramBlocks: (programId) => api.get(`/rehab/programs/${programId}/blocks`),
+  createBlock: (programId, data) => api.post(`/rehab/programs/${programId}/blocks`, data),
+  updateBlock: (blockId, data) => api.put(`/rehab/blocks/${blockId}`, data),
+  deleteBlock: (blockId) => api.delete(`/rehab/blocks/${blockId}`),
 };
 
 // =====================================================
@@ -474,6 +480,10 @@ export const rehab = {
   getDashboard: () => patientApi.get('/rehab/my/dashboard'),
   getMyProgram: () => patientApi.get('/rehab/my/program'),
   getMyExercises: () => patientApi.get('/rehab/my/exercises'),
+  // ARC-CYCLE AC5: продвижение тренировочного дня. Вызывается из ExercisesScreen
+  // на границе завершения раннера (НЕ из LOCKED раннера). { block_id, session_id }.
+  // Идемпотентно на бэке через last_advanced_session_id.
+  advanceTraining: (data) => patientApi.post('/rehab/my/training/advance', data),
 
   // Фазы (публичные). Wave 1 #1.04: тип обязателен, дефолт 'acl' убран.
   // Caller обязан передать program_type из активной программы пациента.

@@ -19,6 +19,7 @@ import { admin, patients } from '../../services/api';
 import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 import { useToast } from '../../context/ToastContext';
 import { severityColor } from './AttentionPanel';
+import { ADHERENCE_AXES, adherenceAxisValue } from './adherenceAxis';
 import s from './CommandCenter.module.css';
 
 function InstructorModal({ row, onClose, onReassigned }) {
@@ -159,6 +160,10 @@ function InstructorModal({ row, onClose, onReassigned }) {
   const denom = (row.caseload || 0) - (row.no_program || 0);
   const activePct = denom > 0 ? Math.round((100 * (row.active || 0)) / denom) : 0;
 
+  // AC7: база-знаменатель адхеренса = онбордингованные (сумма сегментов).
+  const onboarded =
+    (row.active || 0) + (row.at_risk || 0) + (row.dormant || 0) + (row.churned || 0);
+
   return (
     <div
       className={s.instructorModalOverlay}
@@ -217,6 +222,25 @@ function InstructorModal({ row, onClose, onReassigned }) {
             <span className={s.imMetricValue}>{row.no_program}</span>
           </div>
         </div>
+
+        {/* AC7: две оси адхеренса раздельно (Rule #34). «—» = на оси нет целей. */}
+        {row.adherence && (
+          <div className={s.imMetrics} data-testid="instructor-adherence">
+            {ADHERENCE_AXES.map((ax) => {
+              const { text } = adherenceAxisValue(row.adherence[ax.key], onboarded);
+              return (
+                <div
+                  key={ax.key}
+                  className={s.imMetric}
+                  data-testid={`im-adherence-${ax.key}`}
+                >
+                  <span className={s.imMetricLabel}>{ax.label}</span>
+                  <span className={s.imMetricValue}>{text}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className={s.imAttnSection}>
           <h4 className={s.imSubTitle}>Требует внимания</h4>

@@ -187,14 +187,16 @@ describe('AA4 — GET /api/complexes/:id возвращает cue_sounds (pre-fi
   });
 });
 
-describe('GET /api/complexes/patient/:patient_id — derived_title', () => {
+describe('GET /api/complexes/patient/:patient_id — derived_title + ownership', () => {
   it('возвращает derived_title для каждого комплекса пациента', async () => {
-    query.mockResolvedValueOnce({
-      rows: [
-        { id: 10, title: 'Колено фаза 1', derived_title: 'Колено фаза 1', patient_id: 14 },
-        { id: 11, title: null, derived_title: 'Упр А · Упр Б', patient_id: 14 },
-      ],
-    });
+    query
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] }) // access-guard: пациент доступен
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 10, title: 'Колено фаза 1', derived_title: 'Колено фаза 1', patient_id: 14 },
+          { id: 11, title: null, derived_title: 'Упр А · Упр Б', patient_id: 14 },
+        ],
+      });
 
     const res = await request(app)
       .get('/api/complexes/patient/14')
@@ -204,6 +206,36 @@ describe('GET /api/complexes/patient/:patient_id — derived_title', () => {
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data[0].derived_title).toBe('Колено фаза 1');
     expect(res.body.data[1].derived_title).toBe('Упр А · Упр Б');
+  });
+
+  it('ARC-fix: возвращает ВСЕ комплексы пациента (НЕ фильтрует по instructor_id)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] }) // access ok
+      .mockResolvedValueOnce({ rows: [{ id: 59, patient_id: 14, instructor_id: 1 }] });
+
+    await request(app)
+      .get('/api/complexes/patient/14')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .expect(200);
+
+    // calls: [0]=auth is_active, [1]=access-guard, [2]=выборка комплексов.
+    // Выборка: WHERE по patient_id, БЕЗ instructor_id-фильтра.
+    const complexSql = query.mock.calls[2][0];
+    expect(complexSql).toMatch(/WHERE c\.patient_id = \$1 AND c\.is_active = true/);
+    expect(complexSql).not.toMatch(/c\.instructor_id = \$2/);
+  });
+
+  it('ARC-fix: 404 если пациент НЕ доступен инструктору (access-guard, IDOR)', async () => {
+    query.mockResolvedValueOnce({ rows: [] }); // access-guard пуст → нет доступа
+
+    const res = await request(app)
+      .get('/api/complexes/patient/999')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .expect(404);
+
+    expect(res.body.error).toBe('Not Found');
+    // выборка комплексов НЕ выполняется: только [0]=auth + [1]=access-guard.
+    expect(query.mock.calls.length).toBe(2);
   });
 });
 

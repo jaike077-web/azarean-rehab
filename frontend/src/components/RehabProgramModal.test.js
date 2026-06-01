@@ -18,6 +18,11 @@ jest.mock('../services/api', () => ({
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    // AC3: BlockEditor (внутри EditForm) дёргает эти при монтировании/правках.
+    getProgramBlocks: jest.fn(),
+    createBlock: jest.fn(),
+    updateBlock: jest.fn(),
+    deleteBlock: jest.fn(),
   },
   complexes: {
     getByPatient: jest.fn(),
@@ -90,6 +95,8 @@ const SAMPLE_PROGRAM_TYPES = [
 
 beforeEach(() => {
   jest.clearAllMocks();
+  // AC3: EditForm монтирует BlockEditor → грузит блоки. Дефолт — пусто.
+  rehabPrograms.getProgramBlocks.mockResolvedValue({ data: [] });
 });
 
 const flushAsync = () => new Promise((r) => setTimeout(r, 0));
@@ -251,6 +258,7 @@ describe('CreateWizard — Step1 → Step2 → Step3 + POST с program_template_
     // resetAllMocks очищает и mock.calls и mock queue от beforeEach
     jest.resetAllMocks();
     rehabPrograms.getByPatient.mockResolvedValue({ data: [] });
+    rehabPrograms.getProgramBlocks.mockResolvedValue({ data: [] }); // AC3: BlockEditor mount
     complexes.getByPatient.mockResolvedValue({ data: SAMPLE_COMPLEXES });
     rehab.getProgramTemplates.mockResolvedValue({ data: [] });
     rehab.getProgramTypes.mockResolvedValue({ data: SAMPLE_PROGRAM_TYPES });

@@ -527,6 +527,43 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     );
     const exercisesDoneToday = todayProgressResult.rows.length > 0;
 
+    // 8. ARC-CYCLE AC4: разводим «сделано сегодня» по типам блоков (осознанная асимметрия,
+    // решение #7). gymnastics = есть completed-сессия на gymnastics-комплексе сегодня;
+    // training = completed-сессия на комплексе ТЕКУЩЕГО дня ротации сегодня. Без блоков → null
+    // (прежнее поведение; hero до AC5 опирается на exercisesDoneToday). exercisesDoneToday
+    // сохраняем для обратной совместимости.
+    let gymnasticsDoneToday = null;
+    let trainingDoneToday = null;
+    if (program) {
+      const blockDoneResult = await query(
+        `SELECT
+           EXISTS (
+             SELECT 1 FROM program_blocks WHERE program_id = $1 AND is_active = true
+           ) AS has_blocks,
+           EXISTS (
+             SELECT 1 FROM progress_logs pl
+               JOIN program_block_complexes pbc ON pbc.complex_id = pl.complex_id
+               JOIN program_blocks b ON b.id = pbc.block_id
+              WHERE b.program_id = $1 AND b.is_active = true AND b.block_type = 'gymnastics'
+                AND pl.completed = true AND pl.completed_at::date = $2
+           ) AS gym_done,
+           EXISTS (
+             SELECT 1 FROM progress_logs pl
+               JOIN program_block_complexes pbc ON pbc.complex_id = pl.complex_id
+               JOIN program_blocks b ON b.id = pbc.block_id
+              WHERE b.program_id = $1 AND b.is_active = true AND b.block_type = 'training'
+                AND pbc.day_index = b.current_day_index
+                AND pl.completed = true AND pl.completed_at::date = $2
+           ) AS training_done`,
+        [program.id, today]
+      );
+      const bd = blockDoneResult.rows[0];
+      if (bd && bd.has_blocks) {
+        gymnasticsDoneToday = bd.gym_done;
+        trainingDoneToday = bd.training_done;
+      }
+    }
+
     res.json({
       data: {
         program,
@@ -536,6 +573,8 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
         tip,
         diaryFilledToday,
         exercisesDoneToday,
+        gymnasticsDoneToday,
+        trainingDoneToday,
       }
     });
   } catch (error) {
@@ -1575,6 +1614,379 @@ router.delete('/programs/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// =====================================================
+// ARC-CYCLE AC2: CRUD блоков программы (микроцикл-слой)
+// program_blocks (gymnastics плоский / training микроцикл) + program_block_complexes (дни).
+// Инструктор (authenticateToken, Bearer JWT). Ownership через rehab_programs.created_by.
+// Цель живёт на блоке (write-path). Без requireSameOrigin (Bearer, не cookie).
+// =====================================================
+
+const BLOCK_TYPES = ['gymnastics', 'training'];
+const SMALLINT_MAX = 32767; // верхняя граница SMALLINT-колонок (target_*, position) — чистый 400 вместо 500
+
+// Валидация цели блока — зеркало chk_block_cadence (миграция 20260531):
+// всё-NULL или всё-задано + min>=1, max>=min + per-type unit (gymnastics→'day', training→'week').
+// Возвращает { ok:true, target:{min,max,unit} } либо { ok:false, message }.
+function validateBlockTarget(body, blockType) {
+  const { target_min, target_max, target_unit } = body;
+  const anySet = target_min != null || target_max != null || target_unit != null;
+  if (!anySet) return { ok: true, target: { min: null, max: null, unit: null } };
+
+  const min = parseInt(target_min, 10);
+  const max = parseInt(target_max, 10);
+  if (!Number.isInteger(min) || !Number.isInteger(max) || typeof target_unit !== 'string') {
+    return { ok: false, message: 'Цель: target_min, target_max, target_unit задаются вместе' };
+  }
+  if (min < 1 || max < min || max > SMALLINT_MAX) {
+    return { ok: false, message: `Цель: target_min >= 1, target_max в диапазоне [target_min, ${SMALLINT_MAX}]` };
+  }
+  const expectedUnit = blockType === 'gymnastics' ? 'day' : 'week';
+  if (target_unit !== expectedUnit) {
+    return { ok: false, message: `Цель: для «${blockType}» единица должна быть «${expectedUnit}»` };
+  }
+  return { ok: true, target: { min, max, unit: target_unit } };
+}
+
+// Нормализация дней блока из body.complexes.
+// gymnastics → day_index = null (плоский набор, доступен ежедневно);
+// training → day_index обязателен (>=1, день ротации).
+// Возвращает { ok:true, days:[{complex_id, day_index, label, position}] } либо { ok:false, message }.
+function normalizeBlockComplexes(complexes, blockType) {
+  if (!Array.isArray(complexes) || complexes.length === 0) {
+    return { ok: false, message: 'Список комплексов (complexes) обязателен и не пуст' };
+  }
+  const days = [];
+  for (let i = 0; i < complexes.length; i++) {
+    const c = complexes[i] || {};
+    const complexId = parseInt(c.complex_id, 10);
+    if (!Number.isInteger(complexId)) {
+      return { ok: false, message: 'Каждый элемент complexes должен иметь числовой complex_id' };
+    }
+    let dayIndex = null;
+    if (blockType === 'training') {
+      dayIndex = parseInt(c.day_index, 10);
+      if (!Number.isInteger(dayIndex) || dayIndex < 1) {
+        return { ok: false, message: 'Для тренировки каждый комплекс должен иметь day_index >= 1' };
+      }
+    }
+    const posParsed = parseInt(c.position, 10);
+    days.push({
+      complex_id: complexId,
+      day_index: dayIndex,
+      label: (typeof c.label === 'string' && c.label.trim()) || null,
+      // clamp в [0, SMALLINT_MAX] — position косметический (порядок), мусор не должен ронять в 500.
+      position: Math.min(Math.max(Number.isInteger(posParsed) ? posParsed : i, 0), SMALLINT_MAX),
+    });
+  }
+  // Дубль complex_id в одном блоке нарушит UNIQUE(block_id, complex_id) — чистый 400 заранее.
+  const ids = days.map((d) => d.complex_id);
+  if (new Set(ids).size !== ids.length) {
+    return { ok: false, message: 'Комплекс не может повторяться в одном блоке' };
+  }
+  // Инвариант арка: дни тренировки нумеруются подряд с 1 (1, 2, 3, …).
+  // Это согласует current_day_index (= значение day_index), PUT-clamp [1, numDays] и
+  // advance-формулу AC4 (current % numDays) + 1 — все они предполагают плотный диапазон 1..N.
+  // distinct day_index гарантированно = {1..maxDay}, иначе указатель ротации укажет на пустой день.
+  if (blockType === 'training') {
+    const distinct = [...new Set(days.map((d) => d.day_index))];
+    const maxDay = Math.max(...distinct);
+    if (distinct.length !== maxDay) {
+      return { ok: false, message: 'Дни тренировки должны нумероваться подряд с 1 (1, 2, 3, …)' };
+    }
+  }
+  return { ok: true, days };
+}
+
+// Проверка, что все complex_id принадлежат ПАЦИЕНТУ программы и активны.
+// Строго patient_id (НЕ instructor_id-OR): комплекс назначается конкретному пациенту
+// (complexes.patient_id NOT NULL), и блок программы пациента Y не должен принимать комплекс,
+// назначенный другому пациенту X — иначе латентная cross-patient утечка контента при резолве
+// блоков в раннер (AC3+). Кто создал комплекс (instructor_id) — для принадлежности неважно.
+// Возвращает true если все уникальные id прошли, иначе false.
+async function allComplexesAllowed(complexIds, patientId) {
+  const uniqueIds = [...new Set(complexIds)];
+  const result = await query(
+    `SELECT id FROM complexes
+      WHERE id = ANY($1::int[]) AND is_active = true AND patient_id = $2`,
+    [uniqueIds, patientId]
+  );
+  return result.rows.length === uniqueIds.length;
+}
+
+/**
+ * GET /api/rehab/programs/:id/blocks
+ * Блоки программы + вложенные комплексы (дни). Только активные блоки.
+ */
+router.get('/programs/:id/blocks', authenticateToken, async (req, res) => {
+  try {
+    const programId = parseInt(req.params.id, 10);
+    if (isNaN(programId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id программы' });
+    }
+    const owner = await query(
+      'SELECT id FROM rehab_programs WHERE id = $1 AND created_by = $2',
+      [programId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
+    }
+    const result = await query(
+      `SELECT b.id, b.block_type, b.title, b.position,
+              b.target_min, b.target_max, b.target_unit,
+              b.current_day_index, b.is_active,
+              COALESCE(
+                json_agg(
+                  json_build_object(
+                    'id', pbc.id,
+                    'complex_id', pbc.complex_id,
+                    'day_index', pbc.day_index,
+                    'label', pbc.label,
+                    'position', pbc.position,
+                    'complex_title', c.title
+                  ) ORDER BY pbc.day_index NULLS FIRST, pbc.position, pbc.id
+                ) FILTER (WHERE pbc.id IS NOT NULL),
+                '[]'::json
+              ) AS complexes
+         FROM program_blocks b
+         LEFT JOIN program_block_complexes pbc ON pbc.block_id = b.id
+         LEFT JOIN complexes c ON c.id = pbc.complex_id
+        WHERE b.program_id = $1 AND b.is_active = true
+        GROUP BY b.id
+        ORDER BY b.position, b.id`,
+      [programId]
+    );
+    res.json({ data: result.rows });
+  } catch (error) {
+    console.error('Ошибка получения блоков:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка получения блоков' });
+  }
+});
+
+/**
+ * POST /api/rehab/programs/:id/blocks
+ * Создать блок + дни (junction). Транзакция. Цель → write-path на блок.
+ */
+router.post('/programs/:id/blocks', authenticateToken, async (req, res) => {
+  const programId = parseInt(req.params.id, 10);
+  const { block_type, title, position } = req.body;
+
+  // Валидация тела (без БД) → 400 ДО открытия транзакции.
+  if (!BLOCK_TYPES.includes(block_type)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'block_type должен быть gymnastics или training' });
+  }
+  const targetCheck = validateBlockTarget(req.body, block_type);
+  if (!targetCheck.ok) {
+    return res.status(400).json({ error: 'Validation Error', message: targetCheck.message });
+  }
+  const daysCheck = normalizeBlockComplexes(req.body.complexes, block_type);
+  if (!daysCheck.ok) {
+    return res.status(400).json({ error: 'Validation Error', message: daysCheck.message });
+  }
+  const { target } = targetCheck;
+  const { days } = daysCheck;
+
+  let client;
+  try {
+    // Ownership программы + patient_id (через query, ДО транзакции — ранние return без ROLLBACK).
+    const owner = await query(
+      'SELECT id, patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2',
+      [programId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
+    }
+    const patientId = owner.rows[0].patient_id;
+
+    // Все complex_id допустимы (пациента программы ИЛИ инструктора, активны).
+    const ok = await allComplexesAllowed(days.map((d) => d.complex_id), patientId);
+    if (!ok) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некоторые комплексы не найдены, не активны или не принадлежат пациенту программы',
+      });
+    }
+
+    // current_day_index — только для training (= минимальный день, обычно 1); current_day_started_at = NOW().
+    const currentDayIndex = block_type === 'training'
+      ? Math.min(...days.map((d) => d.day_index))
+      : null;
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
+    const blockPosition = Math.min(Math.max(Number.isInteger(parseInt(position, 10)) ? parseInt(position, 10) : 0, 0), SMALLINT_MAX);
+
+    client = await getClient();
+    await client.query('BEGIN');
+
+    const blockResult = await client.query(
+      // $8::smallint в CASE — ОБЯЗАТЕЛЬНЫЙ каст. node-postgres шлёт параметры без OID
+      // (untyped), и $8 в «IS NOT NULL» не даёт Postgres контекста типа → ошибка парсинга
+      // 42P08 «не удалось определить тип данных параметра $8» → 500 на создании ЛЮБОГО блока.
+      // Каст фиксирует тип в этой позиции. Не убирать (mock-тесты SQL против схемы не гоняют).
+      `INSERT INTO program_blocks
+         (program_id, block_type, title, position, target_min, target_max, target_unit,
+          current_day_index, current_day_started_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+               CASE WHEN $8::smallint IS NOT NULL THEN NOW() ELSE NULL END)
+       RETURNING *`,
+      [programId, block_type, normalizedTitle, blockPosition, target.min, target.max, target.unit, currentDayIndex]
+    );
+    const block = blockResult.rows[0];
+
+    for (const d of days) {
+      await client.query(
+        `INSERT INTO program_block_complexes (block_id, complex_id, day_index, label, position)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [block.id, d.complex_id, d.day_index, d.label, d.position]
+      );
+    }
+
+    await client.query('COMMIT');
+    logAudit(req, 'CREATE', 'program_block', block.id, {
+      patientId,
+      details: { block_type, days: days.length },
+    });
+    res.status(201).json({ data: { ...block, complexes: days }, message: 'Блок создан' });
+  } catch (error) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) { /* noop */ } }
+    console.error('Ошибка создания блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка создания блока' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+/**
+ * PUT /api/rehab/blocks/:blockId
+ * Обновить блок + пересобрать дни (DELETE + INSERT). block_type immutable.
+ * Для training — clamp current_day_index в [1, число дней].
+ */
+router.put('/blocks/:blockId', authenticateToken, async (req, res) => {
+  const blockId = parseInt(req.params.blockId, 10);
+  if (isNaN(blockId)) {
+    return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id блока' });
+  }
+
+  let client;
+  try {
+    // Ownership через JOIN на программу + получаем block_type (immutable), current_day_index, patient_id.
+    const owner = await query(
+      `SELECT b.id, b.block_type, b.current_day_index, p.patient_id
+         FROM program_blocks b
+         JOIN rehab_programs p ON p.id = b.program_id
+        WHERE b.id = $1 AND p.created_by = $2 AND b.is_active = true`,
+      [blockId, req.user.id]
+    );
+    if (owner.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
+    }
+    const blockType = owner.rows[0].block_type;
+    const patientId = owner.rows[0].patient_id;
+    const currentDayIndex = owner.rows[0].current_day_index;
+
+    // Валидация тела против зафиксированного block_type.
+    const targetCheck = validateBlockTarget(req.body, blockType);
+    if (!targetCheck.ok) {
+      return res.status(400).json({ error: 'Validation Error', message: targetCheck.message });
+    }
+    const daysCheck = normalizeBlockComplexes(req.body.complexes, blockType);
+    if (!daysCheck.ok) {
+      return res.status(400).json({ error: 'Validation Error', message: daysCheck.message });
+    }
+    const { target } = targetCheck;
+    const { days } = daysCheck;
+
+    const ok = await allComplexesAllowed(days.map((d) => d.complex_id), patientId);
+    if (!ok) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Некоторые комплексы не найдены, не активны или не принадлежат пациенту программы',
+      });
+    }
+
+    const { title, position } = req.body;
+    const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
+    const blockPosition = Math.min(Math.max(Number.isInteger(parseInt(position, 10)) ? parseInt(position, 10) : 0, 0), SMALLINT_MAX);
+
+    client = await getClient();
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE program_blocks
+          SET title = $2, position = $3, target_min = $4, target_max = $5, target_unit = $6,
+              updated_at = NOW()
+        WHERE id = $1`,
+      [blockId, normalizedTitle, blockPosition, target.min, target.max, target.unit]
+    );
+
+    await client.query('DELETE FROM program_block_complexes WHERE block_id = $1', [blockId]);
+    for (const d of days) {
+      await client.query(
+        `INSERT INTO program_block_complexes (block_id, complex_id, day_index, label, position)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [blockId, d.complex_id, d.day_index, d.label, d.position]
+      );
+    }
+
+    // Clamp указателя ротации для training (дни могли сократиться при пересборке).
+    // Контигуозность 1..N гарантирована normalizeBlockComplexes → numDays = maxDay = валидный домен [1, numDays].
+    if (blockType === 'training') {
+      const numDays = new Set(days.map((d) => d.day_index)).size;
+      const base = Number.isInteger(currentDayIndex) && currentDayIndex >= 1 ? currentDayIndex : 1;
+      const clamped = Math.min(base, numDays); // вышли за границу → к последнему существующему дню, НЕ сброс в 1
+      if (clamped !== currentDayIndex) {
+        await client.query(
+          'UPDATE program_blocks SET current_day_index = $2, current_day_started_at = NOW() WHERE id = $1',
+          [blockId, clamped]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    logAudit(req, 'UPDATE', 'program_block', blockId, {
+      patientId,
+      details: { days: days.length },
+    });
+    res.json({ data: { id: blockId }, message: 'Блок обновлён' });
+  } catch (error) {
+    if (client) { try { await client.query('ROLLBACK'); } catch (_) { /* noop */ } }
+    console.error('Ошибка обновления блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка обновления блока' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+/**
+ * DELETE /api/rehab/blocks/:blockId
+ * Мягкое удаление блока (is_active=false). Ownership через JOIN на программу.
+ */
+router.delete('/blocks/:blockId', authenticateToken, async (req, res) => {
+  try {
+    const blockId = parseInt(req.params.blockId, 10);
+    if (isNaN(blockId)) {
+      return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id блока' });
+    }
+    const result = await query(
+      `UPDATE program_blocks b
+          SET is_active = false, updated_at = NOW()
+         FROM rehab_programs p
+        WHERE b.id = $1 AND b.program_id = p.id AND p.created_by = $2 AND b.is_active = true
+        RETURNING b.id, p.patient_id`,
+      [blockId, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
+    }
+    logAudit(req, 'DELETE', 'program_block', blockId, {
+      patientId: result.rows[0].patient_id,
+      details: {},
+    });
+    res.json({ data: { id: blockId }, message: 'Блок удалён' });
+  } catch (error) {
+    console.error('Ошибка удаления блока:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка удаления блока' });
+  }
+});
+
 /**
  * GET /api/rehab/programs/:id/stuck-status
  * Wave 1 #1.09: инструкторская сторона stuck detection.
@@ -1779,6 +2191,135 @@ function safeJsonParse(value) {
 // ПАЦИЕНТ: Упражнения активной программы реабилитации
 // =====================================================
 
+// =====================================================
+// ARC-CYCLE AC4: пациентский резолв блоков (D2) + advance тренировочного дня.
+// Активные program_blocks → две секции (gymnastics ежедневно / training текущий день
+// ротации). Нет блоков → legacy одиночный complex_id (прежнее поведение 1:1, решение #6).
+// =====================================================
+
+// SQL-фрагмент: агрегат упражнений комплекса (зеркало плоского /my/exercises).
+// Требует в FROM: complex_exercises ce LEFT JOIN exercises e, GROUP BY по комплексу.
+// FILTER отбрасывает строку пустого комплекса (ce.id IS NULL) → '[]' вместо [{exercise:null}].
+const COMPLEX_EXERCISES_AGG = `
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', ce.id, 'order_number', ce.order_number, 'sets', ce.sets, 'reps', ce.reps,
+        'duration_seconds', ce.duration_seconds, 'rest_seconds', ce.rest_seconds, 'notes', ce.notes,
+        'exercise', json_build_object(
+          'id', e.id, 'title', e.title, 'description', e.description, 'video_url', e.video_url,
+          'thumbnail_url', e.thumbnail_url, 'kinescope_id', e.kinescope_id, 'exercise_type', e.exercise_type,
+          'difficulty_level', e.difficulty_level, 'equipment', e.equipment, 'instructions', e.instructions,
+          'cues', e.cues, 'tips', e.tips, 'contraindications', e.contraindications,
+          'absolute_contraindications', e.absolute_contraindications, 'red_flags', e.red_flags,
+          'safe_with_inflammation', e.safe_with_inflammation
+        )
+      ) ORDER BY ce.order_number
+    ) FILTER (WHERE ce.id IS NOT NULL),
+    '[]'::json
+  )`;
+
+// Цель блока → { min, max, unit } (null-форма если цель не задана).
+function targetOf(block) {
+  return { min: block.target_min ?? null, max: block.target_max ?? null, unit: block.target_unit ?? null };
+}
+
+// Резолв комплексов блока + их упражнения.
+// dayIndex === null → gymnastics (комплексы day_index IS NULL, плоский набор);
+// число → training текущего дня ротации (day_index = dayIndex).
+async function resolveBlockComplexes(blockId, dayIndex) {
+  const dayFilter = dayIndex === null ? 'pbc.day_index IS NULL' : 'pbc.day_index = $2';
+  const params = dayIndex === null ? [blockId] : [blockId, dayIndex];
+  const { rows } = await query(
+    `SELECT pbc.complex_id, pbc.day_index, pbc.label AS day_label, pbc.position,
+            c.title AS complex_title, c.diagnosis_note, c.recommendations, c.warnings,
+            d.name AS diagnosis_name, u.full_name AS instructor_name,
+            ${COMPLEX_EXERCISES_AGG} AS exercises
+       FROM program_block_complexes pbc
+       JOIN complexes c ON c.id = pbc.complex_id AND c.is_active = true
+       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+       LEFT JOIN users u ON c.instructor_id = u.id
+       LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id
+      WHERE pbc.block_id = $1 AND ${dayFilter}
+      GROUP BY pbc.complex_id, pbc.day_index, pbc.label, pbc.position,
+               c.title, c.diagnosis_note, c.recommendations, c.warnings, d.name, u.full_name
+      ORDER BY pbc.position, pbc.complex_id`,
+    params
+  );
+  return rows.map((r) => {
+    const exercises = Array.isArray(r.exercises) ? r.exercises : [];
+    return {
+      complex_id: r.complex_id,
+      complex_title: r.complex_title,
+      day_index: r.day_index,
+      day_label: r.day_label,
+      diagnosis_name: r.diagnosis_name,
+      diagnosis_note: r.diagnosis_note,
+      recommendations: r.recommendations,
+      warnings: r.warnings,
+      instructor_name: r.instructor_name,
+      exercise_count: exercises.length,
+      exercises,
+    };
+  });
+}
+
+// Продвижение тренировочного дня по кругу (решение #3): next = (current % numDays) + 1.
+// Идемпотентно через guard «last_advanced_session_id IS DISTINCT FROM $3» на уровне UPDATE
+// (защита от гонок/повторов). block: { id, current_day_index, num_days }.
+// Возвращает { advanced, current_day_index }.
+async function advanceTrainingDay(block, closingSessionId) {
+  const numDays = block.num_days;
+  if (!Number.isInteger(numDays) || numDays < 1) {
+    return { advanced: false, current_day_index: block.current_day_index };
+  }
+  const current = Number.isInteger(block.current_day_index) && block.current_day_index >= 1
+    ? block.current_day_index : 1;
+  const next = (current % numDays) + 1;
+  const { rows } = await query(
+    `UPDATE program_blocks
+        SET current_day_index = $2, current_day_started_at = NOW(),
+            last_advanced_session_id = $3, updated_at = NOW()
+      WHERE id = $1 AND block_type = 'training'
+        AND last_advanced_session_id IS DISTINCT FROM $3::bigint
+      RETURNING current_day_index`,
+    [block.id, next, closingSessionId]
+  );
+  if (rows.length > 0) {
+    return { advanced: true, current_day_index: rows[0].current_day_index };
+  }
+  // 0 строк → этот session_id уже продвинул (гонка/повтор) → перечитываем актуальный день.
+  const { rows: cur } = await query(
+    'SELECT current_day_index FROM program_blocks WHERE id = $1',
+    [block.id]
+  );
+  return { advanced: false, current_day_index: cur[0]?.current_day_index ?? block.current_day_index };
+}
+
+// Lazy safety-net (GET /my/exercises): если есть завершённая сессия на комплексе ТЕКУЩЕГО дня
+// после старта дня (freshness-гейт current_day_started_at) и она НЕ та, что уже продвинула →
+// advance. Возвращает обновлённый block (если продвинули — с новым current_day_index).
+async function lazyAdvanceIfNeeded(block, patientId) {
+  const { rows } = await query(
+    `SELECT pl.session_id
+       FROM progress_logs pl
+       JOIN program_block_complexes pbc ON pbc.complex_id = pl.complex_id
+       JOIN complexes c ON c.id = pl.complex_id AND c.patient_id = $1
+      WHERE pbc.block_id = $2 AND pbc.day_index = $3
+        AND pl.completed = true AND pl.session_id IS NOT NULL
+        AND ($4::timestamp IS NULL OR pl.completed_at >= $4::timestamp)
+        AND ($5::bigint IS NULL OR pl.session_id <> $5::bigint)
+      ORDER BY pl.completed_at DESC
+      LIMIT 1`,
+    [patientId, block.id, block.current_day_index, block.current_day_started_at, block.last_advanced_session_id]
+  );
+  if (rows.length === 0) return block;
+  const sessionId = rows[0].session_id;
+  const { current_day_index } = await advanceTrainingDay(block, sessionId);
+  return { ...block, current_day_index, last_advanced_session_id: sessionId };
+}
+
 /**
  * GET /api/rehab/my/exercises
  * Возвращает "сегодняшний" комплекс — тот, что прикреплён к активной
@@ -1789,6 +2330,90 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
 
+    // ── ARC-CYCLE AC4: есть активные блоки → D2 (две секции). Иначе ↓ legacy (один комплекс). ──
+    const progRes = await query(
+      `SELECT id, title FROM rehab_programs
+        WHERE patient_id = $1 AND status = 'active' AND is_active = true
+        ORDER BY created_at DESC LIMIT 1`,
+      [patientId]
+    );
+    const program = progRes.rows[0] || null;
+
+    let blocks = [];
+    if (program) {
+      const blkRes = await query(
+        `SELECT b.id, b.block_type, b.title, b.position,
+                b.target_min, b.target_max, b.target_unit,
+                b.current_day_index, b.current_day_started_at, b.last_advanced_session_id,
+                (SELECT COUNT(DISTINCT pbc.day_index)::int
+                   FROM program_block_complexes pbc WHERE pbc.block_id = b.id) AS num_days
+           FROM program_blocks b
+          WHERE b.program_id = $1 AND b.is_active = true
+          ORDER BY b.position, b.id`,
+        [program.id]
+      );
+      blocks = blkRes.rows;
+    }
+
+    if (program && blocks.length > 0) {
+      const gymBlock = blocks.find((b) => b.block_type === 'gymnastics') || null;
+      let trainBlock = blocks.find((b) => b.block_type === 'training') || null;
+
+      // Lazy advance safety-net: если explicit-advance был пропущен/упал, GET догоняет день.
+      if (trainBlock) {
+        trainBlock = await lazyAdvanceIfNeeded(trainBlock, patientId);
+      }
+
+      const gymnastics = gymBlock
+        ? {
+            block_id: gymBlock.id,
+            title: gymBlock.title,
+            target: targetOf(gymBlock),
+            complexes: await resolveBlockComplexes(gymBlock.id, null),
+          }
+        : null;
+
+      let training = null;
+      if (trainBlock) {
+        const dayComplexes = await resolveBlockComplexes(trainBlock.id, trainBlock.current_day_index);
+        training = {
+          block_id: trainBlock.id,
+          title: trainBlock.title,
+          target: targetOf(trainBlock),
+          current_day_index: trainBlock.current_day_index,
+          num_days: trainBlock.num_days,
+          day_label: dayComplexes.find((c) => c.day_label)?.day_label || null,
+          complexes: dayComplexes,
+        };
+      }
+
+      // Все комплексы ВСЕХ активных блоков (gym + ВСЕ дни тренировки, не только
+      // текущий) — чтобы фронт исключил будущие дни ротации (День Б/В…) из секции
+      // «Другие комплексы». Иначе следующий день микроцикла протекает туда как
+      // посторонний комплекс.
+      const blockCxRes = await query(
+        `SELECT DISTINCT pbc.complex_id
+           FROM program_block_complexes pbc
+           JOIN program_blocks b ON b.id = pbc.block_id
+          WHERE b.program_id = $1 AND b.is_active = true`,
+        [program.id]
+      );
+      const block_complex_ids = blockCxRes.rows.map((r) => r.complex_id);
+
+      return res.json({
+        data: {
+          mode: 'blocks',
+          program_id: program.id,
+          program_title: program.title,
+          gymnastics,
+          training,
+          block_complex_ids,
+          legacy: null,
+        },
+      });
+    }
+
+    // ── LEGACY (нет блоков): прежний запрос 1:1 — НЕ менять (anti-regression решение #6). ──
     const result = await query(
       `SELECT rp.id as program_id,
               rp.complex_id,
@@ -1856,24 +2481,120 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
       ? row.exercises
       : [];
 
+    // Плоский legacy-объект. Дублируем его поля на верхний уровень для обратной совместимости
+    // со старым ExercisesScreen (до AC5 читает data.complex_id/exercises/exercise_count напрямую).
+    // D2-ключи gymnastics/training = null → AC5 различает legacy по их отсутствию.
+    const legacy = {
+      program_id: row.program_id,
+      complex_id: row.complex_id,
+      program_title: row.program_title,
+      complex_title: row.complex_title,
+      diagnosis_name: row.diagnosis_name,
+      diagnosis_note: row.diagnosis_note,
+      recommendations: row.recommendations,
+      warnings: row.warnings,
+      instructor_name: row.instructor_name,
+      exercise_count: exercises.length,
+      exercises,
+    };
+
     res.json({
       data: {
-        program_id: row.program_id,
-        complex_id: row.complex_id,
-        program_title: row.program_title,
-        complex_title: row.complex_title,
-        diagnosis_name: row.diagnosis_name,
-        diagnosis_note: row.diagnosis_note,
-        recommendations: row.recommendations,
-        warnings: row.warnings,
-        instructor_name: row.instructor_name,
-        exercise_count: exercises.length,
-        exercises,
+        mode: 'legacy',
+        gymnastics: null,
+        training: null,
+        legacy,
+        ...legacy,
       },
     });
   } catch (error) {
     console.error('Ошибка получения упражнений:', error.message);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка получения упражнений' });
+  }
+});
+
+/**
+ * POST /api/rehab/my/training/advance
+ * ARC-CYCLE AC4: явное продвижение тренировочного дня (вызывается из ExercisesScreen AC5
+ * на границе завершения раннера — НЕ из LOCKED раннера). Body: { block_id, session_id }.
+ * Идемпотентно через last_advanced_session_id. session_id должен быть завершённой сессией
+ * текущего дня. CSRF: requireSameOrigin на mount /api/rehab/my (server.js).
+ */
+router.post('/my/training/advance', authenticatePatient, async (req, res) => {
+  try {
+    const patientId = req.patient.id;
+    const blockId = parseInt(req.body.block_id, 10);
+    const sessionId = parseInt(req.body.session_id, 10);
+    if (!Number.isInteger(blockId) || !Number.isInteger(sessionId) || sessionId < 1) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'block_id и session_id обязательны (числовые)',
+      });
+    }
+
+    // Блок принадлежит активной программе пациента, type='training', активен. + num_days.
+    const blkRes = await query(
+      `SELECT b.id, b.current_day_index, b.current_day_started_at, b.last_advanced_session_id,
+              (SELECT COUNT(DISTINCT pbc.day_index)::int
+                 FROM program_block_complexes pbc WHERE pbc.block_id = b.id) AS num_days
+         FROM program_blocks b
+         JOIN rehab_programs rp ON rp.id = b.program_id
+        WHERE b.id = $1 AND rp.patient_id = $2
+          AND rp.status = 'active' AND rp.is_active = true
+          AND b.is_active = true AND b.block_type = 'training'`,
+      [blockId, patientId]
+    );
+    if (blkRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Тренировочный блок не найден' });
+    }
+    const block = blkRes.rows[0];
+
+    // Идемпотентность: этот session_id уже продвинул → no-op, вернуть текущий день.
+    if (block.last_advanced_session_id != null && Number(block.last_advanced_session_id) === sessionId) {
+      const complexes = await resolveBlockComplexes(block.id, block.current_day_index);
+      return res.json({
+        data: {
+          advanced: false,
+          block_id: block.id,
+          current_day_index: block.current_day_index,
+          num_days: block.num_days,
+          complexes,
+        },
+      });
+    }
+
+    // Валидация: session_id — завершённая сессия на комплексе ТЕКУЩЕГО дня (ownership + freshness).
+    const sessRes = await query(
+      `SELECT 1 FROM progress_logs pl
+         JOIN program_block_complexes pbc ON pbc.complex_id = pl.complex_id
+         JOIN complexes c ON c.id = pl.complex_id AND c.patient_id = $1
+        WHERE pbc.block_id = $2 AND pbc.day_index = $3
+          AND pl.session_id = $4::bigint AND pl.completed = true
+          AND ($5::timestamp IS NULL OR pl.completed_at >= $5::timestamp)
+        LIMIT 1`,
+      [patientId, block.id, block.current_day_index, sessionId, block.current_day_started_at]
+    );
+    if (sessRes.rows.length === 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'session_id не относится к завершённой сессии текущего тренировочного дня',
+      });
+    }
+
+    const { current_day_index } = await advanceTrainingDay(block, sessionId);
+    const complexes = await resolveBlockComplexes(block.id, current_day_index);
+    return res.json({
+      data: {
+        advanced: true,
+        block_id: block.id,
+        current_day_index,
+        num_days: block.num_days,
+        complexes,
+      },
+    });
+  } catch (error) {
+    console.error('Ошибка продвижения тренировочного дня:', error.message);
+    res.status(500).json({ error: 'Server Error', message: 'Ошибка продвижения тренировочного дня' });
   }
 });
 

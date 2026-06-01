@@ -82,6 +82,37 @@ describe('InstructorModal — Wave 3 C5.4', () => {
     expect(screen.getByText('Red flags')).toBeInTheDocument();
   });
 
+  test('AC7: две оси адхеренса раздельно (onboarded = сумма сегментов)', async () => {
+    // active 2 + at_risk 1 + dormant 0 + churned 0 = onboarded 3.
+    // gym: adhering 1, no_target 1 → withTarget 3-1=2 → "1 из 2".
+    // train: adhering 0, no_target 3 → withTarget 0 → "—".
+    const adhRow = {
+      ...row,
+      adherence: {
+        gymnastics: { adhering: 1, no_target: 1 },
+        training: { adhering: 0, no_target: 3 },
+      },
+    };
+    await act(async () => {
+      render(<InstructorModal row={adhRow} onClose={() => {}} onReassigned={() => {}} />);
+    });
+
+    expect(screen.getByTestId('instructor-adherence')).toBeInTheDocument();
+    const gym = screen.getByTestId('im-adherence-gymnastics');
+    expect(gym).toHaveTextContent('Гимнастика');
+    expect(gym).toHaveTextContent('1 из 2');
+    const train = screen.getByTestId('im-adherence-training');
+    expect(train).toHaveTextContent('Тренировка');
+    expect(train).toHaveTextContent('—');
+  });
+
+  test('AC7: row без adherence → блок скрыт (defensive, старый контракт)', async () => {
+    await act(async () => {
+      render(<InstructorModal row={row} onClose={() => {}} onReassigned={() => {}} />);
+    });
+    expect(screen.queryByTestId('instructor-adherence')).not.toBeInTheDocument();
+  });
+
   test('activePct guard: denom = 0 → 0%, не NaN', async () => {
     const zeroRow = { ...row, caseload: 0, no_program: 0, active: 0 };
     await act(async () => {

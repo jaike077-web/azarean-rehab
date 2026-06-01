@@ -111,8 +111,14 @@
 // v21 (2026-05-31) — Custom Audio админ-слой AA4/AA5: вкладка «Звуки» в
 // AdminContent, секция «Звуки комплекса» в Create/EditComplex, средний
 // слой cue-resolution в AudioContext (program-ярус). Новый JS-бандл → bump.
-const CACHE_NAME = 'azarean-v21';
-const API_CACHE = 'azarean-api-v21';
+// v22 (2026-06-01) — ARC-CYCLE микроцикл влит в прод поверх audio (a9ea058):
+// пациентский D2-сплит «Упражнения» — hero-карточки гимнастика/тренировка +
+// block_complex_ids (будущие дни ротации не протекают в «Другие»); advance
+// ротации День А/Б; командный центр с ДВУМЯ осями адхеренса (FunnelPanel
+// «Приверженность» + InstructorModal); редактор блоков (селектор ВСЕХ комплексов
+// пациента, фикс потери дня). Новый JS-бандл (admin + patient).
+const CACHE_NAME = 'azarean-v22';
+const API_CACHE = 'azarean-api-v22';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

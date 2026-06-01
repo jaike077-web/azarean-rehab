@@ -482,3 +482,159 @@
   }
 }
 
+/* ARC-CYCLE AC3 — редактор блоков (микроцикл) */
+.blockEditor {
+  margin: 4px 0 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.blockEditorTitle {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.blockEditorHint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.blockSection {
+  margin-top: 12px;
+}
+
+.blockSectionHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+
+.blockSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.blockSummaryActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blockForm {
+  padding: 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.blockRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.blockRow select,
+.blockRow input {
+  flex: 1;
+  /* критично: без min-width:0 длинный <option> («День Б — сила (демо ARC)»)
+     распирает flex-контейнер шире модалки → горизонтальный скролл + обрезка метки. */
+  min-width: 0;
+}
+
+/* Селектору комплекса больше места под имя, чем текстовой метке дня. */
+.blockRow select {
+  flex: 1.6 1 140px;
+}
+
+.blockDayLabel {
+  flex: 0 0 56px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.blockMiniBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.blockIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.blockIconBtn:hover {
+  color: var(--color-danger, #d9534f);
+}
+
+.blockAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.blockAddBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.blockTargetRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.blockTargetRow input {
+  width: 64px;
+  flex: 0 0 64px;
+}
+
+.blockFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+

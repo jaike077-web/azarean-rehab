@@ -1,13 +1,16 @@
 // =====================================================
-// FunnelPanel — Воронка онбординга (Wave 3 C5.2)
-// 5 стадий: created → registered → active_program → active → adhering.
+// FunnelPanel — Воронка онбординга (Wave 3 C5.2 + ARC-CYCLE AC7)
+// 4 стадии: created → registered → active_program → active.
+// AC7: «Соблюдает» больше НЕ стадия воронки — приверженность теперь ДВЕ оси
+// раздельно (Гимнастика / Тренировка) под воронкой (Rule #34, НЕ пулим).
 // Числа берём как пришли (Rule #34 — клиент не агрегирует payload).
-// Единственная арифметика — display-ширина бара count/created с guard на 0.
+// Единственная арифметика — display-ширина бара + знаменатель «из скольких».
 // =====================================================
 
 import React from 'react';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { plural } from '../../utils/plural';
+import { ADHERENCE_AXES, adherenceAxisValue } from './adherenceAxis';
 import s from './CommandCenter.module.css';
 
 const STAGES = [
@@ -15,7 +18,6 @@ const STAGES = [
   { key: 'registered',     label: 'Зарегистрирован' },
   { key: 'active_program', label: 'Активная программа' },
   { key: 'active',         label: 'Активен' },
-  { key: 'adhering',       label: 'Соблюдает' },
 ];
 
 function FunnelPanel({ summary, loading, error, onRetry }) {
@@ -88,8 +90,32 @@ function FunnelPanel({ summary, loading, error, onRetry }) {
             </div>
           )}
 
+          {/* AC7: приверженность — ДВЕ оси раздельно. «—» = на оси нет целей. */}
+          {summary.adherence && (
+            <div className={s.axisBlock} data-testid="funnel-adherence">
+              <h4 className={s.axisTitle}>Приверженность</h4>
+              {ADHERENCE_AXES.map((ax) => {
+                const { text } = adherenceAxisValue(
+                  summary.adherence[ax.key],
+                  summary.funnel.active_program
+                );
+                return (
+                  <div
+                    key={ax.key}
+                    className={s.trendRow}
+                    data-testid={`adherence-${ax.key}`}
+                  >
+                    <span className={s.trendLabel}>{ax.label}</span>
+                    <span className={s.trendCount}>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <p className={s.panelHint}>
-            этапы 1–4 — текущее состояние; «Соблюдает» зависит от периода
+            этапы — текущее состояние
+            {summary.adherence ? '; приверженность зависит от периода' : ''}
           </p>
         </>
       )}
