@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 // Custom Audio (AA2): переиспользуем CA2-multer (cue-агностичен: 512КБ memoryStorage
 // + audio MIME) и magic-byte хелперы — НЕ дублируем (meta drift #26).
-const { audioSoundUpload } = require('../middleware/upload');
+const { audioSoundUpload, audioTrackUpload } = require('../middleware/upload');
 const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
 
 // Все эндпоинты требуют admin-доступ
@@ -1538,17 +1538,35 @@ router.delete('/pain-locations/:code', async (req, res) => {
 const PRESETS_DIR = path.resolve(__dirname, '..', 'uploads', 'sounds', 'presets');
 // 4 cue в UI дом-карты (tempo_tick — резерв, decision #8).
 const AUDIO_CUE_UI = ['count_tick', 'set_start', 'set_end', 'rest_end'];
-// usage_count пресета = ссылки из дом-карты + per-комплекс привязок (для 409 + UI).
+// usage_count пресета = ВСЕ ссылки (для 409-on-delete + UI):
+//   cue-привязки (AA): дом-карта + per-комплекс cue;
+//   track-привязки (EA): дефолт упражнения (exercises) + per-комплекс (complex_exercises).
+// Любая ссылка блокирует hard-delete (409 → деактивируй is_active=false).
 const PRESET_USAGE_SQL =
   `(SELECT COUNT(*) FROM audio_cue_defaults d WHERE d.preset_id = ap.id)::int
-  + (SELECT COUNT(*) FROM complex_cue_sounds c WHERE c.preset_id = ap.id)::int`;
+  + (SELECT COUNT(*) FROM complex_cue_sounds c WHERE c.preset_id = ap.id)::int
+  + (SELECT COUNT(*) FROM exercises e WHERE e.audio_preset_id = ap.id)::int
+  + (SELECT COUNT(*) FROM complex_exercises ce WHERE ce.audio_preset_id = ap.id)::int`;
 
-// Обёртка multer с обработкой LIMIT_FILE_SIZE (зеркало CA2 POST /audio-sounds).
+// kind пресета — из ?kind (EA2). Коэрсим: 'track' → track, иначе cue (back-compat:
+// старый AA4 POST без ?kind = cue). Тот же предикат выбирает multer и stored kind →
+// всегда консистентны, инъекция невозможна.
+function presetKind(req) {
+  return req.query.kind === 'track' ? 'track' : 'cue';
+}
+
+// Обёртка multer с обработкой LIMIT_FILE_SIZE. Лимит по kind: cue 512КБ
+// (audioSoundUpload, AA2) / track 10МБ (audioTrackUpload, EA2). Для PUT-замены
+// файла track-пресета клиент (EA4) обязан передать ?kind=track, иначе сработает
+// cue-лимит 512КБ.
 function audioPresetMulter(req, res, next) {
-  audioSoundUpload.single('file')(req, res, (err) => {
+  const isTrack = req.query.kind === 'track';
+  const uploader = isTrack ? audioTrackUpload : audioSoundUpload;
+  const maxLabel = isTrack ? '10 МБ' : '512 КБ';
+  uploader.single('file')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({ error: 'File Too Large', message: 'Максимальный размер файла — 512 КБ' });
+        return res.status(400).json({ error: 'File Too Large', message: `Максимальный размер файла — ${maxLabel}` });
       }
       return res.status(400).json({ error: 'Upload Error', message: err.message || 'Ошибка при загрузке файла' });
     }
@@ -1559,15 +1577,20 @@ function audioPresetMulter(req, res, next) {
 // GET /api/admin/audio-presets — библиотека (allowlist + usage_count, без file_path)
 router.get('/audio-presets', async (req, res) => {
   try {
-    const { is_active } = req.query;
+    const { is_active, kind } = req.query;
     const params = [];
-    let where = '';
+    const conds = [];
     if (is_active !== undefined) {
       params.push(is_active === 'true' || is_active === true);
-      where = `WHERE ap.is_active = $1`;
+      conds.push(`ap.is_active = $${params.length}`);
     }
+    if (kind === 'cue' || kind === 'track') {
+      params.push(kind);
+      conds.push(`ap.kind = $${params.length}`);
+    }
+    const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
     const result = await query(
-      `SELECT ap.id, ap.name, ap.mime_type, ap.size_bytes, ap.duration_ms,
+      `SELECT ap.id, ap.name, ap.kind, ap.mime_type, ap.size_bytes, ap.duration_ms,
               ap.original_filename, ap.is_active, ap.created_at, ap.updated_at,
               ${PRESET_USAGE_SQL} AS usage_count
        FROM audio_presets ap
@@ -1611,15 +1634,17 @@ router.post('/audio-presets', audioPresetMulter, async (req, res) => {
     fs.writeFileSync(path.join(PRESETS_DIR, filename), req.file.buffer);
     const filePath = `/uploads/sounds/presets/${filename}`;
 
+    const kind = presetKind(req); // 'cue' (default) | 'track'
     try {
+      // kind добавлен в конец ($9) — позиции существующих параметров не сдвигаются.
       const ins = await query(
         `INSERT INTO audio_presets
-           (id, name, file_path, mime_type, size_bytes, duration_ms, original_filename, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, name, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
-        [id, name, filePath, mime, req.file.size, durationMs, originalName, req.user.id]
+           (id, name, file_path, mime_type, size_bytes, duration_ms, original_filename, created_by, kind)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, name, kind, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
+        [id, name, filePath, mime, req.file.size, durationMs, originalName, req.user.id, kind]
       );
-      await logAudit(req, 'CREATE', 'audio_preset', id, { name, mime_type: mime, size_bytes: req.file.size });
+      await logAudit(req, 'CREATE', 'audio_preset', id, { name, kind, mime_type: mime, size_bytes: req.file.size });
       res.status(201).json({ data: ins.rows[0], message: 'Пресет создан' });
     } catch (insErr) {
       // INSERT упал → не оставляем orphan-файл.
@@ -1693,7 +1718,7 @@ router.put('/audio-presets/:id', audioPresetMulter, async (req, res) => {
 
     const result = await query(
       `UPDATE audio_presets SET ${sets.join(', ')} WHERE id = $${idx}
-       RETURNING id, name, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
+       RETURNING id, name, kind, mime_type, size_bytes, duration_ms, original_filename, is_active, created_at, updated_at`,
       params
     );
     await logAudit(req, 'UPDATE', 'audio_preset', id, { name, is_active, file_replaced: !!req.file });
@@ -1743,7 +1768,9 @@ router.delete('/audio-presets/:id', async (req, res) => {
     }
     const usage = await query(
       `SELECT (SELECT COUNT(*) FROM audio_cue_defaults WHERE preset_id = $1)::int
-            + (SELECT COUNT(*) FROM complex_cue_sounds WHERE preset_id = $1)::int AS cnt`,
+            + (SELECT COUNT(*) FROM complex_cue_sounds WHERE preset_id = $1)::int
+            + (SELECT COUNT(*) FROM exercises WHERE audio_preset_id = $1)::int
+            + (SELECT COUNT(*) FROM complex_exercises WHERE audio_preset_id = $1)::int AS cnt`,
       [id]
     );
     const cnt = usage.rows[0]?.cnt ?? 0;

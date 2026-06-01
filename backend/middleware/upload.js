@@ -240,9 +240,22 @@ const audioSoundUpload = multer({
   },
 });
 
+// Track-пресеты (Exercise Audio EA2) — ДЛИННЫЙ звук (музыка/голос/медитация),
+// привязанный к упражнению. Отдельный multer с бОльшим лимитом 10 МБ (Vadim
+// подтвердил EA2). НЕ бампим audioSoundUpload — у cue-пресетов остаётся 512КБ
+// abuse-guard. Тот же memoryStorage + audioFilter + magic-byte детект в роуте.
+const audioTrackUpload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: audioFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 МБ (10485760 б), hard — EA2 decision
+  },
+});
+
 module.exports = {
   avatarUpload, processAvatar,
   diaryPhotoUpload, processDiaryPhoto,
   measurementPhotoUpload, processMeasurementPhoto,
   audioSoundUpload,
+  audioTrackUpload,
 };
