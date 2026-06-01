@@ -928,6 +928,38 @@ function ProfileScreen({ onClose, handleLogout, goTo }) {
                         }}
                       />
                     </div>
+                    {/* EA5: громкость трека упражнения (отдельно от cue-сигналов) */}
+                    <div style={{ padding: '0 16px 10px' }}>
+                      <label
+                        htmlFor="music-volume"
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 13,
+                          color: 'var(--pd-text-muted, #737373)',
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span>Громкость музыки</span>
+                        <span>{Math.round((audioSettings.musicVolume ?? 0.5) * 100)}%</span>
+                      </label>
+                      <input
+                        id="music-volume"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={Math.round((audioSettings.musicVolume ?? 0.5) * 100)}
+                        onChange={(e) =>
+                          setAudioSettings({ musicVolume: Number(e.target.value) / 100 })
+                        }
+                        data-testid="music-volume-slider"
+                        style={{
+                          width: '100%',
+                          accentColor: 'var(--pd-color-primary, #0D9488)',
+                        }}
+                      />
+                    </div>
                     <div style={{ padding: '0 16px 14px' }}>
                       <button
                         type="button"
