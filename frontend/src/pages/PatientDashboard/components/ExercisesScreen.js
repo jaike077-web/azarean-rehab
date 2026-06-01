@@ -190,36 +190,47 @@ const ExercisesScreen = ({ screenParams }) => {
   const training = isBlocks ? todayComplex.training : null;
   const legacy = !isBlocks ? todayComplex : null;
 
-  // «Другие комплексы» = myComplexes минус показанные в блоках/сегодняшнем
-  const blockComplexIds = new Set([
-    ...(gymnastics?.complexes || []).map((c) => c.complex_id),
-    ...(training?.complexes || []).map((c) => c.complex_id),
-  ]);
+  // «Другие комплексы» = myComplexes минус ВСЕ комплексы блоков (gym + все дни
+  // тренировки, не только текущий). Источник — backend block_complex_ids (включает
+  // будущие дни ротации, чтобы День Б/В не протекали в «Другие»). Fallback на
+  // текущий вид, если поле не пришло (старый бандл/контракт).
+  const blockComplexIds = new Set(
+    todayComplex?.block_complex_ids || [
+      ...(gymnastics?.complexes || []).map((c) => c.complex_id),
+      ...(training?.complexes || []).map((c) => c.complex_id),
+    ]
+  );
   const otherComplexes = isBlocks
     ? myComplexes.filter((c) => !blockComplexIds.has(c.id))
     : (legacy?.complex_id ? myComplexes.filter((c) => c.id !== legacy.complex_id) : myComplexes);
 
   const hasAnything = isBlocks || Boolean(legacy?.complex_id) || myComplexes.length > 0;
 
-  // Карточка комплекса блока (gymnastics-набор / training-день) — запуск раннера.
-  const renderBlockCard = (c, testid) => (
-    <button
-      key={c.complex_id}
-      onClick={() => openComplex(c.complex_id)}
-      className="pd-complex-card"
-      data-testid={testid}
-    >
-      <div className="pd-complex-card-icon"><Dumbbell size={20} /></div>
-      <div className="pd-complex-card-body">
-        <div className="pd-complex-card-title">{c.complex_title || c.diagnosis_name || 'Комплекс'}</div>
-        <div className="pd-complex-card-meta">
-          {c.instructor_name ? `${c.instructor_name} · ` : ''}
-          {c.exercise_count || 0} упражнений
-        </div>
+  // ARC-CYCLE AC5+ (визуал): hero-карточка комплекса блока вместо плоской —
+  // возврат «красивой» подачи (градиент + крупная кнопка «Начать»), как legacy-hero.
+  // Кнопка несёт data-testid (клик → ExerciseRunner). Тренировка = основной teal-градиент,
+  // гимнастика = изумруд (ежедневная, светлее). Цвета меняются одной строкой.
+  const renderBlockHero = (c, { badge, gradient, testid, hint }) => (
+    <Card key={c.complex_id} variant="hero" className="pd-today-card" gradient={gradient}>
+      <div className="pd-today-badge">
+        <Dumbbell size={18} />
+        <span>{badge}</span>
       </div>
-      <ChevronRight size={18} className="pd-complex-card-chevron" />
-    </button>
+      <h2 className="pd-today-title">{c.complex_title || c.diagnosis_name || 'Комплекс'}</h2>
+      <p className="pd-today-sub">
+        {c.instructor_name ? `${c.instructor_name} · ` : ''}
+        {c.exercise_count || 0} упражнений
+      </p>
+      <button onClick={() => openComplex(c.complex_id)} className="pd-today-btn" data-testid={testid}>
+        <Play size={18} />
+        Начать
+      </button>
+      {hint && <p className="pd-today-hint">{hint}</p>}
+    </Card>
   );
+
+  const TRAIN_GRADIENT = 'var(--pd-gradient-primary, linear-gradient(135deg, #0D9488, #06B6D4))';
+  const GYM_GRADIENT = 'linear-gradient(135deg, #047857 0%, #10B981 55%, #34D399 100%)';
 
   return (
     <div className="pd-exercises-screen">
@@ -238,22 +249,25 @@ const ExercisesScreen = ({ screenParams }) => {
         </div>
       )}
 
-      {/* D2 — Гимнастика (ежедневно) */}
+      {/* D2 — Гимнастика (ежедневно): hero-карточки */}
       {gymnastics && gymnastics.complexes?.length > 0 && (
         <section data-testid="gymnastics-section">
           <h2 className="pd-screen-subtitle">Гимнастика (ежедневно)</h2>
-          {gymnastics.target?.min != null && (
-            <div className="pd-block-meta" data-testid="gymnastics-target">
-              Цель: {gymnastics.target.min}–{gymnastics.target.max} раз/день
-            </div>
+          {gymnastics.complexes.map((c) =>
+            renderBlockHero(c, {
+              badge: 'Гимнастика',
+              gradient: GYM_GRADIENT,
+              testid: `gym-complex-${c.complex_id}`,
+              hint:
+                gymnastics.target?.min != null
+                  ? `Цель: ${gymnastics.target.min}–${gymnastics.target.max} раз/день`
+                  : null,
+            })
           )}
-          <div className="pd-complex-list">
-            {gymnastics.complexes.map((c) => renderBlockCard(c, `gym-complex-${c.complex_id}`))}
-          </div>
         </section>
       )}
 
-      {/* D2 — Тренировка (микроцикл, текущий день ротации) */}
+      {/* D2 — Тренировка (микроцикл, текущий день ротации): hero-карточки */}
       {training && training.complexes?.length > 0 && (
         <section data-testid="training-section">
           <h2 className="pd-screen-subtitle">Тренировка</h2>
@@ -261,14 +275,17 @@ const ExercisesScreen = ({ screenParams }) => {
             {training.day_label ? `${training.day_label} · ` : ''}
             День {training.current_day_index} из {training.num_days}
           </div>
-          {training.target?.min != null && (
-            <div className="pd-block-meta" data-testid="training-target">
-              Цель: {training.target.min}–{training.target.max} раз/неделю
-            </div>
+          {training.complexes.map((c) =>
+            renderBlockHero(c, {
+              badge: 'Тренировка сегодня',
+              gradient: TRAIN_GRADIENT,
+              testid: `training-complex-${c.complex_id}`,
+              hint:
+                training.target?.min != null
+                  ? `Цель: ${training.target.min}–${training.target.max} раз/неделю`
+                  : null,
+            })
           )}
-          <div className="pd-complex-list">
-            {training.complexes.map((c) => renderBlockCard(c, `training-complex-${c.complex_id}`))}
-          </div>
         </section>
       )}
 

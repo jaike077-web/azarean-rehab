@@ -135,6 +135,44 @@ describe('ExercisesScreen v2', () => {
       await waitFor(() => expect(screen.getByTestId('gymnastics-section')).toBeInTheDocument());
       expect(screen.queryByTestId('training-section')).not.toBeInTheDocument();
     });
+
+    it('block_complex_ids исключает будущие дни ротации из «Другие комплексы»', async () => {
+      // У пациента 3 комплекса (63 gym, 64 День А текущий, 65 День Б будущий).
+      // block_complex_ids = [63,64,65] → ни один не должен попасть в «Другие».
+      rehab.getMyExercises.mockResolvedValue({
+        data: {
+          mode: 'blocks', program_id: 7,
+          gymnastics: {
+            block_id: 10, target: { min: 1, max: 2, unit: 'day' },
+            complexes: [{ complex_id: 63, complex_title: 'Зарядка', exercise_count: 2 }],
+          },
+          training: {
+            block_id: 11, target: { min: 2, max: 3, unit: 'week' },
+            current_day_index: 1, num_days: 2, day_label: 'День А',
+            complexes: [{ complex_id: 64, complex_title: 'День А', exercise_count: 3 }],
+          },
+          block_complex_ids: [63, 64, 65],
+          legacy: null,
+        },
+      });
+      // myComplexes возвращает и будущий День Б (65), и посторонний (90)
+      patientAuth.getMyComplexes.mockResolvedValue({
+        data: [
+          { id: 64, title: 'День А' },
+          { id: 65, title: 'День Б' },
+          { id: 90, title: 'Сторонний комплекс' },
+        ],
+      });
+
+      render(<ExercisesScreen />);
+
+      await waitFor(() => expect(screen.getByTestId('gymnastics-section')).toBeInTheDocument());
+      // День Б (65) — член блока → НЕ в «Других»
+      expect(screen.queryByTestId('complex-card-65')).not.toBeInTheDocument();
+      // посторонний (90) — НЕ член блока → показывается в «Других»
+      expect(screen.getByTestId('complex-card-90')).toBeInTheDocument();
+      expect(screen.getByText('Другие комплексы')).toBeInTheDocument();
+    });
   });
 
   describe('State B — нет программы, есть my-complexes', () => {

@@ -2387,6 +2387,19 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
         };
       }
 
+      // Все комплексы ВСЕХ активных блоков (gym + ВСЕ дни тренировки, не только
+      // текущий) — чтобы фронт исключил будущие дни ротации (День Б/В…) из секции
+      // «Другие комплексы». Иначе следующий день микроцикла протекает туда как
+      // посторонний комплекс.
+      const blockCxRes = await query(
+        `SELECT DISTINCT pbc.complex_id
+           FROM program_block_complexes pbc
+           JOIN program_blocks b ON b.id = pbc.block_id
+          WHERE b.program_id = $1 AND b.is_active = true`,
+        [program.id]
+      );
+      const block_complex_ids = blockCxRes.rows.map((r) => r.complex_id);
+
       return res.json({
         data: {
           mode: 'blocks',
@@ -2394,6 +2407,7 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
           program_title: program.title,
           gymnastics,
           training,
+          block_complex_ids,
           legacy: null,
         },
       });
