@@ -7,7 +7,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
 import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 import useAudioPreview from '../../hooks/useAudioPreview';
-import validateAudioFile from '../PatientDashboard/utils/validateAudioFile';
+import validateAudioFile, { validateTrackFile } from '../PatientDashboard/utils/validateAudioFile';
 import { AUDIO_CUE_UI, CUE_LABELS } from '../../utils/audioCues';
 
 // =====================================================
@@ -2024,6 +2024,7 @@ function formatPresetMime(mime) {
 
 function formatPresetBytes(bytes) {
   if (bytes == null) return '—';
+  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} МБ`;
   return `${Math.round(bytes / 1024)} КБ`;
 }
 
@@ -2110,16 +2111,20 @@ function AudioPresetsTab() {
 
   if (loading) return <TableSkeleton rows={4} columns={7} />;
 
+  // EA4: библиотека теперь содержит и track-пресеты — cue-таб и дом-карта
+  // работают ТОЛЬКО с cue-пресетами (треки — в отдельном суб-табе).
+  const cuePresets = presets.filter((p) => p.kind !== 'track');
+
   return (
     <div>
       {/* Библиотека пресетов */}
       <div className={s.contentHeader}>
-        <span>{presets.length} пресетов</span>
+        <span>{cuePresets.length} пресетов</span>
         <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
           <Plus size={14} strokeWidth={1.8} /> Добавить звук
         </button>
       </div>
-      {presets.length === 0 && (
+      {cuePresets.length === 0 && (
         <div className={s.adminEmptyState}>
           <div className={s.emptyStateContent}>
             <div className={s.emptyStateIcon}><Volume2 size={48} strokeWidth={1.8} /></div>
@@ -2128,7 +2133,7 @@ function AudioPresetsTab() {
           </div>
         </div>
       )}
-      {presets.length > 0 && (
+      {cuePresets.length > 0 && (
         <div className={s.adminTableWrap}>
           <table className={s.adminTable}>
             <thead>
@@ -2143,7 +2148,7 @@ function AudioPresetsTab() {
               </tr>
             </thead>
             <tbody>
-              {presets.map((p) => (
+              {cuePresets.map((p) => (
                 <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
                   <td className={s.tdName}>{p.name}</td>
                   <td>{formatPresetMime(p.mime_type)}</td>
@@ -2212,7 +2217,7 @@ function AudioPresetsTab() {
                         )}
                       >
                         <option value="">Стандартный тон</option>
-                        {presets.map((p) => (
+                        {cuePresets.map((p) => (
                           <option key={p.id} value={String(p.id)}>
                             {p.is_active ? p.name : `${p.name} (неактивен)`}
                           </option>
@@ -2269,8 +2274,9 @@ function AudioPresetsTab() {
   );
 }
 
-function AudioPresetForm({ initial, onSave, onClose }) {
+function AudioPresetForm({ initial, onSave, onClose, kind = 'cue' }) {
   const isEdit = !!initial;
+  const isTrack = kind === 'track';
   const toast = useToast();
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -2289,7 +2295,7 @@ function AudioPresetForm({ initial, onSave, onClose }) {
   const handleFile = async (e) => {
     const f = e.target.files && e.target.files[0];
     if (!f) { setFile(null); setFileName(''); return; }
-    const v = await validateAudioFile(f);
+    const v = await (isTrack ? validateTrackFile(f) : validateAudioFile(f));
     if (!v.ok) {
       setFile(null);
       setFileName('');
@@ -2321,7 +2327,7 @@ function AudioPresetForm({ initial, onSave, onClose }) {
     <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
       <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
-          <h3>{isEdit ? 'Редактировать звук' : 'Добавить звук'}</h3>
+          <h3>{isEdit ? 'Редактировать' : 'Добавить'} {isTrack ? 'трек' : 'звук'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
         <div className={s.adminModalForm}>
@@ -2337,7 +2343,9 @@ function AudioPresetForm({ initial, onSave, onClose }) {
           </div>
           <div className={s.adminFormGroup}>
             <label htmlFor="audio-preset-file">
-              {isEdit ? 'Заменить файл (опционально)' : 'Файл MP3/WAV (≤512 КБ, ≤10 сек)'}
+              {isEdit
+                ? 'Заменить файл (опционально)'
+                : (isTrack ? 'Файл MP3/WAV (≤10 МБ)' : 'Файл MP3/WAV (≤512 КБ, ≤10 сек)')}
             </label>
             <input
               id="audio-preset-file"
@@ -2370,6 +2378,173 @@ function AudioPresetForm({ initial, onSave, onClose }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// =====================================================
+// Суб-таб: Треки упражнений (Exercise Audio EA4) — библиотека длинных треков
+// (музыка/голос/медитация, ≤10МБ). Зеркало cue-библиотеки, БЕЗ дом-карты
+// (трек назначается на упражнение в его карточке или в редакторе комплекса).
+// =====================================================
+function TrackPresetsTab() {
+  const [tracks, setTracks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
+  const toast = useToast();
+  const previewPreset = useAudioPreview();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await admin.getAudioPresets({ kind: 'track' });
+      setTracks(res.data || []);
+    } catch {
+      toast.error('Ошибка загрузки треков');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (formData) => {
+    try {
+      if (editing) {
+        await admin.updateAudioPreset(editing.id, formData, 'track');
+        toast.success('Трек обновлён');
+      } else {
+        await admin.createAudioPreset(formData, 'track');
+        toast.success('Трек создан');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      await admin.deleteAudioPreset(deleteItem.id);
+      toast.success('Трек удалён');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления');
+    }
+    setDeleteItem(null);
+  };
+
+  if (loading) return <TableSkeleton rows={3} columns={7} />;
+
+  return (
+    <div>
+      <div className={s.contentHeader}>
+        <span>{tracks.length} треков</span>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Добавить трек
+        </button>
+      </div>
+      {tracks.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><Volume2 size={48} strokeWidth={1.8} /></div>
+            <h3>Нет треков</h3>
+            <p>Загрузите MP3/WAV (≤10 МБ) — музыку, голос-инструкцию или медитацию — и
+              назначьте на упражнение в его карточке или в редакторе комплекса</p>
+          </div>
+        </div>
+      )}
+      {tracks.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Формат</th>
+                <th>Размер</th>
+                <th>Длит.</th>
+                <th>Использований</th>
+                <th>Активен</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tracks.map((p) => (
+                <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
+                  <td className={s.tdName}>{p.name}</td>
+                  <td>{formatPresetMime(p.mime_type)}</td>
+                  <td>{formatPresetBytes(p.size_bytes)}</td>
+                  <td>{formatPresetDuration(p.duration_ms)}</td>
+                  <td>{p.usage_count ?? 0}</td>
+                  <td>{p.is_active ? '✅' : '❌'}</td>
+                  <td className={s.tdActions}>
+                    <button className={s.adminActionBtn} onClick={() => previewPreset(p.id)} title="Прослушать">
+                      <Play size={14} strokeWidth={1.8} />
+                    </button>
+                    <button className={s.adminActionBtn} onClick={() => setEditing(p)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      className={`${s.adminActionBtn} ${s.btnDanger}`}
+                      onClick={() => setDeleteItem(p)}
+                      title="Удалить"
+                    >
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(editing || creating) && (
+        <AudioPresetForm
+          initial={editing}
+          kind="track"
+          onSave={handleSave}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Удаление трека"
+        message={`Удалить трек "${deleteItem?.name}"? Заблокируется, если используется в упражнениях или комплексах — тогда деактивируйте (is_active=false).`}
+        confirmText="Удалить"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+// Обёртка вкладки «Звуки»: суб-переключатель cue-сигналы ↔ треки упражнений.
+function AudioTab() {
+  const [sub, setSub] = useState('cue');
+  return (
+    <div>
+      <div className={s.contentTabs} style={{ marginBottom: 12 }}>
+        <button
+          className={`${s.contentTab} ${sub === 'cue' ? s.active : ''}`}
+          onClick={() => setSub('cue')}
+        >
+          Cue-сигналы
+        </button>
+        <button
+          className={`${s.contentTab} ${sub === 'track' ? s.active : ''}`}
+          onClick={() => setSub('track')}
+        >
+          Треки упражнений
+        </button>
+      </div>
+      {sub === 'cue' ? <AudioPresetsTab /> : <TrackPresetsTab />}
     </div>
   );
 }
@@ -2416,7 +2591,7 @@ function AdminContent() {
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}
       {tab === 'pain-locations' && <PainLocationsTab />}
-      {tab === 'audio' && <AudioPresetsTab />}
+      {tab === 'audio' && <AudioTab />}
     </div>
   );
 }

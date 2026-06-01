@@ -26,6 +26,7 @@ const mockProgressCreate = jest.fn(() => Promise.resolve({ data: { id: 1 } }));
 jest.mock('../context/AudioContext', () => ({
   __esModule: true,
   useAudioCue: () => ({ cue: mockCue, prime: () => {} }),
+  useExerciseAudio: () => ({ startExerciseAudio: () => {}, stopExerciseAudio: () => {} }),
   useAudioSettings: () => ({
     cue: mockCue,
     prime: () => {},

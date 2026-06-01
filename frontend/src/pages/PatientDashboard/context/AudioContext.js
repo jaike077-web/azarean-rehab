@@ -24,7 +24,9 @@ import PropTypes from 'prop-types';
 import { patientAuth } from '../../../services/api';
 
 const STORAGE_KEY = 'azarean_audio';
-const DEFAULT_SETTINGS = { enabled: true, volume: 0.6 };
+// EA5: musicVolume — отдельная громкость трека упражнения (тише cue 0.6, чтобы
+// бипы были слышны поверх музыки). Persisted в том же 'azarean_audio'.
+const DEFAULT_SETTINGS = { enabled: true, volume: 0.6, musicVolume: 0.5 };
 
 function clamp01(n) {
   if (!Number.isFinite(n)) return null;
@@ -41,7 +43,9 @@ function readStoredSettings() {
     const enabled = typeof parsed?.enabled === 'boolean' ? parsed.enabled : DEFAULT_SETTINGS.enabled;
     const volClamped = clamp01(parsed?.volume);
     const volume = volClamped == null ? DEFAULT_SETTINGS.volume : volClamped;
-    return { enabled, volume };
+    const musicClamped = clamp01(parsed?.musicVolume);
+    const musicVolume = musicClamped == null ? DEFAULT_SETTINGS.musicVolume : musicClamped;
+    return { enabled, volume, musicVolume };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }
@@ -91,6 +95,9 @@ const AudioCueContext = createContext({
   refreshOverrides: () => {},
   // AA5: загрузка/сброс привязок звуков комплекса (program-ярус). Безопасный no-op без провайдера.
   loadProgramCues: () => {},
+  // EA5: персистентный трек упражнения (музыка/голос/медитация). Безопасные no-op.
+  startExerciseAudio: () => {},
+  stopExerciseAudio: () => {},
 });
 
 function getAudioCtor() {
@@ -109,6 +116,18 @@ export function AudioProvider({ children }) {
   // AA5: мета привязок звуков текущего комплекса: { [cue]: { preset_id|null, is_locked, sig } }.
   // Читается синхронно в cue() (приоритет §2.2). preset_id=null = «явный тон».
   const programCuesRef = useRef({});
+  // EA5: персистентный плеер трека упражнения (отдельный слой, играет вместе с cue).
+  //   musicRef = { source, preset_id, sig, playing } | null — текущий играющий трек.
+  //   musicGainRef — выделенный GainNode (своя громкость settings.musicVolume).
+  //   musicGenRef — gen-счётчик: отменяет устаревший асинхронный декод при смене упражнения.
+  const musicRef = useRef(null);
+  const musicGainRef = useRef(null);
+  const musicGenRef = useRef(0);
+  // settingsRef — текущие настройки для СТАБИЛЬНОГО startExerciseAudio (без settings
+  // в deps → runner-effect [exAudio, startExerciseAudio] не рестартит музыку при
+  // смене громкости/тоггла; громкость обновляется live через musicGainRef).
+  const settingsRef = useRef(settings);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
   // Custom Audio (CA3): override-метаданные. НЕ грузим на mount — провайдер
   // оборачивает и login-страницы (там бы 401). Тянем по запросу consumer'а
   // (MyAudioSounds на mount, в CA4 — предекод при входе в раннер).
@@ -123,6 +142,13 @@ export function AudioProvider({ children }) {
     if (!Ctor) return null;
     try {
       ctxRef.current = new Ctor();
+      // EA5: выделенный music-gain (свой слой громкости, отдельно от cue). Создаём
+      // один раз при первой инициализации контекста; gain.value ставит startExerciseAudio.
+      try {
+        const g = ctxRef.current.createGain();
+        g.connect(ctxRef.current.destination);
+        musicGainRef.current = g;
+      } catch { /* music-gain best-effort */ }
     } catch {
       ctxRef.current = null;
     }
@@ -249,6 +275,10 @@ export function AudioProvider({ children }) {
       if (partial && 'volume' in partial) {
         const v = clamp01(partial.volume);
         if (v != null) next.volume = v;
+      }
+      if (partial && 'musicVolume' in partial) {
+        const mv = clamp01(partial.musicVolume);
+        if (mv != null) next.musicVolume = mv;
       }
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -377,9 +407,90 @@ export function AudioProvider({ children }) {
     list.forEach((c) => { decodeProgramCue(c); });
   }, [decodeProgramCue]);
 
+  // EA5: остановить трек упражнения. gen++ отменяет любой ожидающий декод.
+  const stopExerciseAudio = useCallback(() => {
+    musicGenRef.current += 1;
+    const cur = musicRef.current;
+    musicRef.current = null;
+    if (cur && cur.source) {
+      try { cur.source.onended = null; cur.source.stop(); } catch { /* уже остановлен */ }
+      try { cur.source.disconnect(); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // EA5: старт трека упражнения (вход в упражнение). audio = { preset_id, loop, sig } | null.
+  // СТАБИЛЬНЫЙ (deps без settings — читаем settingsRef) → runner-effect не рестартит при
+  // смене громкости. iOS-инвариант: AudioBufferSourceNode ТОЛЬКО (как decodeProgramCue),
+  // new Audio() запрещён. Играет через выделенный musicGain (своя громкость). gen-guard
+  // отбрасывает устаревший декод при быстрой смене упражнений. best-effort: нет звука лучше крэша.
+  const startExerciseAudio = useCallback(async (audio) => {
+    const cfg = settingsRef.current || DEFAULT_SETTINGS;
+    // gate: звук выключен или трек не привязан → стоп + выход.
+    if (!cfg.enabled || !audio || audio.preset_id == null) {
+      stopExerciseAudio();
+      return;
+    }
+    const sig = audio.sig || '';
+    // dedup: тот же трек (preset+sig) уже играет → не перезапускаем (бесшовно между
+    // упражнениями с одним треком, не дёргаем при ре-рендере).
+    const cur = musicRef.current;
+    if (cur && cur.playing && cur.preset_id === audio.preset_id && cur.sig === sig) return;
+    // Новый трек: стоп старого (gen++), затем фоновый декод под gen-guard.
+    stopExerciseAudio();
+    const myGen = musicGenRef.current;
+    const ctx = ensureContext();
+    if (!ctx || typeof ctx.decodeAudioData !== 'function') return;
+    try {
+      const res = await patientAuth.fetchProgramPresetBlob(audio.preset_id);
+      if (musicGenRef.current !== myGen) return; // устарело (сменили упражнение / стоп)
+      const blob = res && res.data;
+      if (!blob || typeof blob.arrayBuffer !== 'function') return;
+      const arr = await blob.arrayBuffer();
+      if (musicGenRef.current !== myGen) return;
+      const buffer = await new Promise((resolve, reject) => {
+        const p = ctx.decodeAudioData(arr, resolve, reject);
+        if (p && typeof p.then === 'function') p.then(resolve, reject);
+      });
+      if (musicGenRef.current !== myGen) return; // пока декодили — сменилось/стоп
+      // Звук выключили во время декода → не стартуем (defense-in-depth: gen++ из
+      // enabled-эффекта уже отменил бы выше, но re-check закрывает любое окно до
+      // синхронного source.start, который дальше идёт без await).
+      if (!(settingsRef.current || DEFAULT_SETTINGS).enabled) return;
+      if (!musicGainRef.current) return;
+      const mv = clamp01((settingsRef.current || DEFAULT_SETTINGS).musicVolume);
+      musicGainRef.current.gain.value = mv == null ? DEFAULT_SETTINGS.musicVolume : mv;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = !!audio.loop;
+      source.connect(musicGainRef.current);
+      const entry = { source, preset_id: audio.preset_id, sig, playing: true };
+      source.onended = () => { if (musicRef.current === entry) entry.playing = false; };
+      source.start(0);
+      musicRef.current = entry;
+    } catch {
+      /* music best-effort — нет звука лучше крэша */
+    }
+  }, [ensureContext, stopExerciseAudio]);
+
+  // EA5: live-обновление громкости музыки (без рестарта источника).
+  useEffect(() => {
+    if (musicGainRef.current && settings.musicVolume != null) {
+      try { musicGainRef.current.gain.value = settings.musicVolume; } catch { /* ignore */ }
+    }
+  }, [settings.musicVolume]);
+
+  // EA5: выключение звука глушит и музыку (cue-toggle общий для всего аудио).
+  useEffect(() => {
+    if (!settings.enabled) stopExerciseAudio();
+  }, [settings.enabled, stopExerciseAudio]);
+
   const value = useMemo(
-    () => ({ cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides, loadProgramCues }),
-    [cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides, loadProgramCues],
+    () => ({
+      cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides,
+      loadProgramCues, startExerciseAudio, stopExerciseAudio,
+    }),
+    [cue, prime, settings, setSettings, overrides, overridesLoading, refreshOverrides,
+      loadProgramCues, startExerciseAudio, stopExerciseAudio],
   );
 
   return <AudioCueContext.Provider value={value}>{children}</AudioCueContext.Provider>;
@@ -400,6 +511,14 @@ export function useAudioCue() {
 // для кнопки «Проверить звук».
 export function useAudioSettings() {
   return useContext(AudioCueContext);
+}
+
+// EA5: узкий хук для раннера (узкий unlock) — старт/стоп трека упражнения.
+// startExerciseAudio/stopExerciseAudio стабильны → effect [exAudio, startExerciseAudio]
+// в раннере фактически зависит только от exAudio.
+export function useExerciseAudio() {
+  const { startExerciseAudio, stopExerciseAudio } = useContext(AudioCueContext);
+  return { startExerciseAudio, stopExerciseAudio };
 }
 
 // Custom Audio (CA3): override-метаданные пациента + рефреш.

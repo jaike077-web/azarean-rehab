@@ -680,10 +680,14 @@ export const admin = {
   // иначе instance-default application/json блокирует авто-детект FormData. PUT принимает
   // FormData даже для name-only правки (multer парсит текстовые поля).
   getAudioPresets: (params = {}) => api.get('/admin/audio-presets', { params }),
-  createAudioPreset: (formData) => api.post('/admin/audio-presets', formData, {
+  // kind ('track') идёт в QUERY (бэкенд EA2 читает req.query.kind для выбора multer-
+  // лимита 10МБ + хранит kind). Без kind → cue (512КБ, back-compat).
+  createAudioPreset: (formData, kind) => api.post('/admin/audio-presets', formData, {
+    params: kind ? { kind } : {},
     headers: { 'Content-Type': undefined },
   }),
-  updateAudioPreset: (id, formData) => api.put(`/admin/audio-presets/${id}`, formData, {
+  updateAudioPreset: (id, formData, kind) => api.put(`/admin/audio-presets/${id}`, formData, {
+    params: kind ? { kind } : {},
     headers: { 'Content-Type': undefined },
   }),
   deleteAudioPreset: (id) => api.delete(`/admin/audio-presets/${id}`),

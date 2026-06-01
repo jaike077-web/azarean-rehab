@@ -284,4 +284,26 @@ describe('normalizeExerciseForPayload — payload shape', () => {
     const payload = normalizeExerciseForPayload({ id: 5, reps: 10 }, 1);
     expect(payload.sets).toBe(3);
   });
+
+  // EA4: звук упражнения в payload.
+  it('audio: нет полей → preset null, loop/off false', () => {
+    const p = normalizeExerciseForPayload({ id: 5, reps: 10 }, 1);
+    expect(p.audio_preset_id).toBeNull();
+    expect(p.audio_loop).toBe(false);
+    expect(p.audio_off).toBe(false);
+  });
+
+  it('audio: трек+loop пробрасываются', () => {
+    const p = normalizeExerciseForPayload({ id: 5, reps: 10, audio_preset_id: 7, audio_loop: true }, 1);
+    expect(p.audio_preset_id).toBe(7);
+    expect(p.audio_loop).toBe(true);
+    expect(p.audio_off).toBe(false);
+  });
+
+  it('audio: off обнуляет preset+loop', () => {
+    const p = normalizeExerciseForPayload({ id: 5, reps: 10, audio_off: true, audio_preset_id: 7, audio_loop: true }, 1);
+    expect(p.audio_preset_id).toBeNull();
+    expect(p.audio_loop).toBe(false);
+    expect(p.audio_off).toBe(true);
+  });
 });

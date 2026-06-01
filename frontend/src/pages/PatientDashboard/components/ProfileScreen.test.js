@@ -538,5 +538,27 @@ describe('ProfileScreen overlay (v12)', () => {
       // Slider и кнопка скрыты (enabled=false)
       expect(screen.queryByTestId('audio-volume-slider')).not.toBeInTheDocument();
     });
+
+    // EA5: слайдер громкости музыки.
+    it('рендерит слайдер «Громкость музыки» (дефолт 50%)', () => {
+      setupWithAudio();
+      const slider = screen.getByTestId('music-volume-slider');
+      expect(slider).toBeInTheDocument();
+      expect(slider.value).toBe('50');
+    });
+
+    it('music-slider пишет musicVolume в localStorage (float 0..1)', () => {
+      setupWithAudio();
+      fireEvent.change(screen.getByTestId('music-volume-slider'), { target: { value: '30' } });
+      const stored = JSON.parse(localStorage.getItem('azarean_audio'));
+      expect(stored.musicVolume).toBeCloseTo(0.3);
+    });
+
+    it('после выключения звука music-slider скрыт', () => {
+      setupWithAudio();
+      const switchEl = within(screen.getByTestId('audio-enabled-switch')).getByRole('switch');
+      fireEvent.click(switchEl);
+      expect(screen.queryByTestId('music-volume-slider')).not.toBeInTheDocument();
+    });
   });
 });

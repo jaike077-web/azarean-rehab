@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { useAudioCue } from '../context/AudioContext';
+import { useAudioCue, useExerciseAudio } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
 
 const formatTime = (s) => {
@@ -25,6 +25,8 @@ const ExerciseRunner = ({
   onComplete,
 }) => {
   const toast = useToast();
+  // EA5: узкий unlock — старт/стоп трека упражнения (вне канона раннера).
+  const { startExerciseAudio, stopExerciseAudio } = useExerciseAudio();
 
   const list = useMemo(() => {
     if (Array.isArray(exercises) && exercises.length > 0) return exercises;
@@ -64,6 +66,16 @@ const ExerciseRunner = ({
     setPrevSession(null);
     setShowDetails(false);
   }, [index]);
+
+  // EA5: трек упражнения — старт при входе в упражнение (смена index → новый ce.audio),
+  // стоп при анмаунте раннера (выход/завершение). startExerciseAudio стабилен, поэтому
+  // эффект фактически срабатывает только при смене exAudio. dedup внутри не рестартит
+  // тот же трек между упражнениями (бесшовно). iOS-инвариант — внутри AudioContext.
+  const exAudio = ce.audio || null;
+  useEffect(() => {
+    startExerciseAudio(exAudio);
+  }, [exAudio, startExerciseAudio]);
+  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]);
 
   useEffect(() => {
     if (exercise.id && complexId) {
