@@ -18,6 +18,7 @@ const { authenticatePatient } = require('../middleware/patientAuth');
 const { registerValidator, loginValidator } = require('../middleware/validators');
 const { avatarUpload, processAvatar, audioSoundUpload } = require('../middleware/upload');
 const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
+const { RESOLVED_EXERCISE_AUDIO_SQL, EXERCISE_AUDIO_JOINS } = require('../utils/exerciseAudio');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
@@ -1607,9 +1608,11 @@ router.delete('/audio-sounds/:cue', authenticatePatient, async (req, res) => {
   }
 });
 
-// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3).
-// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента (защита от
-// enumeration). Только активные. Containment-guard + private no-cache (как CA2).
+// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3 cue + EA3 track).
+// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента — как cue
+// (complex_cue_sounds / дом-карта), так и трек упражнения (complex_exercises override
+// ИЛИ exercises library-default упражнения в комплексе пациента). Защита от
+// enumeration. Только активные. Containment-guard + private no-cache (как CA2).
 router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -1625,6 +1628,17 @@ router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
             SELECT 1 FROM complex_cue_sounds ccs
               JOIN complexes c ON c.id = ccs.complex_id
              WHERE ccs.preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+          OR EXISTS (
+            SELECT 1 FROM complex_exercises ce
+              JOIN complexes c ON c.id = ce.complex_id
+             WHERE ce.audio_preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+          OR EXISTS (
+            SELECT 1 FROM complex_exercises ce
+              JOIN complexes c ON c.id = ce.complex_id
+              JOIN exercises ex ON ex.id = ce.exercise_id
+             WHERE ex.audio_preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
           )
         )`,
       [id, req.patient.id]
@@ -1736,6 +1750,9 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
                   'tempo_eccentric_s', ce.tempo_eccentric_s,
                   'tempo_pause_s', ce.tempo_pause_s,
                   'tempo_concentric_s', ce.tempo_concentric_s,
+                  -- EA3: резолвнутый звук упражнения {preset_id,loop,sig}|null
+                  -- (complex override → library default → нет; только активный track).
+                  'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -1760,7 +1777,7 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN users u ON c.instructor_id = u.id
        LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
        WHERE c.id = $1 AND c.patient_id = $2 AND c.is_active = true
        GROUP BY c.id, d.name, u.full_name`,
       [complexId, req.patient.id]

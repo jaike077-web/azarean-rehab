@@ -45,10 +45,14 @@ beforeEach(() => {
   query.mockReset();
 });
 
+// Чистим ТОЛЬКО свои id (7/8/9) — общий реальный presets/ шарится с другими audio-
+// тестами (patient_program_audio id=3, admin_audio_track_presets id 21-25). Широкий
+// \d+ удалял их файлы при параллельных воркерах (флак handoff §5). Узкий паттерн
+// разводит файлы по тест-файлам без гонки.
 afterEach(() => {
   if (fs.existsSync(PRESETS_DIR)) {
     fs.readdirSync(PRESETS_DIR)
-      .filter((f) => /^\d+\.(mp3|wav)$/.test(f))
+      .filter((f) => /^(7|8|9)\.(mp3|wav)$/.test(f))
       .forEach((f) => { try { fs.unlinkSync(path.join(PRESETS_DIR, f)); } catch (_) { /* ignore */ } });
   }
 });

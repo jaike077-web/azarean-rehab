@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
+const { validateTrackPresetIds } = require('../utils/exerciseAudio');
 
 // ========================================
 // GET /api/exercises/kinescope/thumbnail/:videoId - Получение превью из Kinescope
@@ -280,13 +281,17 @@ router.post('/', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
-      safe_with_inflammation = false
+      safe_with_inflammation = false,
+
+      // ЗВУК УПРАЖНЕНИЯ (EA3) — дефолт библиотеки (длинный трек)
+      audio_preset_id,
+      audio_loop = false
     } = req.body;
 
     // ========================================
     // ВАЛИДАЦИЯ ОБЯЗАТЕЛЬНЫХ ПОЛЕЙ
     // ========================================
-    
+
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Название упражнения обязательно', message: 'Название упражнения обязательно' });
     }
@@ -301,6 +306,21 @@ router.post('/', authenticateToken, async (req, res) => {
     } catch (e) {
       return res.status(400).json({ error: 'Некорректная ссылка на видео', message: 'Некорректная ссылка на видео' });
     }
+
+    // Валидация звука упражнения (до внешнего Kinescope-запроса — fail fast).
+    let audioPresetId = null;
+    if (audio_preset_id != null) {
+      const n = Number(audio_preset_id);
+      if (!Number.isInteger(n) || n <= 0) {
+        return res.status(400).json({ error: 'Validation Error', message: 'audio_preset_id некорректен' });
+      }
+      const v = await validateTrackPresetIds(query, [n]);
+      if (!v.ok) {
+        return res.status(400).json({ error: 'Validation Error', message: v.error });
+      }
+      audioPresetId = n;
+    }
+    const audioLoop = audioPresetId != null && (audio_loop === true || audio_loop === 'true');
 
     // ========================================
     // АВТОМАТИЧЕСКОЕ ПОЛУЧЕНИЕ THUMBNAIL ИЗ KINESCOPE
@@ -383,9 +403,11 @@ router.post('/', authenticateToken, async (req, res) => {
         absolute_contraindications,
         red_flags,
         safe_with_inflammation,
-        created_by
+        created_by,
+        audio_preset_id,
+        audio_loop
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
       ) RETURNING *`,
       [
         title.trim(),
@@ -406,7 +428,9 @@ router.post('/', authenticateToken, async (req, res) => {
         absolute_contraindications?.trim() || null,
         red_flags?.trim() || null,
         safe_with_inflammation,
-        req.user.id
+        req.user.id,
+        audioPresetId,
+        audioLoop
       ]
     );
 
@@ -580,7 +604,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
-      safe_with_inflammation
+      safe_with_inflammation,
+
+      // ЗВУК УПРАЖНЕНИЯ (EA3)
+      audio_preset_id,
+      audio_loop
     } = req.body;
 
     // Валидация обязательных полей
@@ -597,6 +625,22 @@ router.put('/:id', authenticateToken, async (req, res) => {
     } catch (e) {
       return res.status(400).json({ error: 'Некорректная ссылка на видео', message: 'Некорректная ссылка на видео' });
     }
+
+    // Валидация звука упражнения (PUT шлёт полный объект; отсутствие audio_preset_id
+    // = снять привязку). До внешнего Kinescope-запроса — fail fast.
+    let audioPresetId = null;
+    if (audio_preset_id != null) {
+      const n = Number(audio_preset_id);
+      if (!Number.isInteger(n) || n <= 0) {
+        return res.status(400).json({ error: 'Validation Error', message: 'audio_preset_id некорректен' });
+      }
+      const v = await validateTrackPresetIds(query, [n]);
+      if (!v.ok) {
+        return res.status(400).json({ error: 'Validation Error', message: v.error });
+      }
+      audioPresetId = n;
+    }
+    const audioLoop = audioPresetId != null && (audio_loop === true || audio_loop === 'true');
 
     // Проверка существования упражнения
     const existing = await query(
@@ -667,8 +711,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
         absolute_contraindications = $16,
         red_flags = $17,
         safe_with_inflammation = $18,
+        audio_preset_id = $19,
+        audio_loop = $20,
         updated_at = NOW()
-      WHERE id = $19
+      WHERE id = $21
       RETURNING *`,
       [
         title.trim(),
@@ -689,6 +735,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         absolute_contraindications?.trim() || null,
         red_flags?.trim() || null,
         safe_with_inflammation || false,
+        audioPresetId,
+        audioLoop,
         id
       ]
     );

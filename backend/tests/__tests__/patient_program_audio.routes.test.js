@@ -27,9 +27,12 @@ const PRESETS_DIR = path.join(__dirname, '../../uploads/sounds/presets');
 const MP3_BUF = Buffer.concat([Buffer.from([0xff, 0xfb, 0x90, 0x00]), Buffer.alloc(60)]);
 
 beforeEach(() => { query.mockReset(); });
+// Чистим ТОЛЬКО свой id (3) — общий реальный presets/ шарится с admin audio-тестами
+// (id 7/8/9 + 21-25). Широкий \d+ удалял чужие файлы при параллельных воркерах
+// (флак handoff §5). Узкий паттерн устраняет гонку.
 afterEach(() => {
   if (fs.existsSync(PRESETS_DIR)) {
-    fs.readdirSync(PRESETS_DIR).filter((f) => /^\d+\.(mp3|wav)$/.test(f))
+    fs.readdirSync(PRESETS_DIR).filter((f) => /^3\.(mp3|wav)$/.test(f))
       .forEach((f) => { try { fs.unlinkSync(path.join(PRESETS_DIR, f)); } catch (_) { /* ignore */ } });
   }
 });
