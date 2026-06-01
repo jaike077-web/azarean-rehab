@@ -2222,10 +2222,10 @@ function AudioPresetsTab() {
                         type="button"
                         className={s.adminActionBtn}
                         data-testid={`cue-default-preview-${cue}`}
-                        title="Прослушать выбранный звук"
+                        title="Прослушать звук"
                         aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
-                        disabled={d.preset_id == null || savingCue === cue}
-                        onClick={() => previewPreset(d.preset_id)}
+                        disabled={savingCue === cue}
+                        onClick={() => previewPreset(d.preset_id, cue)}
                       >
                         <Play size={14} strokeWidth={1.8} />
                       </button>

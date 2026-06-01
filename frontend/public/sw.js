@@ -120,8 +120,10 @@
 // v23 (2026-06-01) — UI-фиксы: восстановлены стили модалки «Состав комплекса»
 // (MyComplexes — потеряны при CSS Modules миграции) + кнопка прослушки ▶ звука
 // в дом-карте и секции «Звуки комплекса» (общий хук useAudioPreview). Новый бандл.
-const CACHE_NAME = 'azarean-v23';
-const API_CACHE = 'azarean-api-v23';
+// v24 (2026-06-01) — ▶ для «Стандартного тона» теперь синтезирует сам тон события
+// (getCueConfig, 1:1 как раннер) — раньше кнопка была неактивна. Новый бандл.
+const CACHE_NAME = 'azarean-v24';
+const API_CACHE = 'azarean-api-v24';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

@@ -70,26 +70,29 @@ describe('ComplexCueSounds', () => {
     expect(screen.queryByTestId('cue-sound-preview-set_start')).not.toBeInTheDocument();
   });
 
-  it('▶ для выбранного пресета зовёт onPreview с его id', () => {
+  it('▶ для выбранного пресета зовёт onPreview с его id + cue', () => {
     const onPreview = jest.fn();
     const state = { ...emptyCueState(), set_start: { sel: '2', locked: false } };
     render(<ComplexCueSounds cueState={state} onChange={() => {}} presets={presets} defaults={defaults} onPreview={onPreview} />);
     fireEvent.click(screen.getByTestId('cue-sound-preview-set_start'));
-    expect(onPreview).toHaveBeenCalledWith(2);
+    expect(onPreview).toHaveBeenCalledWith(2, 'set_start');
   });
 
-  it('▶ при inherit с дом-дефолтом зовёт onPreview с preset_id дефолта', () => {
+  it('▶ при inherit с дом-дефолтом зовёт onPreview с preset_id дефолта + cue', () => {
     const onPreview = jest.fn();
     render(<ComplexCueSounds cueState={emptyCueState()} onChange={() => {}} presets={presets} defaults={defaults} onPreview={onPreview} />);
     fireEvent.click(screen.getByTestId('cue-sound-preview-set_start'));
-    expect(onPreview).toHaveBeenCalledWith(1);
+    expect(onPreview).toHaveBeenCalledWith(1, 'set_start');
   });
 
-  it('▶ disabled при tone и при inherit без дом-дефолта, активна при inherit с дефолтом', () => {
+  it('▶ для tone / inherit-без-дефолта зовёт onPreview(null, cue) — стандартный тон, кнопка не disabled', () => {
+    const onPreview = jest.fn();
     const state = { ...emptyCueState(), set_end: { sel: 'tone', locked: false } };
-    render(<ComplexCueSounds cueState={state} onChange={() => {}} presets={presets} defaults={defaults} onPreview={() => {}} />);
-    expect(screen.getByTestId('cue-sound-preview-count_tick')).toBeDisabled(); // inherit без дефолта
-    expect(screen.getByTestId('cue-sound-preview-set_end')).toBeDisabled();    // tone
-    expect(screen.getByTestId('cue-sound-preview-set_start')).not.toBeDisabled(); // inherit с дефолтом
+    render(<ComplexCueSounds cueState={state} onChange={() => {}} presets={presets} defaults={defaults} onPreview={onPreview} />);
+    fireEvent.click(screen.getByTestId('cue-sound-preview-set_end'));        // явный tone
+    expect(onPreview).toHaveBeenCalledWith(null, 'set_end');
+    fireEvent.click(screen.getByTestId('cue-sound-preview-count_tick'));     // inherit без дом-дефолта
+    expect(onPreview).toHaveBeenCalledWith(null, 'count_tick');
+    expect(screen.getByTestId('cue-sound-preview-set_end')).not.toBeDisabled();
   });
 });
