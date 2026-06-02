@@ -13,7 +13,7 @@
 // =====================================================
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock react-router-dom ДО импорта EditComplex — иначе useParams/useNavigate
@@ -204,5 +204,54 @@ describe('EditComplex — AA4 audio cue pre-fill (admin)', () => {
     expect(screen.getByTestId('cue-sound-lock-set_start')).toBeChecked();
     // непривязанные cue — inherit
     expect(screen.getByTestId('cue-sound-select-count_tick')).toHaveValue('inherit');
+  });
+});
+
+// =====================================================
+// Регресс: 2 data-loss бага EditComplex (найдены 2026-06-02).
+// Баг 1: rest_seconds не грузился → handleSave дефолтил 30 → отдых сбрасывался.
+// Баг 2: warnings не слался → PUT (SET warnings=$4) писал NULL → стирались.
+// Оба теста: load из backend → значение в форме → Save → payload сохраняет его.
+// =====================================================
+describe('EditComplex — фикс data-loss (rest_seconds + warnings сохраняются)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUser = { id: 1, role: 'instructor' };
+  });
+
+  it('rest_seconds=45 и warnings из backend грузятся в форму и сохраняются при Save (не 30 / не null)', async () => {
+    complexes.getOne.mockResolvedValue({
+      data: {
+        id: 50,
+        patient_name: 'Вадим',
+        title: 'Комплекс',
+        recommendations: 'рек',
+        warnings: 'Осторожно с коленом',
+        exercises: [{
+          exercise: { id: 1, title: 'Присед', thumbnail_url: 'http://x/1.jpg' },
+          sets: 3,
+          reps: 10,
+          duration_seconds: null,
+          rest_seconds: 45,
+          order_number: 1,
+        }],
+      },
+    });
+    complexes.update.mockResolvedValue({ data: {} });
+
+    renderEditAt();
+    await waitFor(() => expect(screen.getByTestId('rest-1')).toBeInTheDocument());
+
+    // Загрузка: rest и warnings видны в форме (не дефолты).
+    expect(screen.getByTestId('rest-1')).toHaveValue(45);
+    expect(screen.getByDisplayValue('Осторожно с коленом')).toBeInTheDocument();
+
+    // Save → payload сохраняет оба значения.
+    fireEvent.click(screen.getByText('Сохранить изменения'));
+    await waitFor(() => expect(complexes.update).toHaveBeenCalled());
+
+    const [, payload] = complexes.update.mock.calls[0];
+    expect(payload.warnings).toBe('Осторожно с коленом'); // НЕ null (баг 2)
+    expect(payload.exercises[0].rest_seconds).toBe(45);    // НЕ 30 (баг 1)
   });
 });
