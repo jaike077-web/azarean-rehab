@@ -133,8 +133,11 @@
 // v27 (2026-06-02) — кнопка-мут в раннере (Volume2/VolumeX в шапке карточки):
 // мгновенно глушит весь звук (трек + cue-бипы) через settings.enabled, размут
 // возобновляет. Фидбэк Vadim'а: на смоуке музыка долбила без способа выключить.
-const CACHE_NAME = 'azarean-v27';
-const API_CACHE = 'azarean-api-v27';
+// v28 (2026-06-02) — кнопка-мут перенесена из шапки карточки В ТАЙМЕР-ЗОНУ
+// (timed: absolute правый-верх .sec; rep-only: в баре действий .acts) — у заголовка
+// видео её не видно, а взгляд пациента во время подхода на таймере. Фидбэк Vadim'а.
+const CACHE_NAME = 'azarean-v28';
+const API_CACHE = 'azarean-api-v28';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

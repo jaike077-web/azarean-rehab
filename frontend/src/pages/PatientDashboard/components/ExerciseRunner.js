@@ -148,6 +148,31 @@ const ExerciseRunner = ({
   }, [musicActive, exAudio, startExerciseAudio, stopExerciseAudio]);
   useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]); // анмаунт раннера → стоп
 
+  // Кнопка-мут (музыка + cue-бипы через settings.enabled). Рендерится В ТАЙМЕР-ЗОНЕ
+  // (где взгляд во время подхода — фидбэк Vadim'а), не у заголовка. extraStyle —
+  // позиционирование под место (absolute в таймер-.sec / flex-item в .acts для rep-only).
+  // Inline-стили обходят .pd-runner * reset. 44×44 (Apple HIG), контраст в обоих состояниях.
+  const renderMuteBtn = (extraStyle) => (
+    <button
+      type="button"
+      data-testid="runner-mute-btn"
+      onClick={() => setAudioSettings({ enabled: !audioSettings.enabled })}
+      aria-label={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+      aria-pressed={!audioSettings.enabled}
+      title={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 44, height: 44, padding: 0, border: 'none', borderRadius: 12,
+        background: audioSettings.enabled ? 'var(--az-bg)' : 'var(--az-label)',
+        color: audioSettings.enabled ? 'var(--az-label)' : '#fff',
+        cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+        ...extraStyle,
+      }}
+    >
+      {audioSettings.enabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+    </button>
+  );
+
   // Сброс per-set state при переходе на новое упражнение → ready phase.
   useEffect(() => {
     setCurrentSetIndex(0);
@@ -340,29 +365,6 @@ const ExerciseRunner = ({
           <div className="crd-top">
             <span className="num">{index + 1}</span>
             <span className="nm">{exercise.title || 'Упражнение'}</span>
-            {/* Мут звука (музыка + бипы) — доступен в любой фазе. Inline-стили:
-                обходят .pd-runner * reset; marginLeft:auto прижимает вправо. */}
-            <button
-              type="button"
-              data-testid="runner-mute-btn"
-              onClick={() => setAudioSettings({ enabled: !audioSettings.enabled })}
-              aria-label={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
-              aria-pressed={!audioSettings.enabled}
-              title={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
-              style={{
-                // 44×44 (Apple HIG touch target). Всегда видимая «пилюля» (чёткий хит-эрия
-                // + контраст в обоих состояниях): звук вкл → светлый фон + тёмная иконка;
-                // мут → инверсия (тёмный фон + белая иконка), визуально выделен как «выкл».
-                marginLeft: 'auto', flexShrink: 0, alignSelf: 'flex-start',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                width: 44, height: 44, padding: 0, border: 'none', borderRadius: 12,
-                background: audioSettings.enabled ? 'var(--az-bg)' : 'var(--az-label)',
-                color: audioSettings.enabled ? 'var(--az-label)' : '#fff',
-                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-              }}
-            >
-              {audioSettings.enabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-            </button>
           </div>
           {paramLine() && <div className="rx">{paramLine()}</div>}
           {prevHintText() && (
@@ -499,11 +501,16 @@ const ExerciseRunner = ({
               return `цель ${formatTime(ce.duration_seconds || 0)}`;
             })();
             return (
-            <div className="sec">
+            <div className="sec" style={{ position: 'relative' }}>
               <div className="sec-t">
                 <span data-testid="phase-label">{topLabel}</span>
                 <span className="sw-target" data-testid="phase-context-label">{contextLabel}</span>
               </div>
+              {/* Мут — ниже header'а (.sec-t ~36px), в пустом правом-верхнем углу
+                  кольца-зоны: не перекрывает утверждённый language-header
+                  (phase-label + context-label, DA2), но в таймер-секции у кольца,
+                  куда смотрит пациент во время подхода (фидбэк Vadim'а). */}
+              {renderMuteBtn({ position: 'absolute', top: 44, right: 16, zIndex: 2 })}
               {setPhase === 'ready' && (
                 <div data-testid="ready-state">
                   <PhaseRing
@@ -643,6 +650,8 @@ const ExerciseRunner = ({
 
         {/* Actions */}
         <div className="acts">
+          {/* Rep-only: таймер-зоны нет — мут в баре действий (timed имеет мут в таймер-зоне). */}
+          {!usesPerSetGuide && renderMuteBtn({ flexShrink: 0, width: 50, height: 50 })}
           <button type="button" onClick={goPrev} disabled={index === 0} className="btn btn-bk" aria-label="Предыдущее упражнение" data-testid="runner-back-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
