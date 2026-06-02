@@ -498,6 +498,63 @@ describe('AudioPresetsTab', () => {
     });
   });
 
+  // ── CT4: редактор «Стандартного тона» ──────────────────────────────────
+  it('CT4: tone-редактор показан для «Стандартный тон», скрыт для cue с пресетом', async () => {
+    await openAudioTab();
+    await waitFor(() => expect(screen.getByTestId('cue-default-select-count_tick')).toBeInTheDocument());
+    // count_tick = preset_id null → есть 3 контрола тона
+    expect(screen.getByTestId('cue-tone-freq-count_tick')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-tone-dur-count_tick')).toBeInTheDocument();
+    expect(screen.getByTestId('cue-tone-type-count_tick')).toBeInTheDocument();
+    // set_start = preset_id 1 (файл) → редактора тона нет
+    expect(screen.queryByTestId('cue-tone-freq-set_start')).not.toBeInTheDocument();
+  });
+
+  it('CT4: pre-fill тона из getCueConfig (count_tick = 600 Гц / 80 мс)', async () => {
+    await openAudioTab();
+    await waitFor(() => expect(screen.getByTestId('cue-tone-freq-count_tick')).toBeInTheDocument());
+    expect(screen.getByTestId('cue-tone-freq-count_tick')).toHaveValue(600);
+    expect(screen.getByTestId('cue-tone-dur-count_tick')).toHaveValue(80);
+  });
+
+  it('CT4: правка + «Сохранить тон» → setAudioCueDefault(preset_id=null, tone_config)', async () => {
+    await openAudioTab();
+    admin.setAudioCueDefault.mockResolvedValueOnce({ data: {} });
+    await waitFor(() => expect(screen.getByTestId('cue-tone-freq-count_tick')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('cue-tone-freq-count_tick'), { target: { value: '777' } });
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('cue-tone-type-count_tick'), { target: { value: 'square' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('cue-tone-save-count_tick'));
+    });
+    await waitFor(() => {
+      expect(admin.setAudioCueDefault).toHaveBeenCalledWith('count_tick', {
+        preset_id: null,
+        is_locked: false,
+        tone_config: { frequencies: [777], durationMs: 80, type: 'square' },
+      });
+    });
+  });
+
+  it('CT4: правка тона не теряется при тоггле lock (ревью-фикс — load() не чистит toneForms)', async () => {
+    await openAudioTab();
+    admin.setAudioCueDefault.mockResolvedValue({ data: {} });
+    await waitFor(() => expect(screen.getByTestId('cue-tone-freq-count_tick')).toBeInTheDocument());
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('cue-tone-freq-count_tick'), { target: { value: '777' } });
+    });
+    expect(screen.getByTestId('cue-tone-freq-count_tick')).toHaveValue(777);
+    // тоггл lock → handleSetDefault + load(); несохранённая правка тона должна остаться в форме
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('cue-default-lock-count_tick'));
+    });
+    await waitFor(() => expect(admin.setAudioCueDefault).toHaveBeenCalledWith('count_tick', { preset_id: null, is_locked: true }));
+    expect(screen.getByTestId('cue-tone-freq-count_tick')).toHaveValue(777);
+  });
+
   it('«Добавить звук» → форма → upload шлёт FormData с name+file', async () => {
     await openAudioTab();
     admin.createAudioPreset.mockResolvedValueOnce({ data: { id: 3 } });
@@ -513,7 +570,8 @@ describe('AudioPresetsTab', () => {
       });
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /^Сохранить/ }));
+      // Точное имя: CT4 добавил кнопки «Сохранить тон» в дом-карту → /^Сохранить/ стал неоднозначным.
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить' }));
     });
     await waitFor(() => expect(admin.createAudioPreset).toHaveBeenCalledTimes(1));
     const fd = admin.createAudioPreset.mock.calls[0][0];

@@ -51,8 +51,17 @@ export default function useAudioPreview() {
 
   // Синтез «Стандартного тона» события (cueName) тем же кодом, что у раннера
   // (getCueConfig). Свежий AudioContext на жест → закрываем после тона.
-  const playStandardTone = useCallback((cueName) => {
-    const cfg = getCueConfig(cueName);
+  // CT4: toneConfigOverride (редактируемый тон из формы, уже clamped buildToneConfig)
+  // перебивает дефолтные frequencies/durationMs/type → ▶ играет тон вживую как
+  // будет сохранён. gain НЕ редактируем — берётся из getCueConfig (base).
+  const playStandardTone = useCallback((cueName, toneConfigOverride) => {
+    const base = getCueConfig(cueName);
+    const ov = toneConfigOverride
+      && Array.isArray(toneConfigOverride.frequencies) && toneConfigOverride.frequencies.length > 0
+      ? toneConfigOverride : null;
+    const cfg = ov
+      ? { frequencies: ov.frequencies, durationMs: ov.durationMs, type: ov.type, gain: base ? base.gain : 0.3 }
+      : base;
     if (!cfg) return;
     const Ctor = window.AudioContext || window.webkitAudioContext;
     if (!Ctor) return;
@@ -90,10 +99,11 @@ export default function useAudioPreview() {
   }, []);
 
   // presetId — файл-пресет; presetId==null + cueName — «Стандартный тон» события.
-  const previewPreset = useCallback(async (presetId, cueName) => {
+  // toneConfigOverride (опц., CT4) — редактируемый тон для live-▶ дом-карты.
+  const previewPreset = useCallback(async (presetId, cueName, toneConfigOverride) => {
     stopCurrent();
     if (presetId == null) {
-      if (cueName) playStandardTone(cueName);
+      if (cueName) playStandardTone(cueName, toneConfigOverride);
       return;
     }
     const myGen = genRef.current; // поколение этого вызова (после bump в stopCurrent)
