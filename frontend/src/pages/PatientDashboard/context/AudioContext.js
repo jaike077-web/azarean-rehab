@@ -207,7 +207,20 @@ export function AudioProvider({ children }) {
       // Стандартный тон CP1 (осциллятор). Неизвестный cue → no-op БЕЗ контекста
       // (cfg=null до ensureContext) — чтобы неизвестный cue не плодил AudioContext.
       const playTone = () => {
-        const cfg = getCueConfig(name);
+        const base = getCueConfig(name);
+        // CT3: кастомный тон события из дом-карты (audio_cue_defaults.tone_config,
+        // донесён через loadProgramCues в programCuesRef) перебивает дефолтные
+        // frequencies/durationMs/type. gain НЕ редактируем — всегда из getCueConfig
+        // (base). Малформ tone_config → fallback на base (инвариант: никогда не
+        // тишина, если для cue есть стандартный тон).
+        const meta = programCuesRef.current[name];
+        const tc = meta && meta.tone_config;
+        const tcValid = tc
+          && Array.isArray(tc.frequencies) && tc.frequencies.length > 0
+          && Number.isFinite(tc.durationMs) && typeof tc.type === 'string';
+        const cfg = tcValid
+          ? { frequencies: tc.frequencies, durationMs: tc.durationMs, type: tc.type, gain: base ? base.gain : 0.3 }
+          : base;
         if (!cfg) return;
         const ctx = ensureContext();
         if (!ctx) return;
@@ -389,6 +402,9 @@ export function AudioProvider({ children }) {
           preset_id: c.preset_id == null ? null : c.preset_id,
           is_locked: !!c.is_locked,
           sig: c.sig,
+          // CT3: кастомный тон события (дом-карта, audio_cue_defaults.tone_config).
+          // Используется playTone когда resolved preset_id=null. null = стандартный тон.
+          tone_config: c.tone_config || null,
         };
       }
     });
