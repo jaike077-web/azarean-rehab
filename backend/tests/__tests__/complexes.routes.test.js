@@ -539,6 +539,33 @@ describe('CP2a — INSERT complex_exercises (write path)', () => {
       expect(params[11]).toBeNull();
     });
 
+    // Регресс: фронт при пустом темпе шлёт ЯВНЫЙ null (не omit). Number(null)===0,
+    // поэтому старый toIntNonNeg(null) давал pause=0, ecc/con=null → частичное →
+    // нарушение chk_ce_tempo → 500. Тест 'не задан' выше шлёт undefined (omit) и
+    // не ловил баг. Здесь шлём null — params темпа обязаны быть все три null.
+    it('темп = null (явный, как с фронта) → params [null, null, null], не [null, 0, null]', async () => {
+      const client = makeMockClient();
+      const getCapture = captureCEInsert(client);
+      getClient.mockResolvedValueOnce(client);
+      query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
+
+      await request(app)
+        .post('/api/complexes')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({
+          patient_id: 14,
+          exercises: [{
+            exercise_id: 1, order_number: 1, sets: 3, reps: 10,
+            tempo_eccentric_s: null, tempo_pause_s: null, tempo_concentric_s: null,
+          }],
+        });
+
+      const { params } = getCapture();
+      expect(params[9]).toBeNull();
+      expect(params[10]).toBeNull();   // ← был 0 до фикса (Number(null)===0)
+      expect(params[11]).toBeNull();
+    });
+
     it('reps + duration_seconds вместе (XOR снят) — оба попадают в INSERT', async () => {
       const client = makeMockClient();
       const getCapture = captureCEInsert(client);
