@@ -1,0 +1,3058 @@
+[
+  {
+    "pathology_name_ru": "Разрыв передней крестообразной связки (ПКС) — восстановление после реконструкции (ACLR) и консервативное ведение",
+    "pathology_name_en": "Anterior Cruciate Ligament (ACL) tear — post-reconstruction (ACLR) rehabilitation and conservative management",
+    "suggested_program_type_code": "knee_acl",
+    "anchor": "criterion_driven",
+    "anchor_notes": "Современный стандарт — criterion-based прогрессия (объективные гейты), НЕ календарь. Недели в каждой фазе явно названы \"guardrail, не гейт\" (van Melick 2016; Aspetar 2023). Время с операции НЕОБХОДИМОЕ, но НЕДОСТАТОЧНОЕ условие — нижняя граница для защиты графта (особенно ~6-12 нед уязвимости). Привязка недель — к дате операции (surgery_date) для хирургической траектории; Фаза 0 (prehab) предшествует операции. Общий горизонт 9-12 мес. Переход между фазами — по достижению силовых/функциональных/психологических критериев. RTS — не раньше ~9 мес (мейнстрим), при выполненных критериях.",
+    "num_phases": 7,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": true,
+      "notes": "Досье описывает ДВЕ траектории. (1) Хирургическая (ACLR) — основная, наиболее детальная, 7 фаз (0-6), criterion-based, горизонт 9-12 мес. Ранняя фаза ХИРУРГ-СПЕЦИФИЧНА (режим осевой нагрузки, лимиты ROM, брейс, сроки — задаёт оперировавший хирург, особенно при шве мениска/хондральных процедурах). (2) Консервативная ('copers') — отдельный путь без операции (KANON: не уступает ранней реконструкции по KOOS на 2 и 5 лет). Coper/non-coper классификация ДИНАМИЧНА (Thoma 2019: меняется после нейромышечно-силовой тренировки). Рекомендуется отдельный program_type для консерватива (knee_acl_conservative), т.к. фазовая структура для copers — это NMST-программа без послеоперационного guardrail, своя система гейтов (coper-скрининг: 6m-hop LSI >=80%, KOS-ADL >=80%, глобальная функция >=60, <=1 эпизода giving-way). Хирургическая фаза дополнительно расщепляется на 'хирург-управляемое' (WB/ROM/брейс) vs 'общую реабилитацию' (criterion-based), но это не отдельный program_type, а input-слой."
+    },
+    "measurement_vocabulary": [
+      "knee_extension_full_symmetric",
+      "knee_flexion_rom_pct",
+      "effusion_grade",
+      "quad_activation",
+      "slr_no_lag",
+      "gait_normal",
+      "quad_strength_lsi_pct",
+      "hamstring_strength_lsi_pct",
+      "quad_strength_epic_pct",
+      "cmj_eccentric_impulse_lsi_pct",
+      "pogo_pain_free",
+      "aqua_jog_pain_free",
+      "hop_lsi_pct",
+      "cmj_height_impulse_pct",
+      "rsi_bilateral",
+      "rsi_unilateral",
+      "acl_rsi_score",
+      "ikdc_skf_score",
+      "koos_qol_score",
+      "running_biomech_symmetry_pct",
+      "rts_battery_pass",
+      "single_6m_hop_lsi_pct",
+      "kos_adl_score",
+      "global_function_score",
+      "giving_way_episodes",
+      "time_since_surgery_months"
+    ],
+    "phases": [
+      {
+        "phase_number": 0,
+        "title_ru": "Фаза 0 — Prehab / предоперационная подготовка",
+        "duration_weeks": "",
+        "goals": [
+          "Устранить выпот",
+          "Полная ROM, особенно полное разгибание (преоп дефицит = главный фактор риска послеоперационного дефицита разгибания)",
+          "Реактивировать квадрицепс",
+          ">=90% симметрии силы квадрицепса",
+          "Обучение пациента",
+          "Преоперационное тестирование здоровой ноги (изокинетика) для EPIC, не только LSI"
+        ],
+        "restrictions": [],
+        "allowed": [
+          "Преоперационная реабилитация улучшает ROM и силу квадрицепса на 3 мес после операции (Aspetar 2023, GRADE D)"
+        ],
+        "pain_guidance": [],
+        "red_flags": [],
+        "transition_criteria": [
+          {
+            "label_ru": "Тихое колено: нет выпота",
+            "type": "instructor_check",
+            "measurement_type": "effusion_grade",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Полная ROM перед операцией",
+            "type": "instructor_check",
+            "measurement_type": "knee_flexion_rom_pct",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Хорошая активация квадрицепса",
+            "type": "instructor_check",
+            "measurement_type": "quad_activation",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Симметрия силы квадрицепса >=90% (преоп дефицит >20% значимо ухудшает 2-летний исход, van Melick LoE 2)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          }
+        ]
+      },
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза 1 — Ранняя послеоперационная",
+        "duration_weeks": "0-2",
+        "goals": [
+          "Контроль боли/выпота",
+          "Полное разгибание",
+          "Реактивация квадрицепса (против артрогенного мышечного торможения, AMI)",
+          "Восстановление походки"
+        ],
+        "restrictions": [
+          "Хирург-специфично при сопутствующих процедурах (режим брейса, лимиты ROM, осевая нагрузка задаёт хирург)",
+          "CPM НЕ рекомендуется",
+          "Dry needling vastus medialis very early НЕ рекомендуется"
+        ],
+        "allowed": [
+          "Ранняя осевая нагрузка как переносится, прогрессивно/контролируемо (Aspetar D — с учётом хирургических инструкций)",
+          "Активное движение сразу (иммобилизация НЕ снижает боль и ведёт к атрофии)",
+          "Изометрия квадрицепса / SLR безопасны",
+          "Brace-free — стандарт в изолированных ACLR (режим брейса хирург-специфичен)",
+          "Криотерапия (van Melick LoE 1)",
+          "NMES (GRADE C/D)"
+        ],
+        "pain_guidance": [
+          "В без-/малоболевом диапазоне",
+          "Боль/выпот = снизить нагрузку"
+        ],
+        "red_flags": [
+          "Лихорадка",
+          "Нарастающий выпот",
+          "Эритема",
+          "Икроножная боль/отёк (ТГВ)",
+          "Невозможность разгибания"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Минимальный выпот",
+            "type": "instructor_check",
+            "measurement_type": "effusion_grade",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Полное (симметричное) разгибание",
+            "type": "instructor_check",
+            "measurement_type": "knee_extension_full_symmetric",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Произвольная активация квадрицепса",
+            "type": "instructor_check",
+            "measurement_type": "quad_activation",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "SLR без экстензионного лага",
+            "type": "instructor_check",
+            "measurement_type": "slr_no_lag",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Нормальная походка",
+            "type": "instructor_check",
+            "measurement_type": "gait_normal",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза 2 — Промежуточная (сила)",
+        "duration_weeks": "2-12",
+        "goals": [
+          "Полная ROM сгибания",
+          "Прогрессивная сила квадрицепса/hamstrings",
+          "Устранить экстензионный лаг",
+          "Нормальная походка/лестница"
+        ],
+        "restrictions": [
+          "HS-графты более уязвимы к раннему OKC; OKC БЕЗ доп. веса первые 12 нед для hamstring-графта",
+          "Глубокое сгибание/нагрузка >90° при шве мениска — по хирургическому протоколу",
+          "OKC квадрицепса с сопротивлением в полном разгибании (0-45°) рано — избегать"
+        ],
+        "allowed": [
+          "OKC квадрицепса в 90°-45° с 4 нед без компрометации стабильности (Aspetar D; van Melick LoE 1-2)",
+          "Для BTB-графта доп. сопротивление допускается",
+          "ROM OKC расширяют: 90-30°(нед5) → 90-10°(нед7) → полная(нед8)",
+          "CKC концентрические с ~2 нед; эксцентрика безопасна с ~3 нед",
+          "OKC+CKC в комбинации без вреда графту при мониторинге боли/выпота (van Melick 2025)"
+        ],
+        "pain_guidance": [
+          "Прогрессия только без нарастающего выпота/боли/потери разгибания"
+        ],
+        "red_flags": [],
+        "transition_criteria": [
+          {
+            "label_ru": "ROM сгибания >=95% (критерий к бегу, Aspetar 2023, agreement 87.8%)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_rom_pct",
+            "operator": ">=",
+            "threshold": 95,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Полное разгибание",
+            "type": "instructor_check",
+            "measurement_type": "knee_extension_full_symmetric",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Нет/след выпота",
+            "type": "instructor_check",
+            "measurement_type": "effusion_grade",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Квадрицепс LSI >80%",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "LSI >80% эксцентрического импульса CMJ",
+            "type": "measurement",
+            "measurement_type": "cmj_eccentric_impulse_lsi_pct",
+            "operator": ">",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Безболевой aqua-jogging / Alter-G",
+            "type": "self_report",
+            "measurement_type": "aqua_jog_pain_free",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Безболевые повторные одноногие pogos",
+            "type": "self_report",
+            "measurement_type": "pogo_pain_free",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Минимальный срок до бега ~12 нед (8-16; прямых данных о безопасности <=12 нед нет)",
+            "type": "measurement",
+            "measurement_type": "time_since_surgery_months",
+            "operator": ">=",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза 3 — Продвинутая сила + бег",
+        "duration_weeks": "12-24",
+        "goals": [
+          "Силовая симметрия (LSI >=90% / EPIC >=90%)",
+          "Прогрессия бега",
+          "Базовая плиометрика",
+          "Контроль динамического вальгуса"
+        ],
+        "restrictions": [],
+        "allowed": [
+          "Прогрессия бега",
+          "Базовая плиометрика"
+        ],
+        "pain_guidance": [
+          "Выпот после нагрузки = переоценить дозу"
+        ],
+        "red_flags": [
+          "Выпот после нагрузки",
+          "Стойкая потеря разгибания → подозрение cyclops/артрофиброз"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Силовая симметрия LSI >=90%",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Силовая симметрия EPIC >=90% (сравнение с ДОоперационной здоровой ногой; EPIC чувствительнее LSI)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_epic_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Фаза 4 — Плиометрика + спорт-специфика",
+        "duration_weeks": "24-36",
+        "goals": [
+          "Плиометрика (low → high)",
+          "Change-of-direction",
+          "Спорт-специфика",
+          "Реактивный/нейрокогнитивный тренинг (недооценён, van Melick 2025)"
+        ],
+        "restrictions": [],
+        "allowed": [
+          "8 нед плиометрики положительно влияют на функцию (Chmielewski 2016)"
+        ],
+        "pain_guidance": [],
+        "red_flags": [],
+        "transition_criteria": [
+          {
+            "label_ru": "Прохождение полной RTS-батареи (см. Фаза 5 / раздел 5)",
+            "type": "measurement",
+            "measurement_type": "rts_battery_pass",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 5,
+        "title_ru": "Фаза 5 — Возврат к спорту (RTS)",
+        "duration_weeks": "36+",
+        "goals": [
+          "RTS = оценка риска; клиренс != соревнования (нужна переходная фаза к performance)",
+          "Минимальный срок >=9 мес (для pivoting/level I) + полная батарея критериев"
+        ],
+        "restrictions": [
+          "Не раньше ~9 мес (мейнстрим, Grindem/Kyritsis); молодые level I (<25) — ужесточить",
+          "Невыполнение 6 критериев → x4 риск разрыва графта (Kyritsis HR 4.1)"
+        ],
+        "allowed": [
+          "Возврат к спорту при пройденной батарее и достаточном сроке для созревания тканей"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Возврат нестабильности, нарастание laxity → подозрение на несостоятельность графта"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Минимальный срок с операции >=9 мес (для pivoting/level I; non-pivoting мягче)",
+            "type": "measurement",
+            "measurement_type": "time_since_surgery_months",
+            "operator": ">=",
+            "threshold": 9,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Изокинетика квадрицепса (60°/с) LSI >=90% (high-demand pivoting — стремление к 100%)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Изокинетика hamstrings LSI >=90%",
+            "type": "measurement",
+            "measurement_type": "hamstring_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Hop-батарея LSI >=90% (single, triple, crossover, 6-m timed)",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Прыжковые: CMJ и drop jump >90% по высоте и импульсу",
+            "type": "measurement",
+            "measurement_type": "cmj_height_impulse_pct",
+            "operator": ">",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "RSI >1.3 (двуногий)",
+            "type": "measurement",
+            "measurement_type": "rsi_bilateral",
+            "operator": ">",
+            "threshold": 1.3,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "RSI >0.5 (одноногий)",
+            "type": "measurement",
+            "measurement_type": "rsi_unilateral",
+            "operator": ">",
+            "threshold": 0.5,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "ACL-RSI (психоготовность): пороги растут по времени ~56 (4 мес), ~65 (6 мес), ~72 (12 мес), ~76 (14 мес); единого порога нет",
+            "type": "measurement",
+            "measurement_type": "acl_rsi_score",
+            "operator": ">=",
+            "threshold": 72,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "IKDC-SKF PASS = 75.9 (Muller 2016)",
+            "type": "measurement",
+            "measurement_type": "ikdc_skf_score",
+            "operator": ">=",
+            "threshold": 75.9,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "KOOS-QoL PASS = 62.5 (Muller 2016)",
+            "type": "measurement",
+            "measurement_type": "koos_qol_score",
+            "operator": ">=",
+            "threshold": 62.5,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Биомеханика бега/CoD >90% симметрии",
+            "type": "measurement",
+            "measurement_type": "running_biomech_symmetry_pct",
+            "operator": ">",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          }
+        ]
+      },
+      {
+        "phase_number": 6,
+        "title_ru": "Фаза 6 — Долгосрочная профилактика рецидива",
+        "duration_weeks": "",
+        "goals": [
+          "Нейромышечные программы (PEP, FIFA 11+, Sportsmetrics, Knäkontroll) снижают риск ACL-травмы, особенно у женщин <18 (JOSPT CPG 2023)",
+          "Вторичная профилактика (ACL-SPORTS, perturbation) — снижение контралатеральных травм"
+        ],
+        "restrictions": [],
+        "allowed": [
+          "Нейромышечная профилактика как обязательная фаза, не опционально"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Разрыв/несостоятельность графта: ипси ~5.8%, контра ~11.8% при >=5 лет; у атлетов <25 лет вторичная ACL-травма до 23%"
+        ],
+        "transition_criteria": []
+      }
+    ],
+    "structural_notes": "МОДЕЛЬ ПЛОХО ЛОЖИТСЯ В \"6 фаз привязанных к неделям от операции\" по нескольким причинам:\n\n1. CRITERION-DRIVEN, НЕ TIME-DRIVEN. Досье эксплицитно: прогрессия goal/criterion-based (\"traffic-light\"), недели = \"guardrail, не гейт\". Время — необходимое, но недостаточное условие. Это центральный тезис (van Melick 2016; Aspetar 2023). Модель с жёсткими неделями противоречит самой философии протокола. Недели в фазах (0-2 / 2-12 / 12нед+ / 6-9мес / 9мес+) — это нижние границы защиты графта, а не точки перехода.\n\n2. ФАЗА 0 (PREHAB) — ДО ОПЕРАЦИИ. Не привязана к surgery_date положительным смещением; предшествует операции. Гейт Фазы 0 = \"на операцию\" (\"тихое колено\"). Если якорить всё к surgery_date, Фаза 0 имеет отрицательное время.\n\n3. ДВЕ ОСИ RTS, КОТОРЫЕ НЕЛЬЗЯ СХЛОПЫВАТЬ. Досье настаивает: RTS = (а) минимальный срок (>=9 мес для pivoting/level I, мягче для non-pivoting) И (б) полная батарея критериев. Расхождение по срокам (9 мес vs >9-24 мес) РЕАЛЬНО и не разрешено — Kotsifaki 2025 контрарно показывает, что у выполнивших критерии время RTS не связано с риском. Это не один порог, а политика с двумя осями.\n\n4. LSI vs EPIC. LSI завышает функцию (детренинг здоровой ноги). Досье рекомендует EPIC (сравнение с ДОоперационной здоровой ногой) как более строгий критерий — требует преоперационного тестирования здоровой ноги. В Фазе 3 оба критерия (LSI >=90% И EPIC >=90%) — EPIC чувствительнее.\n\n5. ГРАФТ-СПЕЦИФИЧНАЯ КАЛИБРОВКА. Прогрессия силы квадрицепса зависит от типа графта: QT/BTB — консервативнее (QT даёт самый выраженный дефицит квадрицепса на 7 мес, LSI 67.5-75.1%); HS — без OKC-веса первые 12 нед; аллографт у молодых (<25) — удлинённые сроки + выше ререптура. Один линейный таймлайн не покрывает.\n\n6. ХИРУРГ-УПРАВЛЯЕМЫЙ СЛОЙ. Ранняя фаза (WB-режим, лимиты ROM, брейс, сроки при шве мениска/хондральных/корневом разрыве LMPRT) задаётся хирургом индивидуально — НЕ дефолтить. Сопутствующий шов мениска: non-/toe-touch WB 4-6 нед, лимит сгибания 0-90° ~4 нед. Это input-слой поверх criterion-based фаз.\n\n7. КОНСЕРВАТИВНАЯ ТРАЕКТОРИЯ — отдельная программа. 'Copers' ведутся без операции; нет послеоперационного guardrail, своя система гейтов (coper-скрининг: 6m-hop LSI >=80%, KOS-ADL >=80%, глобальная функция >=60, <=1 giving-way). Классификация ДИНАМИЧНА (Thoma 2019: меняется после NMST). Рекомендуется отдельный program_type knee_acl_conservative.\n\n8. ACL-RSI — ВРЕМЯ-ЗАВИСИМЫЙ ПОРОГ. Психоготовность имеет растущие по времени пороги (56→65→72→76 при 4/6/12/14 мес), единого порога нет. В критерии Фазы 5 взят порог 12 мес (72) как ориентир, но это калибруемо.\n\n9. ПОРОГИ НЕ ВАЛИДИРОВАНЫ. Aspetar прямо: very-low/low certainty (GRADE D/C), пороги — экспертные ориентиры под локальную калибровку, не законы. Большинство RTS-данных — на элитных/мужских когортах → ограниченная валидность для рекреационной/смешанной популяции студии.\n\n10. ГРАНИЦЫ ФАЗ 3-4 неточны в неделях. Фазы помечены guardrail-диапазонами в МЕСЯЦАХ (3-6 мес, 6-9 мес), переведены в недели приблизительно (12-24, 24-36). Фазы 0 и 6 не имеют недельных границ (prehab + бессрочная профилактика)."
+  },
+  {
+    "pathology_name_ru": "Повреждение задней крестообразной связки (ЗКС)",
+    "pathology_name_en": "Posterior Cruciate Ligament (PCL) Injury",
+    "suggested_program_type_code": "knee_pcl",
+    "anchor": "mixed",
+    "anchor_notes": "Досье явно разделяет две ветви с РАЗНЫМИ якорями. Послеоперационная ветвь (основная, описана ниже в phases): сроки фаз привязаны к ДАТЕ ОПЕРАЦИИ (Фаза I 0-4/6 нед, Фаза II 4/6-12 нед, Фаза III 3-6 мес, Фаза IV 6-9+ мес), но недели — это guardrail-ориентир, а реальные гейты — объективные критерии (criterion-based). Консервативная ветвь: сроки от начала лечения/симптомов, RTS-таймлайн не определён вовсе («нет чёткого таймлайна», Int J Surg consensus). Сквозной принцип обеих ветвей: «Guardrail по неделям — ориентир, НЕ гейт. Гейты — объективные критерии». Многие сроки ранней послеоп фазы (WB, ROM-лимиты, длительность брейса, сроки введения хамстрингов, сроки бега/RTS) маркированы как «хирург-специфично» и подлежат вводу оперирующего хирурга.",
+    "num_phases": 4,
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза I — защита графта (послеоперационная, 0-4/6 нед)",
+        "duration_weeks": "0-6",
+        "goals": [
+          "Защита от заднего смещения голени (posterior translation) — главный приоритет всей реабилитации",
+          "Ранняя реактивация квадрицепса",
+          "Мобилизация надколенника",
+          "Профилактика заднего провисания (sag)",
+          "Контроль воспаления/отёка"
+        ],
+        "restrictions": [
+          "ЗАПРЕТ изолированного/резистивного хамстринга (задний шир-вектор на графт; максимум около 90° сгибания)",
+          "ЗАПРЕТ неподдержанного сгибания (гравитация = задний вектор)",
+          "ЗАПРЕТ задне-нагрузочных позиций",
+          "Избегать неподдержанного сгибания — tibia поддерживается при ROM",
+          "ROM в prone 0-90°, проксимальная голень поддерживается",
+          "Брейс: статический локированный в полном разгибании (0°) первые недели — хирург-специфично; PCL-специфичный брейс (Jack/Rebound) до 6 мес у части хирургов",
+          "WB: от NWB/TTWB до PWB — широкий разброс по протоколам (хирург-специфично); ранняя полная осевая нагрузка под запретом (риск увеличения слабины графта)"
+        ],
+        "allowed": [
+          "ROM в положении лёжа на животе (prone) 0-90° с поддержкой голени",
+          "Изолированная контракция квадрицепса (quad set)",
+          "Мобилизация надколенника",
+          "Подушка под проксимальную голень в покое",
+          "WBAT/PWB по переносимости в рамках хирург-специфичного режима"
+        ],
+        "pain_guidance": [
+          "Контроль воспаления/отёка по принципу PEACE&LOVE",
+          "Боль, не уходящая в покое — red flag"
+        ],
+        "red_flags": [
+          "Нарастающая задняя слабина/sag",
+          "Стойкий отёк",
+          "Потеря ROM (артрофиброз)",
+          "Нейроваскулярные симптомы (особенно при combined/мультисвязочных)",
+          "Признаки ТГВ (DVT)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Хороший quad set без экстензионного лага",
+            "type": "instructor_check",
+            "measurement_type": "quad_set_no_lag",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Контроль отёка достигнут",
+            "type": "instructor_check",
+            "measurement_type": "swelling_controlled",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Защищённый ROM достигнут (0-90° в prone с поддержкой голени)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "deg"
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза II — прогрессия ROM и силы (4/6-12 нед)",
+        "duration_weeks": "6-12",
+        "goals": [
+          "Достижение полного ROM (к ~12 нед)",
+          "Отучение от брейса (хирург-специфично, часто разлок ~6 нед)",
+          "Развитие силы квадрицепса в защищённом диапазоне",
+          "Проприоцепция"
+        ],
+        "restrictions": [
+          "OKC-сгибание (хамстринги) откладывается дольше всего",
+          "Хамстринги вводятся осторожно (диапазон 6 нед-6 мес)",
+          "OKC во вредном диапазоне (задние нагрузки в высоких углах сгибания) — избегать"
+        ],
+        "allowed": [
+          "CKC 0-60° (leg press раньше — меньше PCL-нагрузка)",
+          "OKC-квадрицепс 60°→0° (безопасный диапазон)",
+          "Проприоцептивный тренинг",
+          "Прогрессия ROM до полного к ~12 нед",
+          "Осторожное введение хамстрингов без раннего резистивного режима"
+        ],
+        "pain_guidance": [
+          "Минимальная боль при прогрессии нагрузки"
+        ],
+        "red_flags": [
+          "Нарастающая задняя слабина/sag",
+          "Стойкий отёк после нагрузки",
+          "Потеря ROM (артрофиброз)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полный ROM достигнут к ~12 нед",
+            "type": "measurement",
+            "measurement_type": "knee_rom_full",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "deg"
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза III — прогрессия силы и бег (3-6 мес)",
+        "duration_weeks": "12-24",
+        "goals": [
+          "Прогрессия силы CKC/OKC",
+          "Бег по прямой к ~4-6 мес (часть протоколов)",
+          "Введение активных хамстрингов без сопротивления"
+        ],
+        "restrictions": [
+          "Резистивные хамстринги — позже (только после активных без сопротивления)",
+          "Контактный спорт под запретом до ≥9-12 мес"
+        ],
+        "allowed": [
+          "Прогрессия силы CKC/OKC",
+          "Бег по прямой к ~4-6 мес",
+          "Активные хамстринги без сопротивления → резистивные позже"
+        ],
+        "pain_guidance": [
+          "Минимальная/нет боли при беге и нагрузке"
+        ],
+        "red_flags": [
+          "Нарастающая задняя слабина/sag",
+          "Эпизоды нестабильности",
+          "Передняя боль"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Для возврата к бегу — остаточная задняя слабина <2 мм side-to-side по kneeling-стресс-радиографии (LaPrade/Chahla, опционально)",
+            "type": "measurement",
+            "measurement_type": "posterior_laxity_diff_mm",
+            "operator": "<",
+            "threshold": 2,
+            "threshold2": null,
+            "unit": "mm"
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Фаза IV — подготовка к возврату в спорт / RTS (6-9+ мес)",
+        "duration_weeks": "24+",
+        "goals": [
+          "Плиометрика",
+          "Агилити",
+          "Спорт-специфичные дрилы",
+          "Достижение объективных RTS-гейтов"
+        ],
+        "restrictions": [
+          "Контактный спорт — обычно ≥9-12 мес",
+          "Послеоп RTS — обычно ≥9 мес физиотерапии"
+        ],
+        "allowed": [
+          "Плиометрика",
+          "Агилити-тренинг",
+          "Спорт-специфичные дрилы"
+        ],
+        "pain_guidance": [
+          "Минимальная/нет боли — обязательное условие RTS"
+        ],
+        "red_flags": [
+          "Нарастающий sag/drawer перед RTS",
+          "Остаточная слабина выше целевой",
+          "Эпизоды нестабильности — обязательна клинико-визуализационная оценка перед RTS"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полный ROM",
+            "type": "measurement",
+            "measurement_type": "knee_rom_full",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Минимальная/нет боли",
+            "type": "self_report",
+            "measurement_type": "vas_pain",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Сила квадрицепса LSI ≥90% (экстраполяция с ПКС)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Сила хамстрингов LSI ≥90% (экстраполяция с ПКС)",
+            "type": "measurement",
+            "measurement_type": "hamstring_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Hop-батарея LSI >90% (4/13 исследований)",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "IKDC >90 на момент RTS (ориентир, не порог; PCL не валидирован)",
+            "type": "self_report",
+            "measurement_type": "ikdc_score",
+            "operator": ">",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Lysholm >85 на момент RTS (ориентир, не порог)",
+            "type": "self_report",
+            "measurement_type": "lysholm_score",
+            "operator": ">",
+            "threshold": 85,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Остаточная задняя слабина <2 мм side-to-side по kneeling-стресс-радиографии (опциональный гейт, LaPrade/Chahla)",
+            "type": "measurement",
+            "measurement_type": "posterior_laxity_diff_mm",
+            "operator": "<",
+            "threshold": 2,
+            "threshold2": null,
+            "unit": "mm"
+          },
+          {
+            "label_ru": "Клинико-визуализационная оценка перед RTS пройдена (обязательна, Int J Surg statement 10)",
+            "type": "instructor_check",
+            "measurement_type": "rts_clinical_clearance",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      }
+    ],
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": true,
+      "notes": "Досье ЯВНО рекомендует два отдельных program_type (раздел 13, Recommendations #1): (1) КОНСЕРВАТИВНЫЙ — изолированные Grade I-II (заднее смещение 0-10 мм), ведутся с динамическим PCL-брейсингом + квадрицепс-доминантной реабилитацией; 3 фазы: 0-2 нед (острая защита), 2-6 нед (ROM/сила), 6-12+ нед (функция) + RTS без чёткого таймлайна. (2) ПОСЛЕОПЕРАЦИОННЫЙ (реконструкция) — Grade III (>10 мм) / сочетанные-мультисвязочные / симптоматическая нестабильность; 4 фазы (описаны в phases). Обоснование разделения: разные триггеры старта, разные объективные гейты, разные брейс-режимы и таймлайны (особенно длительность защиты графта и анти-sag); объединение приведёт к ошибочному переносу рестрикций. ОБЩЕЕ ЯДРО обеих ветвей: квадрицепс-доминанта, anti-sag меры, criterion-based прогрессия, RTS-батарея, PROMs. ДА, надо как 2 отдельных program_type: knee_pcl_conservative и knee_pcl_postop."
+    },
+    "measurement_vocabulary": [
+      "knee_flexion_degrees",
+      "knee_rom_full",
+      "quad_set_no_lag",
+      "swelling_controlled",
+      "posterior_laxity_diff_mm",
+      "quad_strength_lsi_pct",
+      "hamstring_strength_lsi_pct",
+      "hop_lsi_pct",
+      "ikdc_score",
+      "lysholm_score",
+      "tegner_score",
+      "koos_score",
+      "vas_pain",
+      "rts_clinical_clearance"
+    ],
+    "structural_notes": "КЛЮЧЕВАЯ ОСОБЕННОСТЬ: досье описывает ДВЕ РАЗНЫЕ траектории с разными фазами, якорями и гейтами — НЕ ложится в один линейный набор фаз. В phases извлечена ПОСЛЕОПЕРАЦИОННАЯ ветвь (4 фазы, наиболее детальная и рестриктивная). Архитектор досье прямо рекомендует ДВА program_type (knee_pcl_conservative + knee_pcl_postop).\n\nКОНСЕРВАТИВНАЯ ВЕТВЬ (изолированные Grade I-II), 3 фазы — НЕ извлечена в phases, краткое описание:\n- Фаза 0-2 нед (острая, защита): цели — контроль воспаления/отёка (PEACE&LOVE), защита от заднего провисания, ранняя реактивация квадрицепса. ROM в prone (старт 0-70°, прогрессия по переносимости), WBAT/PWB, брейс. ЗАПРЕТ: изолированный/резистивный хамстринг, глубокое сгибание, позиции с задним провисанием (wall slides, неподдержанное сидение). Гейты: хороший quad set без экстензионного лага + контроль отёка.\n- Фаза 2-6 нед (ROM/сила): цель — полный ROM к 2-4 нед, квадрицепс-сила. OKC-экстензия 90°→45° (с сопротивлением), CKC 45°→0° (mini-squats, terminal knee extension), велотренажёр при сгибании ~115°. Anti-sag сохраняется.\n- Фаза 6-12+ нед (функция): прогрессия силы/проприоцепции, постепенное введение хамстрингов (6 нед-6 мес). Через ~15 нед — клиническая/стресс-рентген оценка заживления ЗКС. RTS без чёткого таймлайна.\n\nВРЕМЯ-ЗАВИСИМАЯ vs КРИТЕРИЙ-ЗАВИСИМАЯ: досье сквозным принципом ставит «Guardrail по неделям — ОРИЕНТИР, НЕ гейт. Гейты — объективные критерии» (раздел 4). Недели в phases использованы как guardrail-диапазоны, реальные переходы criterion-based.\n\nХИРУРГ-СПЕЦИФИЧНЫЕ ПОЛЯ (раздел 10, не зашивать числа жёстко): режим осевой нагрузки/WB (NWB/TTWB/PWB и сроки FWB), лимиты ROM и темп прогрессии, тип/режим ортеза (статический extension lock vs PCL-специфичный Jack/Rebound, длительность до 6 мес), сроки введения хамстрингов, сроки бега/RTS, техника-зависимые нюансы (inlay vs transtibial). Эти поля подлежат вводу оперирующего хирурга.\n\nГРЕЙДИНГ-МОДИФИКАТОР (раздел 1, 8): Grade I 0-5 мм, Grade II 6-10 мм, Grade III >10 мм заднего смещения (posterior drawer @90°). Степень определяет ветвь: I-II → консервативно; III → реконструкция. Combined (ПКС/PLC/мениск) → реконструкция, ещё более рестриктивная и медленная реабилитация + нейроваскулярный мониторинг.\n\nБИОЛОГИЯ ГРАФТА обосновывает удлинённые рестрикции: лигаментизация ЗКС-графта на MRI до ~24 мес (двойные реконструкции 24-36 мес) против ~12 мес у ПКС → реабилитация МЕДЛЕННЕЕ и рестриктивнее ПКС.\n\nВАЖНЫЙ CAVEAT по критериям: PCL-специфичных валидированных RTS-критериев и PROMs НЕТ — все пороги (LSI ≥90%, hop >90%, IKDC >90, Lysholm >85) экстраполированы с ПКС. IKDC прямо «not validated in a PCL injury population». Пороги — доказательные ОРИЕНТИРЫ под клиническую калибровку Vadim'ом/хирургом, не готовое предписание. Точные сроки введения хамстрингов (6 нед-6 мес) — PCL-специфичных данных нет, калибровать.\n\nPROMs-РАСПИСАНИЕ (раздел 6): замеры на 0 / 3 мес / 6 мес / RTS / 12 мес и далее ежегодно. Связка IKDC + KOOS (акцент Sport/Rec + QoL субшкалы) + Lysholm + Tegner."
+  },
+  {
+    "pathology_name_ru": "Синдром илиотибиального тракта (ITBS)",
+    "pathology_name_en": "Iliotibial Band Syndrome (ITBS)",
+    "suggested_program_type_code": "knee_itbs",
+    "anchor": "criterion_driven",
+    "anchor_notes": "Сроки фаз привязаны к объективным гейтам (24-часовая реактивность боли, безболезненная переносимая дистанция, контроль приведения бедра/падения таза), а НЕ к календарю. Недели указаны только как guardrail-ориентир (\"не гейт\"): Фаза 1 ~1-2 нед, Фаза 2 ~2-6 нед, Фаза 3 — возврат к спорту. ITBS — overuse-компрессионный синдром, а не острая травма с биологией заживления; обоснование длительности — тканевая/нагрузочная переносимость. Привязки к дате операции нет (хирургия крайне редка и в досье как протокол не описана).",
+    "num_phases": 3,
+    "pathways": {
+      "has_surgical": false,
+      "has_conservative": true,
+      "notes": "Досье описывает ОДИН консервативный criterion-based путь восстановления с модификаторами «бегун» / «велосипедист» (а не два разных набора фаз). Обоснование автора: патогенез (компрессия под трактом), цели (разгрузка → переносимость → биомеханика) и фазовая логика идентичны для обоих; различаются лишь провоцирующая активность и инструменты разгрузки — gait retraining у бегуна vs bike fit у велосипедиста. Это НЕ требует двух отдельных program_type — достаточно одного с модификатором активности. Хирургия (релиз дистального тракта / иссечение латерального кармана) — только рефрактерным случаям после ≥6-8 недель неэффективной консервативной терапии, крайне редка; конкретный послеоперационный протокол в досье отсутствует, поэтому surgical-путь не моделируется."
+    },
+    "measurement_vocabulary": [
+      "pain_24h_reactivity_after_load",
+      "pain_free_daily_activity",
+      "single_leg_squat_control",
+      "step_down_control",
+      "dynamic_valgus_present",
+      "contralateral_pelvic_drop_present",
+      "pain_free_tolerated_distance",
+      "time_to_pain_distance",
+      "cadence_increase_pct",
+      "vas_pain",
+      "nprs_pain",
+      "lefs_score"
+    ],
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза 1 — деирритация / разгрузка",
+        "duration_weeks": "1-2",
+        "goals": [
+          "Снять компрессионное раздражение иннервированной ткани под трактом",
+          "Стабилизировать симптомы",
+          "Снизить компрессионную и нагрузочную экспозицию ниже порога раздражения"
+        ],
+        "restrictions": [
+          "Избегать бега под гору (downhill)",
+          "Избегать наклонных поверхностей (camber)",
+          "Избегать узкой ширины шага / crossover-паттерна",
+          "У велосипедиста — снизить объём, коррекция посадки (bike fit)",
+          "Относительный покой, модификация нагрузки; боль — guide дозирования"
+        ],
+        "allowed": [
+          "Относительный покой с модификацией нагрузки",
+          "Изометрия латеральной цепи в безболезненном диапазоне",
+          "Обучение пациента (миф роллинга/стретча, логика управления нагрузкой)",
+          "Foam rolling допустим только как кратковременная анальгезия (не как «структурная коррекция» тракта)"
+        ],
+        "pain_guidance": [
+          "Боль — guide дозирования нагрузки",
+          "Целевой ориентир — безболезненная повседневная активность",
+          "Усиление боли через 24 ч после нагрузки → шаг назад по фазе"
+        ],
+        "red_flags": [
+          "Блокировка/защёлкивание сустава",
+          "Истинный выпот",
+          "Ощущение нестабильности",
+          "Ночная боль / боль в покое без нагрузочной связи",
+          "Неврологические симптомы по ходу малоберцового нерва",
+          "Значимая травма в анамнезе",
+          "Подозрение на стресс-реакцию кости"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Безболезненная повседневная активность",
+            "type": "self_report",
+            "measurement_type": "pain_free_daily_activity",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Отсутствие усиления боли через 24 ч после нагрузки",
+            "type": "self_report",
+            "measurement_type": "pain_24h_reactivity_after_load",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза 2 — нагрузка и моторный контроль",
+        "duration_weeks": "2-6",
+        "goals": [
+          "Нарастить тканевую/нагрузочную переносимость",
+          "Восстановить контроль во фронтальной и трансверсальной плоскостях",
+          "Снизить динамический вальгус и контралатеральное падение таза"
+        ],
+        "restrictions": [
+          "Продолжать избегать downhill, наклонных поверхностей и узкого шага до прохождения гейта",
+          "Не допускать 24-часовой реактивности боли на нагрузочные упражнения"
+        ],
+        "allowed": [
+          "Hip-сила и латеральная цепь (gluteus medius / maximus)",
+          "Прогрессия: изометрия → эксцентрика → мультипланарные функциональные упражнения",
+          "Тренировка контроля приведения бедра / падения таза",
+          "Начало навыков gait retraining вне бега"
+        ],
+        "pain_guidance": [
+          "Переносимость нагрузочных упражнений без 24-часовой реактивности боли",
+          "Усиление боли через 24 ч после нагрузки → шаг назад по фазе"
+        ],
+        "red_flags": [
+          "Блокировка/защёлкивание сустава",
+          "Истинный выпот",
+          "Ощущение нестабильности",
+          "Ночная боль / боль в покое без нагрузочной связи",
+          "Неврологические симптомы по ходу малоберцового нерва",
+          "Отсутствие прогресса ≥6-8 недель при адекватном ведении → врачебная оценка/дифдиагностика"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Контроль single-leg squat / step-down без динамического вальгуса и pelvic drop",
+            "type": "instructor_check",
+            "measurement_type": "single_leg_squat_control",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Переносимость нагрузочных упражнений без 24-часовой реактивности боли",
+            "type": "self_report",
+            "measurement_type": "pain_24h_reactivity_after_load",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза 3 — возврат к бегу / велоспорту",
+        "duration_weeks": "",
+        "goals": [
+          "Безболезненный возврат к спорту",
+          "Профилактика рецидива"
+        ],
+        "restrictions": [
+          "Downhill вводить в последнюю очередь и постепенно (высокий риск рецидива)",
+          "Контроль резких скачков километража / объёма (главный модифицируемый драйвер)",
+          "Бегун начинает по ровной поверхности, БЕЗ downhill"
+        ],
+        "allowed": [
+          "Бегун: run-walk через день, начиная по ровной поверхности, без downhill; постепенная прогрессия объёма",
+          "Gait retraining: увеличение каденса на 5-10% над предпочтительным",
+          "Расширение ширины шага при crossover-паттерне",
+          "Тренировка контроля таза",
+          "Велосипедист: постепенный рост объёма + закреплённая коррекция bike fit"
+        ],
+        "pain_guidance": [
+          "Отсутствие 24-часовой реактивности боли после пробежки",
+          "Повторное появление боли раньше запланированной дистанции → пересмотр объёма/биомеханики",
+          "time-to-pain (дистанция/время до появления боли) — ключевой функциональный маркёр"
+        ],
+        "red_flags": [
+          "Повторные рецидивы при возврате к бегу → признак рефрактерности",
+          "Отсутствие улучшения после адекватного (≥6-8 недель) консервативного ведения → врачебная оценка",
+          "Появление неврологических симптомов или признаков нестабильности"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Безболезненная переносимая дистанция при целевом темпе",
+            "type": "self_report",
+            "measurement_type": "pain_free_tolerated_distance",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Приемлемые gait-метрики (каденс, приведение бедра, pelvic drop)",
+            "type": "instructor_check",
+            "measurement_type": "contralateral_pelvic_drop_present",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Отсутствие 24-часовой реактивности боли после пробежки",
+            "type": "self_report",
+            "measurement_type": "pain_24h_reactivity_after_load",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      }
+    ],
+    "structural_notes": "КРИТИЧНО для модели «6 фаз, привязанных к неделям от операции» — данное досье в неё НЕ ложится по нескольким осям:\n\n1. ПРОГРЕССИЯ КРИТЕРИЙ-ЗАВИСИМАЯ, НЕ ВРЕМЯ-ЗАВИСИМАЯ. Автор досье прямо пишет: «переходы — по объективным гейтам …, а не по календарю. Недели — guardrail-ориентир, не гейт». Недели даны только как ориентир (Фаза 1 ~1-2 нед, Фаза 2 ~2-6 нед, Фаза 3 — без жёсткого срока). Жёстких недельных границ фаз нет.\n\n2. НЕТ ПРИВЯЗКИ К ОПЕРАЦИИ. ITBS — overuse-компрессионный синдром, а не острая травма; обоснование длительности — тканевая/нагрузочная переносимость, а не биология заживления. Хирургия крайне редка, последняя линия, и послеоперационный протокол в досье отсутствует. anchor = criterion_driven.\n\n3. ВСЕГО 3 ФАЗЫ, не 6. Деирритация → нагрузка/моторный контроль → возврат к спорту.\n\n4. КРИТЕРИИ ПЕРЕХОДА В ОСНОВНОМ БЕЗ ЧИСЛОВЫХ ПОРОГОВ. Досье ЯВНО указывает: «Единого валидированного ITBS-специфичного PROM нет». В досье НЕТ численных гейтов по ROM (градусы), силе (LSI %), hop-тестам (%), обхвату (см), балансу (сек) — этих метрик нет вообще. Гейты сформулированы качественно: 24-часовая реактивность боли (self_report), контроль single-leg squat/step-down без динамического вальгуса и pelvic drop (instructor_check, очный осмотр), безболезненная переносимая дистанция (self_report/функциональный). Единственное упоминание чисел: LEFS (0-80, MDC/MCID ≈ 9) и каденс +5-10% — но они даны как PROM/инструменты прогрессии, а НЕ как пороги-гейты фаз. Поэтому большинство transition_criteria имеют threshold=null. Если в БД нужны числовые гейты — их придётся калибровать с физиотерапевтом (Vadim), а не извлекать из досье.\n\n5. МОДИФИКАТОРЫ «БЕГУН» vs «ВЕЛОСИПЕДИСТ» — это НЕ две траектории/фаз-набора, а один путь с разными провоцирующими активностями и инструментами разгрузки внутри одних и тех же фаз (особенно Фазы 3: gait retraining у бегуна vs bike fit у велосипедиста). Не плодить два program_type — достаточно одного поля «активность» как модификатора.\n\n6. «ПОРОГИ, МЕНЯЮЩИЕ ТАКТИКУ» — двунаправленные (шаг НАЗАД по фазе при усилении боли через 24 ч), что не вписывается в линейную монотонную модель «фаза N → N+1». Реактивность боли может откатывать пациента назад.\n\n7. КОРОТКИЙ КУРС: типичная доля случаев разрешается за 6-8 недель при адекватной разгрузке (Beals & Flanigan: 44% полное излечение к 8 нед, 91,7% к 6 мес) — общая длительность много короче типовых послеоперационных протоколов колена."
+  },
+  {
+    "pathology_name_ru": "Пателлофеморальный болевой синдром (ПФБС)",
+    "pathology_name_en": "Patellofemoral Pain Syndrome (PFP / PFPS)",
+    "suggested_program_type_code": "knee_pfps",
+    "anchor": "criterion_driven",
+    "anchor_notes": "Досье явно постулирует criterion-based прогрессию: «переходы — по ОБЪЕКТИВНЫМ гейтам, не по календарю» (раздел 4). Сроки (недели–месяцы) служат GUARDRAIL, а не гейтом: «duration_weeks — guardrail, не гейт» (раздел 3, повторено в раздел 4 «Неделя — только guardrail» и в Recommendations п.5). Привязки к дате операции нет (хирургия при изолированном PFP не показана), к дате травмы нет (нетравматическое перегрузочное состояние). Доказательная база течения: 57% неблагоприятный исход через 5–8 лет (Lankhorst 2016), у подростков персистенция до 78% — поэтому сроки реалистично закладывать как недели–месяцы.",
+    "num_phases": 3,
+    "pathways": {
+      "has_surgical": false,
+      "has_conservative": true,
+      "notes": "Досье описывает ИСКЛЮЧИТЕЛЬНО консервативную траекторию. Хирургия при изолированном PFP прямо не показана как первичная мера: AAFP (2019) — операция только после неудачи консервативного лечения и при наличии хирургического показания по визуализации; AAOS — хирургия 'very rarely needed'. Нишевые хирургические показания (рецидивирующий вывих надколенника, трохлеарная дисплазия, выраженный изолированный PFOA с показанием к артропластике 40+) досье трактует как ФАКТИЧЕСКИ ДРУГУЮ нозологию, а не изолированный PFP (раздел 2, 10). Поэтому отдельный хирургический program_type НЕ нужен. Раздел 13 явно рекомендует ОДИН program_type 'ПФБС' с модификаторами под популяции (подросток / бегун / PFOA / сидячий) как СЛОЙ поверх единого пути, а не отдельные program_type — фазовый скелет единый, субстратегии расходятся в акцентах и адъювантах, не в структуре фаз."
+    },
+    "structural_notes": "КРИТЕРИЙ-ЗАВИСИМАЯ, НЕ ВРЕМЯ-ЗАВИСИМАЯ модель. Линейная модель «6 фаз, привязанных к неделям от операции» здесь НЕ применима по нескольким причинам:\n\n1) Всего 3 фазы (не 6), привязаны к объективным гейтам, а не к календарю. duration_weeks намеренно не задаётся как гейт — это guardrail. Числовые недельные пороги в досье встречаются только как бенчмарки СМЕНЫ ТАКТИКИ (направление к ортопеду при неответе после ~6–12 недель полноценного ведения), а не как гейты перехода между фазами.\n\n2) ПОЧТИ ВСЕ силовые/симметрийные пороги — НЕ валидированы для PFP и помечены как «под клиническую калибровку Vadim'а». Раздел 5: «для PFP валидированные объективные пороги RTS определены СЛАБЕЕ, чем для ACL... специфичных валидированных тестовых батарей с порогами НЕТ; критерии экстраполированы из ACL и литературы по нестабильности надколенника». Ориентир LSI ~85–90% заимствован, не PFP-валидирован. Hop-тесты — валидность для PFP ограничена (явно помечено). Поэтому большинство гейтов реализованы как instructor_check (очный осмотр + качество движения), а не как чистый measurement с жёстким числом.\n\n3) Центральное ПРАВИЛО ПРОГРЕССИИ — acceptable pain model + 24h-reactivity rule (по Silbernagel 2007, экстраполяция с ахилла): боль ≤2–3/10 во время/после нагрузки приемлема, ЕСЛИ стабильна и возвращается к baseline за 24 ч; нарастающая/непроходящая >24 ч → снизить нагрузку. Это сквозной механизм управления нагрузкой во ВСЕХ фазах, а не разовый гейт. Конкретный порог (≤2/10 vs ≤3/10) и операционализация 24h-reactivity — открытый вопрос под калибровку (раздел 13 п.3).\n\n4) МОДИФИКАТОРЫ-СЛОЙ поверх единого пути (раздел 8, 13), НЕ отдельные траектории по тяжести:\n   - Подросток: activity-ladder по уровню боли, акцент на приверженность (3 supervised-сессии/нед дают низкую приверженность).\n   - Бегун: gait retraining (каденс +5–10%, обычно +7.5–10%), pain-guided walk-run прогрессия объёма, ↓peak hip adduction cueing (JOSPT grade C).\n   - PFOA (континуум PFP→PFOA): смещение целей к управлению нагрузкой/симптомами.\n   - Сидячий: эргономика сидения, постепенное наращивание толерантности.\n   - Подгруппа гиперпронации: префаб-ортезы (до 6 нед, только с упражнениями); подгруппа для краткосрочной анальгезии: tailored-тейп (до 4 нед). Предикторы ответа на ортезы ПРОТИВОРЕЧИВЫ (Sutlive vs Vicenzino vs Barton — разброс не схлопнут).\n\n5) Конкретные диапазоны сгибания/приседа по фазам (старт часто 0–45–60°) — ориентир под переносимость, открытый вопрос под калибровку (раздел 13 п.2), не жёсткий гейт.\n\n6) Адъюванты, которые НЕ закладывать как самостоятельную линию (grade против): изолированная мобилизация, электрофизиотерапия (УЗ/э-стим/лазер/крио), dry needling, PF-брейсы/sleeves/straps.",
+    "measurement_vocabulary": [
+      "vas_pain_nprs",
+      "pain_24h_reactivity",
+      "quad_strength_lsi_pct",
+      "hip_strength_lsi_pct",
+      "single_leg_squat_quality",
+      "single_leg_control",
+      "knee_flexion_degrees",
+      "akps_kujala_score",
+      "koos_pf_score",
+      "running_volume_progression",
+      "running_cadence_increase_pct"
+    ],
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Контроль симптомов и нейромышечная активация",
+        "duration_weeks": "",
+        "goals": [
+          "Снизить раздражимость (irritability) пателлофеморального сустава",
+          "Восстановить базовый моторный контроль",
+          "Обучить пациента нагрузочному менеджменту (load management)"
+        ],
+        "restrictions": [
+          "Модификация провоцирующих активностей: лестница, глубокий присед, длительное сидение со согнутым коленом ('theatre sign')",
+          "Диапазоны приседа/сгибания — под переносимость (часто 0–45–60° на старте, ориентир под калибровку)",
+          "Снизить/прекратить нагрузку при флэре (реактивность боли >24 ч, нарастающая боль)"
+        ],
+        "allowed": [
+          "Изометрия квадрицепса",
+          "Hip-фокус: отведение / наружная ротация / разгибание бедра, ягодичные",
+          "Низко-умеренная нагрузка в переносимом диапазоне",
+          "Образование пациента + load management (активный компонент ядра)"
+        ],
+        "pain_guidance": [
+          "Боль ≤2–3/10 во время нагрузки приемлема",
+          "Боль должна возвращаться к baseline за 24 ч (24h-reactivity rule)",
+          "Нарастающая или непроходящая >24 ч боль — сигнал снизить нагрузку"
+        ],
+        "red_flags": [
+          "Истинная блокировка сустава",
+          "Выраженный выпот / гемартроз",
+          "Объективная нестабильность надколенника",
+          "Ночная боль",
+          "Системные симптомы (лихорадка, потеря веса)",
+          "Неврологический дефицит / седловидная анестезия / нарушение функции тазовых органов",
+          "Недавняя значимая травма или недавняя инфекция",
+          "Невозможность изменить симптом механическим тестированием"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Приемлемая 24-часовая реактивность боли (боль ≤2–3/10, возврат к baseline за 24 ч)",
+            "type": "instructor_check",
+            "measurement_type": "pain_24h_reactivity",
+            "operator": "<=",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Базовый single-leg control без срыва качества движения",
+            "type": "instructor_check",
+            "measurement_type": "single_leg_control",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Переносимость низко-умеренной нагрузки",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Прогрессивная нагрузка hip+knee (OKC + CKC)",
+        "duration_weeks": "",
+        "goals": [
+          "Прогрессия силы и переносимости нагрузки",
+          "Нормализация single-leg паттернов движения"
+        ],
+        "restrictions": [
+          "CKC в переносимом диапазоне сгибания (под переносимость и провокацию)",
+          "OKC (разгибание колена) — с учётом провокации",
+          "Снизить нагрузку при появлении 24h-флэра при возросшем объёме"
+        ],
+        "allowed": [
+          "Прогрессирующее сопротивление (силовая прогрессия)",
+          "CKC: присед, степ-даун, выпад",
+          "OKC: разгибание колена (OKC и CKC дополняют друг друга, выбор по переносимости/провокации — Cochrane van der Heijden 2015 не нашёл превосходства OKC vs CKC)",
+          "Комбинированные hip+knee упражнения как ядро (grade A)"
+        ],
+        "pain_guidance": [
+          "Боль в пределах приемлемой (≤2–3/10), без 24h-флэра",
+          "Acceptable pain model: возрастание объёма при стабильной боли с возвратом к baseline за 24 ч"
+        ],
+        "red_flags": [
+          "Появление объективной нестабильности надколенника",
+          "Стойкий 24-часовой флэр при возрастании нагрузки",
+          "Любой red flag из раздела 7 (выпот, блокировка, ночная боль, системные симптомы)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Восстановление силы бедра/колена — симметрия по динамометрии/функц. тестам (ориентир, калибруется Vadim; не PFP-валидировано)",
+            "type": "instructor_check",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Качество single-leg squat без срыва (динамический вальгус / срыв качества)",
+            "type": "instructor_check",
+            "measurement_type": "single_leg_squat_quality",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Переносимость возросшего объёма нагрузки без 24h-флэра",
+            "type": "instructor_check",
+            "measurement_type": "pain_24h_reactivity",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Функция / плиометрика / возврат к активности",
+        "duration_weeks": "",
+        "goals": [
+          "Прогрессия к специфике активности (бег — walk-run; спорт — направленная нагрузка)",
+          "Возврат к бегу/спорту в пределах приемлемой боли"
+        ],
+        "restrictions": [
+          "Pain-guided running progression: боль при беге <3/10 по NRS, возврат к baseline за 24 ч (Bramah 2019)",
+          "Постепенная walk-run прогрессия объёма у бегунов"
+        ],
+        "allowed": [
+          "Плиометрика",
+          "Спорт-специфичная прогрессия нагрузки",
+          "Pain-guided running (наращивание объёма при боли в допустимых пределах)",
+          "У бегунов: gait retraining (каденс +5–10%, обычно +7.5–10%), контроль фронтальной плоскости бедра, ↓peak hip adduction cueing (JOSPT grade C)"
+        ],
+        "pain_guidance": [
+          "Боль при беге/нагрузке <3/10 по NRS (Bramah 2019)",
+          "Возврат боли к baseline за 24 ч; иначе снизить объём"
+        ],
+        "red_flags": [
+          "Стойкое нарастание боли при наращивании беговой/спортивной нагрузки (>24 ч)",
+          "Появление объективной нестабильности или red flags раздела 7"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Сила бедра (отведение/наружная ротация) и колена (разгибатели) — симметрия ~85–90% LSI (по аналогии с нестабильностью надколенника; НЕ PFP-валидировано, под калибровку)",
+            "type": "measurement",
+            "measurement_type": "hip_strength_lsi_pct",
+            "operator": "between",
+            "threshold": 85,
+            "threshold2": 90,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Качество single-leg squat / single-leg control без динамического вальгуса/срыва",
+            "type": "instructor_check",
+            "measurement_type": "single_leg_squat_quality",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Pain-guided running: боль при беге <3/10 NRS, возврат к baseline за 24 ч (Bramah 2019)",
+            "type": "self_report",
+            "measurement_type": "vas_pain_nprs",
+            "operator": "<",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": "vas"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "pathology_name_ru": "Острый разрыв разгибательного аппарата колена (разрыв связки надколенника / сухожилия квадрицепса)",
+    "pathology_name_en": "Knee extensor mechanism rupture (patellar tendon / quadriceps tendon rupture)",
+    "suggested_program_type_code": "knee_extensor_mechanism_repair",
+    "anchor": "surgery_date",
+    "anchor_notes": "Основная (наиболее детальная) траектория — послеоперационный протокол Mass General Brigham, criterion- + time-based, привязанный к дате операции (фазы 0-14 дней, 2-6 нед, 6-15 нед, 4-6 мес, 6-8 мес). Финальные пороги ROM / весовой нагрузки / активного разгибания задаёт хирург на основе интраоперационной целостности шва. Консервативный путь (только частичные разрывы) привязан к началу лечения, но в досье он описан менее детально (классификация Popkin-Golman) и приведён в structural_notes. Главный незакрытый конфликт литературы — ранняя мобилизация vs иммобилизация ≥6 недель — НЕ разрешён и влияет на темп; augmentation/relaxing suture позволяют более ранний контролируемый ROM.",
+    "num_phases": 5,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": true,
+      "notes": "Досье рекомендует ОДИН реабилитационный путь (program_type) с модификатором 'пателлярная PTR vs квадрицепс QTR', а НЕ два раздельных протокола: литература и институциональные протоколы (MGH 'Patella/Quad') трактуют формы совместно, биология заживления и предохранители идентичны. Хирургический путь — для полных разрывов (своевременная операция), это основная детальная траектория (5 фаз MGH). Консервативный путь — ТОЛЬКО частичные разрывы с сохранным активным разгибанием, классификация Popkin-Golman (Grade 1-4): иммобилизация в разгибании + защищённая нагрузка (hinged brace) + прогрессивная реабилитация; Grade 4 (>50%) — операция при сохранении симптомов после ~6 месяцев. Консерватив НЕ требует отдельного program_type — это тот же фазовый путь без хирургической защиты шва, привязанный к началу лечения. Модификаторы темпа: QTR медленнее (старше/коморбиднее, выше re-rupture 2.6% vs 0.3%); коморбидность (ХБП/диабет/стероиды/фторхинолоны) — замедление; хронический разрыв с реконструкцией — отсроченная мобилизация; augmentation/internal brace — возможна более ранняя контролируемая мобилизация по решению хирурга."
+    },
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза I (0-14 дней): защита шва",
+        "duration_weeks": "0-2",
+        "goals": [
+          "Защита хирургического шва (медленный набор прочности первые ~4 недели, точка минимальной прочности ~7-10 день)",
+          "Контроль отёка и боли",
+          "Достижение полного пассивного разгибания до 0°",
+          "Активация квадрицепса через изометрию (quad sets)",
+          "Предотвращение атрофии проксимальных групп"
+        ],
+        "restrictions": [
+          "Шарнирный (hinged) брейс заблокирован в полном разгибании постоянно",
+          "Пассивная флексия ограничена ≤60°",
+          "НЕТ активного разгибания (запрещено — растягивает зону репарации)",
+          "Весовая нагрузка только как переносится (WBAT) в брейсе, фиксированном в разгибании"
+        ],
+        "allowed": [
+          "Весовая нагрузка как переносится (WBAT) в брейсе в разгибании",
+          "Пассивная ROM (PROM), heel slides до ≤60°",
+          "Quad sets (изометрия квадрицепса)",
+          "Glute sets (изометрия ягодичных)",
+          "Calf raises (подъёмы на носки)",
+          "Мобилизация надколенника"
+        ],
+        "pain_guidance": [
+          "Контроль боли и отёка — задача фазы",
+          "Неконтролируемая боль — red flag, связь с хирургом"
+        ],
+        "red_flags": [
+          "Лихорадка",
+          "Интенсивная боль в икре (подозрение на ТГВ/DVT)",
+          "Избыточное отделяемое из раны",
+          "Неконтролируемая боль",
+          "Внезапная потеря достигнутого активного разгибания / нарастание экстензионного лага (подозрение на несостоятельность шва)",
+          "Новый/нарастающий пальпируемый дефект",
+          "Признаки расхождения раны"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Прошло 2 недели после операции",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": ">=",
+            "threshold": 2,
+            "threshold2": null,
+            "unit": "week"
+          },
+          {
+            "label_ru": "Достигнуто пассивное разгибание до 0°",
+            "type": "measurement",
+            "measurement_type": "knee_extension_degrees",
+            "operator": "<=",
+            "threshold": 0,
+            "threshold2": null,
+            "unit": "deg"
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза II (2-6 недель): защищённая прогрессия флексии",
+        "duration_weeks": "2-6",
+        "goals": [
+          "Постепенное восстановление флексии до 90° к 5-6 неделе",
+          "Переход к полной весовой нагрузке (FWB) к 6 неделям",
+          "SLR (подъём прямой ноги) без экстензионного лага",
+          "Сохранение полного пассивного разгибания",
+          "Проксимально-дистальное укрепление",
+          "Восстановление активного разгашения до 0° с quad set"
+        ],
+        "restrictions": [
+          "Весовая нагрузка как переносится (WBAT) в брейсе, FWB только к 6 неделям",
+          "Пассивная флексия прогрессирует со старта 50° на 2-й неделе, ~10°/неделю (макс. 60→70→80→90° к 5-й неделе)",
+          "Только лёгкое overpressure при флексии",
+          "Прогрессия ROM не быстрее ~10°/неделю"
+        ],
+        "allowed": [
+          "Пассивная флексия со старта 50° на 2-й нед., ~10°/неделю",
+          "SLR (подъём прямой ноги) без лага",
+          "Проксимально-дистальное укрепление",
+          "Лёгкое overpressure для флексии",
+          "Quad set с активным разгибанием до 0°"
+        ],
+        "pain_guidance": [
+          "FWB должна быть без боли к 6 неделям"
+        ],
+        "red_flags": [
+          "Лихорадка",
+          "Интенсивная боль в икре (ТГВ/DVT)",
+          "Избыточное отделяемое из раны",
+          "Внезапная потеря активного разгибания / нарастание лага",
+          "Новый/нарастающий пальпируемый дефект"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полное пассивное разгибание",
+            "type": "measurement",
+            "measurement_type": "knee_extension_degrees",
+            "operator": "<=",
+            "threshold": 0,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Флексия 90°",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Полная весовая нагрузка (FWB) без боли",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Активное разгибание до 0° с quad set",
+            "type": "measurement",
+            "measurement_type": "knee_active_extension_degrees",
+            "operator": "<=",
+            "threshold": 0,
+            "threshold2": null,
+            "unit": "deg"
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза III (6-15 недель): прогрессивное укрепление",
+        "duration_weeks": "6-15",
+        "goals": [
+          "Прогрессивное укрепление квадрицепса (сила ≥70% к 16 неделе)",
+          "Достижение флексии ≥120°",
+          "Single-leg баланс/проприоцепция (30 сек)",
+          "10 single-leg приседов до 60°",
+          "Отказ от брейса (~8 недель) при адекватном контроле квадрицепса"
+        ],
+        "restrictions": [
+          "НЕТ нагруженной флексии >90° до 8 недель",
+          "НЕТ нагруженной флексии >70° до 12 недель (OrthoUtah)",
+          "НЕТ максимального произвольного сокращения квадрицепса до 16 недель",
+          "Прогрессия ROM не быстрее ~10°/неделю до 12 недель",
+          "Брейс разблокирован для ходьбы 0-60° при контроле квадрицепса; отказ ~8 нед.",
+          "Избегать агрессивного растяжения квадрицепса",
+          "Без разгибательного тренажёра до 16 недель"
+        ],
+        "allowed": [
+          "Брейс разблокирован для ходьбы (0-60°) при контроле квадрицепса",
+          "Leg press (жим ногами)",
+          "Приседы",
+          "Выпады",
+          "Single-leg прогрессия",
+          "Разгибательный тренажёр с 16 недель",
+          "Закрытая кинетическая цепь",
+          "Баланс/проприоцепция"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Внезапная потеря активного разгибания / нарастание экстензионного лага (несостоятельность шва)",
+          "Новый/нарастающий пальпируемый дефект"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "10 single-leg приседов до 60°",
+            "type": "instructor_check",
+            "measurement_type": "single_leg_squat_reps",
+            "operator": ">=",
+            "threshold": 10,
+            "threshold2": null,
+            "unit": "reps"
+          },
+          {
+            "label_ru": "Сила квадрицепса ≥70% (ручной динамометр, тест на 16 нед.)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 70,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Флексия ≥120°",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 120,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Single-leg баланс 30 сек",
+            "type": "measurement",
+            "measurement_type": "single_leg_balance_sec",
+            "operator": ">=",
+            "threshold": 30,
+            "threshold2": null,
+            "unit": "sec"
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Фаза IV (4-6 месяцев): переходная (подготовка к бегу)",
+        "duration_weeks": "16-24",
+        "goals": [
+          "Полный ROM",
+          "Восстановление силы квадрицепса (quad index)",
+          "Начало бег-протокола",
+          "Single-leg hop с хорошей формой",
+          "Quad index ≥90%, Y-balance ≥90%"
+        ],
+        "restrictions": [
+          "Без форсированных эксцентрических сокращений и ударных нагрузок до этой фазы (вводятся в фазе IV)",
+          "Бег только при выполнении критериев бега (полный ROM, нет отёка/боли, LSI ≥80%, SL hop с хорошей формой)"
+        ],
+        "allowed": [
+          "Бег-протокол (при LSI ≥80% + полный ROM + нет отёка/боли + SL hop хорошая форма)",
+          "Single-leg hop",
+          "Прогрессивная эксцентрика",
+          "Укрепление до quad index ≥90%"
+        ],
+        "pain_guidance": [
+          "Бег только при отсутствии отёка и боли"
+        ],
+        "red_flags": [
+          "Нарастание экстензионного лага",
+          "Отёк/боль при нагрузке (стоп прогрессии)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полный ROM (без дефицита)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Нет отёка/боли",
+            "type": "self_report",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "LSI ≥80% (порог для начала бега)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Single-leg hop с хорошей формой",
+            "type": "instructor_check",
+            "measurement_type": "hop_lsi_pct",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Quad index ≥90% (критерий перехода к фазе RTS)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Y-balance ≥90% контралатеральной",
+            "type": "measurement",
+            "measurement_type": "y_balance_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          }
+        ]
+      },
+      {
+        "phase_number": 5,
+        "title_ru": "Фаза V (6-8 месяцев): прогрессивный возврат к спорту (RTS)",
+        "duration_weeks": "24-36",
+        "goals": [
+          "Спорт-специфичная тренировка",
+          "Ускорение/торможение",
+          "Плиометрика",
+          "Прохождение всех RTS-тестов",
+          "Quad index ≥90% (изокинетика предпочтительно)",
+          "Экстензионный лаг = 0°"
+        ],
+        "restrictions": [
+          "Не выпускать к спорту при LSI <90% или сохраняющемся экстензионном лаге",
+          "RTS — совместное решение хирурга и физиотерапевта"
+        ],
+        "allowed": [
+          "Спорт-специфичная тренировка",
+          "Ускорение/торможение",
+          "Плиометрика",
+          "Полный возврат к спорту при прохождении RTS-тестов"
+        ],
+        "pain_guidance": [
+          "Динамический нейромышечный контроль без боли/отёка"
+        ],
+        "red_flags": [
+          "Сохраняющийся экстензионный лаг",
+          "Боль/отёк при спорт-специфичной нагрузке"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Прохождение всех RTS-тестов",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Сила квадрицепса / quad index ≥90% (изокинетика предпочтительно)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Экстензионный лаг = 0° (полное активное разгибание)",
+            "type": "measurement",
+            "measurement_type": "extension_lag_degrees",
+            "operator": "=",
+            "threshold": 0,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Hop-тесты (single-leg, crossover) LSI ≥90%",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Y-balance ≥90% контралатеральной",
+            "type": "measurement",
+            "measurement_type": "y_balance_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          }
+        ]
+      }
+    ],
+    "measurement_vocabulary": [
+      "knee_extension_degrees",
+      "knee_flexion_degrees",
+      "knee_active_extension_degrees",
+      "extension_lag_degrees",
+      "quad_strength_lsi_pct",
+      "hop_lsi_pct",
+      "y_balance_lsi_pct",
+      "single_leg_balance_sec",
+      "single_leg_squat_reps"
+    ],
+    "structural_notes": "КОНФЛИКТ ТЕМПА (не схлопывается в линейную модель): главный незакрытый конфликт литературы — 'ранняя контролируемая мобилизация vs иммобилизация ≥6 недель'. West/Langenhan/Gilmore поддерживают раннюю мобилизацию (с relaxing suture/augmentation, полная нагрузка на 7-10 день, 120° флексии за ~7 нед); сетевой мета-анализ Serino показывает значимо больше осложнений при ранней мобилизации (p=0.02 / p<0.001) и рекомендует ≥6 нед иммобилизации. Извлечённая основная траектория — КОНСЕРВАТИВНЫЙ (защитный) протокол MGH; при augmentation/internal brace хирург может разрешить более ранний и быстрый ROM (модель West: брейс снимается к 6 нед, 120° к ~7.2 нед). Это означает, что duration_weeks фаз — ОРИЕНТИРЫ, реальный темп задаёт хирург.\\n\\nCRITERION-DRIVEN vs TIME-DRIVEN: протокол MGH гибридный (criterion- + time-based). Часть критериев перехода — чисто временные (фаза I: '2 недели'), часть — измеримые гейты (ROM, сила, баланс). Критерий силы '≥70%' жёстко привязан ко времени теста (16 неделя), что важно при засеве: порог 70% не должен проверяться раньше 16 нед.\\n\\nХИРУРГ-УПРАВЛЯЕМЫЕ ПЕРЕМЕННЫЕ (вне фазовой модели): техника шва (transosseous/suture anchor/end-to-end/augmentation), режим брейса, сроки начала ROM и допустимый диапазон флексии, сроки WB и активного разгибания, решение о ревизии. Все числовые ограничения могут модифицироваться хирургом на основе интраоперационной целостности шва — это надо отразить как 'surgeon-overridable' флаги, а не жёсткие правила.\\n\\nМОДИФИКАТОРЫ ВНУТРИ ЕДИНОГО ПУТИ (не отдельные program_type): (1) QTR — более осторожная флексионная прогрессия (re-rupture 2.6% vs PTR 0.3%), старшая/коморбидная популяция → медленнее; (2) PTR — моложе/спортивна → акцент на возврат к высокоинтенсивному спорту; (3) коморбидность (ХБП/диабет/системные стероиды/фторхинолоны/ожирение) → замедление; (4) хронический/застарелый разрыв (>6 нед) с реконструкцией (графт) → отсроченная мобилизация, худшие исходы; (5) билатеральность (часто системные факторы, ХБП/диализ) → реабилитация обеих ног одновременно, более длительная поддержка, индивидуализация.\\n\\nКОНСЕРВАТИВНЫЙ ПУТЬ (только частичные разрывы с сохранным активным разгибанием, классификация Popkin-Golman, привязан к началу лечения): Grade 1 (<8 мм, нет разрыва) → консервативно (брейс, ФТ, NSAIDs); Grade 2 (<25%) → консервативно ± PRP/ESWT; Grade 3 (25-50%) → консервативно + адъюванты; Grade 4 (>50%) → консервативно первично, операция при сохранении симптомов после ~6 месяцев. В досье консервативный путь описан кратко — детальная фазовая структура приведена только для послеоперационного протокола.\\n\\nLSI-ПОРОГИ ЗАИМСТВОВАНЫ ИЗ ACL-ЛИТЕРАТУРЫ: валидированных EMR-специфичных RTS-критериев НЕ существует; пороги LSI ≥80% (бег) и ≥90% (RTS) взяты из ACLR. LSI может ПЕРЕОЦЕНИВАТЬ функцию (контралатеральная нога тоже может быть ослаблена). При засеве phase_transition_criteria это надо пометить как ориентир низкого уровня доказательности.\\n\\nНЕТ МЕЖДУНАРОДНОГО CPG/КОНСЕНСУСА по реабилитации после EMR; вся доказательная база — уровень 3-5 (серии случаев, опросы, мета-анализ обсервационных данных), РКИ нет. Числовые пороги — ОРИЕНТИРЫ из институциональных протоколов (MGH, OrthoUtah) с задокументированной 'substantial variability'.\\n\\nРФ-ИСТОЧНИКИ декларируют агрессивнее RTS (3-4 месяца у milenin-clinic) против международных 4-9 мес — приведены раздельно, не усреднены.\\n\\nРАЗЛИЧИЯ OrthoUtah vs MGH: OrthoUtah избегает нагруженной флексии >70° до 12 недель (использовано в restrictions фазы III); MGH формулирует через >90° до 8 нед. Оба ограничения приведены в фазе III как ориентиры."
+  },
+  {
+    "pathology_name_ru": "Тендинопатия надколенника (колено прыгуна) и квадрицепса",
+    "pathology_name_en": "Patellar and quadriceps tendinopathy",
+    "suggested_program_type_code": "knee_patellar_tendinopathy",
+    "anchor": "criterion_driven",
+    "anchor_notes": "Прогрессия ЯВНО критериальная, а не календарная (Recommendation #3, раздел 4, заголовок «Фазовая структура (критериальная, не календарная)»). Главный гейт перехода между всеми стадиями — 24-часовая реактивность боли на нагрузочном тесте single-leg decline squat (SLDS) + порог боли ≤3/10 + достижение силовых/функциональных порогов. Календарные ориентиры в досье присутствуют как дозировки внутри фазы (5×45 с 2-3 р/день; через день; каждый 3-й день — на основе ~72-часового коллагенового ответа), но НЕ как длительности фаз. Биологический горизонт всего курса — «недели-месяцы», но к конкретным неделям фазы не привязаны. Изометрия может стартовать раньше при раздражимом/болезненном сухожилии, но это состояние-зависимый, а не время-зависимый вход.",
+    "measurement_vocabulary": [
+      "vas_pain_sldecline_squat",
+      "pain_returns_to_baseline_24h",
+      "visa_p_score",
+      "quad_strength_lsi_pct",
+      "hop_lsi_pct",
+      "single_leg_press_bw_pct",
+      "leg_press_8rm_symmetry",
+      "weekly_pain_stiffness_trend"
+    ],
+    "num_phases": 5,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": true,
+      "notes": "Досье — преимущественно ОДИН консервативный нагрузочный путь (Recommendation #1: «структурировать как ОДИН путь со стадийными модификаторами»). Хирургия (открытая/артроскопическая тенотомия, дебридмент) описана только как крайняя мера после ≥3-6 мес неудачи консервативной терапии и НЕ превосходит эксцентрику (Bahr 2006 RCT), требует длительной реабилитации — но конкретного послеоперационного фазирования в досье НЕТ. Поэтому отдельный хирургический program_type НЕ нужен: хирургия = врачебная зона эскалации, не реабилитационный путь. Quadriceps tendinopathy — НЕ отдельный путь, а вариант-модификация того же нагрузочного пути с ранним избеганием провоцирующего глубокого сгибания/компрессии (Recommendation #2). Состояние континуума (reactive обратима / degenerative мало обратима / reactive-on-degenerative) — модификатор тактики внутри пути, а не отдельный набор фаз."
+    },
+    "structural_notes": "КРИТИЧНО для линейной модели «6 фаз по неделям от операции»: эта патология НЕ ложится на неё. (1) Прогрессия КРИТЕРИЙ-ЗАВИСИМАЯ, а не время-зависимая — гейт = 24-часовая реактивность боли + ВАШ ≤3/10 + силовые пороги, а не недели. Поле duration_weeks оставлено пустым у всех фаз намеренно. (2) Якорь — НЕ дата операции (это в основном консервативная патология) и не «начало симптомов», а статус ткани/боли + достижение силовых критериев. (3) Это load-based реабилитация: дозировки задаются параметрами нагрузки (RM, % MVIC, % массы тела, объём→интенсивность прыжков), привязанными к ~72-часовому коллагеновому ответу, а не к фазам недель. (4) Стадия 1 (изометрия) — не обязательная стартовая фаза для всех, а опция при раздражимом/болезненном сухожилии (плюс сам аналгетический эффект изометрии оспорен в литературе — van Ark, Holden, Clifford); пациент с мало раздражимым сухожилием может стартовать со Стадии 2. (5) Quadriceps-вариант = тот же путь с ранним ограничением глубокого сгибания/компрессии. (6) Модификатор континуума (reactive/degenerative) меняет ожидания обратимости и акцент (разгрузка+изометрия vs функция/толерантность), но не плодит отдельные фазы. (7) Поддерживающая фаза (силовые Стадии 2 ≥2 р/нед + ≤3 высокоинтенсивных energy-storage сессий/нед в первый год RTS) — бессрочная, не имеет «выхода». (8) Weekly guardrail (правило Silbernagel): боль/скованность не должны нарастать от недели к неделе — это сквозной мониторинговый инвариант для всех фаз, не критерий перехода. (9) RTS-пороги (LSI ≥90%, VISA-P ~80-90) ЗАИМСТВОВАНЫ из ACL/хирургической литературы и НЕ валидированы для PT — переносить с осторожностью.",
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Стадия 1 — Изометрия (раздражимое/болезненное сухожилие)",
+        "duration_weeks": "",
+        "goals": [
+          "Аналгезия и снижение раздражимости сухожилия (с оговоркой: аналгетический эффект изометрии оспорен в литературе — применять как опцию, не как догму)",
+          "Поддержание силы разгибателей колена без провокации симптомов",
+          "Образование пациента: это перегрузочная адаптация (тендиноз), а не воспаление; ключ — постепенная нагрузка, а не покой"
+        ],
+        "restrictions": [
+          "Избегать резких скачков нагрузки (load spikes) — провоцируют reactive-вспышку",
+          "Избегать полного покоя/иммобилизации (де-адаптация, нет стимула ремоделирования)",
+          "Не провоцировать боль глубоким сгибанием/прыжками на этой стадии",
+          "Кортикостероидные инъекции противопоказаны (вред в средне/долгосрочной перспективе, риск разрыва)",
+          "Для quadriceps-варианта: ранее избегание провоцирующего глубокого сгибания/компрессии (боль у верхнего полюса надколенника)"
+        ],
+        "allowed": [
+          "Изометрические удержания: 5 повторов × 45 с, 2-3 раза/день, до 70% MVIC, в среднем диапазоне сгибания 30-60°, отдых ~2 мин между удержаниями",
+          "Альтернатива — испанский присед (Spanish squat) при 70-90°",
+          "Управление нагрузкой (load management), образование пациента"
+        ],
+        "pain_guidance": [
+          "Допустимая боль ≤3/10 (Malliaras), модель Silbernagel допускает до 5/10",
+          "Боль должна возвращаться к исходной в течение 24 ч на нагрузочном тесте (single-leg decline squat, SLDS)",
+          "Феномен warm-up и усиление боли на следующий день после energy-storage-активности — учитывать в мониторинге"
+        ],
+        "red_flags": [
+          "Острая боль + отёк + потеря активного разгибания → подозрение на разрыв сухожилия, срочно к врачу",
+          "Суставной выпот → указывает на внутрисуставное поражение, а не тендинопатию",
+          "У скелетно незрелых — думать об апофизите (Osgood-Schlatter, Sinding-Larsen-Johansson), не PT",
+          "Системные/«зловещие» признаки (опухоль, инфекция, воспалительная артропатия) → направление"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Минимальная боль ≤3/10 при выполнении изотонической нагрузки (готовность к Стадии 2)",
+            "type": "measurement",
+            "measurement_type": "vas_pain_sldecline_squat",
+            "operator": "<=",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Боль возвращается к исходному уровню в течение 24 ч на нагрузочном тесте SLDS",
+            "type": "self_report",
+            "measurement_type": "pain_returns_to_baseline_24h",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Стадия 2 — Изотоника / Heavy Slow Resistance (HSR), основа",
+        "duration_weeks": "",
+        "goals": [
+          "Прогрессивное наращивание силы разгибателей колена (heavy slow resistance — основа лечения)",
+          "Стимуляция ремоделирования матрикса через дозированную механическую нагрузку (механотрансдукция)",
+          "Повышение толерантности сухожилия к нагрузке"
+        ],
+        "restrictions": [
+          "Без energy-storage/плиометрики пока не достигнуты силовые пороги и толерантность к нагрузке",
+          "Избегать резких скачков нагрузки",
+          "Для quadriceps-варианта: ограничение глубокого сгибания по переносимости"
+        ],
+        "allowed": [
+          "Изотоника/HSR: 3-4 подхода, нагрузка от 15RM к 6RM, через день (every second day), до утомления",
+          "Диапазон движения 10-60°, прогрессия к 90° по переносимости",
+          "Упражнения: leg press, приседы, hack squat, split squat, разгибание голени"
+        ],
+        "pain_guidance": [
+          "Допустимая боль ≤3/10 (до 5/10 по Silbernagel) во время изотоники",
+          "24-часовой тест на SLDS: боль возвращается к исходной за 24 ч",
+          "Weekly guardrail (Silbernagel): боль и скованность не нарастают от недели к неделе"
+        ],
+        "red_flags": [
+          "Нарастание боли/скованности от недели к неделе → снизить нагрузку",
+          "Подозрение на разрыв (острая боль, отёк, потеря разгибания) → к врачу"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Хорошая сила: 4×8 single-leg press ~150% массы тела (ориентир для прыгунов)",
+            "type": "measurement",
+            "measurement_type": "single_leg_press_bw_pct",
+            "operator": ">=",
+            "threshold": 150,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Load tolerance: боль ≤3/10 на нагрузке",
+            "type": "measurement",
+            "measurement_type": "vas_pain_sldecline_squat",
+            "operator": "<=",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Боль возвращается к исходному уровню за 24 ч (24-ч load test)",
+            "type": "self_report",
+            "measurement_type": "pain_returns_to_baseline_24h",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Стадия 3 — Energy-storage / плиометрика",
+        "duration_weeks": "",
+        "goals": [
+          "Развитие способности накопления-высвобождения энергии (energy storage) и мощности",
+          "Прогрессия сначала ОБЪЁМА, затем ИНТЕНСИВНОСТИ прыжков/приземлений",
+          "Подготовка к спорт-специфической energy-storage нагрузке"
+        ],
+        "restrictions": [
+          "Прогрессировать интенсивность только после прогрессии объёма",
+          "Высоконагрузочные energy-storage сессии не чаще ритма ~72-часового коллагенового ответа",
+          "При появлении провокации симптомов или невозврата боли за 24 ч — откат назад"
+        ],
+        "allowed": [
+          "Плиометрика/прыжки: старт например 3×8-10 низкоинтенсивных прыжков, каждый 3-й день (на основе 72-часового коллагенового ответа)",
+          "Продолжение силовой работы Стадии 2 как базы"
+        ],
+        "pain_guidance": [
+          "Плиометрика/energy-storage переносится при боли ≤3/10 и возврате к исходной боли за 24 ч",
+          "Weekly guardrail: боль/скованность не нарастают от недели к неделе"
+        ],
+        "red_flags": [
+          "Усиление боли, не уходящее за 24 ч после прыжковой сессии → снизить объём/интенсивность",
+          "Реактивная вспышка на дегенеративном фоне (reactive-on-degenerative) → откат к разгрузке/изометрии"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полная переносимость тренировок без провокации симптомов (24-ч тест на SLDS)",
+            "type": "self_report",
+            "measurement_type": "pain_returns_to_baseline_24h",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Боль при energy-storage активности ≤3/10",
+            "type": "measurement",
+            "measurement_type": "vas_pain_sldecline_squat",
+            "operator": "<=",
+            "threshold": 3,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Устранение дефицитов силы/мощности (симметрия сторон)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Стадия 4 — Возврат в спорт (RTS)",
+        "duration_weeks": "",
+        "goals": [
+          "Полный тренировочный процесс без провокации симптомов",
+          "Устранение дефицитов мощности и силы (межсторонняя симметрия)",
+          "Безопасный возврат в соревновательную/тренировочную деятельность"
+        ],
+        "restrictions": [
+          "В первый год возврата — ограничение ≤3 высокоинтенсивных energy-storage-сессий в неделю",
+          "Избегать резких скачков нагрузки"
+        ],
+        "allowed": [
+          "Полный тренировочный процесс по переносимости",
+          "Спорт-специфические energy-storage нагрузки"
+        ],
+        "pain_guidance": [
+          "Полная переносимость тренировок без провокации (24-ч тест на SLDS)",
+          "Боль ≤3/10 с возвратом к исходной за 24 ч",
+          "Weekly guardrail: боль/скованность не нарастают от недели к неделе"
+        ],
+        "red_flags": [
+          "Возобновление нагрузко-зависимой боли при возврате к спорту → откат на предыдущую стадию",
+          "Подозрение на разрыв при пиковой нагрузке → к врачу"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полная переносимость тренировок без провокации симптомов (24-ч тест на SLDS)",
+            "type": "self_report",
+            "measurement_type": "pain_returns_to_baseline_24h",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "LSI силы квадрицепса ≥90% (заимствовано из ACL-литературы, НЕ валидировано для PT)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "LSI hop-теста ≥90% / равенство в triple hop for distance (заимствовано из ACL, НЕ валидировано для PT)",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Симметрия силы: leg-press 8RM поражённой стороны = здоровой",
+            "type": "measurement",
+            "measurement_type": "leg_press_8rm_symmetry",
+            "operator": ">=",
+            "threshold": 100,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "VISA-P приближается к норме/at-risk значениям (~80-90; жёсткого валидированного порога RTS для PT нет)",
+            "type": "measurement",
+            "measurement_type": "visa_p_score",
+            "operator": "between",
+            "threshold": 80,
+            "threshold2": 90,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 5,
+        "title_ru": "Поддержание (бессрочная фаза)",
+        "duration_weeks": "",
+        "goals": [
+          "Сохранение силы и толерантности сухожилия, профилактика рецидива (рецидивы >25%)",
+          "Долгосрочное управление нагрузкой"
+        ],
+        "restrictions": [
+          "В первый год возврата — ≤3 высокоинтенсивных energy-storage-сессий в неделю",
+          "Избегать резких скачков нагрузки и полного покоя"
+        ],
+        "allowed": [
+          "Силовые упражнения Стадии 2 ≥2 раза/неделю (поддержание)",
+          "Полный спорт по переносимости"
+        ],
+        "pain_guidance": [
+          "Weekly guardrail (Silbernagel): боль и скованность не должны нарастать от недели к неделе",
+          "Мониторинг SLDS-NRS как индикатор реактивности",
+          "VISA-P измерять с интервалом ≥4 нед (MCID 13)"
+        ],
+        "red_flags": [
+          "Нарастание боли/скованности или падение VISA-P → возврат на нагрузочную стадию",
+          "Отсутствие прогресса VISA-P (<MCID 13) за ≥3-6 мес адекватной программы → направление к врачу для рассмотрения адъювантов/хирургии (последняя линия)"
+        ],
+        "transition_criteria": []
+      }
+    ]
+  },
+  {
+    "pathology_name_ru": "Реабилитация после тотального эндопротезирования коленного сустава (TKA), с модификатором одномыщелкового эндопротезирования (UKA)",
+    "pathology_name_en": "Total Knee Arthroplasty (TKA) rehabilitation, with Unicompartmental Knee Arthroplasty (UKA) modifier",
+    "suggested_program_type_code": "knee_tka",
+    "anchor": "surgery_date",
+    "anchor_notes": "Сроки фаз привязаны к дате операции (post-op timeline). Ранний период явно surgeon-directed («хирург-управляемый, как любая хирургическая рана»). Все временные рамки — temporal guardrails «в среднем», не предписание; прогрессия criterion-based. Phase 0 (Prehab) — предоперационная, привязана к дате операции «до». Полная нагрузка по РФ-КР разрешается через 1–3 мес после эндопротезирования (supplementary).",
+    "num_phases": 4,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": false,
+      "notes": "Досье покрывает ТОЛЬКО пост-артропластику (хирургическую траекторию). Консервативное лечение гонартроза (OA) явно вынесено в отдельное досье ('OA покрыт отдельным досье; здесь — только пост-артропластика'). UKA — это НЕ отдельный program_type, а модификатор той же хирургической траектории: быстрее восстановление в раннем окне (ROM при выписке 77° vs 67°, на 6 нед 115° vs 110°), короче LOS (1,4 vs 2,2 дня), менее рестриктивно, сходимость с TKA по исходам к 1–2 годам. Рекомендую реализовать UKA как флаг-модификатор внутри knee_tka (смягчает ранние пороги/guardrails), а не как самостоятельный program_type."
+    },
+    "measurement_vocabulary": [
+      "knee_flexion_degrees",
+      "knee_extension_degrees",
+      "vas_pain",
+      "walk_distance_m",
+      "quad_strength_nm_per_kg",
+      "thirty_sec_chair_stand_reps",
+      "tug_seconds",
+      "six_min_walk_m",
+      "two_min_walk_m",
+      "koos_jr_score",
+      "oxford_knee_score",
+      "womac_score",
+      "los_days"
+    ],
+    "phases": [
+      {
+        "phase_number": 0,
+        "title_ru": "Фаза 0 — Prehab (предоперационная подготовка)",
+        "duration_weeks": "",
+        "goals": [
+          "Укрепление мышц (strengthening) и гибкость до операции",
+          "Образование пациента: реалистичные ожидания, ADL, ассистивные устройства, профилактика падений [APTA: образование — Best Practice]",
+          "Подготовка ожиданий, особенно у ослабленных/коморбидных пациентов",
+          "Замер baseline PROMs/performance перед операцией"
+        ],
+        "restrictions": [],
+        "allowed": [
+          "Преоперационные силовые и гибкостные упражнения [APTA CPG 2020 рекомендует; ERAS считает не обязательным — конфликт сохранён]"
+        ],
+        "pain_guidance": [],
+        "red_flags": [],
+        "transition_criteria": [
+          {
+            "label_ru": "Выполнена операция (переход к раннему post-op определяется датой операции)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза 1 — Ранний post-op (хирург-управляемый; ориентир 0–2 нед, до ~6 нед)",
+        "duration_weeks": "0-6",
+        "goals": [
+          "Ранняя мобилизация в течение 24 ч после операции [APTA Moderate; ERAS Strong]",
+          "Агрессивное раннее активное/активно-ассистивное ROM: восстановление сгибания и разгибания",
+          "Целевое раннее разгибание → 0° (full extension), избегать flexion contracture",
+          "Контроль отёка и боли: cryotherapy, элевация, мультимодальная анальгезия",
+          "Активация квадрицепса: ранние изометрические упражнения (quad sets), борьба с AMI (arthrogenic muscle inhibition)",
+          "Motor function training (баланс, ходьба, симметрия движения) — единственная Strong-рекомендация APTA",
+          "Достижение discharge-критериев (ERAS)"
+        ],
+        "restrictions": [
+          "WBAT (weight-bearing as tolerated) — по умолчанию, но ТОЛЬКО если хирург не задал ограничение (например при сложной фиксации/остеотомии)",
+          "Избегать форсированных high-impact нагрузок в раннем окне",
+          "Положение колена в покое: допустимо 30–90° сгибания в покое для снижения кровопотери/отёка в первые 7 дней [APTA Weak]",
+          "Контроль отёка перед нагрузкой",
+          "CPM (continuous passive motion) НЕ использовать при первичной неосложнённой TKA [Cochrane; APTA 'should NOT']"
+        ],
+        "allowed": [
+          "WBAT — нагрузка по переносимости, обычно немедленно, если хирург не указал иное [высокий — стандарт ERAS/fast-track]",
+          "Ходьба с ходунками/костылями",
+          "Пассивное, активно-ассистивное и активное сгибание/разгибание",
+          "NMES (neuromuscular electrical stimulation): начинать рано (~POD 2), 5–7×/день, минимум ~3 нед, тетанические сокращения на максимально переносимой интенсивности [APTA Moderate]"
+        ],
+        "pain_guidance": [
+          "Дискомфорт при сгибании ожидаем; боль контролируется (лёд, элевация, лекарства)",
+          "NPRS/NPRS для мониторинга боли",
+          "Мультимодальная опиоид-сберегающая анальгезия (ERAS) — surgeon-directed"
+        ],
+        "red_flags": [
+          "Лихорадка, нарастающая боль/эритема/отделяемое из раны, ↑СРБ — подозрение на PJI (periprosthetic joint infection), срочно к хирургу",
+          "Односторонний отёк/боль голени — подозрение на DVT (ТГВ); одышка/боль в груди — PE (ТЭЛА), срочная оценка",
+          "Острая боль, невозможность нагрузки, деформация после падения — periprosthetic fracture, срочно к хирургу",
+          "Weekly guardrail: на 2 нед сгибание <70–80° → эскалация (интенсификация PT, оценка на arthrofibrosis, обсуждение MUA в окне <12 нед)",
+          "Weekly guardrail: на 4–6 нед сгибание <90° → эскалация"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Контроль отёка и боли достигнут",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Активация квадрицепса (active quad set) восстановлена",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Сгибание колена ~90° (часто discharge-target)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "WBAT уверенно (уверенная нагрузка по переносимости)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Discharge-критерий: пройти дистанцию >70 м (ERAS-ориентир)",
+            "type": "measurement",
+            "measurement_type": "walk_distance_m",
+            "operator": ">",
+            "threshold": 70,
+            "threshold2": null,
+            "unit": "m"
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза 2 — Восстановление (ориентир ~2/6–12 нед)",
+        "duration_weeks": "6-12",
+        "goals": [
+          "Прогрессивная силовая нагрузка [APTA: high-intensity strength training в пределах 7 дней после операции для улучшения функции, силы и ROM, Moderate]",
+          "Прогрессия баланса и симметрии походки",
+          "Отказ от вспомогательных средств по критериям",
+          "Повторный замер PROMs/performance",
+          "Дальнейшая прогрессия ROM к целевым 0–110–120°"
+        ],
+        "restrictions": [
+          "Избегать high-impact нагрузок",
+          "Интенсивность: HI (высокоинтенсивная) безопасна, но в раннем окне НЕ доказано превосходит LI (низкоинтенсивную) из-за AMI — конфликт сохранён, оба подхода работают"
+        ],
+        "allowed": [
+          "Прогрессивная резистивная нагрузка (HI или LI — оба допустимы)",
+          "Тренировка баланса и походки",
+          "Постепенный отказ от вспомогательных средств по достижению критериев"
+        ],
+        "pain_guidance": [
+          "Боль по NPRS — мониторинг"
+        ],
+        "red_flags": [
+          "Weekly guardrail: на 4–6 нед сгибание <90° → эскалация (интенсификация PT, оценка на arthrofibrosis, обсуждение MUA)",
+          "ROM не прогрессирует, сгибание <90° на 4–6 нед → подозрение arthrofibrosis; MUA лучше <12 нед",
+          "Признаки PJI/DVT-PE/fracture в любое время → surgeon-directed эскалация"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Сгибание колена ≥110–120°",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 110,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Разгибание колена ~0° (full extension)",
+            "type": "measurement",
+            "measurement_type": "knee_extension_degrees",
+            "operator": "<=",
+            "threshold": 0,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Растущая сила квадрицепса",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Безопасная походка без значимой асимметрии",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза 3 — Функция (ориентир ~3–6+ мес)",
+        "duration_weeks": "12+",
+        "goals": [
+          "Возврат к рекреационной активности (recreational; не RTS-ориентированная популяция)",
+          "Достижение целевого ROM-ориентира 0–110–120°",
+          "Долгосрочная функция",
+          "Достижение performance-порогов для ADL (лестница, стул, ходьба)"
+        ],
+        "restrictions": [
+          "High-impact активности не начинать заново (low-impact и при опыте intermediate-impact разрешены) [expert consensus]",
+          "Возврат к спорту обсуждать с хирургом"
+        ],
+        "allowed": [
+          "Low-impact активности (плавание, велосипед) — типично раньше, ориентир ~3 мес, комфортнее к 6 мес",
+          "Intermediate-impact активности при наличии опыта",
+          "Высокофлексионные активности (присед, на коленях) при достижении ROM 110–165°"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Лихорадка, нарастающие краснота/отёк/выделения из раны, резкая боль/отёк голени, одышка — срочно к врачу",
+          "PJI возможен в любое время (ранний и поздний типы)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Целевой ROM сгибание достигнут (0–110–120°, лучшие результаты 128–132°)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 120,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Минимальное время до возврата к спорту/рекреации ~3 мес (комфортнее ~6 мес)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Cutoff для самостоятельной лестницы после билатеральной TKA: сгибание 121° (Nanjo 2025)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 121,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Cutoff для самостоятельной лестницы после билатеральной TKA: сила квадрицепса 1,09 Нм/кг (Nanjo 2025)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_nm_per_kg",
+            "operator": ">=",
+            "threshold": 1.09,
+            "threshold2": null,
+            "unit": "nm_per_kg"
+          }
+        ]
+      }
+    ],
+    "structural_notes": "МОДЕЛЬ ПРОГРЕССИИ: criterion-based + temporal guardrails. Прогрессия строится на достижении milestones (по критериям ROM/силы/функции), а время — «for reference to the average», НЕ жёсткое предписание (OHSU 2023 и др.). Это плохо ложится в линейную модель «фаза = N недель от операции». Реализовывать пороги как гейты, а недельные рамки — как мягкие guardrails.\n\nSURGEON-DIRECTED РАННИЙ ПЕРИОД: вся Фаза 1 явно хирург-управляема. WBAT по умолчанию НО только если хирург не задал ограничение. Решения о статусе раны/нагрузке/MUA — за хирургом. Платформа работает в рамках, заданных хирургом, и не лечит осложнения, а эскалирует red flags.\n\nWEEKLY GUARDRAIL (safety-net): отдельная время-чувствительная проверка ROM, не привязанная к смене фазы — на 2 нед сгибание <70–80° ИЛИ на 4–6 нед <90° → эскалация. Это «защитная сетка» поверх criterion-based прогрессии. Стоит реализовать как отдельный мониторинг-триггер (по аналогии с phase_stuck_alerts), а не как transition criterion.\n\nОКНО MUA: критическое окно для восстановления ROM — ранние недели; arthrofibrosis на 6–12 нед → MUA лучше <12 нед (Issa: прирост сгибания 36,5° vs 17°, финальный ROM 119° vs 95° при ранней манипуляции). Конфликт «early vs late MUA» НЕ разрешён (Ipach 2011 не нашёл разницы). MUA — хирургическое вмешательство, не реабилитация.\n\nUKA-МОДИФИКАТОР: НЕ отдельный набор фаз, а смягчение той же траектории — быстрее восстановление в раннем окне, короче LOS, менее рестриктивно, сходимость к 1–2 годам. Можно реализовать флагом, который двигает ранние пороги/таймлайны.\n\nКОНФЛИКТЫ ИНТЕНСИВНОСТИ/МОДЕЛИ (сохранены как spread, не схлопнуты): (1) HI vs LI силовая — HI безопасна, но в раннем окне НЕ превосходит LI из-за AMI (Bade 2017 RCT); (2) Формальный supervised PT vs HEP/telerehab — non-inferior у отобранных/прогрессирующих пациентов (CORKA, Fleischman, Han, Liu, VERITAS), но structured/criterion-based прогрессия важна для отстающих; (3) Prehab обязателен (APTA) vs не обязателен (ERAS). Эти конфликты не влияют на структуру фаз, но влияют на выбор контента упражнений.\n\nPROMs/PERFORMANCE НАБОР (для замеров, не гейты переходов): APTA рекомендует KOOS-JR + 30-Second Sit-to-Stand (30CST) + TUG; также OKS, WOMAC, NPRS, 6MWT, 2MWT. MCID метод-зависимы (диапазоны): KOOS-JR ~6 (distribution) / ~14 (anchor); OKS ~5 (4,7–10,0); WOMAC Pain 20,5–36,0. Тайминг замеров: baseline (преоп) → 4–6 нед → 3 мес → 6–12 мес. Эти измерения скорее для дашборда динамики, чем для transition criteria.\n\nROM-ПОРОГИ ДЛЯ ADL (справочно, для контента/целей фаз): ходьба ~60–75°, лестница ~83–90°, стул ~90–95°, подъём предмета ~117°; минимум функционального сгибания ~90°, база ADL ~110°, лучшие результаты 128–132° (Ritter). Разгибание целевое 0°.\n\nFall-risk: 30CST <8–10 повторений у пожилых → высокий риск падений (общий порог, не TKA-специфичный)."
+  },
+  {
+    "pathology_name_ru": "Корригирующая остеотомия коленного сустава (HTO / DFO)",
+    "pathology_name_en": "Knee corrective osteotomy (high tibial osteotomy / distal femoral osteotomy)",
+    "suggested_program_type_code": "knee_osteotomy_hto_dfo",
+    "anchor": "mixed",
+    "anchor_notes": "Сроки фаз привязаны к ДАТЕ ОПЕРАЦИИ (недели 0-4, 4-8, 8-16, 4-6 мес, 6 мес+), но master-guardrail всей программы — КОСТНЫЙ СОЮЗ (bone union) + решение хирурга. Прогрессия criterion-based: фаза не переходит без (а) функциональных критериев И (б) рентгенологической консолидации. OSU CPG явно помечает «недели — ориентир для среднего пациента, не гейт для индивидуума». Рентгенологический союз обычно к ~6-12 нед; отсутствие заполнения щели к 12 нед → эскалация к хирургу (delayed/non-union).",
+    "num_phases": 5,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": false,
+      "notes": "Чисто хирургическая патология — остеотомия это операция (HTO для варуса/медиального компартмента, DFO для вальгуса/латерального). Консервативного пути восстановления НЕТ. Внутри хирургического — НЕ два отдельных program_type, а ОДИН базовый путь «HTO» (детальная траектория = MOWHTO) с DFO-вариантом (более консервативный WB-таймлайн, ESSKA «extra caution») и сочетанными процедурами (хрящ ACI/MFX/OCA / корень мениска / ACL) как НАЛОЖЕННЫМИ модификаторами ранних рестрикций (доминирует более рестриктивный протокол). Дополнительный сплит внутри ранней WB-фазы: «стандартный MOWHTO с locking-plate» (ранняя прогрессия) vs «подгруппа риска» (нестабильный hinge / коррекция >10°/>10мм / курение → консервативный 6-нед протокол). Рекомендация архитектора досье: НЕ дробить на множество program_type, держать один с модификаторами."
+    },
+    "measurement_vocabulary": [
+      "knee_flexion_degrees",
+      "knee_extension_full_passive",
+      "weight_bearing_pct",
+      "quad_isometric_strength",
+      "quad_isokinetic_lsi_pct",
+      "hamstring_strength_lsi_pct",
+      "hop_lsi_pct",
+      "effusion_grade",
+      "slr_no_extensor_lag",
+      "radiographic_union",
+      "calf_girth_increase_cm"
+    ],
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Фаза I — Защита (Protection)",
+        "duration_weeks": "0-4",
+        "goals": [
+          "Восстановление ROM в пределах хирургических лимитов",
+          "Минимизация выпота и боли",
+          "Активация квадрицепса (NMES)",
+          "Соблюдение хирургических precautions",
+          "Пателлярная мобилизация",
+          "Достижение симметричного разгибания к нед 4"
+        ],
+        "restrictions": [
+          "MOWHTO: WB toe-touch (TTWB) нед 0-2 → 25% нед 2-4",
+          "Закрытоугольная (anterior closing wedge) HTO: TTWB нед 0-2 → прогрессия к FWB с нед 2 (нативный bone-to-bone контакт)",
+          "ROM 0-110° (нед 0-2), затем прогрессия к полному сгибанию",
+          "Избегать активной работы хамстрингов первые 2 нед",
+          "Модификатор: коррекция >10° или >10 мм → задержка прогрессии WB",
+          "Модификатор meniscal repair: без форсированного сгибания >90° ×4 нед",
+          "Модификатор ACI (MACI/NovoCart/NeoCart): FWB отложена до 8-12 нед, ROM медленнее"
+        ],
+        "allowed": [
+          "Криотерапия и компрессия",
+          "NMES для активации квадрицепса",
+          "Пателлярная мобилизация",
+          "Нагрузка по толерантности боли в рамках разрешённого WB-лимита"
+        ],
+        "pain_guidance": [
+          "Контроль криотерапией/компрессией",
+          "Нагрузка по толерантности боли"
+        ],
+        "red_flags": [
+          "Отсутствие полного разгибания к 4 нед → к хирургу",
+          "Механический блок/щелчок → к хирургу",
+          "Эпизоды нестабильности → к хирургу",
+          "Признаки DVT (болезненность по ходу глубоких вен, отёк всей конечности, прирост окружности голени >3 см, питтинг-отёк) → немедленно в ED",
+          "Компартмент-синдром может маскироваться под отсроченную малоберцовую невропатию"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Безболезненное сгибание колена >120°",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">",
+            "threshold": 120,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Полное пассивное разгибание колена",
+            "type": "instructor_check",
+            "measurement_type": "knee_extension_full_passive",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Походка heel-to-toe с 25% массы тела",
+            "type": "instructor_check",
+            "measurement_type": "weight_bearing_pct",
+            "operator": "=",
+            "threshold": 25,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Сильный изометрический квадрицепс",
+            "type": "instructor_check",
+            "measurement_type": "quad_isometric_strength",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Фаза II — Ранняя нагрузка (Early Loading)",
+        "duration_weeks": "4-8",
+        "goals": [
+          "Нормализация ROM",
+          "Развитие силы квадрицепса, ягодичных мышц и кора"
+        ],
+        "restrictions": [
+          "MOWHTO: WB 25%→50% (нед 4-6) → WBAT с костылями (нед 6-8)",
+          "Полный безболезненный ROM",
+          "BFR-тренинг возможен с ~6 нед (при отсутствии противопоказаний/риска DVT)"
+        ],
+        "allowed": [
+          "CKC-программа (по переносимости)",
+          "BFR-тренинг с ~6 нед",
+          "Прогрессия WB по разрешённому лимиту"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Признаки DVT → немедленно в ED",
+          "Эпизоды нестабильности → к хирургу"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полный безболезненный активный ROM (AROM)",
+            "type": "instructor_check",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Выпот менее 1+",
+            "type": "instructor_check",
+            "measurement_type": "effusion_grade",
+            "operator": "<",
+            "threshold": 1,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "SLR ×10 без extensor lag",
+            "type": "instructor_check",
+            "measurement_type": "slr_no_extensor_lag",
+            "operator": ">=",
+            "threshold": 10,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Переносимость CKC-программы",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Фаза III — Укрепление / Возврат к функции (Strengthening / Return to Function)",
+        "duration_weeks": "8-16",
+        "goals": [
+          "Отказ от костылей → нормальная походка",
+          "Полная нагрузка (FWB)",
+          "Прогрессия силы, баланса и кора"
+        ],
+        "restrictions": [
+          "Осторожность с CKC-сгибанием около 90° в раннем периоде",
+          "Осторожность со спуском по лестнице в раннем периоде",
+          "OKC-квадрицепс через полный ROM только с ~12-14 нед"
+        ],
+        "allowed": [
+          "OKC-квадрицепс через полный ROM с ~12-14 нед",
+          "Прогрессия силы, баланса, кора",
+          "Беговая прогрессия (по достижении критериев)"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Отсутствие признаков заполнения щели к 12 нед → эскалация к хирургу (подозрение на delayed/non-union)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Изометрия/изокинетика квадрицепса ≥80%",
+            "type": "measurement",
+            "measurement_type": "quad_isokinetic_lsi_pct",
+            "operator": ">=",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Изометрия/изокинетика хамстрингов ≥80%",
+            "type": "measurement",
+            "measurement_type": "hamstring_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Переносимость беговой прогрессии без выпота >1+",
+            "type": "measurement",
+            "measurement_type": "effusion_grade",
+            "operator": "<=",
+            "threshold": 1,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Фаза IV — Возврат к активности (Return to Activity)",
+        "duration_weeks": "16-26",
+        "goals": [
+          "Старт бега и прыжков при достижении силовых критериев"
+        ],
+        "restrictions": [
+          "Бег/прыжки только при достижении силовых и функциональных критериев"
+        ],
+        "allowed": [
+          "Бег",
+          "Прыжки",
+          "Hopping на месте (безболезненный)"
+        ],
+        "pain_guidance": [],
+        "red_flags": [],
+        "transition_criteria": [
+          {
+            "label_ru": "Полный безболезненный симметричный ROM",
+            "type": "instructor_check",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Изокинетика ≥80% (на 60°/с и 300°/с)",
+            "type": "measurement",
+            "measurement_type": "quad_isokinetic_lsi_pct",
+            "operator": ">=",
+            "threshold": 80,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Выпот ≤1+",
+            "type": "measurement",
+            "measurement_type": "effusion_grade",
+            "operator": "<=",
+            "threshold": 1,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Нейромышечный контроль — безболезненный hopping на месте",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 5,
+        "title_ru": "Фаза V — Возврат к спорту (Return to Sport)",
+        "duration_weeks": "26+",
+        "goals": [
+          "Полный возврат к спорт-специфичной активности",
+          "Корректная механика плиометрики и агилити"
+        ],
+        "restrictions": [
+          "Возврат к спорту только после clearance врача"
+        ],
+        "allowed": [
+          "Спорт-специфичная активность",
+          "Плиометрика",
+          "Агилити"
+        ],
+        "pain_guidance": [],
+        "red_flags": [
+          "Реактивный выпот при спорт-специфичной активности → пересмотр готовности"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Изокинетика ≥90%",
+            "type": "measurement",
+            "measurement_type": "quad_isokinetic_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Hop-тесты LSI ≥90%",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Отсутствие реактивного выпота при спорт-специфичной активности",
+            "type": "instructor_check",
+            "measurement_type": "effusion_grade",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Корректная механика плиометрики и агилити",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Clearance врача",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      }
+    ],
+    "structural_notes": "КЛЮЧЕВОЕ: модель НЕ ложится в чистую «6 фаз, привязанных к неделям от операции», потому что прогрессия ГИБРИДНАЯ — criterion-based + time-based с master-guardrail «костный союз / решение хирурга». OSU CPG явно: «недели — ориентир для среднего пациента, не гейт для индивидуума». Ни одна фаза не прогрессирует без рентгенологической консолидации И функциональных критериев.\n\n(1) РАЗВИЛКА ВНУТРИ РАННЕЙ WB-ФАЗЫ (Фаза I-II), которую нельзя схлопнуть в одно число: «стандартный MOWHTO с locking-plate / angular stable + малая коррекция + некурящий» → допустима ранняя/немедленная FWB по решению хирурга (RCT Lansdaal/Schröter, RSA Brinkman, мета van Haeringen) ПРОТИВ «подгруппа риска» (нестабильный hinge Takeuchi II / коррекция >10° или >10 мм / курение / высокий BMI) → консервативный 6-недельный protected WB ~20 кг. Архитектор досье явно предписывает задать это как развилку, а НЕ единое значение WB.\n\n(2) HTO vs DFO как варианты темпа: базовый путь = HTO (детально = MOWHTO). DFO ведётся КОНСЕРВАТИВНЕЕ по умолчанию (ESSKA «extra caution in DFO patients»), хотя Apseloff 2025 не нашёл связи сроков WB с союзом (база слабая). Также закрытоугольная (anterior/lateral closing wedge) HTO имеет bone-to-bone контакт → более ранняя FWB чем opening-wedge.\n\n(3) СОЧЕТАННЫЕ ПРОЦЕДУРЫ = наложенные модификаторы, доминирует более рестриктивный протокол: meniscal root repair (сгибание ≤90° без нагрузки ~6 нед, FWB к 8 нед); ACL + корень мениска (non-WB/toe-touch 4-6 нед, ROM 0-90°, FWB/ROM к 8-12 нед); хрящ ACI/MACI (FWB до 8-12 нед, изометрия до 4-5 мес, ранний ROM/CPM для питания трансплантата). Эти модификаторы УЖЕСТОЧАЮТ ранние WB/ROM-лимиты фаз I-II.\n\n(4) Восстановление силы квадрицепса ОТСТАЁТ от костного союза на месяцы (значимое улучшение часто только к 12 мес, особенно при варусе >5°) — это ожидаемая особенность, а не задержка. Бенчмарк: дефицит квадрицепса >20% на 3 мес → усилить унилатеральный силовой блок.\n\n(5) Фаза V «6 мес+» — открытый верхний предел (реально RTS 6-12 мес; HTO 88,2% к 7,5 мес, DFO 86,1% при 12,3 мес). duration_weeks Фазы IV/V проставлены как 16-26 и 26+ для линейности, но в досье это «4-6 мес» и «6 мес+».\n\n(6) Survivorship-слой (выживаемость HTO 89%/5лет, 73%/10лет; конверсия в TKA) — это долгосрочный outcome-трекинг (PROMs: KOOS/Lysholm/Tegner/IKDC/OKS/VAS пред-оп, 6/12/18 мес, далее ежегодно), НЕ фаза реабилитации.\n\nПОРОГИ — ОРИЕНТИРЫ ПОД КЛИНИЧЕСКУЮ КАЛИБРОВКУ Vadim'а (большая часть доказательной базы Level IV). Рентген-критерии союза задаёт хирург, не алгоритм."
+  },
+  {
+    "pathology_name_ru": "Восстановление хряща коленного сустава (cartilage repair)",
+    "pathology_name_en": "Knee articular cartilage repair",
+    "suggested_program_type_code": "knee_cartilage_repair",
+    "anchor": "surgery_date",
+    "anchor_notes": "Все временные ориентиры привязаны к дате операции (cartilage repair). Сроки расходятся ПРИНЦИПИАЛЬНО по процедуре: microfracture/BMS (фиброхрящ, быстрее, RTS ~4 мес), OAT/OCA (osseointegration, RTS ~5-6 мес), ACI/MACI (гиалино-подобный хрящ, созревание до года+, RTS ~8-12 мес). Ранняя фаза строго ХИРУРГ-УПРАВЛЯЕМА: точные WB/ROM-пороги, тип брейса, использование CPM, сроки полной нагрузки задаёт хирург письменным протоколом — числа в досье это guardrail под калибровку, не предписание. Сочетанные процедуры (HTO/DFO, мениск, ПКС, MPFL/TTO) удлиняют курс — берётся самый рестриктивный режим (Delphi strong consensus 97%).",
+    "num_phases": 4,
+    "pathways": {
+      "has_surgical": true,
+      "has_conservative": false,
+      "notes": "Досье описывает ИСКЛЮЧИТЕЛЬНО хирургическую реабилитацию после восстановления хряща. Консервативного пути (без операции) нет. Однако хирургический путь ветвится ДВУМЕРНО: по ПРОЦЕДУРЕ (microfracture/BMS vs ACI/MACI vs OAT/OCA) и по ЛОКАЛИЗАЦИИ (мыщелок/condyle vs пателлофеморальный/PF). Рекомендация досье (раздел 13/Recommendations) — завести 6 ОТДЕЛЬНЫХ program_type по комбинации процедура×локализация (cartilage_microfracture_condyle, cartilage_microfracture_pf, cartilage_aci_condyle, cartilage_aci_pf, cartilage_oat_oca_condyle, cartilage_oat_oca_pf), потому что WB/ROM-логика и сроки расходятся принципиально (PF: осевая нагрузка в разгибании рано, нагруженная флексия поздно; condyle: разгрузка рано, ROM рано; ACI vs microfracture различаются по длительности созревания в 2-3 раза). Фолбэк-вариант: свести к 3 program_type по процедуре с локализационным флагом, если хирург-партнёр использует унифицированный протокол. ОБЩАЯ реабилитация (нейромышечный контроль, проприоцепция, сила, кардио без импакта, функция) — единый модуль поверх всех вариантов в разрешённых рамках. Основная (наиболее детальная) траектория для phases ниже — ACI/MACI мыщелок (MACI Rehabilitation Manual, Patient 3), как самая полно специфицированная."
+    },
+    "measurement_vocabulary": [
+      "knee_flexion_degrees",
+      "knee_extension_degrees",
+      "weight_bearing_pct_bodyweight",
+      "quad_strength_lsi_pct",
+      "hop_lsi_pct",
+      "vas_pain",
+      "effusion_present",
+      "gait_symmetry",
+      "rts_time_months_since_surgery"
+    ],
+    "phases": [
+      {
+        "phase_number": 1,
+        "title_ru": "Имплантация и защита (защита трансплантата / пролиферация)",
+        "duration_weeks": "0-6",
+        "goals": [
+          "Защитить зону восстановления хряща и трансплантат от смещения/делиминации",
+          "ACI/MACI: клетки адгезируют и пролиферируют (тканевая фаза Implantation & Protection 0-6 нед)",
+          "Запуск раннего пассивного ROM для профилактики артрофиброза",
+          "Активация квадрицепса (quad sets) без shear-сил",
+          "Контроль боли и выпота",
+          "Постепенная прогрессия осевой нагрузки по протоколу хирурга"
+        ],
+        "restrictions": [
+          "ACI/MACI мыщелок: WB старт <20% массы тела, прирост 10-15%/нед (избыточная нагрузка >20% массы тела для TF-дефектов противопоказана)",
+          "Избегать нагруженной флексии >45° рано (ACI/MACI)",
+          "Избегать shear-сил и активного разгибания против сопротивления (ACI/MACI)",
+          "PF-локализация: ограничение НАГРУЖЕННОЙ флексии, безопасная зона ~0-30/45°, брейс locked in full extension",
+          "Microfracture/BMS мыщелок: традиционно toe-touch/NWB 6-8 нед (под калибровку: малые дефекты <2 см² могут не требовать WB-ограничений)",
+          "Несоблюдение режима реабилитации — формальное противопоказание к MACI (FDA)"
+        ],
+        "allowed": [
+          "Пассивный ROM сразу (ACI/MACI)",
+          "Брейс прогрессия 0-30° → 0-45° (мыщелок); locked in full extension (PF)",
+          "Quad sets, SLR (мыщелок)",
+          "2 костыля рано",
+          "OAT/OCA: немедленный ROM с акцентом на полное разгибание, брейс рано (88-100% протоколов)",
+          "CPM по протоколу хирурга (исторически microfracture 6-8 ч/день 0-40°; современный Delphi — не обязателен)",
+          "Изометрия квадрицепса в разгибании (PF)"
+        ],
+        "pain_guidance": [
+          "Персистирующий выпот/боль — признак слишком быстрой прогрессии: снизить нагрузку/объём",
+          "MACI manual: при резкой боли с блоком или выпотом — немедленно уведомить хирурга"
+        ],
+        "red_flags": [
+          "Несостоятельность/делиминация трансплантата (ACI/MACI): резкая боль с блоком/выпотом → немедленно к хирургу",
+          "Признаки ТГВ/ВТЭ → немедленно в неотложку (MACI manual)",
+          "Инфекция",
+          "Артрофиброз / потеря ROM, спайки",
+          "OAT/OCA: отрыв/нон-юнион костной части, коллапс"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "ACI/MACI мыщелок: достигнут диапазон брейса 0-45°",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": ">=",
+            "threshold": 45,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Прогрессия осевой нагрузки по протоколу хирурга (ACI/MACI старт <20% массы тела с приростом 10-15%/нед)",
+            "type": "instructor_check",
+            "measurement_type": "weight_bearing_pct_bodyweight",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Контроль выпота, отсутствие признаков делиминации/несостоятельности (очный осмотр)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Переход и созревание (формирование/ремоделирование матрикса)",
+        "duration_weeks": "6-12",
+        "goals": [
+          "ACI/MACI: формирование матрикса, перекрывающего дефект (Transition & Proliferation 6-12 нед); начало ремоделирования/созревания",
+          "Microfracture мыщелок: переход к WBAT и более зрелому гиалино-подобному хрящу (к ~12 нед)",
+          "Достижение полной осевой нагрузки",
+          "Достижение полного ROM",
+          "Восстановление симметрии походки",
+          "OAT/OCA: завершение osseointegration костной части графта (полная WB к 8-10 нед)"
+        ],
+        "restrictions": [
+          "ACI/MACI: осторожная прогрессия нагруженной флексии вне зоны контакта дефекта",
+          "Microfracture: прогрессия CKC только после полной WB",
+          "PF: контроль OKC-разгибания в диапазонах высокого PF-давления (60-90°)",
+          "Без импакта/бега в этой фазе"
+        ],
+        "allowed": [
+          "ACI/MACI мыщелок: полная WB к 7-9 нед (ускоренные протоколы Ebert — к 6-8 нед); полный ROM к 7-9 нед; брейс прогрессия до полной флексии",
+          "Microfracture мыщелок: прогрессия к WBAT, велотренажёр без сопротивления, OKC-разгибание (если дефект НЕ в PF-зоне), CKC после полной WB",
+          "Сила, низкоимпактное кардио (велосипед, плавание) — фаза 3-6 мес активности (ACI/MACI)",
+          "Прогрессия нейромышечного контроля и проприоцепции в разрешённых рамках"
+        ],
+        "pain_guidance": [
+          "Персистирующий выпот/боль = слишком быстрая прогрессия → снизить нагрузку/объём",
+          "Прогрессия только при отсутствии боли/выпота"
+        ],
+        "red_flags": [
+          "Гипертрофия трансплантата (ACI, особенно periosteal): пик 3-7 мес, симптоматическая ~5-15% → может требовать артроскопии",
+          "Несостоятельность/делиминация: резкая боль с блоком/выпотом → к хирургу",
+          "Персистирующий выпот как признак избыточной прогрессии"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Полная осевая нагрузка без боли и выпота",
+            "type": "measurement",
+            "measurement_type": "weight_bearing_pct_bodyweight",
+            "operator": ">=",
+            "threshold": 100,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Полный ROM (полное разгибание + полная флексия, к 7-9 нед для ACI/MACI)",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Симметрия походки",
+            "type": "instructor_check",
+            "measurement_type": "gait_symmetry",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Отсутствие боли и выпота при полной нагрузке",
+            "type": "self_report",
+            "measurement_type": "vas_pain",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "vas"
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Функция и сила (нейромышечный контроль, прогрессия силы)",
+        "duration_weeks": "12-26",
+        "goals": [
+          "ACI/MACI: ремоделирование и созревание ткани до durable (Remodeling & Maturation 12-26 нед и далее)",
+          "Прогрессия силы квадрицепса и нижней конечности к симметрии (LSI)",
+          "Развитие нейромышечного контроля и проприоцепции",
+          "Низкоимпактное кардио без импакта",
+          "Подготовка к беговой/импактной нагрузке"
+        ],
+        "restrictions": [
+          "Импакт обычно не раньше ~3-4 мес (microfracture); бег с 7-9 мес (ACI/MACI)",
+          "Прогрессия OKC/CKC только по разрешению/в разрешённых рамках",
+          "Без контактного/коллизионного спорта"
+        ],
+        "allowed": [
+          "Сила (прогрессия нагрузки), низкоимпактные дисциплины (велосипед, плавание)",
+          "Microfracture: импакт с ~3-4 мес",
+          "Нейромышечный контроль, проприоцепция, функциональная прогрессия",
+          "Начало беговой прогрессии для ACI/MACI с 7-9 мес (на стыке с фазой 4)"
+        ],
+        "pain_guidance": [
+          "Прогрессия по переносимости боли/выпота — выпот как сигнал избыточного объёма"
+        ],
+        "red_flags": [
+          "Гипертрофия трансплантата (ACI): пик 3-7 мес — симптоматическая гипертрофия может требовать артроскопии",
+          "Персистирующий выпот/боль при наращивании нагрузки",
+          "Microfracture: ухудшение функции после ~2 лет (долгосрочный мониторинг)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Сила квадрицепса симметрична (LSI ≥90%, заимствование ACL-батареи — нет валидированной cartilage-батареи)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Достигнут процедуро-специфичный минимум времени для импакта/бега (microfracture импакт ~3-4 мес; бег ACI/MACI 7-9 мес)",
+            "type": "measurement",
+            "measurement_type": "rts_time_months_since_surgery",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Контроль боли и выпота при функциональной нагрузке (очная оценка)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 4,
+        "title_ru": "Нагрузка и возврат в спорт (RTS)",
+        "duration_weeks": "16+",
+        "goals": [
+          "Спорт-специфичная прогрессия (agility, импакт)",
+          "Достижение объективных RTS-критериев (criterion-based gates + time-guardrail)",
+          "Психологическая готовность к возврату",
+          "Возврат к импактному, затем контактному/коллизионному спорту по процедуро-специфичным срокам"
+        ],
+        "restrictions": [
+          "Контактный/коллизионный спорт: ACI/MACI 10-12 мес+ (мыщелок), 12 мес+ (одиночный PF)",
+          "Процедуро-специфичный минимум времени до спорта обязателен наряду с критериями (Delphi Q9 consensus 83%)",
+          "Решение по объективным критериям, а не только по календарю"
+        ],
+        "allowed": [
+          "Бег: ACI/MACI с 7-9 мес",
+          "Теннис ~9 мес (одиночный PF)",
+          "Импактные дисциплины по достижении критериев",
+          "Контактный/коллизионный спорт по процедуро-специфичным срокам (10-12 мес+)"
+        ],
+        "pain_guidance": [
+          "RTS только при отсутствии боли и выпота на спорт-нагрузке"
+        ],
+        "red_flags": [
+          "Резкая боль с блоком/выпотом при возврате к нагрузке → к хирургу (делиминация/несостоятельность)",
+          "Donor-site морбидность (OAT/мозаичная): knee-to-knee ~5,9%, пателлофеморальные жалобы ~22%, крепитация ~31%"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Сила квадрицепса/конечности LSI ≥90% (RTS-батарея, заимствование ACL)",
+            "type": "measurement",
+            "measurement_type": "quad_strength_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Hop-тесты LSI ≥90% (заимствование ACL-батареи — нет валидированной cartilage-специфичной батареи)",
+            "type": "measurement",
+            "measurement_type": "hop_lsi_pct",
+            "operator": ">=",
+            "threshold": 90,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Отсутствие боли и выпота на спорт-нагрузке",
+            "type": "self_report",
+            "measurement_type": "vas_pain",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "vas"
+          },
+          {
+            "label_ru": "Полный ROM",
+            "type": "measurement",
+            "measurement_type": "knee_flexion_degrees",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": "deg"
+          },
+          {
+            "label_ru": "Проприоцепция, функциональное тестирование, agility пройдены (RTS-батарея Delphi)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Достигнут процедуро-специфичный минимум времени до спорта (BMS ~4 мес; OAT/OCA ~6 мес; ACI/MACI ~8-12+ мес)",
+            "type": "measurement",
+            "measurement_type": "rts_time_months_since_surgery",
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Психологическая готовность к возврату в спорт",
+            "type": "self_report",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      }
+    ],
+    "structural_notes": "КЛЮЧЕВОЕ: досье НЕ ложится в одну линейную модель — ветвление ДВУМЕРНОЕ (процедура × локализация), 6 базовых комбинаций. Линейные 4 фазы выше построены по ОСНОВНОЙ, наиболее детальной траектории — ACI/MACI мыщелок (MACI Rehabilitation Manual, Patient 3 + биология заживления раздел 3 + фазы активности 4.3). Реальная реализация по рекомендации досье — 6 отдельных program_type.\n\nРАСХОЖДЕНИЕ СРОКОВ ПО ПРОЦЕДУРЕ (в 2-3 раза!):\n- Microfracture/BMS (фиброхрящ, коллаген I): защита дефекта >6 нед; полная WB после 6-8 нед NWB/toe-touch; импакт ~3-4 мес; RTS Delphi-минимум ~4 мес; RTS-проценты низшие (MFX 58-75%); durability ухудшается после ~2 лет на средних/крупных дефектах. ДЛЯ МАЛЫХ (<2 см²) дефектов мыщелка WB-ограничения могут быть НЕ нужны (Jain/Lau, серия РКИ Ebert).\n- OAT/OCA (гиалин durable, лимит = osseointegration кости): NWB ~8 нед → полная WB 8-10 нед (мыщелок); RTS-минимум 6 мес; OAT самый быстрый RTS (5,2±1,8 мес, RTS 89-93%), OCA ~9,6 мес.\n- ACI/MACI (гиалино-подобный, созревание до года+): тканевые фазы 0-6 / 6-12 / 12-26 нед+; бег 7-9 мес; контакт 10-12 мес+; RTS-минимум 8 мес (Delphi, но Q10 НЕ достиг консенсуса 69%); RTS ~11,8±3,8 мес (ACI по Krych).\n\nРАСХОЖДЕНИЕ ЛОГИКИ ПО ЛОКАЛИЗАЦИИ (независимая ось):\n- МЫЩЕЛОК (tibiofemoral): контакт сохраняется по всей дуге → защищают ОСЕВУЮ нагрузку (ранняя разгрузка), но ROM без нагрузки безопасен рано, БЕЗ брейса для condyle. WB-логика выше = condyle.\n- ПАТЕЛЛОФЕМОРАЛЬНЫЙ (PF/трохлея): надколенник в контакте с трохлеей с ~20-30°, пик давления 60-90° → осевая нагрузка В РАЗГИБАНИИ разрешена рано (брейс locked in full extension), но ограничивается НАГРУЖЕННАЯ ФЛЕКСИЯ (безопасная зона 0-30/45°). ACI/MACI одиночный PF — даже немедленная полная WB (81-100%) в брейсе. OAT/OCA PF — WBAT ~2,8 нед (раньше мыщелка). Это переворачивает раннюю фазу: для PF restriction — на флексию, не на нагрузку.\n\nCRITERION-DRIVEN vs TIME-DRIVEN: досье явно говорит «решение по объективным критериям, а не только по календарю», но числовых сроков много как guardrail. RTS = criterion-based gates (боль/выпот, ROM, сила/LSI ≥90%, hop-батарея, agility) + time-guardrail. КРИТИЧНО: валидированной cartilage-специфичной тест-батареи НЕТ — поле заимствует ACL-батареи (hop, LSI ≥90%); пороги LSI 90% это заимствование, не cartilage-evidence.\n\nРАННЯЯ ФАЗА = ХИРУРГ-УПРАВЛЯЕМАЯ: точные WB/ROM-пороги, тип/настройка брейса, CPM, сроки до полной нагрузки НЕ задавать без письменного протокола хирурга — все числа это ОРИЕНТИРЫ под калибровку. Общая реабилитация (нейромышечный контроль, проприоцепция, сила, кардио, функция) — единый модуль поверх в разрешённых рамках.\n\nСОЧЕТАННЫЕ ПРОЦЕДУРЫ = СЛОЙ МОДИФИКАТОРОВ (берётся самый рестриктивный, Delphi consensus 97%): остеотомия HTO/DFO (WB замедляется до рентген-сращения), ПКС (графт-зависимые лимиты, пересечение с ACL-dossier), мениск-шов/трансплантация (медленнее WB и ROM, без активной флексии >90° первые 6-8 нед), MPFL (WB снижена ~2 нед), TTO (ROM 0-90° первые ~4 нед, активное разгибание ограничено 6-8 нед).\n\nWB-ДЕБАТ (accelerated vs conservative) — заложить как настраиваемый параметр: РКИ Ebert поддерживают ускоренную WB после MACI мыщелка как безопасную до 10 лет; контрапункт Wondrasch — клинически эквивалентно, но MRI-качество ткани снижалось между 2 и 5 годами. Дефолт — протокол хирурга.\n\nMOCART (структурный МРТ-исход) — опциональный маркер, НЕ самостоятельный gate (корреляция с клиникой слабая, ~28% исследований). НЕ включён в transition_criteria намеренно.\n\nДОКАЗАТЕЛЬНАЯ БАЗА: большинство протокольных чисел уровень IV-V (консенсусы, нарративы, протокол производителя MACI, институциональные). РКИ есть по WB-дебату (Ebert, уровень I) и MACI vs microfracture (SUMMIT, уровень I). PF-протоколы для OAT/OCA скудны — зона неопределённости."
+  },
+  {
+    "pathology_name_ru": "Гонартроз (остеоартроз коленного сустава)",
+    "pathology_name_en": "Knee osteoarthritis (knee OA / gonarthrosis)",
+    "suggested_program_type_code": "knee_oa",
+    "anchor": "criterion_driven",
+    "anchor_notes": "Досье прямо отвергает календарно-постоп-фазовую модель (СЕКЦИЯ 4, СЕКЦИЯ 10): прогрессия по симптомам/функции (criterion-based), не по дате операции. Хирургии в основной траектории нет — это exercise-first консервативное состояние. Где упомянуты недели — это «guardrails»/ориентиры, привязанные к НАЧАЛУ структурированной программы (treatment_start): core-блок недели 0–12 (модель GLA:D ~6–12 нед супервизии), затем поддержание 12 нед → бессрочно. Замеры PROMs: baseline / ~3 мес / ~12 мес. Точка направления к врачу — ориентир ≥12 недель «адекватного консерватива», но это клиническое, а не числовое решение.",
+    "num_phases": 4,
+    "phases": [
+      {
+        "phase_number": 0,
+        "title_ru": "Этап 0 — оценка (вход)",
+        "duration_weeks": "",
+        "goals": [
+          "Поставить клинический диагноз по критериям NICE NG226 (возраст 45+, нагрузочная боль, утренняя скованность ≤30 минут)",
+          "Скрининг red flags",
+          "Снять базовые PROMs (KOOS/WOMAC + NPRS) и performance-батарею OARSI (30s-CST, 40m fast-paced walk, stair-climb test)",
+          "Оценить ИМТ, мальалайнмент (варус/вальгус), клинический фенотип, коморбидности",
+          "Определить модификаторы ведения (KL grade / фенотип / ИМТ / мальалайнмент / коморбидности / возраст-активность) для настройки интенсивности и акцентов"
+        ],
+        "restrictions": [
+          "Не назначать рутинную визуализацию (NICE NG226: не использовать рутинно ни для диагностики, ни для ведения)",
+          "Не вести программу по KL grade / рентген-структуре — структура слабо коррелирует с симптомами на индивидуальном уровне"
+        ],
+        "allowed": [],
+        "pain_guidance": [],
+        "red_flags": [
+          "Септический артрит — острое горячее опухшее колено + системные симптомы (УРГЕНТНО)",
+          "Воспалительный артрит (ревматоидный, кристаллический/подагра): утренняя скованность >30–45 мин, полиартикулярность, системность",
+          "Отражённая боль из тазобедренного сустава или поясницы",
+          "Объёмный выпот неясного генеза",
+          "Ночная боль / боль покоя, нетипичная для ОА",
+          "Быстрое нарастание симптомов / деформация",
+          "Подозрение на малигнизацию или инфекцию (NICE «atypical features»)"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Отсутствуют red flags; клинический диагноз knee OA подтверждён, базовые PROMs и performance-тесты сняты — можно начинать core-блок",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Любой red flag → немедленная эскалация / направление к врачу до продолжения нагрузки (НЕ переход на Этап 1)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 1,
+        "title_ru": "Этап 1 — core-блок (недели 0–12)",
+        "duration_weeks": "0-12",
+        "goals": [
+          "Структурированные упражнения: сила (resistance) + аэробика (aerobic) + нейромышечное/функциональное (neuromuscular)",
+          "Модель GLA:D: 2 образовательные сессии + ~12 супервизируемых нейромышечных сессий (≈6–12 недель)",
+          "Образование и самоменеджмент",
+          "При избыточном весе — цель снижения ≥5%, лучше ≥10% массы тела (IDEA, дозозависимый эффект)",
+          "Переносимость нагрузки → рост силы/функции",
+          "Наращивать силу квадрицепса (ключевой модифицируемый таргет; дефицит при OA 11–56%)"
+        ],
+        "restrictions": [
+          "Не использовать отдых/избегание нагрузки как стратегию (декондиционирование ухудшает OA — ПРОТИВ)",
+          "При остром обострении (flare) — временно снизить объём/интенсивность, НЕ прекращать полностью"
+        ],
+        "allowed": [
+          "Движение и нагрузка безопасны и полезны — сустав не «стирается» упражнениями",
+          "Мягкая боль при OA безопасна и не означает повреждение",
+          "Боль может временно увеличиться в начале терапевтических упражнений — это ожидаемо (NICE NG226)"
+        ],
+        "pain_guidance": [
+          "Модель приемлемой боли (acceptable pain model, по Silbernagel 2007): боль во время и после нагрузки приемлема до ~5/10 по NPRS",
+          "Боль не должна существенно нарастать после нагрузки и должна возвращаться к исходному уровню к следующему утру",
+          "Если боль к следующему утру не возвращается к исходному — снизить нагрузку",
+          "Боль как guide, не как стоп-сигнал"
+        ],
+        "red_flags": [
+          "Появление любого red flag в ходе программы → направление к врачу до продолжения нагрузки"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Улучшение субшкал KOOS ≥8–10 пунктов (MIC, мягкий-умеренный OA) к ~12 неделе",
+            "type": "measurement",
+            "measurement_type": "koos_subscale_points",
+            "operator": ">=",
+            "threshold": 8,
+            "threshold2": null,
+            "unit": "points"
+          },
+          {
+            "label_ru": "Прирост 30-second chair-stand test ≥~2,5 вставаний (индивидуальный MDC) к ~12 неделе",
+            "type": "measurement",
+            "measurement_type": "chair_stand_30s_reps",
+            "operator": ">=",
+            "threshold": 2.5,
+            "threshold2": null,
+            "unit": "reps"
+          },
+          {
+            "label_ru": "Снижение веса при избытке: ориентир ≥5% массы тела (лучше ≥10%)",
+            "type": "measurement",
+            "measurement_type": "body_weight_loss_pct",
+            "operator": ">=",
+            "threshold": 5,
+            "threshold2": null,
+            "unit": "pct"
+          },
+          {
+            "label_ru": "Боль во время/после нагрузки удерживается на приемлемом уровне (≤5/10 NPRS, спад к утру) — переносимость нагрузки достигнута",
+            "type": "measurement",
+            "measurement_type": "nprs_pain",
+            "operator": "<=",
+            "threshold": 5,
+            "threshold2": null,
+            "unit": "nprs"
+          }
+        ]
+      },
+      {
+        "phase_number": 2,
+        "title_ru": "Этап 2 — поддержание (12 недель → бессрочно)",
+        "duration_weeks": "12+",
+        "goals": [
+          "Перевод в самостоятельную / полусупервизируемую программу",
+          "Перенос упражнений в повседневную и рекреационную активность",
+          "Долгосрочное поддержание неопределённо долго («как чистка зубов»)",
+          "Акцент на приверженность — эффект упражнений обратим при прекращении",
+          "Повторный замер PROMs и performance-тестов на ~3 и ~12 мес (модель GLA:D-регистра)"
+        ],
+        "restrictions": [
+          "Не прекращать упражнения — эффект на боль/функцию угасает через 2–6 мес после остановки (Cochrane), откат активности к 12 мес (GLA:D)"
+        ],
+        "allowed": [
+          "Полноценная повседневная и рекреационная активность (это НЕ спортивный return-to-sport как при ПКС)"
+        ],
+        "pain_guidance": [
+          "Продолжать применять модель приемлемой боли (до ~5/10 NPRS, спад к утру)"
+        ],
+        "red_flags": [
+          "Нарастающая / ночная / неконтролируемая боль → переход на Этап 3 (направление к врачу)",
+          "Любой red flag → направление к врачу"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "К ~12 неделям адекватного консерватива НЕТ значимого улучшения → переход на Этап 3 (направление к врачу)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          },
+          {
+            "label_ru": "Боль нарастает / ночная / неконтролируемая → переход на Этап 3",
+            "type": "self_report",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      },
+      {
+        "phase_number": 3,
+        "title_ru": "Этап 3 — направление к врачу (TKA-континуум)",
+        "duration_weeks": "",
+        "goals": [
+          "Направление к врачу при провале адекватного консерватива (ориентир ≥12 недель структурированных упражнений + образование + контроль веса при достаточной приверженности)",
+          "Обсуждение опций: внутрисуставные КС (короткий эффект, поддержка упражнений), HTO/остеотомия (молодые активные, unicompartmental + мальалайнмент), консультация по TKA",
+          "Решение о направлении — клиническое, по оценке влияния симптомов на качество жизни, а НЕ по числовой шкале тяжести"
+        ],
+        "restrictions": [
+          "Не исключать кандидатуру на TKA по возрасту, полу, курению, коморбидностям, ИМТ (NICE NG226)",
+          "Детали постоп-TKA — отдельный dossier (здесь только обозначение точки перехода)"
+        ],
+        "allowed": [],
+        "pain_guidance": [],
+        "red_flags": [
+          "Любой red flag → срочное направление к врачу"
+        ],
+        "transition_criteria": [
+          {
+            "label_ru": "Недостаточный ответ на адекватный консерватив (ориентир ≥12 недель) при достаточной приверженности",
+            "type": "instructor_check",
+            "measurement_type": "conservative_treatment_weeks",
+            "operator": ">=",
+            "threshold": 12,
+            "threshold2": null,
+            "unit": "weeks"
+          },
+          {
+            "label_ru": "Суставные симптомы существенно ухудшают качество жизни И консерватив неэффективен/неприемлем — рассматривать направление на эндопротезирование (TKA)",
+            "type": "instructor_check",
+            "measurement_type": null,
+            "operator": null,
+            "threshold": null,
+            "threshold2": null,
+            "unit": null
+          }
+        ]
+      }
+    ],
+    "pathways": {
+      "has_surgical": false,
+      "has_conservative": true,
+      "notes": "Досье прямо рекомендует ОДИН консервативный exercise-first путь `knee_OA` с модификаторами (СЕКЦИЯ 13: НЕ несколько отдельных путей). Хирургии в основной траектории НЕТ — постоп-рестрикций, как при ПКС/мениске, здесь нет (СЕКЦИЯ 8, СЕКЦИЯ 10). Хирургия (в/с инъекции КС, HTO/остеотомия, TKA) — это ТОЧКА ВЫХОДА/направления к врачу (Этап 3), а не отдельная программная траектория; постоп-TKA вынесен в отдельный dossier. Поэтому отдельный surgical program_type создавать НЕ нужно — только consервативный с модификаторами интенсивности/прогрессии/акцентов/точки направления."
+    },
+    "measurement_vocabulary": [
+      "koos_subscale_points",
+      "womac_score",
+      "nprs_pain",
+      "chair_stand_30s_reps",
+      "walk_40m_fast_sec",
+      "stair_climb_test",
+      "quad_strength_deficit_pct",
+      "body_weight_loss_pct",
+      "bmi",
+      "morning_stiffness_min",
+      "conservative_treatment_weeks",
+      "kl_grade",
+      "koos_pain_pass_score"
+    ],
+    "structural_notes": "КЛЮЧЕВОЕ: это досье НЕ ложится в линейную модель «N фаз, привязанных к неделям от операции». (1) Прогрессия CRITERION-BASED по симптомам/функции, а НЕ календарно-постоп-фазовая (СЕКЦИЯ 4, 10). Сроки в неделях («недели 0–12», «≥12 недель») — это GUARDRAILS/ориентиры от начала структурированной программы (treatment_start), не жёсткие фазовые границы. (2) Состояние ХРОНИЧЕСКОЕ управляемое, не «излечивается курсом» — Этап 2 (поддержание) бессрочен («как чистка зубов»), эффект обратим при прекращении (Cochrane 2–6 мес, GLA:D откат к 12 мес). (3) «Фазы» в моём извлечении соответствуют 4 ЭТАПАМ из секции Recommendations (0 оценка → 1 core-блок → 2 поддержание → 3 направление к врачу), это самая детальная структура прогрессии в досье; rehab_phases.duration_weeks для них носит ориентировочный характер. (4) ОДИН путь `knee_OA` с МОДИФИКАТОРАМИ (KL grade / фенотип / ИМТ / мальалайнмент / коморбидности / возраст-активность — СЕКЦИЯ 8) — модификаторы настраивают интенсивность, прогрессию, акценты и точку направления к врачу, но НЕ меняют каркас и НЕ образуют отдельные траектории. ВАРИАНТЫ ПО ФЕНОТИПУ (6 фенотипов, СЕКЦИЯ 1: хроническая боль/центр.сенситизация, воспалительный, метаболический, костно-хрящевой, механической перегрузки, минимальной болезни) — разные акценты: центр.сенситизация → образование о боли + аэробика; метаболический/ожирение → приоритет снижения веса; воспалительный → учёт обострений. (5) Тип упражнений ВТОРИЧЕН — ни один не превосходит другой статистически (Goh 2019 NMA); тип калибруется под предпочтения/доступность/коморбидности, не догмой. (6) Пороги performance-тестов и PASS (KOOS Pain ≈77,7 — из TKA-когорты) требуют ЛОКАЛЬНОЙ НОРМИРОВКИ — не валидированы вне TKA; переносить с осторожностью. (7) Performance-батарея OARSI (30s-CST, 40m walk, stair-climb) стандартизирует ПРОТОКОЛЫ тестов, а не единые нормативы для популяции knee OA. (8) РФ-слой (SYSADOA/ГК на высшем грейде) намеренно ИЗОЛИРОВАН как supplementary, конфликтует с OARSI/ACR/NICE — не смешивать в международный спайн. (9) Числовые гейты слабые: KOOS MIC ≥8–10, 30s-CST MDC ≥~2,5, вес ≥5%(лучше ≥10%), боль ≤5/10 NPRS, скованность ≤30 мин (диагностический критерий), ≥12 нед консерватива до эскалации — большинство «переходов» это instructor_check/self_report, а не жёсткие measurement-гейты как при ПКС (нет LSI силы, нет hop-тестов %, нет градусов ROM-целей)."
+  }
+]
