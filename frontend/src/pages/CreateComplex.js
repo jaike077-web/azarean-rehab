@@ -37,9 +37,11 @@ import {
   ChevronRight,
   Save,
   Folder,
+  Eye,
 } from 'lucide-react';
 import s from './CreateComplex.module.css';
 import TemplateSelector from '../components/TemplateSelector';
+import ComplexPreviewModal from '../components/ComplexPreviewModal';
 import { validateExerciseRow, normalizeExerciseForPayload, TEMPO_BOUNDS } from '../utils/exerciseValidation';
 
 // Компонент для перетаскиваемого упражнения
@@ -235,6 +237,7 @@ function CreateComplex() {
   const [warnings, setWarnings] = useState('');
   
   const [selectedExercises, setSelectedExercises] = useState([]);
+  const [showPreview, setShowPreview] = useState(false); // превью «глазами пациента»
   // CP2b: inline-ошибки валидации по строкам упражнений (map exerciseId → {prescription?, tempo?}).
   // Заполняется в handleSubmit перед отправкой; рендерится в SortableExercise через props errors.
   const [exerciseErrors, setExerciseErrors] = useState({});
@@ -871,6 +874,13 @@ function CreateComplex() {
               <ChevronLeft size={18} /> Назад
             </button>
             <button
+              className={s.btnSecondary}
+              onClick={() => setShowPreview(true)}
+              disabled={selectedExercises.length === 0}
+            >
+              <Eye size={18} /> Предпросмотр
+            </button>
+            <button
               className={s.btnPrimary}
               onClick={handleSubmit}
               disabled={loading || selectedExercises.length === 0}
@@ -930,6 +940,19 @@ function CreateComplex() {
   onClose={() => setTemplateSelectorOpen(false)}
   onSelect={loadTemplate}
   diagnosisId={selectedDiagnosis?.id || null}
+/>
+
+{/* Превью «глазами пациента» — рендерит из состояния формы (комплекс ещё не сохранён) */}
+<ComplexPreviewModal
+  isOpen={showPreview}
+  onClose={() => setShowPreview(false)}
+  title={complexTitle}
+  diagnosisName={selectedDiagnosis?.name}
+  diagnosisNote={diagnosisNote}
+  recommendations={recommendations}
+  warnings={warnings}
+  instructorName={user?.full_name}
+  exercises={selectedExercises}
 />
 
 {/* Модалка сохранения шаблона */}

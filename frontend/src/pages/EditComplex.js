@@ -7,6 +7,7 @@ import ExerciseAudioControl from '../components/ExerciseAudioControl';
 import useAudioPreview from '../hooks/useAudioPreview';
 import { emptyCueState, cueStateFromBindings, buildCueSoundsPayload } from '../utils/audioCues';
 import BackButton from '../components/BackButton';
+import ComplexPreviewModal from '../components/ComplexPreviewModal';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
   DndContext,
@@ -30,7 +31,8 @@ import {
   Save,
   Check,
   X,
-  Volume2
+  Volume2,
+  Eye
 } from 'lucide-react';
 
 
@@ -224,6 +226,7 @@ function EditComplex() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [exercisesLoading, setExercisesLoading] = useState(true);
+  const [showPreview, setShowPreview] = useState(false); // превью «глазами пациента»
 
   // Определяем, есть ли вообще тач
   const isTouchDevice =
@@ -735,12 +738,30 @@ function EditComplex() {
           <button className={s.btnSecondary} onClick={() => navigate('/my-complexes')}>
             Отмена
           </button>
+          <button
+            className={s.btnSecondary}
+            onClick={() => setShowPreview(true)}
+            disabled={selectedExercises.length === 0}
+          >
+            <Eye size={18} />
+            <span>Предпросмотр</span>
+          </button>
           <button className={s.btnPrimary} onClick={handleSave}>
             <Save size={18} />
             <span>Сохранить изменения</span>
           </button>
         </div>
       </div>
+
+      {/* Превью «глазами пациента» — из текущего состояния формы */}
+      <ComplexPreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title={complexTitle}
+        recommendations={recommendations}
+        instructorName={user?.full_name}
+        exercises={selectedExercises}
+      />
     </div>
   );
 }
