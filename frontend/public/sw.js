@@ -126,8 +126,12 @@
 // на упражнение — admin грузит/привязывает (ExerciseModal + per-row в редакторе
 // комплекса + вкладка «Треки» в Звуках), раннер играет ВЕСЬ период упражнения поверх
 // cue-бипов (отдельная громкость в Профиле). Новый JS-бандл (admin + patient).
-const CACHE_NAME = 'azarean-v25';
-const API_CACHE = 'azarean-api-v25';
+// v26 (2026-06-02) — EA5 hotfix: трек упражнения играет в фазе 'work' (не на интро-
+// экране «Начать подход» и не нонстоп между подходами) — звук НА ВРЕМЯ выполнения
+// подхода. Правка ExerciseRunner (узкий unlock). Без bump'а PWA продолжат слышать
+// трек уже на ready-интро (iOS-фидбэк Vadim'а).
+const CACHE_NAME = 'azarean-v26';
+const API_CACHE = 'azarean-api-v26';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
