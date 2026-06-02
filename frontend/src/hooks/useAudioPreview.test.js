@@ -77,4 +77,18 @@ describe('useAudioPreview', () => {
     act(() => { jest.runOnlyPendingTimers(); }); // закрытие ctx по setTimeout
     jest.useRealTimers();
   });
+
+  it('CT4: toneConfigOverride перебивает дефолт (▶ играет редактируемый тон)', async () => {
+    jest.useFakeTimers();
+    const { result } = renderHook(() => useAudioPreview());
+    // override с ДВУМЯ частотами vs count_tick дефолт (одна) → override применён.
+    await act(async () => {
+      await result.current(null, 'count_tick', { frequencies: [440, 550], durationMs: 100, type: 'square' });
+    });
+    expect(global.AudioContext).toHaveBeenCalledTimes(1);
+    expect(oscCount).toBe(2);
+    expect(admin.fetchAudioPresetBlob).not.toHaveBeenCalled();
+    act(() => { jest.runOnlyPendingTimers(); });
+    jest.useRealTimers();
+  });
 });

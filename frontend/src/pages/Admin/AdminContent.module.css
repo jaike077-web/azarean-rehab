@@ -639,3 +639,44 @@
   gap: 8px;
 }
 
+/* CT4: редактор «Стандартного тона» — суб-строка под cue (preset_id=null) */
+.toneEditorRow td {
+  padding-top: 0;
+  border-top: none;
+}
+
+.toneEditor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 8px 10px 10px 24px;
+  background: var(--color-surface-2);
+  border-radius: 6px;
+}
+
+.toneEditorLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  align-self: center;
+}
+
+.toneField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.toneInput {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--color-text);
+  width: 110px;
+}
+
