@@ -20,11 +20,18 @@ const { normalizeExerciseAudio, validateTrackPresetIds } = require('../utils/exe
 //   - tempo_*: число-или-null. Все-или-ничего — DB CHECK backstop, тут не дублируем.
 // =====================================================
 function normalizeExerciseFields(exercise) {
+  // Гард '' / null / undefined → null ДО Number(): Number(null)===0 и Number('')===0,
+  // из-за чего toIntNonNeg(null) возвращал 0 (а не null). Фронт при пустом темпе шлёт
+  // tempo_pause_s: null (явный JSON null) → бэкенд делал pause=0, ecc/con=null →
+  // частичное состояние → нарушение chk_ce_tempo → 500 при создании комплекса.
+  // Зеркало frontend utils/exerciseValidation.js toPositiveInt/toNonNegativeInt.
   const toIntPositive = (v) => {
+    if (v === '' || v == null) return null;
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
   };
   const toIntNonNeg = (v) => {
+    if (v === '' || v == null) return null;
     const n = Number(v);
     return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
   };

@@ -4,9 +4,10 @@
 // =====================================================
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { useAudioCue, useExerciseAudio } from '../context/AudioContext';
+import { useAudioCue, useExerciseAudio, useAudioSettings } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
 
 const formatTime = (s) => {
@@ -27,6 +28,8 @@ const ExerciseRunner = ({
   const toast = useToast();
   // EA5: узкий unlock — старт/стоп трека упражнения (вне канона раннера).
   const { startExerciseAudio, stopExerciseAudio } = useExerciseAudio();
+  // Мут: глобальный флаг звука (музыка + cue-бипы). Кнопка в раннере — мгновенная тишина.
+  const { settings: audioSettings, setSettings: setAudioSettings } = useAudioSettings();
 
   const list = useMemo(() => {
     if (Array.isArray(exercises) && exercises.length > 0) return exercises;
@@ -67,15 +70,8 @@ const ExerciseRunner = ({
     setShowDetails(false);
   }, [index]);
 
-  // EA5: трек упражнения — старт при входе в упражнение (смена index → новый ce.audio),
-  // стоп при анмаунте раннера (выход/завершение). startExerciseAudio стабилен, поэтому
-  // эффект фактически срабатывает только при смене exAudio. dedup внутри не рестартит
-  // тот же трек между упражнениями (бесшовно). iOS-инвариант — внутри AudioContext.
-  const exAudio = ce.audio || null;
-  useEffect(() => {
-    startExerciseAudio(exAudio);
-  }, [exAudio, startExerciseAudio]);
-  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]);
+  // EA5 music-плеер перенесён НИЖЕ (после объявления setPhase) — завязан на фазу
+  // work, а не на вход в упражнение (фикс iOS-фидбэка: не играть на интро-экране).
 
   useEffect(() => {
     if (exercise.id && complexId) {
@@ -134,6 +130,23 @@ const ExerciseRunner = ({
   const [setPhase, setSetPhase] = useState('ready'); // 'ready'|'preroll'|'work'|'rest'|'done'
   const [setRemaining, setSetRemaining] = useState(ce.duration_seconds || 0);
   const [prerollCountdown, setPrerollCountdown] = useState(0);
+
+  // EA5 (фикс iOS-фидбэка #2): трек упражнения = звук НА ВРЕМЯ ВЫПОЛНЕНИЯ подхода,
+  // НЕ фон на всю тренировку (может быть голос/ритм/музыка для упражнения).
+  //  - Таймерные (usesPerSetGuide): играет только в фазе 'work'; на интро «Начать
+  //    подход» (ready), 3-2-1 (preroll), отдыхе (rest) и done — стоп. Каждый подход
+  //    стартует заново (не нонстоп между подходами).
+  //  - Rep-only (нет гейта work): играет пока пациент на упражнении.
+  // Стоп на смене упражнения / выходе. Узкий unlock — канон раннера не трогаем.
+  const exAudio = ce.audio || null;
+  // + audioSettings.enabled: мут мгновенно глушит трек; размут в work — возобновляет.
+  const musicActive = !!exAudio && audioSettings.enabled
+    && (usesPerSetGuide ? setPhase === 'work' : true);
+  useEffect(() => {
+    if (musicActive) startExerciseAudio(exAudio);
+    else stopExerciseAudio();
+  }, [musicActive, exAudio, startExerciseAudio, stopExerciseAudio]);
+  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]); // анмаунт раннера → стоп
 
   // Сброс per-set state при переходе на новое упражнение → ready phase.
   useEffect(() => {
@@ -327,6 +340,29 @@ const ExerciseRunner = ({
           <div className="crd-top">
             <span className="num">{index + 1}</span>
             <span className="nm">{exercise.title || 'Упражнение'}</span>
+            {/* Мут звука (музыка + бипы) — доступен в любой фазе. Inline-стили:
+                обходят .pd-runner * reset; marginLeft:auto прижимает вправо. */}
+            <button
+              type="button"
+              data-testid="runner-mute-btn"
+              onClick={() => setAudioSettings({ enabled: !audioSettings.enabled })}
+              aria-label={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+              aria-pressed={!audioSettings.enabled}
+              title={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+              style={{
+                // 44×44 (Apple HIG touch target). Всегда видимая «пилюля» (чёткий хит-эрия
+                // + контраст в обоих состояниях): звук вкл → светлый фон + тёмная иконка;
+                // мут → инверсия (тёмный фон + белая иконка), визуально выделен как «выкл».
+                marginLeft: 'auto', flexShrink: 0, alignSelf: 'flex-start',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 44, height: 44, padding: 0, border: 'none', borderRadius: 12,
+                background: audioSettings.enabled ? 'var(--az-bg)' : 'var(--az-label)',
+                color: audioSettings.enabled ? 'var(--az-label)' : '#fff',
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {audioSettings.enabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </button>
           </div>
           {paramLine() && <div className="rx">{paramLine()}</div>}
           {prevHintText() && (
