@@ -137,8 +137,11 @@
 // длительность/форму волны встроенного тона события (дом-карта, preset_id=null);
 // раннер играет кастомный тон. Новый JS-бандл (AdminContent + AudioContext + хук
 // превью). Без bump'а PWA держали бы старые chunks.
-const CACHE_NAME = 'azarean-v28';
-const API_CACHE = 'azarean-api-v28';
+// v29 (2026-06-02) — кнопка-мут перенесена из шапки карточки В ТАЙМЕР-ЗОНУ
+// (timed: absolute правый-верх .sec; rep-only: в баре действий .acts) — у заголовка
+// видео её не видно, а взгляд пациента во время подхода на таймере. Фидбэк Vadim'а.
+const CACHE_NAME = 'azarean-v29';
+const API_CACHE = 'azarean-api-v29';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
