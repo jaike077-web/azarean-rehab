@@ -4,9 +4,10 @@
 // =====================================================
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { useAudioCue, useExerciseAudio } from '../context/AudioContext';
+import { useAudioCue, useExerciseAudio, useAudioSettings } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
 
 const formatTime = (s) => {
@@ -27,6 +28,8 @@ const ExerciseRunner = ({
   const toast = useToast();
   // EA5: узкий unlock — старт/стоп трека упражнения (вне канона раннера).
   const { startExerciseAudio, stopExerciseAudio } = useExerciseAudio();
+  // Мут: глобальный флаг звука (музыка + cue-бипы). Кнопка в раннере — мгновенная тишина.
+  const { settings: audioSettings, setSettings: setAudioSettings } = useAudioSettings();
 
   const list = useMemo(() => {
     if (Array.isArray(exercises) && exercises.length > 0) return exercises;
@@ -136,7 +139,9 @@ const ExerciseRunner = ({
   //  - Rep-only (нет гейта work): играет пока пациент на упражнении.
   // Стоп на смене упражнения / выходе. Узкий unlock — канон раннера не трогаем.
   const exAudio = ce.audio || null;
-  const musicActive = !!exAudio && (usesPerSetGuide ? setPhase === 'work' : true);
+  // + audioSettings.enabled: мут мгновенно глушит трек; размут в work — возобновляет.
+  const musicActive = !!exAudio && audioSettings.enabled
+    && (usesPerSetGuide ? setPhase === 'work' : true);
   useEffect(() => {
     if (musicActive) startExerciseAudio(exAudio);
     else stopExerciseAudio();
@@ -335,6 +340,29 @@ const ExerciseRunner = ({
           <div className="crd-top">
             <span className="num">{index + 1}</span>
             <span className="nm">{exercise.title || 'Упражнение'}</span>
+            {/* Мут звука (музыка + бипы) — доступен в любой фазе. Inline-стили:
+                обходят .pd-runner * reset; marginLeft:auto прижимает вправо. */}
+            <button
+              type="button"
+              data-testid="runner-mute-btn"
+              onClick={() => setAudioSettings({ enabled: !audioSettings.enabled })}
+              aria-label={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+              aria-pressed={!audioSettings.enabled}
+              title={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+              style={{
+                // 44×44 (Apple HIG touch target). Всегда видимая «пилюля» (чёткий хит-эрия
+                // + контраст в обоих состояниях): звук вкл → светлый фон + тёмная иконка;
+                // мут → инверсия (тёмный фон + белая иконка), визуально выделен как «выкл».
+                marginLeft: 'auto', flexShrink: 0, alignSelf: 'flex-start',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                width: 44, height: 44, padding: 0, border: 'none', borderRadius: 12,
+                background: audioSettings.enabled ? 'var(--az-bg)' : 'var(--az-label)',
+                color: audioSettings.enabled ? 'var(--az-label)' : '#fff',
+                cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              {audioSettings.enabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </button>
           </div>
           {paramLine() && <div className="rx">{paramLine()}</div>}
           {prevHintText() && (

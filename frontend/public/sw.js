@@ -130,8 +130,11 @@
 // экране «Начать подход» и не нонстоп между подходами) — звук НА ВРЕМЯ выполнения
 // подхода. Правка ExerciseRunner (узкий unlock). Без bump'а PWA продолжат слышать
 // трек уже на ready-интро (iOS-фидбэк Vadim'а).
-const CACHE_NAME = 'azarean-v26';
-const API_CACHE = 'azarean-api-v26';
+// v27 (2026-06-02) — кнопка-мут в раннере (Volume2/VolumeX в шапке карточки):
+// мгновенно глушит весь звук (трек + cue-бипы) через settings.enabled, размут
+// возобновляет. Фидбэк Vadim'а: на смоуке музыка долбила без способа выключить.
+const CACHE_NAME = 'azarean-v27';
+const API_CACHE = 'azarean-api-v27';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

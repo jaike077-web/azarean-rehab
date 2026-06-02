@@ -33,6 +33,7 @@ const mockCue = jest.fn();
 const mockProgressCreate = jest.fn(() => Promise.resolve({ data: { id: 1 } }));
 const mockStartExerciseAudio = jest.fn();
 const mockStopExerciseAudio = jest.fn();
+const mockSetAudioSettings = jest.fn();
 
 jest.mock('../context/AudioContext', () => ({
   __esModule: true,
@@ -42,7 +43,7 @@ jest.mock('../context/AudioContext', () => ({
     cue: mockCue,
     prime: () => {},
     settings: { enabled: true, volume: 0.6 },
-    setSettings: () => {},
+    setSettings: mockSetAudioSettings,
   }),
   AudioProvider: ({ children }) => children,
   getCueConfig: () => null,
@@ -103,6 +104,7 @@ beforeEach(() => {
   mockCue.mockReset();
   mockStartExerciseAudio.mockReset();
   mockStopExerciseAudio.mockReset();
+  mockSetAudioSettings.mockReset();
   mockProgressCreate.mockReset();
   mockProgressCreate.mockImplementation(() => Promise.resolve({ data: { id: 1 } }));
 });
@@ -140,6 +142,15 @@ describe('CP3c.1 — ready-гейт + 3-2-1 преролл + set_start + еди�
     expect(mockStartExerciseAudio).not.toHaveBeenCalledWith(audio);
     startCurrentSet(); // → work
     expect(mockStartExerciseAudio).toHaveBeenCalledWith(audio);
+  });
+
+  // Кнопка-мут: тап → setSettings({enabled:false}) (мгновенная тишина: трек + бипы).
+  it('кнопка-мут в раннере зовёт setSettings({enabled:false})', () => {
+    renderRunner();
+    const btn = screen.getByTestId('runner-mute-btn');
+    expect(btn).toHaveAttribute('aria-label', 'Выключить звук'); // enabled=true в моке
+    fireEvent.click(btn);
+    expect(mockSetAudioSettings).toHaveBeenCalledWith({ enabled: false });
   });
 
   it('Тап «Начать подход» → 3-2-1 преролл (count_tick ×3 + set_start), затем countdown стартует', () => {
