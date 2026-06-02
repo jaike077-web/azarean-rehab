@@ -140,8 +140,11 @@
 // v29 (2026-06-02) — кнопка-мут перенесена из шапки карточки В ТАЙМЕР-ЗОНУ
 // (timed: absolute правый-верх .sec; rep-only: в баре действий .acts) — у заголовка
 // видео её не видно, а взгляд пациента во время подхода на таймере. Фидбэк Vadim'а.
-const CACHE_NAME = 'azarean-v29';
-const API_CACHE = 'azarean-api-v29';
+// v30 (2026-06-02) — превью комплекса «глазами пациента» (CreateComplex/EditComplex):
+// новый компонент ComplexPreviewModal в инструкторском бандле. Без bump'а PWA
+// инструктора держали бы старые chunks (PR #74).
+const CACHE_NAME = 'azarean-v30';
+const API_CACHE = 'azarean-api-v30';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
