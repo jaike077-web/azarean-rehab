@@ -32,7 +32,8 @@ import {
   Check,
   X,
   Volume2,
-  Eye
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 
 
@@ -104,6 +105,16 @@ function SortableExercise({ exercise, errors, onRemove, onUpdate, onUpdateAudio,
           onChange={(e) => onUpdate(exercise.id, 'reps', e.target.value)}
           min="1"
           data-testid={`reps-${exercise.id}`}
+        />
+        <input
+          type="number"
+          placeholder="Отдых (сек)"
+          title="Отдых между подходами."
+          value={exercise.rest_seconds ?? ''}
+          onChange={(e) => onUpdate(exercise.id, 'rest_seconds', e.target.value)}
+          min="0"
+          max="9999"
+          data-testid={`rest-${exercise.id}`}
         />
         <input
           type="number"
@@ -213,6 +224,7 @@ function EditComplex() {
   const [complexTitle, setComplexTitle] = useState('');
   const [diagnosisId, setDiagnosisId] = useState('');
   const [recommendations, setRecommendations] = useState('');
+  const [warnings, setWarnings] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
   // AA4: «Звуки комплекса» (admin-only). cueDirty гейтит отправку:
@@ -269,6 +281,7 @@ function EditComplex() {
       setComplexTitle(complexData.title || '');
       setDiagnosisId(complexData.diagnosis_id || '');
       setRecommendations(complexData.recommendations || '');
+      setWarnings(complexData.warnings || '');
 
       // Преобразуем упражнения из backend формата
       const exercisesData = complexData.exercises || [];
@@ -283,8 +296,14 @@ function EditComplex() {
           sets: item.sets,
           reps: item.reps,
           duration_seconds: item.duration_seconds,
+          // Фикс data-loss: rest_seconds не грузился → handleSave дефолтил 30 →
+          // отдых всех упражнений сбрасывался при каждом сохранении. Грузим, чтобы
+          // normalizeExerciseForPayload сохранил исходное значение.
+          rest_seconds: item.rest_seconds,
           notes: item.notes,
           order_number: item.order_number,
+          // Для превью «глазами пациента» (миниатюра существующих упражнений).
+          thumbnail_url: item.exercise.thumbnail_url,
           // CP2b: 4 поля из миграции 20260527. На legacy строках до
           // применения CP2a backend вернёт auto_complete=true (DEFAULT),
           // tempo_*=null — нормально для UI (showing as пустые).
@@ -400,7 +419,7 @@ function EditComplex() {
   const handleUpdateExercise = (exerciseId, field, value) => {
     // CP2b: числовые поля — валидация диапазона. auto_complete — boolean
     // (приходит из onChange checkbox). Темп — числа в [0..30] (CHECK).
-    if (['sets', 'reps', 'duration_seconds',
+    if (['sets', 'reps', 'duration_seconds', 'rest_seconds',
          'tempo_eccentric_s', 'tempo_pause_s', 'tempo_concentric_s'].includes(field)) {
       if (value !== '' && value != null) {
         const numValue = parseInt(value, 10);
@@ -474,6 +493,9 @@ function EditComplex() {
         title: complexTitle.trim() || null,
         diagnosis_id: diagnosisId || null,
         recommendations: recommendations || null,
+        // Фикс data-loss: EditComplex не слал warnings → PUT (SET warnings=$4)
+        // писал NULL → предупреждения стирались при каждом сохранении. Шлём явно.
+        warnings: warnings || null,
         // CP2b: shared normalizer (тот же что в CreateComplex). reps:null
         // для time-only, all-or-nothing для tempo, auto_complete default true.
         exercises: selectedExercises.map((ex, index) =>
@@ -624,6 +646,19 @@ function EditComplex() {
           />
         </div>
 
+        <div className={s.formSection}>
+          <h3>
+            <AlertTriangle size={20} />
+            <span>Внимание</span>
+          </h3>
+          <textarea
+            value={warnings}
+            onChange={(e) => setWarnings(e.target.value)}
+            placeholder="Предупреждения для пациента (при усилении боли прекратить и т.п.)..."
+            rows="3"
+          />
+        </div>
+
         {isAdmin && (
           <div className={s.formSection}>
             <h3>
@@ -759,6 +794,7 @@ function EditComplex() {
         onClose={() => setShowPreview(false)}
         title={complexTitle}
         recommendations={recommendations}
+        warnings={warnings}
         instructorName={user?.full_name}
         exercises={selectedExercises}
       />

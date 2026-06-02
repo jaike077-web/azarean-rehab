@@ -143,8 +143,11 @@
 // v30 (2026-06-02) — превью комплекса «глазами пациента» (CreateComplex/EditComplex):
 // новый компонент ComplexPreviewModal в инструкторском бандле. Без bump'а PWA
 // инструктора держали бы старые chunks (PR #74).
-const CACHE_NAME = 'azarean-v30';
-const API_CACHE = 'azarean-api-v30';
+// v31 (2026-06-02) — EditComplex фикс data-loss: добавлены инпут «Отдых (сек)»
+// и поле «Внимание» (warnings) + грузятся rest_seconds/warnings/thumbnail_url.
+// Новый инструкторский бандл. Без bump'а PWA держали бы старые chunks.
+const CACHE_NAME = 'azarean-v31';
+const API_CACHE = 'azarean-api-v31';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
