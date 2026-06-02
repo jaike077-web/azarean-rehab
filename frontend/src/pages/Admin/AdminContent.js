@@ -9,6 +9,14 @@ import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 import useAudioPreview from '../../hooks/useAudioPreview';
 import validateAudioFile, { validateTrackFile } from '../PatientDashboard/utils/validateAudioFile';
 import { AUDIO_CUE_UI, CUE_LABELS } from '../../utils/audioCues';
+import {
+  TONE_WAVE_TYPES, TONE_WAVE_LABELS,
+  TONE_FREQ_MIN, TONE_FREQ_MAX, TONE_DURATION_MIN_MS, TONE_DURATION_MAX_MS,
+  toneFormFromConfig, buildToneConfig,
+} from '../../utils/toneConfig';
+// getCueConfig — дефолтные параметры тона cue для pre-fill редактора (pure export;
+// services/api замокан в тестах → AudioContext грузится без axios-ESM проблем).
+import { getCueConfig } from '../PatientDashboard/context/AudioContext';
 
 // =====================================================
 // Суб-таб: Фазы
@@ -2041,6 +2049,9 @@ function AudioPresetsTab() {
   const [creating, setCreating] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
   const [savingCue, setSavingCue] = useState(null);
+  // CT4: локальные правки тона по cue { [cue]: { frequency, durationMs, type } }.
+  // Пусто = форма выводится из defaults (tone_config ?? getCueConfig). Чистим при load().
+  const [toneForms, setToneForms] = useState({});
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -2052,6 +2063,9 @@ function AudioPresetsTab() {
       ]);
       setPresets(pRes.data || []);
       setDefaults(dRes.data || []);
+      // НЕ чистим toneForms здесь: тоггл lock/смена select зовут load(), и общий
+      // сброс терял бы несохранённые правки тона (CT4-ревью). Сохранённый cue
+      // чистится точечно в handleSaveTone → ре-вывод из нормализованного DB-значения.
     } catch {
       toast.error('Ошибка загрузки звуков');
     } finally {
@@ -2107,6 +2121,41 @@ function AudioPresetsTab() {
     } finally {
       setSavingCue(null);
     }
+  };
+
+  // CT4: сохранить параметры «Стандартного тона» события (preset_id остаётся null).
+  // tone_config через buildToneConfig (clamp в диапазоны), lock не трогаем (текущий d).
+  const handleSaveTone = async (cue, isLocked, form) => {
+    try {
+      setSavingCue(cue);
+      await admin.setAudioCueDefault(cue, {
+        preset_id: null,
+        is_locked: isLocked,
+        tone_config: buildToneConfig(form),
+      });
+      toast.success('Тон обновлён');
+      await load();
+      // Точечно сбрасываем правку этого cue → форма ре-выводится из сохранённого
+      // (нормализованного backend'ом) tone_config, а не из сырого ввода (напр. clamp).
+      setToneForms((prev) => {
+        const next = { ...prev };
+        delete next[cue];
+        return next;
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    } finally {
+      setSavingCue(null);
+    }
+  };
+
+  // Текущая форма тона cue: локальная правка ?? вывод из defaults (tone_config|дефолт cue).
+  const toneFormFor = (cue, d) => toneForms[cue] || toneFormFromConfig(d.tone_config, getCueConfig(cue));
+  const setToneField = (cue, d, field, value) => {
+    setToneForms((prev) => {
+      const cur = prev[cue] || toneFormFromConfig(d.tone_config, getCueConfig(cue));
+      return { ...prev, [cue]: { ...cur, [field]: value } };
+    });
   };
 
   if (loading) return <TableSkeleton rows={4} columns={7} />;
@@ -2199,54 +2248,118 @@ function AudioPresetsTab() {
             {AUDIO_CUE_UI.map((cue) => {
               const d = defaults.find((row) => row.cue_name === cue) || { preset_id: null, is_locked: false };
               const selValue = d.preset_id != null ? String(d.preset_id) : '';
+              // CT4: «Стандартный тон» (preset_id=null) → показать редактор тона.
+              const isTone = d.preset_id == null;
+              const toneForm = toneFormFor(cue, d);
               return (
-                <tr key={cue}>
-                  <td className={s.tdName}>{CUE_LABELS[cue]}</td>
-                  <td>
-                    <div className={s.audioCueCell}>
-                      <select
-                        className={s.audioInlineSelect}
-                        data-testid={`cue-default-select-${cue}`}
-                        aria-label={`Звук для «${CUE_LABELS[cue]}»`}
-                        value={selValue}
+                <React.Fragment key={cue}>
+                  <tr>
+                    <td className={s.tdName}>{CUE_LABELS[cue]}</td>
+                    <td>
+                      <div className={s.audioCueCell}>
+                        <select
+                          className={s.audioInlineSelect}
+                          data-testid={`cue-default-select-${cue}`}
+                          aria-label={`Звук для «${CUE_LABELS[cue]}»`}
+                          value={selValue}
+                          disabled={savingCue === cue}
+                          onChange={(e) => handleSetDefault(
+                            cue,
+                            e.target.value === '' ? null : Number(e.target.value),
+                            !!d.is_locked,
+                          )}
+                        >
+                          <option value="">Стандартный тон</option>
+                          {cuePresets.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.is_active ? p.name : `${p.name} (неактивен)`}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className={s.adminActionBtn}
+                          data-testid={`cue-default-preview-${cue}`}
+                          title="Прослушать звук"
+                          aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
+                          disabled={savingCue === cue}
+                          // CT4: для «Стандартного тона» ▶ играет редактируемый тон вживую.
+                          onClick={() => previewPreset(d.preset_id, cue, isTone ? buildToneConfig(toneForm) : undefined)}
+                        >
+                          <Play size={14} strokeWidth={1.8} />
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        data-testid={`cue-default-lock-${cue}`}
+                        aria-label={`Запретить менять «${CUE_LABELS[cue]}»`}
+                        checked={!!d.is_locked}
                         disabled={savingCue === cue}
-                        onChange={(e) => handleSetDefault(
-                          cue,
-                          e.target.value === '' ? null : Number(e.target.value),
-                          !!d.is_locked,
-                        )}
-                      >
-                        <option value="">Стандартный тон</option>
-                        {cuePresets.map((p) => (
-                          <option key={p.id} value={String(p.id)}>
-                            {p.is_active ? p.name : `${p.name} (неактивен)`}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className={s.adminActionBtn}
-                        data-testid={`cue-default-preview-${cue}`}
-                        title="Прослушать звук"
-                        aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
-                        disabled={savingCue === cue}
-                        onClick={() => previewPreset(d.preset_id, cue)}
-                      >
-                        <Play size={14} strokeWidth={1.8} />
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      data-testid={`cue-default-lock-${cue}`}
-                      aria-label={`Запретить менять «${CUE_LABELS[cue]}»`}
-                      checked={!!d.is_locked}
-                      disabled={savingCue === cue}
-                      onChange={(e) => handleSetDefault(cue, d.preset_id ?? null, e.target.checked)}
-                    />
-                  </td>
-                </tr>
+                        onChange={(e) => handleSetDefault(cue, d.preset_id ?? null, e.target.checked)}
+                      />
+                    </td>
+                  </tr>
+                  {isTone && (
+                    <tr className={s.toneEditorRow}>
+                      <td colSpan={3}>
+                        <div className={s.toneEditor}>
+                          <span className={s.toneEditorLabel}>Параметры тона:</span>
+                          <label className={s.toneField}>
+                            Частота, Гц
+                            <input
+                              type="number"
+                              className={s.toneInput}
+                              data-testid={`cue-tone-freq-${cue}`}
+                              min={TONE_FREQ_MIN}
+                              max={TONE_FREQ_MAX}
+                              value={toneForm.frequency}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'frequency', e.target.value)}
+                            />
+                          </label>
+                          <label className={s.toneField}>
+                            Длит., мс
+                            <input
+                              type="number"
+                              className={s.toneInput}
+                              data-testid={`cue-tone-dur-${cue}`}
+                              min={TONE_DURATION_MIN_MS}
+                              max={TONE_DURATION_MAX_MS}
+                              value={toneForm.durationMs}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'durationMs', e.target.value)}
+                            />
+                          </label>
+                          <label className={s.toneField}>
+                            Форма волны
+                            <select
+                              className={s.toneInput}
+                              data-testid={`cue-tone-type-${cue}`}
+                              value={toneForm.type}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'type', e.target.value)}
+                            >
+                              {TONE_WAVE_TYPES.map((t) => (
+                                <option key={t} value={t}>{TONE_WAVE_LABELS[t]}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            className={s.adminBtnPrimary}
+                            data-testid={`cue-tone-save-${cue}`}
+                            disabled={savingCue === cue}
+                            onClick={() => handleSaveTone(cue, !!d.is_locked, toneForm)}
+                          >
+                            Сохранить тон
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>

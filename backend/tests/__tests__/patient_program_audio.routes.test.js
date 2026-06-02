@@ -78,6 +78,39 @@ describe('GET /my-complexes/:id — resolved audio_cues', () => {
     expect(cues.count_tick).toMatchObject({ preset_id: null, is_locked: false, sig: null });
   });
 
+  it('CT2: tone_config глобальный (из дом-карты) — прикладывается когда resolved preset_id=null', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{
+        id: 5, title: 'X', diagnosis_name: null, diagnosis_note: null,
+        recommendations: null, warnings: null, instructor_name: null,
+        created_at: new Date(), exercises: [{ exercise: { id: 1 } }],
+      }] }) // main SELECT
+      .mockResolvedValueOnce({ rows: [
+        { cue_name: 'set_end', preset_id: null, is_locked: false }, // per-комплекс «явный тон»
+      ] }) // complex_cue_sounds
+      .mockResolvedValueOnce({ rows: [
+        { cue_name: 'set_start', preset_id: null, is_locked: false, tone_config: { frequencies: [880], durationMs: 200, type: 'square' } }, // дом-карта: кастомный тон
+        { cue_name: 'set_end', preset_id: 7, is_locked: false, tone_config: { frequencies: [500], durationMs: 100, type: 'sine' } }, // дом дефолт=пресет, НО binding перебивает на тон; tone_config из дома
+        { cue_name: 'rest_end', preset_id: 5, is_locked: false, tone_config: null }, // активный пресет → файл, не тон
+      ] }) // audio_cue_defaults
+      .mockResolvedValueOnce({ rows: [
+        { id: 7, is_active: true, updated_at: 't7' },
+        { id: 5, is_active: true, updated_at: 't5' },
+      ] }); // audio_presets
+
+    const res = await auth(request(app).get('/api/patient-auth/my-complexes/5'));
+    expect(res.status).toBe(200);
+    const cues = Object.fromEntries(res.body.data.audio_cues.map((c) => [c.cue_name, c]));
+    // set_start: тон из дом-карты
+    expect(cues.set_start).toMatchObject({ preset_id: null, tone_config: { frequencies: [880], durationMs: 200, type: 'square' } });
+    // set_end: per-комплекс «явный тон», но параметры тона — глобальные (из дом-карты)
+    expect(cues.set_end).toMatchObject({ preset_id: null, tone_config: { frequencies: [500], durationMs: 100, type: 'sine' } });
+    // rest_end: активный пресет → файл играет, tone_config не нужен
+    expect(cues.rest_end).toMatchObject({ preset_id: 5, sig: 't5', tone_config: null });
+    // count_tick: нет источника → тон-дефолт без кастома
+    expect(cues.count_tick).toMatchObject({ preset_id: null, tone_config: null });
+  });
+
   it('аудио-инфра падает (нет таблиц) → 200, тон-cue (graceful degrade)', async () => {
     query
       .mockResolvedValueOnce({ rows: [{
