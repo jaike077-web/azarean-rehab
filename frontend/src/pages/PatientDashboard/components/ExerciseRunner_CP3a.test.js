@@ -31,11 +31,13 @@ import ExerciseRunner from './ExerciseRunner';
 
 const mockCue = jest.fn();
 const mockProgressCreate = jest.fn(() => Promise.resolve({ data: { id: 1 } }));
+const mockStartExerciseAudio = jest.fn();
+const mockStopExerciseAudio = jest.fn();
 
 jest.mock('../context/AudioContext', () => ({
   __esModule: true,
   useAudioCue: () => ({ cue: mockCue, prime: () => {} }),
-  useExerciseAudio: () => ({ startExerciseAudio: () => {}, stopExerciseAudio: () => {} }),
+  useExerciseAudio: () => ({ startExerciseAudio: mockStartExerciseAudio, stopExerciseAudio: mockStopExerciseAudio }),
   useAudioSettings: () => ({
     cue: mockCue,
     prime: () => {},
@@ -99,6 +101,8 @@ const countCueCalls = (name) =>
 beforeEach(() => {
   jest.useFakeTimers();
   mockCue.mockReset();
+  mockStartExerciseAudio.mockReset();
+  mockStopExerciseAudio.mockReset();
   mockProgressCreate.mockReset();
   mockProgressCreate.mockImplementation(() => Promise.resolve({ data: { id: 1 } }));
 });
@@ -125,6 +129,17 @@ describe('CP3c.1 — ready-гейт + 3-2-1 преролл + set_start + еди�
     act(() => { jest.advanceTimersByTime(5000); });
     expect(screen.getByTestId('ready-state')).toBeInTheDocument();
     expect(mockCue).not.toHaveBeenCalled();
+  });
+
+  // EA5 hotfix (iOS-фидбэк #2): трек упражнения НЕ играет на ready-интро,
+  // стартует только в фазе work (после «Начать подход»).
+  it('EA5: трек НЕ стартует на ready, стартует в work после «Начать подход»', () => {
+    const audio = { preset_id: 5, loop: true, sig: 's1' };
+    renderRunner({ audio });
+    // ready-интро: трек не запущен
+    expect(mockStartExerciseAudio).not.toHaveBeenCalledWith(audio);
+    startCurrentSet(); // → work
+    expect(mockStartExerciseAudio).toHaveBeenCalledWith(audio);
   });
 
   it('Тап «Начать подход» → 3-2-1 преролл (count_tick ×3 + set_start), затем countdown стартует', () => {

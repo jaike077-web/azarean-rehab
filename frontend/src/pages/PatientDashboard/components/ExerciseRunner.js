@@ -67,15 +67,8 @@ const ExerciseRunner = ({
     setShowDetails(false);
   }, [index]);
 
-  // EA5: трек упражнения — старт при входе в упражнение (смена index → новый ce.audio),
-  // стоп при анмаунте раннера (выход/завершение). startExerciseAudio стабилен, поэтому
-  // эффект фактически срабатывает только при смене exAudio. dedup внутри не рестартит
-  // тот же трек между упражнениями (бесшовно). iOS-инвариант — внутри AudioContext.
-  const exAudio = ce.audio || null;
-  useEffect(() => {
-    startExerciseAudio(exAudio);
-  }, [exAudio, startExerciseAudio]);
-  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]);
+  // EA5 music-плеер перенесён НИЖЕ (после объявления setPhase) — завязан на фазу
+  // work, а не на вход в упражнение (фикс iOS-фидбэка: не играть на интро-экране).
 
   useEffect(() => {
     if (exercise.id && complexId) {
@@ -134,6 +127,21 @@ const ExerciseRunner = ({
   const [setPhase, setSetPhase] = useState('ready'); // 'ready'|'preroll'|'work'|'rest'|'done'
   const [setRemaining, setSetRemaining] = useState(ce.duration_seconds || 0);
   const [prerollCountdown, setPrerollCountdown] = useState(0);
+
+  // EA5 (фикс iOS-фидбэка #2): трек упражнения = звук НА ВРЕМЯ ВЫПОЛНЕНИЯ подхода,
+  // НЕ фон на всю тренировку (может быть голос/ритм/музыка для упражнения).
+  //  - Таймерные (usesPerSetGuide): играет только в фазе 'work'; на интро «Начать
+  //    подход» (ready), 3-2-1 (preroll), отдыхе (rest) и done — стоп. Каждый подход
+  //    стартует заново (не нонстоп между подходами).
+  //  - Rep-only (нет гейта work): играет пока пациент на упражнении.
+  // Стоп на смене упражнения / выходе. Узкий unlock — канон раннера не трогаем.
+  const exAudio = ce.audio || null;
+  const musicActive = !!exAudio && (usesPerSetGuide ? setPhase === 'work' : true);
+  useEffect(() => {
+    if (musicActive) startExerciseAudio(exAudio);
+    else stopExerciseAudio();
+  }, [musicActive, exAudio, startExerciseAudio, stopExerciseAudio]);
+  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]); // анмаунт раннера → стоп
 
   // Сброс per-set state при переходе на новое упражнение → ready phase.
   useEffect(() => {
