@@ -28,6 +28,15 @@ const { __toastMocks } = require('../../../../context/ToastContext');
 
 import DailyPainSection from '../DailyPainSection';
 
+// Локальная сегодняшняя дата — как компонент (getFullYear/Month/Date, НЕ UTC
+// toISOString). В ранне-утреннее окно Asia/Yekaterinburg UTC-дата < локальной →
+// new Date().toISOString().slice(0,10) дал бы «вчера» и «Сегодняшняя запись» не
+// распозналась бы (дата-зависимый флак — фикс backlog).
+const localTodayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
   rehab.getPainLocations.mockResolvedValue({
@@ -49,7 +58,7 @@ describe('DailyPainSection', () => {
     rehab.getDailyPainToday.mockResolvedValue({
       data: [{
         id: 50,
-        entry_date: new Date().toISOString().slice(0, 10),
+        entry_date: localTodayStr(),
         vas_score: 5,
         locations: [{ code: 'knee_anterior' }],
         notes: 'OK',
@@ -108,7 +117,7 @@ describe('DailyPainSection', () => {
     rehab.getDailyPainToday.mockResolvedValue({
       data: [{
         id: 60,
-        entry_date: new Date().toISOString().slice(0, 10),
+        entry_date: localTodayStr(),
         vas_score: 3,
         locations: [],
         created_at: new Date().toISOString(),
@@ -162,7 +171,7 @@ describe('DailyPainSection', () => {
     rehab.getDailyPainToday.mockResolvedValue({
       data: [{
         id: 60,
-        entry_date: new Date().toISOString().slice(0, 10),
+        entry_date: localTodayStr(),
         vas_score: 5,
         pain_character: ['aching', 'throbbing'],
         locations: [],

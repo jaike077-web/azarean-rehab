@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Info } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Info, Play } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
-import { exercises as exercisesApi } from '../../../services/api';
+import { exercises as exercisesApi, admin } from '../../../services/api';
 import s from './ExerciseModal.module.css';
 import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
+import { useAuth } from '../../../context/AuthContext';
+import useAudioPreview from '../../../hooks/useAudioPreview';
 
 // Wave 0 commit 05 — hint-метки рядом с полями, видимые инструктору.
 // Помогают понять где в пациентском UI отрисуется значение поля,
@@ -54,10 +56,21 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [tips, setTips] = useState('');
   const [contraindications, setContraindications] = useState('');
 
+  // ЗВУК УПРАЖНЕНИЯ (EA4) — дефолт библиотеки (длинный трек). audioPresetId
+  // round-trip'ится у всех ролей (сохраняется при правке не-админом), редактируется
+  // только админом (пресеты под admin-glob).
+  const [audioPresetId, setAudioPresetId] = useState(null);
+  const [audioLoop, setAudioLoop] = useState(false);
+  const [trackPresets, setTrackPresets] = useState([]);
+
   // UI state
   const [errors, setErrors] = useState({});
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const previewTrack = useAudioPreview();
 
   // ========================================
   // INITIALIZATION
@@ -88,6 +101,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setTips(exercise.tips || '');
       setContraindications(exercise.contraindications || '');
 
+      // ЗВУК (EA4) — pre-fill (round-trip даже для не-админа).
+      setAudioPresetId(exercise.audio_preset_id ?? null);
+      setAudioLoop(exercise.audio_loop === true);
+
       // Показать расширенные поля если они заполнены
       if (
         exercise.instructions ||
@@ -99,6 +116,22 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       }
     }
   }, [exercise]);
+
+  // EA4: трек-пресеты для select (admin-only — эндпоинт под admin-glob).
+  // Ошибка не блокирует редактор: select просто без опций (кроме «нет звука»).
+  useEffect(() => {
+    if (!isAdmin) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await admin.getAudioPresets({ kind: 'track' });
+        if (!cancelled) setTrackPresets(res.data || []);
+      } catch {
+        /* секция деградирует — не блокер */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin]);
 
   // ========================================
   // VALIDATION
@@ -171,6 +204,12 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       ...(contraindications.trim() && {
         contraindications: contraindications.trim(),
       }),
+
+      // ЗВУК (EA4) — ВСЕГДА шлём (а не conditional spread): чтобы правка
+      // упражнения не-админом не затёрла привязку (backend PUT ставит null при
+      // отсутствии поля). audioLoop осмыслен только при заданном пресете.
+      audio_preset_id: audioPresetId,
+      audio_loop: audioPresetId != null ? audioLoop : false,
     };
   };
 
@@ -617,6 +656,62 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                 </div>
               )}
             </div>
+
+            {/* ЗВУК УПРАЖНЕНИЯ (EA4) — дефолт библиотеки, admin-only */}
+            {isAdmin && (
+              <div className={s.formSection}>
+                <h3 className={s.sectionTitle}>
+                  Звук упражнения (трек)
+                  <PatientHint>Музыка / голос-инструкция / медитация на всё упражнение</PatientHint>
+                </h3>
+                <div className={s.formGroup}>
+                  <label>Трек по умолчанию</label>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <select
+                      value={audioPresetId == null ? '' : String(audioPresetId)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setAudioPresetId(v === '' ? null : Number(v));
+                        if (v === '') setAudioLoop(false);
+                      }}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <option value="">Нет звука</option>
+                      {audioPresetId != null
+                        && !trackPresets.some((p) => String(p.id) === String(audioPresetId)) && (
+                        <option value={String(audioPresetId)}>Трек #{audioPresetId}</option>
+                      )}
+                      {trackPresets.map((p) => (
+                        <option key={p.id} value={String(p.id)}>
+                          {p.is_active === false ? `${p.name} (неактивен)` : p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className={s.btnSecondary}
+                      onClick={() => previewTrack(audioPresetId)}
+                      disabled={audioPresetId == null}
+                      title="Прослушать"
+                      style={{ padding: '6px 10px' }}
+                    >
+                      <Play size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className={s.formGroup}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={audioLoop}
+                      disabled={audioPresetId == null}
+                      onChange={(e) => setAudioLoop(e.target.checked)}
+                    />
+                    <span>Зациклить трек на всё упражнение</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* FOOTER */}

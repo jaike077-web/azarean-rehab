@@ -15,6 +15,12 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { admin } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { getCueConfig } from '../pages/PatientDashboard/context/AudioContext';
+
+// Громкость превью «Стандартного тона» = дефолт громкости пациента (0.6),
+// чтобы админ слышал примерно как пациент. getCueConfig — тот же источник
+// частот/длительностей, что у раннера → превью тона совпадает 1:1 (нет дрейфа).
+const PREVIEW_TONE_VOLUME = 0.6;
 
 export default function useAudioPreview() {
   const audioRef = useRef(null);
@@ -24,6 +30,7 @@ export default function useAudioPreview() {
   // увидит расхождение и не заиграет — закрывает гонку двойного клика и
   // воспроизведение после размонтирования (refs ещё null → stopCurrent не помог бы).
   const genRef = useRef(0);
+  const toneCtxRef = useRef(null); // AudioContext синтеза «Стандартного тона»
   const toast = useToast();
 
   const stopCurrent = useCallback(() => {
@@ -36,11 +43,69 @@ export default function useAudioPreview() {
       try { URL.revokeObjectURL(urlRef.current); } catch (_) { /* ignore */ }
       urlRef.current = null;
     }
+    if (toneCtxRef.current) {
+      try { if (toneCtxRef.current.close) toneCtxRef.current.close(); } catch (_) { /* ignore */ }
+      toneCtxRef.current = null;
+    }
   }, []);
 
-  const previewPreset = useCallback(async (presetId) => {
-    if (presetId == null) return; // «Стандартный тон» — нет файла для прослушки
+  // Синтез «Стандартного тона» события (cueName) тем же кодом, что у раннера
+  // (getCueConfig). Свежий AudioContext на жест → закрываем после тона.
+  // CT4: toneConfigOverride (редактируемый тон из формы, уже clamped buildToneConfig)
+  // перебивает дефолтные frequencies/durationMs/type → ▶ играет тон вживую как
+  // будет сохранён. gain НЕ редактируем — берётся из getCueConfig (base).
+  const playStandardTone = useCallback((cueName, toneConfigOverride) => {
+    const base = getCueConfig(cueName);
+    const ov = toneConfigOverride
+      && Array.isArray(toneConfigOverride.frequencies) && toneConfigOverride.frequencies.length > 0
+      ? toneConfigOverride : null;
+    const cfg = ov
+      ? { frequencies: ov.frequencies, durationMs: ov.durationMs, type: ov.type, gain: base ? base.gain : 0.3 }
+      : base;
+    if (!cfg) return;
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    let ctx = null;
+    try {
+      ctx = new Ctor();
+      toneCtxRef.current = ctx;
+      if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
+      const peak = PREVIEW_TONE_VOLUME * cfg.gain;
+      const now = typeof ctx.currentTime === 'number' ? ctx.currentTime : 0;
+      const perToneSec = cfg.durationMs / cfg.frequencies.length / 1000;
+      cfg.frequencies.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = cfg.type;
+        osc.frequency.value = freq;
+        gain.gain.value = peak;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        const start = now + i * perToneSec;
+        osc.start(start);
+        if (typeof osc.stop === 'function') osc.stop(start + perToneSec);
+      });
+      const ctxToClose = ctx;
+      setTimeout(() => {
+        if (toneCtxRef.current === ctxToClose) toneCtxRef.current = null;
+        try { if (ctxToClose.close) ctxToClose.close(); } catch (_) { /* ignore */ }
+      }, cfg.durationMs + 150);
+    } catch {
+      if (ctx) {
+        if (toneCtxRef.current === ctx) toneCtxRef.current = null;
+        try { if (ctx.close) ctx.close(); } catch (_) { /* ignore */ }
+      }
+    }
+  }, []);
+
+  // presetId — файл-пресет; presetId==null + cueName — «Стандартный тон» события.
+  // toneConfigOverride (опц., CT4) — редактируемый тон для live-▶ дом-карты.
+  const previewPreset = useCallback(async (presetId, cueName, toneConfigOverride) => {
     stopCurrent();
+    if (presetId == null) {
+      if (cueName) playStandardTone(cueName, toneConfigOverride);
+      return;
+    }
     const myGen = genRef.current; // поколение этого вызова (после bump в stopCurrent)
     let url = null;
     let audio = null;
@@ -71,7 +136,7 @@ export default function useAudioPreview() {
       if (audio && audioRef.current === audio) audioRef.current = null;
       toast.error('Не удалось воспроизвести');
     }
-  }, [stopCurrent, toast]);
+  }, [stopCurrent, playStandardTone, toast]);
 
   // Размонтирование (закрытие модалки / смена шага визарда) — гасим клип.
   useEffect(() => stopCurrent, [stopCurrent]);

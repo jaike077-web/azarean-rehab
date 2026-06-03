@@ -4,6 +4,8 @@ const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 // Custom Audio (AA3): валидация cue'ов привязки звуков к комплексу.
 const { isValidCueName } = require('../utils/audioFile');
+// Exercise Audio (EA3): нормализация/валидация трек-звука упражнения.
+const { normalizeExerciseAudio, validateTrackPresetIds } = require('../utils/exerciseAudio');
 
 // =====================================================
 // CP2a: нормализация полей упражнения перед INSERT в complex_exercises.
@@ -18,11 +20,18 @@ const { isValidCueName } = require('../utils/audioFile');
 //   - tempo_*: число-или-null. Все-или-ничего — DB CHECK backstop, тут не дублируем.
 // =====================================================
 function normalizeExerciseFields(exercise) {
+  // Гард '' / null / undefined → null ДО Number(): Number(null)===0 и Number('')===0,
+  // из-за чего toIntNonNeg(null) возвращал 0 (а не null). Фронт при пустом темпе шлёт
+  // tempo_pause_s: null (явный JSON null) → бэкенд делал pause=0, ecc/con=null →
+  // частичное состояние → нарушение chk_ce_tempo → 500 при создании комплекса.
+  // Зеркало frontend utils/exerciseValidation.js toPositiveInt/toNonNegativeInt.
   const toIntPositive = (v) => {
+    if (v === '' || v == null) return null;
     const n = Number(v);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
   };
   const toIntNonNeg = (v) => {
+    if (v === '' || v == null) return null;
     const n = Number(v);
     return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
   };
@@ -153,10 +162,20 @@ router.post('/', authenticateToken, async (req, res) => {
 
     if (patientCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(403).json({ 
+      return res.status(403).json({
         error: 'Forbidden',
-        message: 'Нет доступа к этому пациенту' 
+        message: 'Нет доступа к этому пациенту'
       });
+    }
+
+    // EA3: валидация трек-пресетов привязки упражнений (kind='track', активен).
+    const audioCheck = await validateTrackPresetIds(
+      (sql, params) => client.query(sql, params),
+      exercises.map((ex) => normalizeExerciseAudio(ex).audioPresetId)
+    );
+    if (!audioCheck.ok) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Validation Error', message: audioCheck.error });
     }
 
     // Создаем комплекс (access_token больше не генерируется — пациент получает
@@ -187,11 +206,13 @@ router.post('/', authenticateToken, async (req, res) => {
     // Добавляем упражнения в комплекс
     for (const exercise of exercises) {
       const fields = normalizeExerciseFields(exercise);
+      const audio = normalizeExerciseAudio(exercise); // EA3: per-row звук
       await client.query(
         `INSERT INTO complex_exercises
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes,
-          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s,
+          audio_preset_id, audio_loop, audio_off)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           complex.id,
           exercise.exercise_id,
@@ -205,6 +226,9 @@ router.post('/', authenticateToken, async (req, res) => {
           fields.tempoEccentric,
           fields.tempoPause,
           fields.tempoConcentric,
+          audio.audioPresetId,
+          audio.audioLoop,
+          audio.audioOff,
         ]
       );
     }
@@ -469,6 +493,15 @@ router.get('/:id', authenticateToken, async (req, res) => {
                   'tempo_eccentric_s', ce.tempo_eccentric_s,
                   'tempo_pause_s', ce.tempo_pause_s,
                   'tempo_concentric_s', ce.tempo_concentric_s,
+                  -- EA3/EA4: raw звук упражнения для pre-fill контрола в EditComplex.
+                  -- audio_preset_id/loop/off — per-комплекс привязка; lib_* — дефолт
+                  -- библиотеки (для метки «наследовать (из библиотеки: …)»). Резолв в
+                  -- раннер — отдельно (exercise.audio в /my-complexes/:id).
+                  'audio_preset_id', ce.audio_preset_id,
+                  'audio_loop', ce.audio_loop,
+                  'audio_off', ce.audio_off,
+                  'lib_audio_preset_id', e.audio_preset_id,
+                  'lib_audio_loop', e.audio_loop,
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -546,6 +579,16 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: cueValid.error });
     }
 
+    // EA3: валидация трек-пресетов привязки упражнений (kind='track', активен).
+    const audioCheck = await validateTrackPresetIds(
+      (sql, params) => client.query(sql, params),
+      (exercises || []).map((ex) => normalizeExerciseAudio(ex).audioPresetId)
+    );
+    if (!audioCheck.ok) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Validation Error', message: audioCheck.error });
+    }
+
     // Обновляем комплекс. title опционален — пустая строка → NULL → derived_title fallback.
     const normalizedTitle = (typeof title === 'string' && title.trim()) || null;
     await client.query(
@@ -568,11 +611,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
     // Добавляем новые упражнения
     for (const exercise of exercises) {
       const fields = normalizeExerciseFields(exercise);
+      const audio = normalizeExerciseAudio(exercise); // EA3: per-row звук
       await client.query(
         `INSERT INTO complex_exercises
          (complex_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes,
-          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          auto_complete, tempo_eccentric_s, tempo_pause_s, tempo_concentric_s,
+          audio_preset_id, audio_loop, audio_off)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
         [
           id,
           exercise.exercise_id,
@@ -586,6 +631,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
           fields.tempoEccentric,
           fields.tempoPause,
           fields.tempoConcentric,
+          audio.audioPresetId,
+          audio.audioLoop,
+          audio.audioOff,
         ]
       );
     }

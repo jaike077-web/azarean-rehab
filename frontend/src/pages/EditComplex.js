@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { exercises, complexes, admin } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ComplexCueSounds from '../components/ComplexCueSounds';
+import ExerciseAudioControl from '../components/ExerciseAudioControl';
 import useAudioPreview from '../hooks/useAudioPreview';
 import { emptyCueState, cueStateFromBindings, buildCueSoundsPayload } from '../utils/audioCues';
 import BackButton from '../components/BackButton';
+import ComplexPreviewModal from '../components/ComplexPreviewModal';
 import Breadcrumbs from '../components/Breadcrumbs';
 import {
   DndContext,
@@ -29,7 +31,9 @@ import {
   Save,
   Check,
   X,
-  Volume2
+  Volume2,
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 
 
@@ -48,7 +52,8 @@ import ExerciseCardSkeleton from '../components/skeletons/ExerciseCardSkeleton';
 import { validateExerciseRow, normalizeExerciseForPayload, TEMPO_BOUNDS } from '../utils/exerciseValidation';
 
 // Компонент для перетаскиваемого упражнения
-function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
+function SortableExercise({ exercise, errors, onRemove, onUpdate, onUpdateAudio, trackPresets, isAdmin, onPreviewTrack }) {
+  const stop = (e) => e.stopPropagation();
   const {
     attributes,
     listeners,
@@ -100,6 +105,16 @@ function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
           onChange={(e) => onUpdate(exercise.id, 'reps', e.target.value)}
           min="1"
           data-testid={`reps-${exercise.id}`}
+        />
+        <input
+          type="number"
+          placeholder="Отдых (сек)"
+          title="Отдых между подходами."
+          value={exercise.rest_seconds ?? ''}
+          onChange={(e) => onUpdate(exercise.id, 'rest_seconds', e.target.value)}
+          min="0"
+          max="9999"
+          data-testid={`rest-${exercise.id}`}
         />
         <input
           type="number"
@@ -169,6 +184,17 @@ function SortableExercise({ exercise, errors, onRemove, onUpdate }) {
           />
         </div>
       </div>
+      {/* EA4: трек-звук упражнения (admin-only). stopPropagation — карта целиком draggable. */}
+      {isAdmin && (
+        <div onPointerDown={stop} onClick={stop}>
+          <ExerciseAudioControl
+            row={exercise}
+            presets={trackPresets}
+            onChange={(patch) => onUpdateAudio(exercise.id, patch)}
+            onPreview={onPreviewTrack}
+          />
+        </div>
+      )}
       {errors && (errors.prescription || errors.tempo) && (
         <div className={s.exerciseErrors} data-testid={`errors-${exercise.id}`}>
           {errors.prescription && <span>{errors.prescription}</span>}
@@ -198,6 +224,7 @@ function EditComplex() {
   const [complexTitle, setComplexTitle] = useState('');
   const [diagnosisId, setDiagnosisId] = useState('');
   const [recommendations, setRecommendations] = useState('');
+  const [warnings, setWarnings] = useState('');
   const [availableExercises, setAvailableExercises] = useState([]);
   const [selectedExercises, setSelectedExercises] = useState([]);
   // AA4: «Звуки комплекса» (admin-only). cueDirty гейтит отправку:
@@ -211,6 +238,7 @@ function EditComplex() {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [exercisesLoading, setExercisesLoading] = useState(true);
+  const [showPreview, setShowPreview] = useState(false); // превью «глазами пациента»
 
   // Определяем, есть ли вообще тач
   const isTouchDevice =
@@ -253,6 +281,7 @@ function EditComplex() {
       setComplexTitle(complexData.title || '');
       setDiagnosisId(complexData.diagnosis_id || '');
       setRecommendations(complexData.recommendations || '');
+      setWarnings(complexData.warnings || '');
 
       // Преобразуем упражнения из backend формата
       const exercisesData = complexData.exercises || [];
@@ -267,8 +296,14 @@ function EditComplex() {
           sets: item.sets,
           reps: item.reps,
           duration_seconds: item.duration_seconds,
+          // Фикс data-loss: rest_seconds не грузился → handleSave дефолтил 30 →
+          // отдых всех упражнений сбрасывался при каждом сохранении. Грузим, чтобы
+          // normalizeExerciseForPayload сохранил исходное значение.
+          rest_seconds: item.rest_seconds,
           notes: item.notes,
           order_number: item.order_number,
+          // Для превью «глазами пациента» (миниатюра существующих упражнений).
+          thumbnail_url: item.exercise.thumbnail_url,
           // CP2b: 4 поля из миграции 20260527. На legacy строках до
           // применения CP2a backend вернёт auto_complete=true (DEFAULT),
           // tempo_*=null — нормально для UI (showing as пустые).
@@ -276,6 +311,12 @@ function EditComplex() {
           tempo_eccentric_s: item.tempo_eccentric_s ?? '',
           tempo_pause_s: item.tempo_pause_s ?? '',
           tempo_concentric_s: item.tempo_concentric_s ?? '',
+          // EA4: per-комплекс override звука + дефолт библиотеки (для метки «наследовать»).
+          audio_preset_id: item.audio_preset_id ?? null,
+          audio_loop: item.audio_loop === true,
+          audio_off: item.audio_off === true,
+          lib_audio_preset_id: item.lib_audio_preset_id ?? null,
+          lib_audio_loop: item.lib_audio_loop === true,
         }));
 
       setSelectedExercises(formattedExercises);
@@ -301,6 +342,11 @@ function EditComplex() {
   }, []);
 
   const previewPreset = useAudioPreview(); // прослушка звука в секции «Звуки комплекса»
+  const previewTrack = useAudioPreview();  // прослушка трека в per-упражнение контроле (EA4)
+
+  // EA4: библиотека содержит cue + track — разводим по kind.
+  const cuePresets = useMemo(() => audioPresets.filter((p) => p.kind !== 'track'), [audioPresets]);
+  const trackPresets = useMemo(() => audioPresets.filter((p) => p.kind === 'track'), [audioPresets]);
 
   // AA4: библиотека пресетов + дом-карта для секции «Звуки комплекса» (admin-only).
   useEffect(() => {
@@ -357,6 +403,12 @@ function EditComplex() {
       tempo_eccentric_s: '',
       tempo_pause_s: '',
       tempo_concentric_s: '',
+      // EA4: звук — дефолт библиотеки в lib_*, override пуст (наследуем).
+      lib_audio_preset_id: exercise.audio_preset_id ?? null,
+      lib_audio_loop: exercise.audio_loop ?? false,
+      audio_preset_id: null,
+      audio_loop: false,
+      audio_off: false,
     }]);
   };
 
@@ -367,7 +419,7 @@ function EditComplex() {
   const handleUpdateExercise = (exerciseId, field, value) => {
     // CP2b: числовые поля — валидация диапазона. auto_complete — boolean
     // (приходит из onChange checkbox). Темп — числа в [0..30] (CHECK).
-    if (['sets', 'reps', 'duration_seconds',
+    if (['sets', 'reps', 'duration_seconds', 'rest_seconds',
          'tempo_eccentric_s', 'tempo_pause_s', 'tempo_concentric_s'].includes(field)) {
       if (value !== '' && value != null) {
         const numValue = parseInt(value, 10);
@@ -389,6 +441,13 @@ function EditComplex() {
         return next;
       });
     }
+  };
+
+  // EA4: батч-патч audio-полей строки (функциональный setState — несколько полей сразу).
+  const handleUpdateExerciseAudio = (exerciseId, patch) => {
+    setSelectedExercises((prev) =>
+      prev.map((e) => (e.id === exerciseId ? { ...e, ...patch } : e))
+    );
   };
 
   const handleDragEnd = (event) => {
@@ -434,6 +493,9 @@ function EditComplex() {
         title: complexTitle.trim() || null,
         diagnosis_id: diagnosisId || null,
         recommendations: recommendations || null,
+        // Фикс data-loss: EditComplex не слал warnings → PUT (SET warnings=$4)
+        // писал NULL → предупреждения стирались при каждом сохранении. Шлём явно.
+        warnings: warnings || null,
         // CP2b: shared normalizer (тот же что в CreateComplex). reps:null
         // для time-only, all-or-nothing для tempo, auto_complete default true.
         exercises: selectedExercises.map((ex, index) =>
@@ -584,6 +646,19 @@ function EditComplex() {
           />
         </div>
 
+        <div className={s.formSection}>
+          <h3>
+            <AlertTriangle size={20} />
+            <span>Внимание</span>
+          </h3>
+          <textarea
+            value={warnings}
+            onChange={(e) => setWarnings(e.target.value)}
+            placeholder="Предупреждения для пациента (при усилении боли прекратить и т.п.)..."
+            rows="3"
+          />
+        </div>
+
         {isAdmin && (
           <div className={s.formSection}>
             <h3>
@@ -593,7 +668,7 @@ function EditComplex() {
             <ComplexCueSounds
               cueState={cueState}
               onChange={handleCueChange}
-              presets={audioPresets}
+              presets={cuePresets}
               defaults={audioDefaults}
               onPreview={previewPreset}
             />
@@ -629,6 +704,10 @@ function EditComplex() {
                       errors={exerciseErrors[exercise.id]}
                       onRemove={handleRemoveExercise}
                       onUpdate={handleUpdateExercise}
+                      onUpdateAudio={handleUpdateExerciseAudio}
+                      trackPresets={trackPresets}
+                      isAdmin={isAdmin}
+                      onPreviewTrack={previewTrack}
                     />
                   ))}
                 </div>
@@ -694,12 +773,31 @@ function EditComplex() {
           <button className={s.btnSecondary} onClick={() => navigate('/my-complexes')}>
             Отмена
           </button>
+          <button
+            className={s.btnSecondary}
+            onClick={() => setShowPreview(true)}
+            disabled={selectedExercises.length === 0}
+          >
+            <Eye size={18} />
+            <span>Предпросмотр</span>
+          </button>
           <button className={s.btnPrimary} onClick={handleSave}>
             <Save size={18} />
             <span>Сохранить изменения</span>
           </button>
         </div>
       </div>
+
+      {/* Превью «глазами пациента» — из текущего состояния формы */}
+      <ComplexPreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title={complexTitle}
+        recommendations={recommendations}
+        warnings={warnings}
+        instructorName={user?.full_name}
+        exercises={selectedExercises}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ const { authenticatePatient } = require('../middleware/patientAuth');
 const { registerValidator, loginValidator } = require('../middleware/validators');
 const { avatarUpload, processAvatar, audioSoundUpload } = require('../middleware/upload');
 const { detectAudioType, isValidCueName, AUDIO_TYPE_META } = require('../utils/audioFile');
+const { RESOLVED_EXERCISE_AUDIO_SQL, EXERCISE_AUDIO_JOINS } = require('../utils/exerciseAudio');
 const { sendPasswordResetEmail } = require('../utils/email');
 const { hashToken } = require('../utils/tokens');
 const { normalizeInviteCode, isValidCodeFormat } = require('../utils/inviteCode');
@@ -1607,9 +1608,11 @@ router.delete('/audio-sounds/:cue', authenticatePatient, async (req, res) => {
   }
 });
 
-// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3).
-// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента (защита от
-// enumeration). Только активные. Containment-guard + private no-cache (как CA2).
+// GET /audio-presets/:id/file — стрим админ-пресета программы (AA3 cue + EA3 track).
+// Scoped: пресет в дом-карте ИЛИ привязан к комплексу ЭТОГО пациента — как cue
+// (complex_cue_sounds / дом-карта), так и трек упражнения (complex_exercises override
+// ИЛИ exercises library-default упражнения в комплексе пациента). Защита от
+// enumeration. Только активные. Containment-guard + private no-cache (как CA2).
 router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -1625,6 +1628,17 @@ router.get('/audio-presets/:id/file', authenticatePatient, async (req, res) => {
             SELECT 1 FROM complex_cue_sounds ccs
               JOIN complexes c ON c.id = ccs.complex_id
              WHERE ccs.preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+          OR EXISTS (
+            SELECT 1 FROM complex_exercises ce
+              JOIN complexes c ON c.id = ce.complex_id
+             WHERE ce.audio_preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
+          )
+          OR EXISTS (
+            SELECT 1 FROM complex_exercises ce
+              JOIN complexes c ON c.id = ce.complex_id
+              JOIN exercises ex ON ex.id = ce.exercise_id
+             WHERE ex.audio_preset_id = ap.id AND c.patient_id = $2 AND c.is_active = true
           )
         )`,
       [id, req.patient.id]
@@ -1736,6 +1750,9 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
                   'tempo_eccentric_s', ce.tempo_eccentric_s,
                   'tempo_pause_s', ce.tempo_pause_s,
                   'tempo_concentric_s', ce.tempo_concentric_s,
+                  -- EA3: резолвнутый звук упражнения {preset_id,loop,sig}|null
+                  -- (complex override → library default → нет; только активный track).
+                  'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -1760,7 +1777,7 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN users u ON c.instructor_id = u.id
        LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
        WHERE c.id = $1 AND c.patient_id = $2 AND c.is_active = true
        GROUP BY c.id, d.name, u.full_name`,
       [complexId, req.patient.id]
@@ -1781,11 +1798,11 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
     // AA3: resolved звуки программы per cue (для раннер-resolution AA5).
     // Источник: complex binding (incl preset_id=null=«явный тон») ?? дом-карта ?? тон.
     // best-effort: если аудио-инфра отсутствует/сбой — отдаём тон-cue (раннер на CP1-тон).
-    let audio_cues = AUDIO_CUE_UI.map((c) => ({ cue_name: c, preset_id: null, is_locked: false, sig: null }));
+    let audio_cues = AUDIO_CUE_UI.map((c) => ({ cue_name: c, preset_id: null, is_locked: false, sig: null, tone_config: null }));
     try {
       const [bindings, defaults] = await Promise.all([
         query('SELECT cue_name, preset_id, is_locked FROM complex_cue_sounds WHERE complex_id = $1', [complexId]),
-        query('SELECT cue_name, preset_id, is_locked FROM audio_cue_defaults'),
+        query('SELECT cue_name, preset_id, is_locked, tone_config FROM audio_cue_defaults'),
       ]);
       const bindMap = {}; bindings.rows.forEach((r) => { bindMap[r.cue_name] = r; });
       const defMap = {}; defaults.rows.forEach((r) => { defMap[r.cue_name] = r; });
@@ -1799,7 +1816,11 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
       }
       audio_cues = AUDIO_CUE_UI.map((cue) => {
         const src = bindMap[cue] || defMap[cue] || null;
-        if (!src) return { cue_name: cue, preset_id: null, is_locked: false, sig: null };
+        // CT2: tone_config — глобальный (Вариант А, дом-карта). Прикладываем его, когда
+        // итоговый resolved preset_id=null (играет тон, не файл): из audio_cue_defaults
+        // даже если «явный тон» задан per-комплекс (complex_cue_sounds тон не несёт).
+        const toneConfig = (defMap[cue] && defMap[cue].tone_config) || null;
+        if (!src) return { cue_name: cue, preset_id: null, is_locked: false, sig: null, tone_config: toneConfig };
         let presetId = src.preset_id;
         let sig = null;
         if (presetId != null) {
@@ -1807,7 +1828,13 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
           if (!p || !p.is_active) { presetId = null; } // неактивный пресет → тон
           else { sig = p.updated_at; }
         }
-        return { cue_name: cue, preset_id: presetId, is_locked: !!src.is_locked, sig };
+        return {
+          cue_name: cue,
+          preset_id: presetId,
+          is_locked: !!src.is_locked,
+          sig,
+          tone_config: presetId == null ? toneConfig : null,
+        };
       });
     } catch (audioErr) {
       console.error('my-complexes audio_cues resolve error:', audioErr.message);

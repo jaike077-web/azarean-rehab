@@ -13,6 +13,7 @@ import {
   useAudioCue,
   useAudioSettings,
   useAudioOverrides,
+  useExerciseAudio,
   getCueConfig,
 } from './AudioContext';
 
@@ -69,7 +70,11 @@ function createMockAudioContext() {
     }),
     createBuffer: jest.fn(() => ({})),
     createBufferSource: jest.fn(() => {
-      const node = { buffer: null, connect: jest.fn(), start: jest.fn() };
+      // EA5: + loop/stop/disconnect/onended для music-плеера (back-compat для cue-буфера).
+      const node = {
+        buffer: null, loop: false, onended: null,
+        connect: jest.fn(), start: jest.fn(), stop: jest.fn(), disconnect: jest.fn(),
+      };
       bufferSourceInstances.push(node);
       return node;
     }),
@@ -318,14 +323,17 @@ describe('peak gain = settings.volume × cfg.gain', () => {
     );
     const { getByTestId } = renderProvider();
     fireEvent.click(getByTestId('cue-rest'));
-    expect(gainInstances[0].gain.value).toBeCloseTo(0.3);
+    // EA5: ensureContext создаёт персистентный music-gain ПЕРЕД cue-тоном → cue-gain
+    // теперь последний созданный (не [0]).
+    expect(gainInstances[gainInstances.length - 1].gain.value).toBeCloseTo(0.3);
   });
 
   it('volume=0.5 + rest_end.gain=0.3 → gain.value ≈ 0.15', () => {
     const { getByTestId } = renderProvider();
     fireEvent.click(getByTestId('vol50'));
     fireEvent.click(getByTestId('cue-rest'));
-    expect(gainInstances[0].gain.value).toBeCloseTo(0.15);
+    // EA5: cue-gain — последний созданный (после персистентного music-gain).
+    expect(gainInstances[gainInstances.length - 1].gain.value).toBeCloseTo(0.15);
   });
 });
 
@@ -404,6 +412,11 @@ function AA5Consumer() {
       <button data-testid="aa5-unlocked-preset-s2" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: 9, is_locked: false, sig: 's2' }])}>unlocked preset s2</button>
       <button data-testid="aa5-locked-tone" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: true, sig: 's1' }])}>locked tone</button>
       <button data-testid="aa5-clear" type="button" onClick={() => loadProgramCues(null)}>clear</button>
+      {/* CT3: кастомный тон события (tone_config из дом-карты) */}
+      <button data-testid="ct3-tone-custom" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: false, sig: 'tc1', tone_config: { frequencies: [1234], durationMs: 111, type: 'square' } }])}>custom tone</button>
+      <button data-testid="ct3-tone-locked-custom" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: true, sig: 'tc1', tone_config: { frequencies: [1234], durationMs: 111, type: 'square' } }])}>locked custom tone</button>
+      <button data-testid="ct3-tone-null" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: false, sig: 'tc0', tone_config: null }])}>null tone</button>
+      <button data-testid="ct3-tone-malformed" type="button" onClick={() => loadProgramCues([{ cue_name: 'set_end', preset_id: null, is_locked: false, sig: 'tcx', tone_config: { frequencies: [], durationMs: 111, type: 'square' } }])}>malformed tone</button>
     </div>
   );
 }
@@ -509,5 +522,150 @@ describe('AA5 — program cue-resolution (приоритет §2.2)', () => {
     const ctx = audioCtxCtor.mock.results[0].value;
     expect(ctx.createOscillator).toHaveBeenCalled();
     expect(playedSrc()).toBeNull();
+  });
+});
+
+// =====================================================
+// CT3 — кастомный тон события (tone_config из дом-карты перебивает getCueConfig)
+// =====================================================
+describe('CT3 — кастомный тон события (tone_config)', () => {
+  const renderAA5 = () => render(<AudioProvider><AA5Consumer /></AudioProvider>);
+
+  it('tone_config задан → осциллятор использует кастомную частоту/форму (не getCueConfig)', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-custom')); });
+    fireEvent.click(getByTestId('aa5-cue')); // set_end
+    // getCueConfig('set_end') = [660,990] двухтон; кастом = [1234] однотон square.
+    expect(oscInstances).toHaveLength(1);
+    expect(oscInstances[0].frequency.value).toBe(1234);
+    expect(oscInstances[0].type).toBe('square');
+    expect(playedSrc()).toBeNull(); // тон, не буфер
+  });
+
+  it('gain берётся из getCueConfig (tone_config не несёт gain)', async () => {
+    localStorage.setItem('azarean_audio', JSON.stringify({ enabled: true, volume: 1 }));
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-custom')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    // volume=1 × getCueConfig('set_end').gain=0.3 → 0.3 (кастом меняет частоту, НЕ gain)
+    expect(gainInstances[gainInstances.length - 1].gain.value).toBeCloseTo(0.3);
+  });
+
+  it('tone_config=null → стандартный тон getCueConfig (set_end двухтон 660/990)', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-null')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    expect(oscInstances).toHaveLength(2); // двухтон
+    expect(oscInstances[0].frequency.value).toBe(660);
+    expect(oscInstances[1].frequency.value).toBe(990);
+  });
+
+  it('locked tone_config → кастомный тон играет (ветка locked-program → playTone)', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-locked-custom')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    expect(oscInstances).toHaveLength(1);
+    expect(oscInstances[0].frequency.value).toBe(1234);
+    expect(oscInstances[0].type).toBe('square');
+  });
+
+  it('малформ tone_config (frequencies пустой) → fallback на стандартный тон (не тишина)', async () => {
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-malformed')); });
+    fireEvent.click(getByTestId('aa5-cue'));
+    // защита: невалидный tone_config → getCueConfig('set_end') двухтон, не молчание
+    expect(oscInstances).toHaveLength(2);
+    expect(oscInstances[0].frequency.value).toBe(660);
+  });
+
+  it('patient override перебивает НЕзалоченный tone_config (приоритет §2.2)', async () => {
+    patientAuth.listSounds.mockResolvedValue({ data: [{ cue_name: 'set_end', uploaded_at: 't1' }] });
+    const { getByTestId } = renderAA5();
+    await act(async () => { fireEvent.click(getByTestId('aa5-refresh')); });
+    await flushDecode();
+    await act(async () => { fireEvent.click(getByTestId('ct3-tone-custom')); }); // unlocked tone_config
+    await flushDecode();
+    fireEvent.click(getByTestId('aa5-cue'));
+    // unlocked → patient override (персонализация) побеждает кастомный тон студии
+    expect(playedSrc()).toBe('patient');
+    expect(oscInstances).toHaveLength(0);
+  });
+});
+
+// =====================================================
+// EA5 — персистентный трек упражнения (startExerciseAudio / stopExerciseAudio)
+// =====================================================
+function EA5Consumer({ audio }) {
+  const { startExerciseAudio, stopExerciseAudio } = useExerciseAudio();
+  const { settings, setSettings } = useAudioSettings();
+  return (
+    <div>
+      <button data-testid="ea5-start" type="button" onClick={() => startExerciseAudio(audio)}>start</button>
+      <button data-testid="ea5-start-null" type="button" onClick={() => startExerciseAudio(null)}>start null</button>
+      <button data-testid="ea5-stop" type="button" onClick={() => stopExerciseAudio()}>stop</button>
+      <button data-testid="ea5-mv30" type="button" onClick={() => setSettings({ musicVolume: 0.3 })}>mv30</button>
+      <button data-testid="ea5-disable" type="button" onClick={() => setSettings({ enabled: false })}>disable</button>
+      <span data-testid="ea5-mv">{Math.round((settings.musicVolume ?? -1) * 100)}</span>
+    </div>
+  );
+}
+
+describe('EA5 — трек упражнения', () => {
+  const renderEA5 = (audio) => render(<AudioProvider><EA5Consumer audio={audio} /></AudioProvider>);
+  // музыкальный источник = последний BufferSource с program-тегированным буфером.
+  const musicSrc = () => bufferSourceInstances.filter((n) => n.buffer && n.buffer.__src === 'program').slice(-1)[0] || null;
+
+  it('musicVolume по умолчанию 0.5 (50%) + persist в localStorage', () => {
+    const { getByTestId } = renderEA5(null);
+    expect(getByTestId('ea5-mv').textContent).toBe('50');
+    fireEvent.click(getByTestId('ea5-mv30'));
+    expect(getByTestId('ea5-mv').textContent).toBe('30');
+    expect(JSON.parse(localStorage.getItem('azarean_audio')).musicVolume).toBeCloseTo(0.3);
+  });
+
+  it('startExerciseAudio({preset,loop}) → BufferSource (program), loop=true, start вызван', async () => {
+    const { getByTestId } = renderEA5({ preset_id: 5, loop: true, sig: 's1' });
+    await act(async () => { fireEvent.click(getByTestId('ea5-start')); });
+    await flushDecode();
+    const src = musicSrc();
+    expect(src).not.toBeNull();
+    expect(src.loop).toBe(true);
+    expect(src.start).toHaveBeenCalled();
+    expect(src.connect).toHaveBeenCalled();
+  });
+
+  it('preset_id=null → трек не стартует (gate)', async () => {
+    const { getByTestId } = renderEA5(null);
+    await act(async () => { fireEvent.click(getByTestId('ea5-start-null')); });
+    await flushDecode();
+    expect(musicSrc()).toBeNull();
+  });
+
+  it('звук выключен → трек не стартует (gate)', async () => {
+    const { getByTestId } = renderEA5({ preset_id: 5, loop: false, sig: 's1' });
+    fireEvent.click(getByTestId('ea5-disable'));
+    await act(async () => { fireEvent.click(getByTestId('ea5-start')); });
+    await flushDecode();
+    expect(musicSrc()).toBeNull();
+  });
+
+  it('stopExerciseAudio после старта → source.stop вызван', async () => {
+    const { getByTestId } = renderEA5({ preset_id: 5, loop: true, sig: 's1' });
+    await act(async () => { fireEvent.click(getByTestId('ea5-start')); });
+    await flushDecode();
+    const src = musicSrc();
+    await act(async () => { fireEvent.click(getByTestId('ea5-stop')); });
+    expect(src.stop).toHaveBeenCalled();
+  });
+
+  it('повтор того же трека (preset+sig) не создаёт второй source (dedup)', async () => {
+    const { getByTestId } = renderEA5({ preset_id: 5, loop: true, sig: 's1' });
+    await act(async () => { fireEvent.click(getByTestId('ea5-start')); });
+    await flushDecode();
+    const countAfterFirst = bufferSourceInstances.filter((n) => n.buffer && n.buffer.__src === 'program').length;
+    await act(async () => { fireEvent.click(getByTestId('ea5-start')); });
+    await flushDecode();
+    const countAfterSecond = bufferSourceInstances.filter((n) => n.buffer && n.buffer.__src === 'program').length;
+    expect(countAfterSecond).toBe(countAfterFirst);
   });
 });

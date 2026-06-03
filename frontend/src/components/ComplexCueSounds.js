@@ -77,8 +77,7 @@ function ComplexCueSounds({ cueState, onChange, presets = [], defaults = [], onP
                 data-testid={`cue-sound-preview-${cue}`}
                 title="Прослушать выбранный звук"
                 aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
-                disabled={previewId == null}
-                onClick={() => onPreview(previewId)}
+                onClick={() => onPreview(previewId, cue)}
               >
                 <Play size={14} strokeWidth={1.8} />
               </button>

@@ -7,8 +7,16 @@ import ConfirmModal from '../../components/ConfirmModal';
 import s from './AdminContent.module.css';
 import { useModalOverlayClose } from '../../hooks/useModalOverlayClose';
 import useAudioPreview from '../../hooks/useAudioPreview';
-import validateAudioFile from '../PatientDashboard/utils/validateAudioFile';
+import validateAudioFile, { validateTrackFile } from '../PatientDashboard/utils/validateAudioFile';
 import { AUDIO_CUE_UI, CUE_LABELS } from '../../utils/audioCues';
+import {
+  TONE_WAVE_TYPES, TONE_WAVE_LABELS,
+  TONE_FREQ_MIN, TONE_FREQ_MAX, TONE_DURATION_MIN_MS, TONE_DURATION_MAX_MS,
+  toneFormFromConfig, buildToneConfig,
+} from '../../utils/toneConfig';
+// getCueConfig — дефолтные параметры тона cue для pre-fill редактора (pure export;
+// services/api замокан в тестах → AudioContext грузится без axios-ESM проблем).
+import { getCueConfig } from '../PatientDashboard/context/AudioContext';
 
 // =====================================================
 // Суб-таб: Фазы
@@ -2024,6 +2032,7 @@ function formatPresetMime(mime) {
 
 function formatPresetBytes(bytes) {
   if (bytes == null) return '—';
+  if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} МБ`;
   return `${Math.round(bytes / 1024)} КБ`;
 }
 
@@ -2040,6 +2049,9 @@ function AudioPresetsTab() {
   const [creating, setCreating] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
   const [savingCue, setSavingCue] = useState(null);
+  // CT4: локальные правки тона по cue { [cue]: { frequency, durationMs, type } }.
+  // Пусто = форма выводится из defaults (tone_config ?? getCueConfig). Чистим при load().
+  const [toneForms, setToneForms] = useState({});
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -2051,6 +2063,9 @@ function AudioPresetsTab() {
       ]);
       setPresets(pRes.data || []);
       setDefaults(dRes.data || []);
+      // НЕ чистим toneForms здесь: тоггл lock/смена select зовут load(), и общий
+      // сброс терял бы несохранённые правки тона (CT4-ревью). Сохранённый cue
+      // чистится точечно в handleSaveTone → ре-вывод из нормализованного DB-значения.
     } catch {
       toast.error('Ошибка загрузки звуков');
     } finally {
@@ -2108,18 +2123,57 @@ function AudioPresetsTab() {
     }
   };
 
+  // CT4: сохранить параметры «Стандартного тона» события (preset_id остаётся null).
+  // tone_config через buildToneConfig (clamp в диапазоны), lock не трогаем (текущий d).
+  const handleSaveTone = async (cue, isLocked, form) => {
+    try {
+      setSavingCue(cue);
+      await admin.setAudioCueDefault(cue, {
+        preset_id: null,
+        is_locked: isLocked,
+        tone_config: buildToneConfig(form),
+      });
+      toast.success('Тон обновлён');
+      await load();
+      // Точечно сбрасываем правку этого cue → форма ре-выводится из сохранённого
+      // (нормализованного backend'ом) tone_config, а не из сырого ввода (напр. clamp).
+      setToneForms((prev) => {
+        const next = { ...prev };
+        delete next[cue];
+        return next;
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    } finally {
+      setSavingCue(null);
+    }
+  };
+
+  // Текущая форма тона cue: локальная правка ?? вывод из defaults (tone_config|дефолт cue).
+  const toneFormFor = (cue, d) => toneForms[cue] || toneFormFromConfig(d.tone_config, getCueConfig(cue));
+  const setToneField = (cue, d, field, value) => {
+    setToneForms((prev) => {
+      const cur = prev[cue] || toneFormFromConfig(d.tone_config, getCueConfig(cue));
+      return { ...prev, [cue]: { ...cur, [field]: value } };
+    });
+  };
+
   if (loading) return <TableSkeleton rows={4} columns={7} />;
+
+  // EA4: библиотека теперь содержит и track-пресеты — cue-таб и дом-карта
+  // работают ТОЛЬКО с cue-пресетами (треки — в отдельном суб-табе).
+  const cuePresets = presets.filter((p) => p.kind !== 'track');
 
   return (
     <div>
       {/* Библиотека пресетов */}
       <div className={s.contentHeader}>
-        <span>{presets.length} пресетов</span>
+        <span>{cuePresets.length} пресетов</span>
         <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
           <Plus size={14} strokeWidth={1.8} /> Добавить звук
         </button>
       </div>
-      {presets.length === 0 && (
+      {cuePresets.length === 0 && (
         <div className={s.adminEmptyState}>
           <div className={s.emptyStateContent}>
             <div className={s.emptyStateIcon}><Volume2 size={48} strokeWidth={1.8} /></div>
@@ -2128,7 +2182,7 @@ function AudioPresetsTab() {
           </div>
         </div>
       )}
-      {presets.length > 0 && (
+      {cuePresets.length > 0 && (
         <div className={s.adminTableWrap}>
           <table className={s.adminTable}>
             <thead>
@@ -2143,7 +2197,7 @@ function AudioPresetsTab() {
               </tr>
             </thead>
             <tbody>
-              {presets.map((p) => (
+              {cuePresets.map((p) => (
                 <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
                   <td className={s.tdName}>{p.name}</td>
                   <td>{formatPresetMime(p.mime_type)}</td>
@@ -2194,54 +2248,118 @@ function AudioPresetsTab() {
             {AUDIO_CUE_UI.map((cue) => {
               const d = defaults.find((row) => row.cue_name === cue) || { preset_id: null, is_locked: false };
               const selValue = d.preset_id != null ? String(d.preset_id) : '';
+              // CT4: «Стандартный тон» (preset_id=null) → показать редактор тона.
+              const isTone = d.preset_id == null;
+              const toneForm = toneFormFor(cue, d);
               return (
-                <tr key={cue}>
-                  <td className={s.tdName}>{CUE_LABELS[cue]}</td>
-                  <td>
-                    <div className={s.audioCueCell}>
-                      <select
-                        className={s.audioInlineSelect}
-                        data-testid={`cue-default-select-${cue}`}
-                        aria-label={`Звук для «${CUE_LABELS[cue]}»`}
-                        value={selValue}
+                <React.Fragment key={cue}>
+                  <tr>
+                    <td className={s.tdName}>{CUE_LABELS[cue]}</td>
+                    <td>
+                      <div className={s.audioCueCell}>
+                        <select
+                          className={s.audioInlineSelect}
+                          data-testid={`cue-default-select-${cue}`}
+                          aria-label={`Звук для «${CUE_LABELS[cue]}»`}
+                          value={selValue}
+                          disabled={savingCue === cue}
+                          onChange={(e) => handleSetDefault(
+                            cue,
+                            e.target.value === '' ? null : Number(e.target.value),
+                            !!d.is_locked,
+                          )}
+                        >
+                          <option value="">Стандартный тон</option>
+                          {cuePresets.map((p) => (
+                            <option key={p.id} value={String(p.id)}>
+                              {p.is_active ? p.name : `${p.name} (неактивен)`}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className={s.adminActionBtn}
+                          data-testid={`cue-default-preview-${cue}`}
+                          title="Прослушать звук"
+                          aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
+                          disabled={savingCue === cue}
+                          // CT4: для «Стандартного тона» ▶ играет редактируемый тон вживую.
+                          onClick={() => previewPreset(d.preset_id, cue, isTone ? buildToneConfig(toneForm) : undefined)}
+                        >
+                          <Play size={14} strokeWidth={1.8} />
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        data-testid={`cue-default-lock-${cue}`}
+                        aria-label={`Запретить менять «${CUE_LABELS[cue]}»`}
+                        checked={!!d.is_locked}
                         disabled={savingCue === cue}
-                        onChange={(e) => handleSetDefault(
-                          cue,
-                          e.target.value === '' ? null : Number(e.target.value),
-                          !!d.is_locked,
-                        )}
-                      >
-                        <option value="">Стандартный тон</option>
-                        {presets.map((p) => (
-                          <option key={p.id} value={String(p.id)}>
-                            {p.is_active ? p.name : `${p.name} (неактивен)`}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className={s.adminActionBtn}
-                        data-testid={`cue-default-preview-${cue}`}
-                        title="Прослушать выбранный звук"
-                        aria-label={`Прослушать звук для «${CUE_LABELS[cue]}»`}
-                        disabled={d.preset_id == null || savingCue === cue}
-                        onClick={() => previewPreset(d.preset_id)}
-                      >
-                        <Play size={14} strokeWidth={1.8} />
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <input
-                      type="checkbox"
-                      data-testid={`cue-default-lock-${cue}`}
-                      aria-label={`Запретить менять «${CUE_LABELS[cue]}»`}
-                      checked={!!d.is_locked}
-                      disabled={savingCue === cue}
-                      onChange={(e) => handleSetDefault(cue, d.preset_id ?? null, e.target.checked)}
-                    />
-                  </td>
-                </tr>
+                        onChange={(e) => handleSetDefault(cue, d.preset_id ?? null, e.target.checked)}
+                      />
+                    </td>
+                  </tr>
+                  {isTone && (
+                    <tr className={s.toneEditorRow}>
+                      <td colSpan={3}>
+                        <div className={s.toneEditor}>
+                          <span className={s.toneEditorLabel}>Параметры тона:</span>
+                          <label className={s.toneField}>
+                            Частота, Гц
+                            <input
+                              type="number"
+                              className={s.toneInput}
+                              data-testid={`cue-tone-freq-${cue}`}
+                              min={TONE_FREQ_MIN}
+                              max={TONE_FREQ_MAX}
+                              value={toneForm.frequency}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'frequency', e.target.value)}
+                            />
+                          </label>
+                          <label className={s.toneField}>
+                            Длит., мс
+                            <input
+                              type="number"
+                              className={s.toneInput}
+                              data-testid={`cue-tone-dur-${cue}`}
+                              min={TONE_DURATION_MIN_MS}
+                              max={TONE_DURATION_MAX_MS}
+                              value={toneForm.durationMs}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'durationMs', e.target.value)}
+                            />
+                          </label>
+                          <label className={s.toneField}>
+                            Форма волны
+                            <select
+                              className={s.toneInput}
+                              data-testid={`cue-tone-type-${cue}`}
+                              value={toneForm.type}
+                              disabled={savingCue === cue}
+                              onChange={(e) => setToneField(cue, d, 'type', e.target.value)}
+                            >
+                              {TONE_WAVE_TYPES.map((t) => (
+                                <option key={t} value={t}>{TONE_WAVE_LABELS[t]}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <button
+                            type="button"
+                            className={s.adminBtnPrimary}
+                            data-testid={`cue-tone-save-${cue}`}
+                            disabled={savingCue === cue}
+                            onClick={() => handleSaveTone(cue, !!d.is_locked, toneForm)}
+                          >
+                            Сохранить тон
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -2269,8 +2387,9 @@ function AudioPresetsTab() {
   );
 }
 
-function AudioPresetForm({ initial, onSave, onClose }) {
+function AudioPresetForm({ initial, onSave, onClose, kind = 'cue' }) {
   const isEdit = !!initial;
+  const isTrack = kind === 'track';
   const toast = useToast();
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -2289,7 +2408,7 @@ function AudioPresetForm({ initial, onSave, onClose }) {
   const handleFile = async (e) => {
     const f = e.target.files && e.target.files[0];
     if (!f) { setFile(null); setFileName(''); return; }
-    const v = await validateAudioFile(f);
+    const v = await (isTrack ? validateTrackFile(f) : validateAudioFile(f));
     if (!v.ok) {
       setFile(null);
       setFileName('');
@@ -2321,7 +2440,7 @@ function AudioPresetForm({ initial, onSave, onClose }) {
     <div className={s.adminModalOverlay} {...useModalOverlayClose(onClose)}>
       <div className={s.adminModal}>
         <div className={s.adminModalHeader}>
-          <h3>{isEdit ? 'Редактировать звук' : 'Добавить звук'}</h3>
+          <h3>{isEdit ? 'Редактировать' : 'Добавить'} {isTrack ? 'трек' : 'звук'}</h3>
           <button className={s.adminModalClose} onClick={onClose}><X size={18} strokeWidth={1.8} /></button>
         </div>
         <div className={s.adminModalForm}>
@@ -2337,7 +2456,9 @@ function AudioPresetForm({ initial, onSave, onClose }) {
           </div>
           <div className={s.adminFormGroup}>
             <label htmlFor="audio-preset-file">
-              {isEdit ? 'Заменить файл (опционально)' : 'Файл MP3/WAV (≤512 КБ, ≤10 сек)'}
+              {isEdit
+                ? 'Заменить файл (опционально)'
+                : (isTrack ? 'Файл MP3/WAV (≤10 МБ)' : 'Файл MP3/WAV (≤512 КБ, ≤10 сек)')}
             </label>
             <input
               id="audio-preset-file"
@@ -2370,6 +2491,173 @@ function AudioPresetForm({ initial, onSave, onClose }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// =====================================================
+// Суб-таб: Треки упражнений (Exercise Audio EA4) — библиотека длинных треков
+// (музыка/голос/медитация, ≤10МБ). Зеркало cue-библиотеки, БЕЗ дом-карты
+// (трек назначается на упражнение в его карточке или в редакторе комплекса).
+// =====================================================
+function TrackPresetsTab() {
+  const [tracks, setTracks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [deleteItem, setDeleteItem] = useState(null);
+  const toast = useToast();
+  const previewPreset = useAudioPreview();
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await admin.getAudioPresets({ kind: 'track' });
+      setTracks(res.data || []);
+    } catch {
+      toast.error('Ошибка загрузки треков');
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSave = async (formData) => {
+    try {
+      if (editing) {
+        await admin.updateAudioPreset(editing.id, formData, 'track');
+        toast.success('Трек обновлён');
+      } else {
+        await admin.createAudioPreset(formData, 'track');
+        toast.success('Трек создан');
+      }
+      setEditing(null);
+      setCreating(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка сохранения');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteItem) return;
+    try {
+      await admin.deleteAudioPreset(deleteItem.id);
+      toast.success('Трек удалён');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Ошибка удаления');
+    }
+    setDeleteItem(null);
+  };
+
+  if (loading) return <TableSkeleton rows={3} columns={7} />;
+
+  return (
+    <div>
+      <div className={s.contentHeader}>
+        <span>{tracks.length} треков</span>
+        <button className={s.adminBtnPrimary} onClick={() => setCreating(true)}>
+          <Plus size={14} strokeWidth={1.8} /> Добавить трек
+        </button>
+      </div>
+      {tracks.length === 0 && (
+        <div className={s.adminEmptyState}>
+          <div className={s.emptyStateContent}>
+            <div className={s.emptyStateIcon}><Volume2 size={48} strokeWidth={1.8} /></div>
+            <h3>Нет треков</h3>
+            <p>Загрузите MP3/WAV (≤10 МБ) — музыку, голос-инструкцию или медитацию — и
+              назначьте на упражнение в его карточке или в редакторе комплекса</p>
+          </div>
+        </div>
+      )}
+      {tracks.length > 0 && (
+        <div className={s.adminTableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th>Название</th>
+                <th>Формат</th>
+                <th>Размер</th>
+                <th>Длит.</th>
+                <th>Использований</th>
+                <th>Активен</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tracks.map((p) => (
+                <tr key={p.id} className={!p.is_active ? s.rowInactive : ''}>
+                  <td className={s.tdName}>{p.name}</td>
+                  <td>{formatPresetMime(p.mime_type)}</td>
+                  <td>{formatPresetBytes(p.size_bytes)}</td>
+                  <td>{formatPresetDuration(p.duration_ms)}</td>
+                  <td>{p.usage_count ?? 0}</td>
+                  <td>{p.is_active ? '✅' : '❌'}</td>
+                  <td className={s.tdActions}>
+                    <button className={s.adminActionBtn} onClick={() => previewPreset(p.id)} title="Прослушать">
+                      <Play size={14} strokeWidth={1.8} />
+                    </button>
+                    <button className={s.adminActionBtn} onClick={() => setEditing(p)} title="Редактировать">
+                      <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                    <button
+                      className={`${s.adminActionBtn} ${s.btnDanger}`}
+                      onClick={() => setDeleteItem(p)}
+                      title="Удалить"
+                    >
+                      <Trash2 size={14} strokeWidth={1.8} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {(editing || creating) && (
+        <AudioPresetForm
+          initial={editing}
+          kind="track"
+          onSave={handleSave}
+          onClose={() => { setEditing(null); setCreating(false); }}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteItem}
+        onClose={() => setDeleteItem(null)}
+        onConfirm={confirmDelete}
+        title="Удаление трека"
+        message={`Удалить трек "${deleteItem?.name}"? Заблокируется, если используется в упражнениях или комплексах — тогда деактивируйте (is_active=false).`}
+        confirmText="Удалить"
+        variant="danger"
+        icon={Trash2}
+      />
+    </div>
+  );
+}
+
+// Обёртка вкладки «Звуки»: суб-переключатель cue-сигналы ↔ треки упражнений.
+function AudioTab() {
+  const [sub, setSub] = useState('cue');
+  return (
+    <div>
+      <div className={s.contentTabs} style={{ marginBottom: 12 }}>
+        <button
+          className={`${s.contentTab} ${sub === 'cue' ? s.active : ''}`}
+          onClick={() => setSub('cue')}
+        >
+          Cue-сигналы
+        </button>
+        <button
+          className={`${s.contentTab} ${sub === 'track' ? s.active : ''}`}
+          onClick={() => setSub('track')}
+        >
+          Треки упражнений
+        </button>
+      </div>
+      {sub === 'cue' ? <AudioPresetsTab /> : <TrackPresetsTab />}
     </div>
   );
 }
@@ -2416,7 +2704,7 @@ function AdminContent() {
       {tab === 'tips' && <TipsTab />}
       {tab === 'videos' && <VideosTab />}
       {tab === 'pain-locations' && <PainLocationsTab />}
-      {tab === 'audio' && <AudioPresetsTab />}
+      {tab === 'audio' && <AudioTab />}
     </div>
   );
 }

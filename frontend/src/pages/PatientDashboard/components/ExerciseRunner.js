@@ -4,9 +4,10 @@
 // =====================================================
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { progressPatient } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { useAudioCue } from '../context/AudioContext';
+import { useAudioCue, useExerciseAudio, useAudioSettings } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
 
 const formatTime = (s) => {
@@ -25,6 +26,10 @@ const ExerciseRunner = ({
   onComplete,
 }) => {
   const toast = useToast();
+  // EA5: узкий unlock — старт/стоп трека упражнения (вне канона раннера).
+  const { startExerciseAudio, stopExerciseAudio } = useExerciseAudio();
+  // Мут: глобальный флаг звука (музыка + cue-бипы). Кнопка в раннере — мгновенная тишина.
+  const { settings: audioSettings, setSettings: setAudioSettings } = useAudioSettings();
 
   const list = useMemo(() => {
     if (Array.isArray(exercises) && exercises.length > 0) return exercises;
@@ -64,6 +69,9 @@ const ExerciseRunner = ({
     setPrevSession(null);
     setShowDetails(false);
   }, [index]);
+
+  // EA5 music-плеер перенесён НИЖЕ (после объявления setPhase) — завязан на фазу
+  // work, а не на вход в упражнение (фикс iOS-фидбэка: не играть на интро-экране).
 
   useEffect(() => {
     if (exercise.id && complexId) {
@@ -122,6 +130,48 @@ const ExerciseRunner = ({
   const [setPhase, setSetPhase] = useState('ready'); // 'ready'|'preroll'|'work'|'rest'|'done'
   const [setRemaining, setSetRemaining] = useState(ce.duration_seconds || 0);
   const [prerollCountdown, setPrerollCountdown] = useState(0);
+
+  // EA5 (фикс iOS-фидбэка #2): трек упражнения = звук НА ВРЕМЯ ВЫПОЛНЕНИЯ подхода,
+  // НЕ фон на всю тренировку (может быть голос/ритм/музыка для упражнения).
+  //  - Таймерные (usesPerSetGuide): играет только в фазе 'work'; на интро «Начать
+  //    подход» (ready), 3-2-1 (preroll), отдыхе (rest) и done — стоп. Каждый подход
+  //    стартует заново (не нонстоп между подходами).
+  //  - Rep-only (нет гейта work): играет пока пациент на упражнении.
+  // Стоп на смене упражнения / выходе. Узкий unlock — канон раннера не трогаем.
+  const exAudio = ce.audio || null;
+  // + audioSettings.enabled: мут мгновенно глушит трек; размут в work — возобновляет.
+  const musicActive = !!exAudio && audioSettings.enabled
+    && (usesPerSetGuide ? setPhase === 'work' : true);
+  useEffect(() => {
+    if (musicActive) startExerciseAudio(exAudio);
+    else stopExerciseAudio();
+  }, [musicActive, exAudio, startExerciseAudio, stopExerciseAudio]);
+  useEffect(() => () => { stopExerciseAudio(); }, [stopExerciseAudio]); // анмаунт раннера → стоп
+
+  // Кнопка-мут (музыка + cue-бипы через settings.enabled). Рендерится В ТАЙМЕР-ЗОНЕ
+  // (где взгляд во время подхода — фидбэк Vadim'а), не у заголовка. extraStyle —
+  // позиционирование под место (absolute в таймер-.sec / flex-item в .acts для rep-only).
+  // Inline-стили обходят .pd-runner * reset. 44×44 (Apple HIG), контраст в обоих состояниях.
+  const renderMuteBtn = (extraStyle) => (
+    <button
+      type="button"
+      data-testid="runner-mute-btn"
+      onClick={() => setAudioSettings({ enabled: !audioSettings.enabled })}
+      aria-label={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+      aria-pressed={!audioSettings.enabled}
+      title={audioSettings.enabled ? 'Выключить звук' : 'Включить звук'}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 44, height: 44, padding: 0, border: 'none', borderRadius: 12,
+        background: audioSettings.enabled ? 'var(--az-bg)' : 'var(--az-label)',
+        color: audioSettings.enabled ? 'var(--az-label)' : '#fff',
+        cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+        ...extraStyle,
+      }}
+    >
+      {audioSettings.enabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+    </button>
+  );
 
   // Сброс per-set state при переходе на новое упражнение → ready phase.
   useEffect(() => {
@@ -451,11 +501,16 @@ const ExerciseRunner = ({
               return `цель ${formatTime(ce.duration_seconds || 0)}`;
             })();
             return (
-            <div className="sec">
+            <div className="sec" style={{ position: 'relative' }}>
               <div className="sec-t">
                 <span data-testid="phase-label">{topLabel}</span>
                 <span className="sw-target" data-testid="phase-context-label">{contextLabel}</span>
               </div>
+              {/* Мут — ниже header'а (.sec-t ~36px), в пустом правом-верхнем углу
+                  кольца-зоны: не перекрывает утверждённый language-header
+                  (phase-label + context-label, DA2), но в таймер-секции у кольца,
+                  куда смотрит пациент во время подхода (фидбэк Vadim'а). */}
+              {renderMuteBtn({ position: 'absolute', top: 44, right: 16, zIndex: 2 })}
               {setPhase === 'ready' && (
                 <div data-testid="ready-state">
                   <PhaseRing
@@ -595,6 +650,8 @@ const ExerciseRunner = ({
 
         {/* Actions */}
         <div className="acts">
+          {/* Rep-only: таймер-зоны нет — мут в баре действий (timed имеет мут в таймер-зоне). */}
+          {!usesPerSetGuide && renderMuteBtn({ flexShrink: 0, width: 50, height: 50 })}
           <button type="button" onClick={goPrev} disabled={index === 0} className="btn btn-bk" aria-label="Предыдущее упражнение" data-testid="runner-back-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>

@@ -23,6 +23,8 @@ const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
 const { sendOpsAlert } = require('../utils/opsAlert');
+// Exercise Audio (EA3): резолв трек-звука упражнения (complex override → library → нет).
+const { RESOLVED_EXERCISE_AUDIO_SQL, EXERCISE_AUDIO_JOINS } = require('../utils/exerciseAudio');
 
 // Whitelist для pain_entries.pain_character (TEXT[] после Wave 2 HF#9 v2 migration 20260520).
 // Каждый элемент массива должен быть из enum. Backend CHECK constraint chk_pain_character_array
@@ -2206,6 +2208,9 @@ const COMPLEX_EXERCISES_AGG = `
       json_build_object(
         'id', ce.id, 'order_number', ce.order_number, 'sets', ce.sets, 'reps', ce.reps,
         'duration_seconds', ce.duration_seconds, 'rest_seconds', ce.rest_seconds, 'notes', ce.notes,
+        -- EA3: резолвнутый звук упражнения {preset_id,loop,sig}|null. Требует ap_ce/ap_e
+        -- JOIN'ы (EXERCISE_AUDIO_JOINS) в запросе-потребителе.
+        'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
         'exercise', json_build_object(
           'id', e.id, 'title', e.title, 'description', e.description, 'video_url', e.video_url,
           'thumbnail_url', e.thumbnail_url, 'kinescope_id', e.kinescope_id, 'exercise_type', e.exercise_type,
@@ -2240,7 +2245,7 @@ async function resolveBlockComplexes(blockId, dayIndex) {
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN users u ON c.instructor_id = u.id
        LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
       WHERE pbc.block_id = $1 AND ${dayFilter}
       GROUP BY pbc.complex_id, pbc.day_index, pbc.label, pbc.position,
                c.title, c.diagnosis_note, c.recommendations, c.warnings, d.name, u.full_name
@@ -2433,6 +2438,8 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
                   'duration_seconds', ce.duration_seconds,
                   'rest_seconds', ce.rest_seconds,
                   'notes', ce.notes,
+                  -- EA3: резолвнутый звук упражнения (legacy-путь тоже enrich'им).
+                  'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
                   'exercise', json_build_object(
                     'id', e.id,
                     'title', e.title,
@@ -2458,7 +2465,7 @@ router.get('/my/exercises', authenticatePatient, async (req, res) => {
        LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
        LEFT JOIN users u ON c.instructor_id = u.id
        LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id
+       LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
        WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
          AND c.is_active = true
        GROUP BY rp.id, rp.complex_id, rp.title, c.title, c.diagnosis_note,

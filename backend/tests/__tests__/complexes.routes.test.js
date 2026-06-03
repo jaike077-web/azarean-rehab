@@ -425,7 +425,7 @@ describe('CP2a — INSERT complex_exercises (write path)', () => {
   }
 
   describe('POST /api/complexes — INSERT включает новые колонки', () => {
-    it('SQL содержит auto_complete + 3 темп-колонки + 12 параметров', async () => {
+    it('SQL содержит auto_complete + 3 темп-колонки + 3 audio-колонки (EA3) + 15 параметров', async () => {
       const client = makeMockClient();
       const getCapture = captureCEInsert(client);
       getClient.mockResolvedValueOnce(client);
@@ -444,8 +444,16 @@ describe('CP2a — INSERT complex_exercises (write path)', () => {
       expect(sql).toMatch(/tempo_eccentric_s/);
       expect(sql).toMatch(/tempo_pause_s/);
       expect(sql).toMatch(/tempo_concentric_s/);
-      expect(sql).toMatch(/\$12/);
-      expect(params).toHaveLength(12);
+      // EA3: 3 audio-колонки добавлены в той же транзакции.
+      expect(sql).toMatch(/audio_preset_id/);
+      expect(sql).toMatch(/audio_loop/);
+      expect(sql).toMatch(/audio_off/);
+      expect(sql).toMatch(/\$15/);
+      expect(params).toHaveLength(15);
+      // Без audio_preset_id в body → null preset, loop/off = false (последние 3 параметра).
+      expect(params[12]).toBeNull();   // audio_preset_id
+      expect(params[13]).toBe(false);  // audio_loop
+      expect(params[14]).toBe(false);  // audio_off
     });
 
     it('по умолчанию auto_complete=true (CP2 решение арка)', async () => {
@@ -528,6 +536,33 @@ describe('CP2a — INSERT complex_exercises (write path)', () => {
       const { params } = getCapture();
       expect(params[9]).toBeNull();
       expect(params[10]).toBeNull();
+      expect(params[11]).toBeNull();
+    });
+
+    // Регресс: фронт при пустом темпе шлёт ЯВНЫЙ null (не omit). Number(null)===0,
+    // поэтому старый toIntNonNeg(null) давал pause=0, ecc/con=null → частичное →
+    // нарушение chk_ce_tempo → 500. Тест 'не задан' выше шлёт undefined (omit) и
+    // не ловил баг. Здесь шлём null — params темпа обязаны быть все три null.
+    it('темп = null (явный, как с фронта) → params [null, null, null], не [null, 0, null]', async () => {
+      const client = makeMockClient();
+      const getCapture = captureCEInsert(client);
+      getClient.mockResolvedValueOnce(client);
+      query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
+
+      await request(app)
+        .post('/api/complexes')
+        .set('Authorization', `Bearer ${instructorToken}`)
+        .send({
+          patient_id: 14,
+          exercises: [{
+            exercise_id: 1, order_number: 1, sets: 3, reps: 10,
+            tempo_eccentric_s: null, tempo_pause_s: null, tempo_concentric_s: null,
+          }],
+        });
+
+      const { params } = getCapture();
+      expect(params[9]).toBeNull();
+      expect(params[10]).toBeNull();   // ← был 0 до фикса (Number(null)===0)
       expect(params[11]).toBeNull();
     });
 
