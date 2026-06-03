@@ -5,7 +5,7 @@
 // =====================================================
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act, within } from '@testing-library/react';
 
 jest.mock('./RehabProgramModal.module.css', () => new Proxy({}, { get: (_, p) => String(p) }));
 
@@ -14,6 +14,7 @@ jest.mock('../../services/api', () => ({
     getProgramTemplates: jest.fn(),
     getProgramTypes: jest.fn(),
     getProgramTemplatePhases: jest.fn(),
+    getPhases: jest.fn(),
   },
   rehabPrograms: {
     create: jest.fn(),
@@ -36,7 +37,7 @@ jest.mock('./ComplexSelector', () => (props) => (
 ));
 
 const { rehab } = require('../../services/api');
-import CreateWizard, { groupTemplatesByJoint, pluralPhases } from './CreateWizard';
+import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices } from './CreateWizard';
 
 const TEMPLATES = [
   { id: 1, code: 'tpl_acl', program_type: 'acl', program_type_label: 'ПКС реабилитация', program_joint: 'knee', title: 'ПКС', surgery_required: true },
@@ -48,6 +49,9 @@ const PHASES = [
   { phase_number: 0, title: 'Подготовка к операции', subtitle: 'До операции', recommended_complex: null },
   { phase_number: 1, title: 'Ранний период', subtitle: 'Недели 1–2', recommended_complex: null },
 ];
+
+// ACL-подобный набор 0..6 для проверки динамического дропдауна фаз.
+const PHASES_ACL = [0, 1, 2, 3, 4, 5, 6].map((n) => ({ phase_number: n, title: `Этап ${n}`, recommended_complex: null }));
 
 describe('groupTemplatesByJoint (pure)', () => {
   it('сводит все колено под один заголовок «Колено», порядок сохраняется', () => {
@@ -88,6 +92,31 @@ describe('pluralPhases (pure)', () => {
   });
 });
 
+describe('buildPhaseChoices (pure)', () => {
+  it('исключает phase 0, формирует label «N — title», сохраняет порядок', () => {
+    const choices = buildPhaseChoices([
+      { phase_number: 0, title: 'Prehab' },
+      { phase_number: 1, title: 'A' },
+      { phase_number: 2, title: 'B' },
+    ]);
+    expect(choices).toEqual([
+      { number: 1, label: '1 — A' },
+      { number: 2, label: '2 — B' },
+    ]);
+  });
+
+  it('пусто / только phase 0 / null → дженерик-фолбэк 1..6', () => {
+    expect(buildPhaseChoices([]).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(buildPhaseChoices([{ phase_number: 0, title: 'Prehab' }]).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(buildPhaseChoices(null).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('7-фазный протокол (0..6) → 6 опций (1..6), phase 0 нет', () => {
+    const choices = buildPhaseChoices([0, 1, 2, 3, 4, 5, 6].map((n) => ({ phase_number: n, title: `Этап ${n}` })));
+    expect(choices.map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
 describe('CreateWizard — шаг 1 (группировка) + превью фаз', () => {
   const patient = { id: 5, full_name: 'Тест', diagnosis: '' };
   const complexes = [{ id: 9, title: 'C9', derived_title: 'C9' }];
@@ -97,6 +126,7 @@ describe('CreateWizard — шаг 1 (группировка) + превью фа
     rehab.getProgramTemplates.mockResolvedValue({ data: TEMPLATES });
     rehab.getProgramTypes.mockResolvedValue({ data: [] });
     rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: TEMPLATES[0], phases: PHASES } });
+    rehab.getPhases.mockResolvedValue({ data: [] });
   });
 
   it('группирует шаблоны: «Колено» (2 карточки) + «Плечо» (1 карточка)', async () => {
@@ -166,5 +196,41 @@ describe('CreateWizard — шаг 1 (группировка) + превью фа
     });
     expect(screen.queryByText('A-фаза')).not.toBeInTheDocument();
     expect(screen.getByText('B-фаза')).toBeInTheDocument();
+  });
+
+  it('дропдаун «Текущая фаза» динамичен из фаз протокола (1..6), phase 0 исключён, не обрезан до 4', async () => {
+    rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: {}, phases: PHASES_ACL } });
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    fireEvent.click(screen.getAllByTestId('template-card')[0]); // ПКС-подобный, фазы 0..6
+
+    const sel = await screen.findByTestId('current-phase-select');
+    // ждём реальные фазы (а не дженерик-фолбэк «Фаза N»)
+    await waitFor(() => expect(within(sel).getByRole('option', { name: '1 — Этап 1' })).toBeInTheDocument());
+    const labels = within(sel).getAllByRole('option').map((o) => o.textContent);
+    expect(labels).toEqual(['1 — Этап 1', '2 — Этап 2', '3 — Этап 3', '4 — Этап 4', '5 — Этап 5', '6 — Этап 6']);
+    // phase 0 (prehab) не предлагается как стартовая (D3); фазы 5/6 присутствуют (не обрезано до 4)
+    expect(within(sel).queryByRole('option', { name: /Этап 0/ })).not.toBeInTheDocument();
+  });
+
+  it('ручной режим: дропдаун фаз тянется по выбранному program_type', async () => {
+    rehab.getProgramTypes.mockResolvedValue({ data: [{ code: 'knee_oa', label: 'Гонартроз' }] });
+    rehab.getPhases.mockResolvedValue({ data: [
+      { phase_number: 1, title: 'Острая' },
+      { phase_number: 2, title: 'Подострая' },
+      { phase_number: 3, title: 'Возврат к нагрузке' },
+    ] });
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    fireEvent.click(screen.getByText('Пропустить (создать вручную)'));
+    const ptSelect = await screen.findByLabelText('Тип программы');
+    fireEvent.change(ptSelect, { target: { value: 'knee_oa' } });
+
+    await waitFor(() => expect(rehab.getPhases).toHaveBeenCalledWith('knee_oa'));
+    const sel = screen.getByTestId('current-phase-select');
+    await waitFor(() => expect(within(sel).getByRole('option', { name: '1 — Острая' })).toBeInTheDocument());
+    expect(within(sel).getAllByRole('option')).toHaveLength(3);
   });
 });

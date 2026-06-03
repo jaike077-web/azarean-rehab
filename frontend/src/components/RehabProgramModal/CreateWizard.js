@@ -53,6 +53,19 @@ export function pluralPhases(n) {
   return `${n} фаз`;
 }
 
+// Опции дропдауна «Текущая фаза» из реальных фаз протокола. Исключаем phase 0
+// (prehab): выбор prehab как стартовой фазы пока не поддержан сквозно — и фронт
+// (handleCreate), и бэк (POST /rehab/programs) коэрсят current_phase 0→1 (||1).
+// Это отложенный D3. Если фаз нет (ручной режим без типа / протокол без фаз) —
+// дженерик-фолбэк 1..6, чтобы дропдаун не был пустым.
+export function buildPhaseChoices(rawPhases) {
+  const real = (rawPhases || [])
+    .filter((p) => Number(p.phase_number) >= 1)
+    .map((p) => ({ number: p.phase_number, label: `${p.phase_number} — ${p.title}` }));
+  if (real.length) return real;
+  return [1, 2, 3, 4, 5, 6].map((n) => ({ number: n, label: `Фаза ${n}` }));
+}
+
 function Step1Template({ templates, loading, onSelect, onSkip }) {
   if (loading) return <p>Загрузка шаблонов…</p>;
 
@@ -141,6 +154,21 @@ function PhasePreview({ phases, loading }) {
 
 function Step2Details({ patient, template, programTypes, complexes, form, setForm, onBack, onNext, phases, loadingPhases }) {
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  // Фазы для дропдауна «Текущая фаза»: в режиме шаблона — фазы протокола (phases,
+  // уже загружены родителем для превью); в ручном режиме — тянем по program_type.
+  const [manualPhases, setManualPhases] = useState([]);
+  useEffect(() => {
+    if (template || !form.program_type) { setManualPhases([]); return undefined; }
+    let alive = true;
+    rehab
+      .getPhases(form.program_type)
+      .then((res) => { if (alive) setManualPhases(Array.isArray(res?.data) ? res.data : []); })
+      .catch(() => { if (alive) setManualPhases([]); });
+    return () => { alive = false; };
+  }, [template, form.program_type]);
+
+  const phaseChoices = buildPhaseChoices(template ? phases : manualPhases);
 
   const surgeryFieldVisible = template ? !!template.surgery_required : true;
   // program_type показываем только если шаблон НЕ выбран (иначе берём из template)
@@ -231,11 +259,11 @@ function Step2Details({ patient, template, programTypes, complexes, form, setFor
             id="rp-w-phase"
             value={form.current_phase}
             onChange={(e) => set('current_phase', parseInt(e.target.value, 10) || 1)}
+            data-testid="current-phase-select"
           >
-            <option value={1}>1 — Фаза 1</option>
-            <option value={2}>2 — Фаза 2</option>
-            <option value={3}>3 — Фаза 3</option>
-            <option value={4}>4 — Фаза 4</option>
+            {phaseChoices.map((opt) => (
+              <option key={opt.number} value={opt.number}>{opt.label}</option>
+            ))}
           </select>
         </div>
         {showProgramTypeSelect && (
@@ -244,7 +272,7 @@ function Step2Details({ patient, template, programTypes, complexes, form, setFor
             <select
               id="rp-w-pt"
               value={form.program_type || ''}
-              onChange={(e) => set('program_type', e.target.value || null)}
+              onChange={(e) => setForm((prev) => ({ ...prev, program_type: e.target.value || null, current_phase: 1 }))}
             >
               <option value="">— Не выбран —</option>
               {programTypes.map((pt) => (
@@ -365,6 +393,8 @@ function CreateWizard({ patient, complexes, onCreated, onClose }) {
       program_type: template.program_type,
       // Pre-fill title из template если у программы было дефолтное «Реабилитация»
       title: prev.title === 'Реабилитация' ? template.title : prev.title,
+      // Сброс фазы на 1 — всегда валидна для набора фаз нового протокола.
+      current_phase: 1,
     }));
     // Превью фаз протокола («что войдёт в программу») — best-effort, не блокирует шаг.
     // reqId-гард: применяем ответ, только если это всё ещё последний выбранный шаблон.
