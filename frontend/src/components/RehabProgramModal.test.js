@@ -97,6 +97,9 @@ beforeEach(() => {
   jest.clearAllMocks();
   // AC3: EditForm монтирует BlockEditor → грузит блоки. Дефолт — пусто.
   rehabPrograms.getProgramBlocks.mockResolvedValue({ data: [] });
+  // CreateWizard при выборе шаблона грузит превью фаз протокола. Дефолт — пусто
+  // (без resolved-значения .then упал бы на undefined и шаг 2 не открылся бы).
+  rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: {}, phases: [] } });
 });
 
 const flushAsync = () => new Promise((r) => setTimeout(r, 0));

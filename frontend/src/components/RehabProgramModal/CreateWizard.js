@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { rehab, rehabPrograms } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import ComplexSelector from './ComplexSelector';
@@ -15,17 +15,48 @@ import s from './RehabProgramModal.module.css';
  * Сами 3 шага оформлены как локальные компоненты внутри файла для компактности.
  */
 
+// Метки групп по суставу (program_joint из program_types). Все протоколы одного
+// сустава сводятся под один заголовок (напр. все колено → «Колено») вместо
+// отдельной секции на каждый program_type.
+const JOINT_GROUP_LABELS = {
+  knee: 'Колено',
+  shoulder: 'Плечо',
+  hip: 'Тазобедренный сустав',
+  ankle: 'Голеностоп',
+  spine: 'Позвоночник',
+};
+
+// Группирует шаблоны по суставу, сохраняя порядок (position) внутри группы и
+// порядок первого появления групп. Fallback на program_type_label, если у типа
+// нет joint. Возвращает [{ label, templates }].
+export function groupTemplatesByJoint(templates) {
+  const order = [];
+  const byLabel = new Map();
+  for (const t of templates) {
+    const label =
+      JOINT_GROUP_LABELS[t.program_joint] || t.program_type_label || t.program_type || 'Прочее';
+    if (!byLabel.has(label)) {
+      byLabel.set(label, []);
+      order.push(label);
+    }
+    byLabel.get(label).push(t);
+  }
+  return order.map((label) => ({ label, templates: byLabel.get(label) }));
+}
+
+// Русская плюрализация счётчика фаз (1 фаза / 2 фазы / 5 фаз).
+export function pluralPhases(n) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return `${n} фаза`;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return `${n} фазы`;
+  return `${n} фаз`;
+}
+
 function Step1Template({ templates, loading, onSelect, onSkip }) {
   if (loading) return <p>Загрузка шаблонов…</p>;
 
-  // Группировка по program_type_label для UI
-  const grouped = templates.reduce((acc, t) => {
-    const key = t.program_type_label || t.program_type || 'Прочее';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(t);
-    return acc;
-  }, {});
-  const groupKeys = Object.keys(grouped);
+  const groups = groupTemplatesByJoint(templates);
 
   return (
     <div className={s.wizardSection}>
@@ -34,21 +65,22 @@ function Step1Template({ templates, loading, onSelect, onSkip }) {
         Шаблон задаст тип программы и подскажет рекомендованные комплексы. Можно пропустить и настроить вручную.
       </p>
 
-      {groupKeys.length === 0 ? (
-        <p className={s.emptyTemplates}>
+      {groups.length === 0 ? (
+        <p className={s.emptyTemplates} data-testid="no-templates">
           Нет доступных шаблонов. Создайте их в админ-панели (вкладка «Шаблоны программ»)
           или продолжите вручную.
         </p>
       ) : (
-        groupKeys.map((groupLabel) => (
-          <div key={groupLabel} className={s.templateGroup}>
-            <h4>{groupLabel}</h4>
+        groups.map((group) => (
+          <div key={group.label} className={s.templateGroup} data-testid="template-group">
+            <h4 data-testid="template-group-label">{group.label}</h4>
             <div className={s.templateCards}>
-              {grouped[groupLabel].map((t) => (
+              {group.templates.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   className={s.templateCard}
+                  data-testid="template-card"
                   onClick={() => onSelect(t)}
                 >
                   <strong>{t.title}</strong>
@@ -73,7 +105,41 @@ function Step1Template({ templates, loading, onSelect, onSkip }) {
   );
 }
 
-function Step2Details({ patient, template, programTypes, complexes, form, setForm, onBack, onNext }) {
+// Превью «что войдёт в программу» — фазы выбранного протокола (read-only).
+// Данные из GET /program-templates/:id/phases. recommended_complex обычно null
+// (для колена complex-шаблоны пока не заведены) → честная пометка «назначается
+// вручную» вместо выдуманного комплекса.
+function PhasePreview({ phases, loading }) {
+  if (loading) {
+    return (
+      <p className={s.phasePreviewLoading} data-testid="phase-preview-loading">
+        Загрузка фаз протокола…
+      </p>
+    );
+  }
+  if (!phases || phases.length === 0) return null;
+  return (
+    <div className={s.phasePreview} data-testid="phase-preview">
+      <h4 className={s.phasePreviewTitle}>Что войдёт в программу: {pluralPhases(phases.length)}</h4>
+      <ol className={s.phaseList}>
+        {phases.map((ph) => (
+          <li key={ph.phase_number} className={s.phaseItem} data-testid="phase-item">
+            <span className={s.phaseNum}>Фаза {ph.phase_number}</span>
+            <span className={s.phaseTitle}>{ph.title}</span>
+            {ph.subtitle && <span className={s.phaseSub}>{ph.subtitle}</span>}
+            {ph.recommended_complex ? (
+              <span className={s.phaseComplex}>{ph.recommended_complex.name}</span>
+            ) : (
+              <span className={s.phaseComplexMuted}>комплекс назначается вручную</span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function Step2Details({ patient, template, programTypes, complexes, form, setForm, onBack, onNext, phases, loadingPhases }) {
   const set = (key, val) => setForm((prev) => ({ ...prev, [key]: val }));
 
   const surgeryFieldVisible = template ? !!template.surgery_required : true;
@@ -94,6 +160,8 @@ function Step2Details({ patient, template, programTypes, complexes, form, setFor
           <span>Шаблон: <strong>{template.title}</strong></span>
         </div>
       )}
+
+      <PhasePreview phases={phases} loading={loadingPhases} />
 
       {complexes.length === 0 && (
         <div className={s.rehabProgramWarn}>
@@ -263,6 +331,11 @@ function CreateWizard({ patient, complexes, onCreated, onClose }) {
   const [programTypes, setProgramTypes] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templatePhases, setTemplatePhases] = useState([]);
+  const [loadingPhases, setLoadingPhases] = useState(false);
+  // id последнего выбранного шаблона — гард против гонки: устаревший ответ фаз
+  // (выбрал A → Назад → выбрал B, A отвечает позже) не должен перезаписать превью B.
+  const latestPhaseReqRef = useRef(null);
   const [form, setForm] = useState({
     ...EMPTY_FORM,
     diagnosis: patient.diagnosis || '',
@@ -293,11 +366,26 @@ function CreateWizard({ patient, complexes, onCreated, onClose }) {
       // Pre-fill title из template если у программы было дефолтное «Реабилитация»
       title: prev.title === 'Реабилитация' ? template.title : prev.title,
     }));
+    // Превью фаз протокола («что войдёт в программу») — best-effort, не блокирует шаг.
+    // reqId-гард: применяем ответ, только если это всё ещё последний выбранный шаблон.
+    const reqId = template.id;
+    latestPhaseReqRef.current = reqId;
+    setTemplatePhases([]);
+    setLoadingPhases(true);
+    rehab
+      .getProgramTemplatePhases(reqId)
+      .then((res) => { if (latestPhaseReqRef.current === reqId) setTemplatePhases(res?.data?.phases || []); })
+      .catch(() => { if (latestPhaseReqRef.current === reqId) setTemplatePhases([]); })
+      .finally(() => { if (latestPhaseReqRef.current === reqId) setLoadingPhases(false); });
     setStep(2);
   };
 
   const handleSkipTemplate = () => {
     setSelectedTemplate(null);
+    // Сбрасываем гард: in-flight ответ от ранее выбранного шаблона не применится.
+    latestPhaseReqRef.current = null;
+    setTemplatePhases([]);
+    setLoadingPhases(false);
     setStep(2);
   };
 
@@ -353,6 +441,8 @@ function CreateWizard({ patient, complexes, onCreated, onClose }) {
             complexes={complexes}
             form={form}
             setForm={setForm}
+            phases={templatePhases}
+            loadingPhases={loadingPhases}
             onBack={() => setStep(1)}
             onNext={() => setStep(3)}
           />

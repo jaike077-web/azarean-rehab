@@ -146,8 +146,10 @@
 // v31 (2026-06-02) — EditComplex фикс data-loss: добавлены инпут «Отдых (сек)»
 // и поле «Внимание» (warnings) + грузятся rest_seconds/warnings/thumbnail_url.
 // Новый инструкторский бандл. Без bump'а PWA держали бы старые chunks.
-const CACHE_NAME = 'azarean-v31';
-const API_CACHE = 'azarean-api-v31';
+// v32 (2026-06-03) — wizard программы: группировка шаблонов по суставу («Колено»)
+// + превью фаз протокола в Step2. Новый инструкторский бандл → bump для chunks.
+const CACHE_NAME = 'azarean-v32';
+const API_CACHE = 'azarean-api-v32';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
