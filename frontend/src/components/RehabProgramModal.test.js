@@ -12,6 +12,7 @@ jest.mock('../services/api', () => ({
     getProgramTemplates: jest.fn(),
     getProgramTypes: jest.fn(),
     getProgramTemplatePhases: jest.fn(),
+    getPhases: jest.fn(),
   },
   rehabPrograms: {
     getByPatient: jest.fn(),
@@ -100,6 +101,8 @@ beforeEach(() => {
   // CreateWizard при выборе шаблона грузит превью фаз протокола. Дефолт — пусто
   // (без resolved-значения .then упал бы на undefined и шаг 2 не открылся бы).
   rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: {}, phases: [] } });
+  // Динамический дропдаун «Текущая фаза» в ручном режиме тянет фазы по program_type.
+  rehab.getPhases.mockResolvedValue({ data: [] });
 });
 
 const flushAsync = () => new Promise((r) => setTimeout(r, 0));

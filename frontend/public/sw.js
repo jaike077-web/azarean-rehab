@@ -148,8 +148,10 @@
 // Новый инструкторский бандл. Без bump'а PWA держали бы старые chunks.
 // v32 (2026-06-03) — wizard программы: группировка шаблонов по суставу («Колено»)
 // + превью фаз протокола в Step2. Новый инструкторский бандл → bump для chunks.
-const CACHE_NAME = 'azarean-v32';
-const API_CACHE = 'azarean-api-v32';
+// v33 (2026-06-03) — wizard: «Текущая фаза» = динамический дропдаун из фаз протокола
+// (до 7 фаз вместо хардкода 1-4). Новый инструкторский бандл → bump для chunks.
+const CACHE_NAME = 'azarean-v33';
+const API_CACHE = 'azarean-api-v33';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
