@@ -261,6 +261,20 @@ export const exercises = {
   update: (id, data) => api.put(`/exercises/${id}`, data),
   delete: (id) => api.delete(`/exercises/${id}`),
 
+  // AI-надиктовка: расшифровка → { fields, warnings } для предзаполнения формы (не-PII).
+  structure: (transcript) => api.post('/exercises/structure', { transcript }),
+
+  // Распознавание речи (Yandex SpeechKit): аудио-Blob → { text }. По умолчанию raw PCM 16кГц.
+  transcribe: (blob, { format = 'lpcm', sampleRateHertz = 16000 } = {}) => {
+    const fd = new FormData();
+    fd.append('audio', blob, 'speech.pcm');
+    fd.append('format', format);
+    fd.append('sampleRateHertz', String(sampleRateHertz));
+    return api.post('/exercises/transcribe', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   getMuscleGroups: (category = null) => {
     const params = category ? `?category=${category}` : '';
     return api.get(`/exercises/muscle-groups/all${params}`);

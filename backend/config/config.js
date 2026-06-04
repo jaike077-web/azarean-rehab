@@ -97,8 +97,27 @@ const config = {
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
     projectId: process.env.KINESCOPE_PROJECT_ID,
-    folderId: process.env.KINESCOPE_FOLDER_ID || null, 
+    folderId: process.env.KINESCOPE_FOLDER_ID || null,
     apiUrl: 'https://api.kinescope.io/v1',
+  },
+
+  // is*ai (LLM хостера is*hosting, OpenAI-совместимый, Open WebUI + Ollama).
+  // Используется ТОЛЬКО для НЕ-PII задач (структурирование надиктовки упражнений).
+  // Данные пациентов сюда НЕ отправляем — is*ai физически вне РФ (Гонконг).
+  // baseUrl/model в env: точный путь подтверждается эмпирически по живому инстансу.
+  // Пусто → сервис в noop (эндпоинт вернёт 503).
+  isai: {
+    apiKey: process.env.ISAI_API_KEY || '',
+    baseUrl: process.env.ISAI_BASE_URL || 'https://ai.ishosting.com/api',
+    model: process.env.ISAI_MODEL || 'qwen3:latest',
+  },
+
+  // Yandex SpeechKit (STT) — распознавание надиктовки. Каталог cloud-jaike077 (РФ).
+  // Контент упражнений = не PII. Short audio recognize (до ~30с / 1 МБ на запрос).
+  speechkit: {
+    apiKey: process.env.YANDEX_SPEECHKIT_API_KEY || '',
+    folderId: process.env.YANDEX_SPEECHKIT_FOLDER_ID || '',
+    lang: process.env.YANDEX_SPEECHKIT_LANG || 'ru-RU',
   },
 };
 

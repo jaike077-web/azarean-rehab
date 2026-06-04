@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Info, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi, admin } from '../../../services/api';
 import s from './ExerciseModal.module.css';
 import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import { useAuth } from '../../../context/AuthContext';
 import useAudioPreview from '../../../hooks/useAudioPreview';
+import useAudioRecorder from '../../../hooks/useAudioRecorder';
 
 // Wave 0 commit 05 — hint-метки рядом с полями, видимые инструктору.
 // Помогают понять где в пациентском UI отрисуется значение поля,
@@ -68,9 +69,18 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // AI-надиктовка (is*ai) — текст → поля. По умолчанию раскрыто для нового упражнения.
+  const [showDictation, setShowDictation] = useState(!exercise);
+  const [transcript, setTranscript] = useState('');
+  const [structuring, setStructuring] = useState(false);
+  const [structureWarnings, setStructureWarnings] = useState([]);
+  const [structureError, setStructureError] = useState(null);
+  const [transcribing, setTranscribing] = useState(false);
+
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const previewTrack = useAudioPreview();
+  const recorder = useAudioRecorder();
 
   // ========================================
   // INITIALIZATION
@@ -177,6 +187,79 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     }
   };
 
+  // Применить разобранные is*ai поля к форме (только присутствующие ключи — не затираем
+  // то, чего модель не вернула). Источник клиники = эксперт; модель только структурирует.
+  const applyStructured = (fields) => {
+    if (!fields || typeof fields !== 'object') return;
+    if (fields.title != null) setTitle(fields.title);
+    if (fields.short_title != null) setShortTitle(fields.short_title);
+    if (fields.description != null) setDescription(fields.description);
+    if (fields.exercise_type != null) setExerciseType(fields.exercise_type);
+    if (fields.body_region != null) setBodyRegion(fields.body_region);
+    if (fields.difficulty_level != null) setDifficultyLevel(fields.difficulty_level);
+    if (Array.isArray(fields.equipment)) setEquipment(fields.equipment);
+    if (Array.isArray(fields.position)) setPosition(fields.position);
+    if (Array.isArray(fields.rehab_phases)) setRehabPhases(fields.rehab_phases);
+    if (fields.instructions != null) setInstructions(fields.instructions);
+    if (fields.cues != null) setCues(fields.cues);
+    if (fields.tips != null) setTips(fields.tips);
+    if (fields.contraindications != null) setContraindications(fields.contraindications);
+    if (fields.instructions || fields.cues || fields.tips || fields.contraindications) {
+      setShowAdvanced(true);
+    }
+  };
+
+  const handleStructure = async () => {
+    const text = transcript.trim();
+    if (text.length < 3 || structuring) return;
+    setStructuring(true);
+    setStructureError(null);
+    setStructureWarnings([]);
+    try {
+      const res = await exercisesApi.structure(text);
+      const payload = res.data || {};
+      applyStructured(payload.fields);
+      setStructureWarnings(Array.isArray(payload.warnings) ? payload.warnings : []);
+    } catch (err) {
+      setStructureError(
+        err.response?.data?.message || 'Не удалось разобрать надиктовку. Попробуйте ещё раз.'
+      );
+    } finally {
+      setStructuring(false);
+    }
+  };
+
+  // Микрофон: старт записи → (повторный клик) стоп + распознавание через SpeechKit →
+  // распознанный текст дописывается в поле расшифровки.
+  const handleMicToggle = async () => {
+    setStructureError(null);
+    if (!recorder.recording) {
+      await recorder.start();
+      return;
+    }
+    setTranscribing(true);
+    try {
+      const result = await recorder.stop();
+      if (!result || !result.blob || !result.blob.size) {
+        return;
+      }
+      const res = await exercisesApi.transcribe(result.blob, {
+        format: 'lpcm',
+        sampleRateHertz: result.sampleRateHertz,
+      });
+      const text = (res.data && res.data.text) || '';
+      if (text) {
+        setTranscript((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text));
+      }
+    } catch (err) {
+      setStructureError(
+        err.response?.data?.message || 'Не удалось распознать аудио. Попробуйте ещё раз.'
+      );
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
   const buildPayload = () => {
     return {
       // ОБЯЗАТЕЛЬНЫЕ поля
@@ -274,6 +357,89 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
         <form onSubmit={handleSubmit}>
           <div className={s.modalBody}>
+            {/* AI-НАДИКТОВКА — текст → поля через is*ai (не-PII контент библиотеки) */}
+            <div className={s.formSection}>
+              <button
+                type="button"
+                className={s.toggleAdvancedBtn}
+                onClick={() => setShowDictation((v) => !v)}
+              >
+                {showDictation ? <ChevronDown size={16} /> : <ChevronRight size={16} />}{' '}
+                <Sparkles size={16} /> Заполнить надиктовкой{' '}
+                <span className={s.optional}>(голос / текст → поля)</span>
+              </button>
+
+              {showDictation && (
+                <div className={s.advancedFields}>
+                  <p className={s.fieldHint} style={{ marginTop: 0, fontSize: 12, color: 'var(--color-text-muted, #6b7280)', lineHeight: 1.5 }}>
+                    Надиктуйте микрофоном клавиатуры или вставьте текст по чек-листу:
+                    название · регион · тип · сложность · оборудование · положение ·
+                    как выполнять · подсказки · противопоказания. Затем «Разобрать» —
+                    поля заполнятся, проверьте и поправьте вручную.
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className={s.btnSecondary}
+                      onClick={handleMicToggle}
+                      disabled={transcribing || structuring}
+                      style={recorder.recording
+                        ? { background: '#fde8e8', borderColor: '#f56565', color: '#c53030' }
+                        : undefined}
+                    >
+                      {recorder.recording && (<><Square size={15} /> Остановить и распознать</>)}
+                      {!recorder.recording && transcribing && 'Распознаю…'}
+                      {!recorder.recording && !transcribing && (<><Mic size={15} /> Записать голос</>)}
+                    </button>
+                    {recorder.recording && (
+                      <span style={{ fontSize: 12, color: '#c53030' }}>● идёт запись…</span>
+                    )}
+                  </div>
+                  {recorder.error && (
+                    <div className={s.errorMessage} style={{ marginBottom: 8 }}>{recorder.error}</div>
+                  )}
+                  <textarea
+                    value={transcript}
+                    onChange={(e) => setTranscript(e.target.value)}
+                    placeholder="Например: Маятник Кодмана, плечо, мобилизация, сложность 2, без оборудования, стоя; расслабить руку и раскачивать корпусом…"
+                    rows="5"
+                    disabled={structuring || transcribing || recorder.recording}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className={s.btnPrimary}
+                      onClick={handleStructure}
+                      disabled={structuring || transcript.trim().length < 3}
+                    >
+                      {structuring ? 'Разбираю… (~30–60 сек)' : 'Разобрать в поля'}
+                    </button>
+                    {transcript && !structuring && (
+                      <button
+                        type="button"
+                        className={s.btnSecondary}
+                        onClick={() => {
+                          setTranscript('');
+                          setStructureWarnings([]);
+                          setStructureError(null);
+                        }}
+                      >
+                        Очистить
+                      </button>
+                    )}
+                  </div>
+                  {structureError && (
+                    <div className={s.errorMessage} style={{ marginTop: 8 }}>{structureError}</div>
+                  )}
+                  {structureWarnings.length > 0 && (
+                    <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--color-text-muted, #6b7280)', fontSize: 12 }}>
+                      {structureWarnings.map((w, i) => (<li key={`warn-${i}`}>{w}</li>))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* ОБЯЗАТЕЛЬНЫЕ ПОЛЯ */}
             <div className={`${s.formSection} ${s.requiredSection}`}>
               <h3 className={s.sectionTitle}>Обязательные поля</h3>
