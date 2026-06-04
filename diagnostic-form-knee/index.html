@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Диагностическое обследование — Колено | Azarean Network</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="logo-mark" aria-hidden="true">AZAREAN</div>
+      <div>
+        <h1>Azarean Network</h1>
+        <p>Диагностическое обследование — Коленный сустав</p>
+      </div>
+    </header>
+
+    <div class="accent-choices" aria-label="Варианты акцентного цвета">
+      <span>Акцентные цвета:</span>
+      <button type="button" class="accent-swatch" data-accent="blue" aria-label="Медицинский синий"></button>
+      <button type="button" class="accent-swatch" data-accent="teal" aria-label="Бирюзовый"></button>
+      <button type="button" class="accent-swatch" data-accent="green" aria-label="Глубокий зелёный"></button>
+    </div>
+
+    <div class="form-card">
+      <div class="form-note" id="validationMessage" role="alert" aria-live="polite"></div>
+      <form id="diagnosticForm" novalidate>
+        <section class="accordion" data-block="patient" data-required="patient_name,patient_dob,diagnosis_date">
+          <button type="button" class="accordion-header" aria-expanded="true">
+            <span>Блок 1: Данные пациента</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body is-open">
+            <div class="field-grid">
+              <label class="field">
+                <span>ФИО<span class="required">*</span></span>
+                <input type="text" id="patient_name" name="patient_name" placeholder="Иванов Иван Иванович" required />
+              </label>
+              <label class="field">
+                <span>Дата рождения<span class="required">*</span></span>
+                <input type="date" id="patient_dob" name="patient_dob" required />
+              </label>
+              <label class="field">
+                <span>Дата диагностики<span class="required">*</span></span>
+                <input type="date" id="diagnosis_date" name="diagnosis_date" required />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="subjective" data-required="main_complaint,localization,vas_rest,vas_load,patient_goal">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 2: Субъективное обследование</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <label class="field field-wide">
+                <span>Основная жалоба<span class="required">*</span></span>
+                <textarea id="main_complaint" name="main_complaint" rows="3" placeholder="Опишите основную жалобу пациента" required></textarea>
+              </label>
+              <fieldset class="field">
+                <legend>Локализация<span class="required">*</span></legend>
+                <div class="checkbox-group" data-required-group="localization">
+                  <label><input type="checkbox" name="localization" value="Правое" />Правое</label>
+                  <label><input type="checkbox" name="localization" value="Левое" />Левое</label>
+                  <label><input type="checkbox" name="localization" value="Оба" />Оба</label>
+                </div>
+              </fieldset>
+              <div class="field">
+                <span>VAS в покое<span class="required">*</span></span>
+                <div class="range-field">
+                  <input type="range" id="vas_rest" name="vas_rest" min="0" max="10" value="0" />
+                  <span class="range-value" data-range-value="vas_rest">0</span>
+                </div>
+                <div class="range-labels">
+                  <span>Нет боли</span>
+                  <span>Невыносимая боль</span>
+                </div>
+              </div>
+              <div class="field">
+                <span>VAS при нагрузке<span class="required">*</span></span>
+                <div class="range-field">
+                  <input type="range" id="vas_load" name="vas_load" min="0" max="10" value="0" />
+                  <span class="range-value" data-range-value="vas_load">0</span>
+                </div>
+                <div class="range-labels">
+                  <span>Нет боли</span>
+                  <span>Невыносимая боль</span>
+                </div>
+              </div>
+              <label class="field">
+                <span>Длительность проблемы</span>
+                <select id="duration" name="duration">
+                  <option value="">Выберите</option>
+                  <option value="Менее 1 месяца">Менее 1 месяца</option>
+                  <option value="1-3 месяца">1-3 месяца</option>
+                  <option value="3-6 месяцев">3-6 месяцев</option>
+                  <option value="6-12 месяцев">6-12 месяцев</option>
+                  <option value="Более 1 года">Более 1 года</option>
+                  <option value="Другое">Другое</option>
+                </select>
+                <input type="text" id="duration_other" name="duration_other" placeholder="Уточните" class="conditional" />
+              </label>
+              <fieldset class="field field-wide">
+                <legend>Когда хуже</legend>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="worse_when" value="Утром" />Утром</label>
+                  <label><input type="checkbox" name="worse_when" value="Вечером" />Вечером</label>
+                  <label><input type="checkbox" name="worse_when" value="После нагрузки" />После нагрузки</label>
+                  <label><input type="checkbox" name="worse_when" value="В начале движения" />В начале движения</label>
+                  <label><input type="checkbox" name="worse_when" value="При длительной статике" />При длительной статике</label>
+                  <label><input type="checkbox" name="worse_when" value="Ночью" />Ночью</label>
+                  <label><input type="checkbox" name="worse_when" value="Другое" data-toggle-text="worse_when_other" />Другое</label>
+                </div>
+                <input type="text" id="worse_when_other" name="worse_when_other" placeholder="Уточните" class="conditional" />
+              </fieldset>
+              <fieldset class="field field-wide">
+                <legend>Когда легче</legend>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="better_when" value="После разминки" />После разминки</label>
+                  <label><input type="checkbox" name="better_when" value="В покое" />В покое</label>
+                  <label><input type="checkbox" name="better_when" value="После тепла" />После тепла</label>
+                  <label><input type="checkbox" name="better_when" value="После холода" />После холода</label>
+                  <label><input type="checkbox" name="better_when" value="Другое" data-toggle-text="better_when_other" />Другое</label>
+                </div>
+                <input type="text" id="better_when_other" name="better_when_other" placeholder="Уточните" class="conditional" />
+              </fieldset>
+              <fieldset class="field field-wide">
+                <legend>Предыдущее лечение</legend>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="previous_treatment" value="ЛФК" />ЛФК</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Массаж" />Массаж</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Физиотерапия" />Физиотерапия</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Инъекции" />Инъекции</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Операция" />Операция</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Ничего не делали" />Ничего не делали</label>
+                  <label><input type="checkbox" name="previous_treatment" value="Другое" data-toggle-text="previous_treatment_other" />Другое</label>
+                </div>
+                <input type="text" id="previous_treatment_other" name="previous_treatment_other" placeholder="Уточните" class="conditional" />
+              </fieldset>
+              <fieldset class="field field-wide">
+                <legend>Консультации врачей</legend>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="doctors" value="Травматолог" />Травматолог</label>
+                  <label><input type="checkbox" name="doctors" value="Невролог" />Невролог</label>
+                  <label><input type="checkbox" name="doctors" value="Ревматолог" />Ревматолог</label>
+                  <label><input type="checkbox" name="doctors" value="Хирург" />Хирург</label>
+                  <label><input type="checkbox" name="doctors" value="Не обращался" />Не обращался</label>
+                  <label><input type="checkbox" name="doctors" value="Другой" data-toggle-text="doctors_other" />Другой</label>
+                </div>
+                <input type="text" id="doctors_other" name="doctors_other" placeholder="Уточните" class="conditional" />
+              </fieldset>
+              <label class="field">
+                <span>Диагноз (если есть)</span>
+                <input type="text" id="diagnosis" name="diagnosis" placeholder="Диагноз от врача, если известен" />
+              </label>
+              <fieldset class="field">
+                <legend>МРТ / Рентген</legend>
+                <div class="radio-group">
+                  <label><input type="radio" name="imaging" value="Нет" checked />Нет</label>
+                  <label><input type="radio" name="imaging" value="Есть" />Есть</label>
+                </div>
+                <textarea id="imaging_details" name="imaging_details" rows="3" placeholder="Дата и заключение" class="conditional"></textarea>
+              </fieldset>
+              <label class="field">
+                <span>Уровень бытовой активности</span>
+                <select id="daily_activity" name="daily_activity">
+                  <option value="">Выберите</option>
+                  <option value="Низкий (сидячий образ жизни)">Низкий (сидячий образ жизни)</option>
+                  <option value="Умеренный">Умеренный</option>
+                  <option value="Высокий (активная работа, много ходьбы)">Высокий (активная работа, много ходьбы)</option>
+                  <option value="Другое">Другое</option>
+                </select>
+                <input type="text" id="daily_activity_other" name="daily_activity_other" placeholder="Уточните" class="conditional" />
+              </label>
+              <label class="field field-wide">
+                <span>Спортивная активность</span>
+                <textarea id="sport_activity" name="sport_activity" rows="3" placeholder="Вид спорта, частота занятий"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Цель пациента<span class="required">*</span></span>
+                <textarea id="patient_goal" name="patient_goal" rows="3" placeholder="Чего хочет достичь пациент?" required></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="visual">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 3: Визуальный осмотр</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <fieldset class="field">
+                <legend>Рубцы</legend>
+                <div class="radio-group">
+                  <label><input type="radio" name="scars" value="Нет" checked />Нет</label>
+                  <label><input type="radio" name="scars" value="Есть" />Есть</label>
+                </div>
+                <input type="text" id="scars_details" name="scars_details" placeholder="Локализация и состояние" class="conditional" />
+              </fieldset>
+              <label class="field">
+                <span>Отёк</span>
+                <select id="edema" name="edema">
+                  <option value="Нет">Нет</option>
+                  <option value="Незначительный">Незначительный</option>
+                  <option value="Умеренный">Умеренный</option>
+                  <option value="Выраженный">Выраженный</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Локализация отёка</span>
+                <input type="text" id="edema_location" name="edema_location" placeholder="Уточните" class="conditional" />
+              </label>
+              <label class="field">
+                <span>Изменение температуры</span>
+                <select id="temperature" name="temperature">
+                  <option value="">Выберите</option>
+                  <option value="Норма">Норма</option>
+                  <option value="Гипертермия (теплее)">Гипертермия (теплее)</option>
+                  <option value="Гипотермия (холоднее)">Гипотермия (холоднее)</option>
+                </select>
+              </label>
+              <fieldset class="field">
+                <legend>Разница длины н/к</legend>
+                <div class="radio-group">
+                  <label><input type="radio" name="leg_length_diff" value="Нет" checked />Нет</label>
+                  <label><input type="radio" name="leg_length_diff" value="Есть" />Есть</label>
+                </div>
+                <input type="number" id="leg_length_diff_value" name="leg_length_diff_value" placeholder="Разница (см)" step="0.5" class="conditional" />
+              </fieldset>
+              <label class="field">
+                <span>Обхват бедра над надколенником — Правое</span>
+                <input type="number" id="thigh_above_patella_r" name="thigh_above_patella_r" placeholder="см" />
+              </label>
+              <label class="field">
+                <span>Обхват бедра над надколенником — Левое</span>
+                <input type="number" id="thigh_above_patella_l" name="thigh_above_patella_l" placeholder="см" />
+              </label>
+              <label class="field">
+                <span>Обхват бедра 15 см выше надколенника — Правое</span>
+                <input type="number" id="thigh_15cm_r" name="thigh_15cm_r" placeholder="см" />
+              </label>
+              <label class="field">
+                <span>Обхват бедра 15 см выше надколенника — Левое</span>
+                <input type="number" id="thigh_15cm_l" name="thigh_15cm_l" placeholder="см" />
+              </label>
+              <label class="field">
+                <span>Обхват голени — Правое</span>
+                <input type="number" id="calf_r" name="calf_r" placeholder="см" />
+              </label>
+              <label class="field">
+                <span>Обхват голени — Левое</span>
+                <input type="number" id="calf_l" name="calf_l" placeholder="см" />
+              </label>
+              <label class="field field-wide">
+                <span>Пальпация — болезненность</span>
+                <textarea id="palpation_pain" name="palpation_pain" rows="3" placeholder="Зоны болезненности, интенсивность"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Пальпация — тонус</span>
+                <textarea id="palpation_tone" name="palpation_tone" rows="3" placeholder="Гипертонус, гипотонус, триггерные точки"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="posture">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 4: Постуральная оценка и базовые тесты</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <label class="field field-wide">
+                <span>Статика (костные ориентиры)</span>
+                <textarea id="statics" name="statics" rows="3" placeholder="Асимметрии, отклонения, ротации"></textarea>
+              </label>
+              <fieldset class="field field-wide">
+                <legend>Походка</legend>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" name="gait" value="Норма" />Норма</label>
+                  <label><input type="checkbox" name="gait" value="Хромота" />Хромота</label>
+                  <label><input type="checkbox" name="gait" value="Анталгическая" />Анталгическая</label>
+                  <label><input type="checkbox" name="gait" value="Тренделенбург" />Тренделенбург</label>
+                  <label><input type="checkbox" name="gait" value="Другое" data-toggle-text="gait_other" />Другое</label>
+                </div>
+                <input type="text" id="gait_other" name="gait_other" placeholder="Уточните" class="conditional" />
+              </fieldset>
+              <label class="field">
+                <span>Проба Ромберга</span>
+                <select id="romberg" name="romberg">
+                  <option value="">Выберите</option>
+                  <option value="Отрицательная">Отрицательная</option>
+                  <option value="Положительная">Положительная</option>
+                  <option value="Другое">Другое</option>
+                </select>
+                <input type="text" id="romberg_other" name="romberg_other" placeholder="Комментарий" class="conditional" />
+              </label>
+              <label class="field field-wide">
+                <span>Наклон вперёд</span>
+                <textarea id="forward_bend" name="forward_bend" rows="3" placeholder="Паттерн движения, ограничения"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Step up / Step down</span>
+                <textarea id="step_test" name="step_test" rows="3" placeholder="Качество выполнения, компенсации, асимметрии"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Паттерны движения (заметки)</span>
+                <textarea id="movement_patterns" name="movement_patterns" rows="3" placeholder="Общие наблюдения за качеством движения"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="rom">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 5: ROM (объём движений)</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <label class="field field-wide">
+                <span>ROM коленного сустава</span>
+                <textarea id="rom_knee" name="rom_knee" rows="3" placeholder="Флексия/экстензия, активный/пассивный, П/Л, ограничения, боль"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>ROM тазобедренного сустава</span>
+                <textarea id="rom_hip" name="rom_hip" rows="3" placeholder="Основные движения, ограничения, асимметрии"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>ROM голеностопного сустава</span>
+                <textarea id="rom_ankle" name="rom_ankle" rows="3" placeholder="Дорсифлексия, плантарфлексия, П/Л"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="mmt">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 6: ММТ коленного сустава</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <p class="helper-text">Оценка силы по шкале 0-5 (0 = нет сокращения, 5 = полная сила против сопротивления)</p>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Мышца</th>
+                    <th>Правое</th>
+                    <th>Левое</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Квадрицепс</td>
+                    <td>
+                      <select id="mmt_quad_r" name="mmt_quad_r">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="mmt_quad_l" name="mmt_quad_l">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Хамстринги</td>
+                    <td>
+                      <select id="mmt_ham_r" name="mmt_ham_r">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="mmt_ham_l" name="mmt_ham_l">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Аддукторы</td>
+                    <td>
+                      <select id="mmt_add_r" name="mmt_add_r">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="mmt_add_l" name="mmt_add_l">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Абдукторы</td>
+                    <td>
+                      <select id="mmt_abd_r" name="mmt_abd_r">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="mmt_abd_l" name="mmt_abd_l">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Икроножная</td>
+                    <td>
+                      <select id="mmt_calf_r" name="mmt_calf_r">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select id="mmt_calf_l" name="mmt_calf_l">
+                        <option value="">—</option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="Не тестировалось">Не тестировалось</option>
+                      </select>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <label class="field field-wide">
+              <span>Комментарий к ММТ</span>
+              <textarea id="mmt_comment" name="mmt_comment" rows="3" placeholder="Дополнительные наблюдения"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="ortho">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 7: Ортопедические тесты коленного сустава</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <p class="helper-text">— отрицательный, + слабо положительный, ++ умеренно положительный, +++ резко положительный</p>
+
+            <div class="ortho-group">
+              <h3>Тесты ПКС</h3>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Тест</th>
+                      <th>Правое</th>
+                      <th>Левое</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Lachman</td>
+                      <td><select id="lachman_r" name="lachman_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="lachman_l" name="lachman_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Передний выдвижной ящик</td>
+                      <td><select id="ant_drawer_r" name="ant_drawer_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="ant_drawer_l" name="ant_drawer_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Pivot shift</td>
+                      <td><select id="pivot_shift_r" name="pivot_shift_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="pivot_shift_l" name="pivot_shift_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="ortho-group">
+              <h3>Тесты ЗКС</h3>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Тест</th>
+                      <th>Правое</th>
+                      <th>Левое</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Задний выдвижной ящик</td>
+                      <td><select id="post_drawer_r" name="post_drawer_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="post_drawer_l" name="post_drawer_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="ortho-group">
+              <h3>Тесты коллатеральных связок</h3>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Тест</th>
+                      <th>Правое</th>
+                      <th>Левое</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Valgus stress 0°</td>
+                      <td><select id="valgus_0_r" name="valgus_0_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="valgus_0_l" name="valgus_0_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Valgus stress 30°</td>
+                      <td><select id="valgus_30_r" name="valgus_30_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="valgus_30_l" name="valgus_30_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Varus stress 0°</td>
+                      <td><select id="varus_0_r" name="varus_0_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="varus_0_l" name="varus_0_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Varus stress 30°</td>
+                      <td><select id="varus_30_r" name="varus_30_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="varus_30_l" name="varus_30_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="++">++</option><option value="+++">+++</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="ortho-group">
+              <h3>Тесты менисков</h3>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Тест</th>
+                      <th>Правое</th>
+                      <th>Левое</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>McMurray</td>
+                      <td><select id="mcmurray_r" name="mcmurray_r"><option value="">—</option><option value="—">—</option><option value="+ медиальный">+ медиальный</option><option value="+ латеральный">+ латеральный</option><option value="+ оба">+ оба</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="mcmurray_l" name="mcmurray_l"><option value="">—</option><option value="—">—</option><option value="+ медиальный">+ медиальный</option><option value="+ латеральный">+ латеральный</option><option value="+ оба">+ оба</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Thessaly</td>
+                      <td><select id="thessaly_r" name="thessaly_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="thessaly_l" name="thessaly_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Apley compression</td>
+                      <td><select id="apley_comp_r" name="apley_comp_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="apley_comp_l" name="apley_comp_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Apley distraction</td>
+                      <td><select id="apley_dist_r" name="apley_dist_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="apley_dist_l" name="apley_dist_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="ortho-group">
+              <h3>Тесты пателлофеморального сустава</h3>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Тест</th>
+                      <th>Правое</th>
+                      <th>Левое</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Patella grind (Clarke's)</td>
+                      <td><select id="patella_grind_r" name="patella_grind_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="patella_grind_l" name="patella_grind_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                    <tr>
+                      <td>Patella apprehension</td>
+                      <td><select id="patella_appr_r" name="patella_appr_r"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                      <td><select id="patella_appr_l" name="patella_appr_l"><option value="">—</option><option value="—">—</option><option value="+">+</option><option value="Не тестировалось">Не тестировалось</option></select></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <label class="field field-wide">
+              <span>Другие ортопедические тесты</span>
+              <textarea id="ortho_other" name="ortho_other" rows="3" placeholder="Дополнительные тесты и их результаты"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="neuro">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 8: Неврологические тесты</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <label class="field field-wide">
+              <span>Неврологические тесты</span>
+              <textarea id="neuro_tests" name="neuro_tests" rows="3" placeholder="SLR, Femoral stretch, чувствительность, другие тесты и находки"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="functional">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 9: Функциональное тестирование в зале</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <label class="field field-wide">
+                <span>Выполненные упражнения/тесты</span>
+                <textarea id="functional_exercises" name="functional_exercises" rows="3" placeholder="Приседания, выпады, прыжки, специфические тесты"></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Наблюдения</span>
+                <textarea id="functional_observations" name="functional_observations" rows="3" placeholder="Как организм ведёт себя под нагрузкой, компенсации, ограничения"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="session">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 10: Динамика во время занятия</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <div class="field field-wide">
+                <span>VAS (до | в процессе | после)</span>
+                <div class="range-row">
+                  <label>
+                    <span>До</span>
+                    <input type="range" id="vas_before" name="vas_before" min="0" max="10" value="0" />
+                    <span class="range-value" data-range-value="vas_before">0</span>
+                  </label>
+                  <label>
+                    <span>В процессе</span>
+                    <input type="range" id="vas_during" name="vas_during" min="0" max="10" value="0" />
+                    <span class="range-value" data-range-value="vas_during">0</span>
+                  </label>
+                  <label>
+                    <span>После</span>
+                    <input type="range" id="vas_after" name="vas_after" min="0" max="10" value="0" />
+                    <span class="range-value" data-range-value="vas_after">0</span>
+                  </label>
+                </div>
+              </div>
+              <label class="field">
+                <span>ROM до (кратко)</span>
+                <input type="text" id="rom_before" name="rom_before" placeholder="Например: флексия 100°" />
+              </label>
+              <label class="field">
+                <span>ROM после (кратко)</span>
+                <input type="text" id="rom_after" name="rom_after" placeholder="Например: флексия 115°" />
+              </label>
+              <label class="field">
+                <span>Самочувствие до</span>
+                <select id="wellbeing_before" name="wellbeing_before">
+                  <option value="">Выберите</option>
+                  <option value="Плохое">Плохое</option>
+                  <option value="Удовлетворительное">Удовлетворительное</option>
+                  <option value="Хорошее">Хорошее</option>
+                  <option value="Отличное">Отличное</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Самочувствие после</span>
+                <select id="wellbeing_after" name="wellbeing_after">
+                  <option value="">Выберите</option>
+                  <option value="Плохое">Плохое</option>
+                  <option value="Удовлетворительное">Удовлетворительное</option>
+                  <option value="Хорошее">Хорошее</option>
+                  <option value="Отличное">Отличное</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="accordion" data-block="conclusion" data-required="hypothesis,main_findings,recommendations">
+          <button type="button" class="accordion-header" aria-expanded="false">
+            <span>Блок 11: Заключение</span>
+            <span class="block-status" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-body">
+            <div class="field-grid">
+              <label class="field field-wide">
+                <span>Рабочая гипотеза<span class="required">*</span></span>
+                <textarea id="hypothesis" name="hypothesis" rows="3" placeholder="Предполагаемая причина проблемы" required></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Основные находки<span class="required">*</span></span>
+                <textarea id="main_findings" name="main_findings" rows="3" placeholder="Ключевые результаты обследования" required></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>Рекомендации<span class="required">*</span></span>
+                <textarea id="recommendations" name="recommendations" rows="3" placeholder="Рекомендации для пациента" required></textarea>
+              </label>
+              <label class="field field-wide">
+                <span>План работы</span>
+                <textarea id="work_plan" name="work_plan" rows="3" placeholder="План реабилитации, этапы, цели"></textarea>
+              </label>
+              <label class="field">
+                <span>Рекомендуемая программа</span>
+                <select id="recommended_program" name="recommended_program">
+                  <option value="">Выберите</option>
+                  <option value="Базовая">Базовая</option>
+                  <option value="Стандарт">Стандарт</option>
+                  <option value="Премиум">Премиум</option>
+                  <option value="Индивидуальная">Индивидуальная</option>
+                  <option value="Другое">Другое</option>
+                </select>
+                <input type="text" id="recommended_program_other" name="recommended_program_other" placeholder="Комментарий" class="conditional" />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button type="button" id="clearForm" class="btn btn-secondary">Очистить форму</button>
+          <button type="button" id="generatePdf" class="btn btn-primary">Сгенерировать отчёт (PDF)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="reportContainer" class="report-container" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/pdf-generator.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
