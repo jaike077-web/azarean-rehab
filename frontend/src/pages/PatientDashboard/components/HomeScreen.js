@@ -142,7 +142,7 @@ export default function HomeScreen({
   const allDone = Boolean(exercisesDoneToday);
 
   const firstName = (program.patient_name || patient?.full_name || 'Пациент').split(' ')[0];
-  const currentPhase = program.current_phase || 1;
+  const currentPhase = program.current_phase ?? 1; // ?? 1: фаза 0 (prehab) реальна (D3)
   const totalWeeks = phase?.duration_weeks || 12;
   const currentWeek = getWeeksSinceSurgery(program.surgery_date);
   const phasePct = totalWeeks > 0 ? Math.min(100, Math.round((currentWeek / totalWeeks) * 100)) : 0;

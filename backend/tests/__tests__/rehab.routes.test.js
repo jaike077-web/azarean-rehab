@@ -1758,6 +1758,83 @@ describe('POST /api/rehab/programs — program_template_id support', () => {
   });
 });
 
+// D3 — prehab phase 0 как стартовая фаза: current_phase=0 не должен коэрситься в 1.
+// POST INSERT params: [...,current_phase=idx5,...]; PUT UPDATE params: [...,current_phase=idx3,...].
+describe('current_phase coercion — prehab phase 0 (D3)', () => {
+  let instructorToken;
+
+  beforeEach(() => {
+    instructorToken = jwt.sign(
+      { id: 1, email: 'instructor@test.com', role: 'instructor' },
+      process.env.JWT_SECRET,
+      { algorithm: 'HS256', expiresIn: '1h' }
+    );
+  });
+
+  it('POST: current_phase=0 (prehab) сохраняется как 0, не коэрсится в 1', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })  // auth
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })            // patientCheck
+      .mockResolvedValueOnce({ rows: [{ id: 100, current_phase: 0, program_type: 'acl' }] }) // INSERT
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });        // streak
+
+    await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ patient_id: 14, title: 'Prehab', program_type: 'acl', current_phase: 0 })
+      .expect(201);
+
+    const insertParams = query.mock.calls[2][1];
+    expect(insertParams[5]).toBe(0); // current_phase в INSERT = 0
+  });
+
+  it('POST: без current_phase → дефолт 1', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 14 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 100, program_type: 'acl' }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    await request(app)
+      .post('/api/rehab/programs')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ patient_id: 14, title: 'Без фазы' })
+      .expect(201);
+
+    expect(query.mock.calls[2][1][5]).toBe(1);
+  });
+
+  it('PUT: current_phase=0 (prehab) обновляется как 0, не коэрсится', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })          // auth
+      .mockResolvedValueOnce({ rows: [{ id: 5, current_phase: 1 }] })  // checkResult
+      .mockResolvedValueOnce({ rows: [{ id: 5, current_phase: 0 }] }); // UPDATE
+
+    await request(app)
+      .put('/api/rehab/programs/5')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ current_phase: 0 })
+      .expect(200);
+
+    expect(query.mock.calls[2][1][3]).toBe(0); // current_phase в UPDATE = 0
+  });
+
+  it('PUT: без current_phase → null (COALESCE сохраняет старую фазу)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 5, current_phase: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 5, current_phase: 2 }] });
+
+    await request(app)
+      .put('/api/rehab/programs/5')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ notes: 'только заметки' })
+      .expect(200);
+
+    expect(query.mock.calls[2][1][3]).toBeNull();
+  });
+});
+
 // Sanity-тесты структуры миграции 20260513_program_templates.sql
 // (паттерн как в program_types.migration.test.js — без реальной БД)
 describe('20260513_program_templates migration — структура SQL', () => {

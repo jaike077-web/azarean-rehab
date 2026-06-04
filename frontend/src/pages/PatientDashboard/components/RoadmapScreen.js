@@ -397,7 +397,8 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
     goTo(3, { prefilledMessage: msg });
   }, [goTo, stuckStatus]);
 
-  const currentPhaseNumber = dashboardData?.program?.current_phase || 1;
+  // ?? 1 (не || 1): фаза 0 (prehab) — реальная текущая фаза, не подменяем на 1.
+  const currentPhaseNumber = dashboardData?.program?.current_phase ?? 1;
   const currentPhase = useMemo(
     () => phases.find((p) => p.phase_number === currentPhaseNumber) || null,
     [phases, currentPhaseNumber]

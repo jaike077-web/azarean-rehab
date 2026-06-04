@@ -1444,6 +1444,16 @@ router.get('/programs', authenticateToken, async (req, res) => {
   }
 });
 
+// Нормализация current_phase из тела запроса. Допускает phase 0 (prehab) как
+// валидную стартовую фазу (D3) — раньше `current_phase || 1` / `|| null` коэрсили
+// 0 в дефолт. Возвращает целое >= 0, либо fallback (1 для POST, null для PUT-keep)
+// при отсутствии/пустом/нечисловом значении. Избегаем ловушки Number(null)===0.
+function coercePhase(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 0 ? n : fallback;
+}
+
 /**
  * POST /api/rehab/programs
  * Создать программу для пациента
@@ -1506,7 +1516,7 @@ router.post('/programs', authenticateToken, async (req, res) => {
         title,
         diagnosis || null,
         surgery_date || null,
-        current_phase || 1,
+        coercePhase(current_phase, 1),
         notes || null,
         req.user.id,
         resolvedProgramType || null,
@@ -1574,7 +1584,7 @@ router.put('/programs/:id', authenticateToken, async (req, res) => {
         title || null,
         diagnosis || null,
         surgery_date || null,
-        current_phase || null,
+        coercePhase(current_phase, null),
         status || null,
         notes || null,
         complex_id || null,

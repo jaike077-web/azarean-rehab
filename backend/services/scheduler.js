@@ -161,7 +161,7 @@ async function sendDailyTip() {
          WHERE is_active = true
            AND (phase_number = $1 OR phase_number IS NULL)
          ORDER BY RANDOM() LIMIT 1`,
-        [patient.current_phase || 1]
+        [patient.current_phase ?? 1]  // ?? 1: фаза 0 (prehab) → советы фазы 0/общие, не фазы 1
       );
 
       if (tipResult.rows.length > 0) {
