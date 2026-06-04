@@ -7,6 +7,7 @@ import ConfirmModal from '../ConfirmModal';
 import { formatDate } from '../../utils/dateUtils';
 import ComplexSelector from './ComplexSelector';
 import BlockEditor from './BlockEditor';
+import { buildPhaseChoices, phaseFromForm } from './CreateWizard';
 import s from './RehabProgramModal.module.css';
 
 /**
@@ -28,12 +29,17 @@ function EditForm({ patient, program, complexes, onSaved, onClose, onDeleted }) 
     complex_id: program.complex_id || '',
     diagnosis: program.diagnosis || '',
     surgery_date: program.surgery_date ? String(program.surgery_date).split('T')[0] : '',
-    current_phase: program.current_phase || 1,
+    // ?? 1 (не || 1): фаза 0 (prehab) — валидная стартовая (D3), не коэрсим в 1.
+    current_phase: program.current_phase ?? 1,
     notes: program.notes || '',
     status: program.status || 'active',
   });
   const [submitting, setSubmitting] = useState(false);
   const [templateLabel, setTemplateLabel] = useState(null); // имя шаблона если есть program_template_id
+  // Фазы протокола для дропдауна «Текущая фаза» — динамически по program_type
+  // (раньше был хардкод 1–4, неверный для ACL 0..6 / knee_oa 1..3). Включает
+  // phase 0 (prehab) как валидную стартовую — D3.
+  const [phases, setPhases] = useState([]);
 
   // Если программа создана из шаблона — подгружаем title шаблона для info-бейджа.
   // Не блокирует render — если запрос упал, бейдж просто не показывается.
@@ -50,6 +56,18 @@ function EditForm({ patient, program, complexes, onSaved, onClose, onDeleted }) 
       .catch(() => {});
     return () => { alive = false; };
   }, [program.program_template_id]);
+
+  // Загрузка фаз протокола для дропдауна «Текущая фаза». best-effort: при ошибке
+  // или отсутствии program_type buildPhaseChoices даёт дженерик-фолбэк 1..6.
+  useEffect(() => {
+    if (!program.program_type) { setPhases([]); return undefined; }
+    let alive = true;
+    rehab
+      .getPhases(program.program_type)
+      .then((res) => { if (alive) setPhases(Array.isArray(res?.data) ? res.data : []); })
+      .catch(() => { if (alive) setPhases([]); });
+    return () => { alive = false; };
+  }, [program.program_type]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,7 +90,7 @@ function EditForm({ patient, program, complexes, onSaved, onClose, onDeleted }) 
         complex_id: form.complex_id ? parseInt(form.complex_id, 10) : null,
         diagnosis: form.diagnosis.trim() || null,
         surgery_date: form.surgery_date || null,
-        current_phase: parseInt(form.current_phase, 10) || 1,
+        current_phase: phaseFromForm(form.current_phase),
         notes: form.notes.trim() || null,
         status: form.status,
       };
@@ -188,11 +206,11 @@ function EditForm({ patient, program, complexes, onSaved, onClose, onDeleted }) 
             name="current_phase"
             value={form.current_phase}
             onChange={handleChange}
+            data-testid="edit-phase-select"
           >
-            <option value={1}>1 — Фаза 1</option>
-            <option value={2}>2 — Фаза 2</option>
-            <option value={3}>3 — Фаза 3</option>
-            <option value={4}>4 — Фаза 4</option>
+            {buildPhaseChoices(phases).map((opt) => (
+              <option key={opt.number} value={opt.number}>{opt.label}</option>
+            ))}
           </select>
         </div>
         <div className={s.rehabProgramField}>

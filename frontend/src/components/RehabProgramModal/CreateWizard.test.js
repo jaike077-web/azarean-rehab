@@ -36,8 +36,8 @@ jest.mock('./ComplexSelector', () => (props) => (
   </select>
 ));
 
-const { rehab } = require('../../services/api');
-import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices } from './CreateWizard';
+const { rehab, rehabPrograms } = require('../../services/api');
+import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices, phaseFromForm } from './CreateWizard';
 
 const TEMPLATES = [
   { id: 1, code: 'tpl_acl', program_type: 'acl', program_type_label: 'ПКС реабилитация', program_joint: 'knee', title: 'ПКС', surgery_required: true },
@@ -93,27 +93,61 @@ describe('pluralPhases (pure)', () => {
 });
 
 describe('buildPhaseChoices (pure)', () => {
-  it('исключает phase 0, формирует label «N — title», сохраняет порядок', () => {
+  it('включает phase 0 (prehab), формирует label «N — title», сохраняет порядок (D3)', () => {
     const choices = buildPhaseChoices([
       { phase_number: 0, title: 'Prehab' },
       { phase_number: 1, title: 'A' },
       { phase_number: 2, title: 'B' },
     ]);
     expect(choices).toEqual([
+      { number: 0, label: '0 — Prehab' },
       { number: 1, label: '1 — A' },
       { number: 2, label: '2 — B' },
     ]);
   });
 
-  it('пусто / только phase 0 / null → дженерик-фолбэк 1..6', () => {
+  it('пусто / null → дженерик-фолбэк 1..6 (без phase 0 в фолбэке)', () => {
     expect(buildPhaseChoices([]).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(buildPhaseChoices([{ phase_number: 0, title: 'Prehab' }]).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(buildPhaseChoices(null).map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
   });
 
-  it('7-фазный протокол (0..6) → 6 опций (1..6), phase 0 нет', () => {
+  it('только phase 0 → дропдаун из одной опции [0] (не фолбэк)', () => {
+    expect(buildPhaseChoices([{ phase_number: 0, title: 'Prehab' }])).toEqual([
+      { number: 0, label: '0 — Prehab' },
+    ]);
+  });
+
+  it('7-фазный протокол (0..6) → 7 опций (0..6), phase 0 включён (D3)', () => {
     const choices = buildPhaseChoices([0, 1, 2, 3, 4, 5, 6].map((n) => ({ phase_number: n, title: `Этап ${n}` })));
-    expect(choices.map((c) => c.number)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(choices.map((c) => c.number)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('отбрасывает нечисловые/отрицательные phase_number, фолбэк при пустом результате', () => {
+    const choices = buildPhaseChoices([
+      { phase_number: -1, title: 'bad' },
+      { phase_number: 'x', title: 'bad' },
+      { phase_number: 2, title: 'B' },
+    ]);
+    expect(choices).toEqual([{ number: 2, label: '2 — B' }]);
+  });
+});
+
+describe('phaseFromForm (pure)', () => {
+  it('сохраняет phase 0 (prehab) — число и строка', () => {
+    expect(phaseFromForm(0)).toBe(0);
+    expect(phaseFromForm('0')).toBe(0);
+  });
+
+  it('пропускает обычные фазы', () => {
+    expect(phaseFromForm(3)).toBe(3);
+    expect(phaseFromForm('5')).toBe(5);
+  });
+
+  it('пусто / undefined / NaN / мусор → дефолт 1', () => {
+    expect(phaseFromForm('')).toBe(1);
+    expect(phaseFromForm(undefined)).toBe(1);
+    expect(phaseFromForm(NaN)).toBe(1);
+    expect(phaseFromForm('abc')).toBe(1);
   });
 });
 
@@ -198,7 +232,7 @@ describe('CreateWizard — шаг 1 (группировка) + превью фа
     expect(screen.getByText('B-фаза')).toBeInTheDocument();
   });
 
-  it('дропдаун «Текущая фаза» динамичен из фаз протокола (1..6), phase 0 исключён, не обрезан до 4', async () => {
+  it('дропдаун «Текущая фаза» динамичен из фаз протокола (0..6), phase 0 включён (D3), не обрезан до 4', async () => {
     rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: {}, phases: PHASES_ACL } });
     render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
     await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
@@ -206,12 +240,34 @@ describe('CreateWizard — шаг 1 (группировка) + превью фа
     fireEvent.click(screen.getAllByTestId('template-card')[0]); // ПКС-подобный, фазы 0..6
 
     const sel = await screen.findByTestId('current-phase-select');
-    // ждём реальные фазы (а не дженерик-фолбэк «Фаза N»)
-    await waitFor(() => expect(within(sel).getByRole('option', { name: '1 — Этап 1' })).toBeInTheDocument());
+    // ждём реальные фазы (а не дженерик-фолбэк «Фаза N»), включая prehab 0
+    await waitFor(() => expect(within(sel).getByRole('option', { name: '0 — Этап 0' })).toBeInTheDocument());
     const labels = within(sel).getAllByRole('option').map((o) => o.textContent);
-    expect(labels).toEqual(['1 — Этап 1', '2 — Этап 2', '3 — Этап 3', '4 — Этап 4', '5 — Этап 5', '6 — Этап 6']);
-    // phase 0 (prehab) не предлагается как стартовая (D3); фазы 5/6 присутствуют (не обрезано до 4)
-    expect(within(sel).queryByRole('option', { name: /Этап 0/ })).not.toBeInTheDocument();
+    expect(labels).toEqual(['0 — Этап 0', '1 — Этап 1', '2 — Этап 2', '3 — Этап 3', '4 — Этап 4', '5 — Этап 5', '6 — Этап 6']);
+    // фазы 5/6 присутствуют (не обрезано до 4)
+    expect(within(sel).getByRole('option', { name: '6 — Этап 6' })).toBeInTheDocument();
+  });
+
+  it('выбор фазы 0 (prehab) долетает в payload POST как current_phase: 0 (D3)', async () => {
+    rehab.getProgramTemplatePhases.mockResolvedValue({ data: { template: {}, phases: PHASES_ACL } });
+    rehabPrograms.create.mockResolvedValue({ data: { id: 1 } });
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    fireEvent.click(screen.getAllByTestId('template-card')[0]); // фазы 0..6
+
+    const sel = await screen.findByTestId('current-phase-select');
+    await waitFor(() => expect(within(sel).getByRole('option', { name: '0 — Этап 0' })).toBeInTheDocument());
+
+    // выбираем комплекс (required для isValid) + стартовую фазу 0
+    fireEvent.change(screen.getByTestId('complex-selector'), { target: { value: '9' } });
+    fireEvent.change(sel, { target: { value: '0' } });
+
+    fireEvent.click(screen.getByText('Далее'));
+    fireEvent.click(await screen.findByText('Создать программу'));
+
+    await waitFor(() => expect(rehabPrograms.create).toHaveBeenCalledTimes(1));
+    expect(rehabPrograms.create.mock.calls[0][0]).toMatchObject({ current_phase: 0 });
   });
 
   it('ручной режим: дропдаун фаз тянется по выбранному program_type', async () => {

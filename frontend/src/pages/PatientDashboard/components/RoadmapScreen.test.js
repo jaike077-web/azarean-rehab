@@ -399,4 +399,32 @@ describe('RoadmapScreen v12', () => {
       expect(rehab.getPhases).not.toHaveBeenCalled();
     });
   });
+
+  // D3 — prehab phase 0 как стартовая/текущая фаза.
+  describe('D3 — prehab phase 0 как текущая', () => {
+    const phase0 = {
+      id: 0, phase_number: 0, name: 'Подготовка к операции', icon: 'shield',
+      color: '#0D9488', color_bg: '#ECFEFF', teaser: 'Предоперационная подготовка',
+      duration_weeks: 2, week_start: 0, week_end: 2,
+      description: 'Подготовка к операции, укрепление перед вмешательством',
+      goals: ['Укрепление квадрицепса'], restrictions: [], allowed: ['Лёгкие упражнения'],
+      pain: [], daily: [], red_flags: [], criteria_next: ['Дата операции назначена'], faq: [],
+    };
+
+    it('current_phase=0 (prehab) → фаза 0 текущая, не коэрсится в 1 (D3)', async () => {
+      rehab.getPhases.mockResolvedValue({ data: [phase0, ...mockPhases] });
+      renderScreen({
+        dashboardData: { ...mockDashboardData, program: { ...mockDashboardData.program, current_phase: 0 } },
+      });
+      await waitFor(() => expect(screen.getByTestId('pd-rm-current-card')).toBeInTheDocument());
+      // current card = фаза 0 (описание prehab), а не фаза 1
+      expect(screen.getByTestId('pd-rm-current-card').textContent).toMatch(/укрепление перед вмешательством/);
+      // ровно один pulse-dot (текущая фаза одна)
+      expect(document.querySelectorAll('[data-testid="pd-rm-pulse"]')).toHaveLength(1);
+      // фаза 0 — самая ранняя → нет прошедших (при коэрсинге в 1 фаза 0 стала бы past)
+      expect(document.querySelectorAll('.pd-rm-circle--past')).toHaveLength(0);
+      // фазы 1..6 будущие → 6 кнопок «План этой фазы» (при коэрсинге было бы 5)
+      expect(screen.getAllByText('План этой фазы')).toHaveLength(6);
+    });
+  });
 });

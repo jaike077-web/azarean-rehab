@@ -283,7 +283,7 @@ async function handleTip(msg) {
        WHERE patient_id = $1 AND status = 'active' AND is_active = true LIMIT 1`,
       [patient.id]
     );
-    const phase = progResult.rows[0]?.current_phase || 1;
+    const phase = progResult.rows[0]?.current_phase ?? 1;  // ?? 1: фаза 0 (prehab) реальна
 
     const tipResult = await query(
       `SELECT title, body, icon FROM tips

@@ -53,17 +53,26 @@ export function pluralPhases(n) {
   return `${n} фаз`;
 }
 
-// Опции дропдауна «Текущая фаза» из реальных фаз протокола. Исключаем phase 0
-// (prehab): выбор prehab как стартовой фазы пока не поддержан сквозно — и фронт
-// (handleCreate), и бэк (POST /rehab/programs) коэрсят current_phase 0→1 (||1).
-// Это отложенный D3. Если фаз нет (ручной режим без типа / протокол без фаз) —
-// дженерик-фолбэк 1..6, чтобы дропдаун не был пустым.
+// Опции дропдауна «Текущая фаза» из реальных фаз протокола. Включаем phase 0
+// (prehab, напр. «Подготовка к операции»): с D3 prehab можно выбрать стартовой
+// фазой — коэрсинг current_phase 0→1 снят сквозь фронт (handleCreate/onChange/
+// EditForm), бэк (POST/PUT /rehab/programs) и патиент-экраны (Home/Roadmap).
+// Лейбл фазы 0 берётся из её title в данных. Если фаз нет (ручной режим без типа /
+// протокол без фаз) — дженерик-фолбэк 1..6, чтобы дропдаун не был пустым.
 export function buildPhaseChoices(rawPhases) {
   const real = (rawPhases || [])
-    .filter((p) => Number(p.phase_number) >= 1)
-    .map((p) => ({ number: p.phase_number, label: `${p.phase_number} — ${p.title}` }));
+    .filter((p) => Number.isInteger(Number(p.phase_number)) && Number(p.phase_number) >= 0)
+    .map((p) => ({ number: Number(p.phase_number), label: `${p.phase_number} — ${p.title}` }));
   if (real.length) return real;
   return [1, 2, 3, 4, 5, 6].map((n) => ({ number: n, label: `Фаза ${n}` }));
+}
+
+// Нормализация значения «Текущая фаза» из формы/select → целое для payload.
+// finite-гард вместо `|| 1`: 0 (prehab) — валидная стартовая фаза (D3), сохраняем;
+// пусто/NaN/мусор → дефолт 1.
+export function phaseFromForm(value) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : 1;
 }
 
 function Step1Template({ templates, loading, onSelect, onSkip }) {
@@ -258,7 +267,7 @@ function Step2Details({ patient, template, programTypes, complexes, form, setFor
           <select
             id="rp-w-phase"
             value={form.current_phase}
-            onChange={(e) => set('current_phase', parseInt(e.target.value, 10) || 1)}
+            onChange={(e) => set('current_phase', phaseFromForm(e.target.value))}
             data-testid="current-phase-select"
           >
             {phaseChoices.map((opt) => (
@@ -428,7 +437,7 @@ function CreateWizard({ patient, complexes, onCreated, onClose }) {
         complex_id: form.complex_id ? parseInt(form.complex_id, 10) : null,
         diagnosis: form.diagnosis.trim() || null,
         surgery_date: form.surgery_date || null,
-        current_phase: parseInt(form.current_phase, 10) || 1,
+        current_phase: phaseFromForm(form.current_phase),
         notes: form.notes.trim() || null,
         program_type: form.program_type || selectedTemplate?.program_type || null,
         program_template_id: selectedTemplate?.id || null,
