@@ -6,6 +6,18 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { validateTrackPresetIds } = require('../utils/exerciseAudio');
+const isai = require('../services/isai');
+const speechkit = require('../services/yandexSpeechKit');
+const multer = require('multer');
+
+// Аудио надиктовки держим в памяти (не пишем на диск) — сразу шлём в SpeechKit. До 5 МБ.
+// fileFilter: только audio/* (рекордер шлёт audio/l16; телефоны — audio/ogg|wav|mpeg).
+// Не-аудио отсекается → req.file пуст → роут отвечает 400.
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /^audio\//i.test(file.mimetype || '')),
+});
 
 // ========================================
 // GET /api/exercises/kinescope/thumbnail/:videoId - Получение превью из Kinescope
@@ -51,6 +63,76 @@ router.get('/kinescope/thumbnail/:videoId', authenticateToken, async (req, res) 
   } catch (error) {
     console.error('Error fetching Kinescope thumbnail:', error);
     res.status(500).json({ error: 'Ошибка при получении превью', message: 'Ошибка при получении превью' });
+  }
+});
+
+// ========================================
+// POST /api/exercises/structure - Надиктовка → поля упражнения через is*ai
+// НЕ-PII (контент библиотеки). Возвращает частичный объект { fields, warnings }
+// для предзаполнения формы упражнения. Инструктор затем проверяет/правит вручную.
+// Auth = authenticateToken (уровень инструктора, НЕ admin-only — намеренно, паритет
+// с POST/PUT /exercises: кто создаёт упражнения, тот пользуется надиктовкой).
+// ========================================
+
+router.post('/structure', authenticateToken, async (req, res) => {
+  try {
+    const transcript = (req.body && req.body.transcript) || '';
+
+    if (typeof transcript !== 'string' || transcript.trim().length < 3) {
+      return res.status(400).json({ error: 'Пустая расшифровка', message: 'Передайте текст надиктовки (поле transcript)' });
+    }
+    if (transcript.length > 8000) {
+      return res.status(400).json({ error: 'Слишком длинно', message: 'Расшифровка не должна превышать 8000 символов' });
+    }
+    if (!isai.isConfigured()) {
+      return res.status(503).json({ error: 'is*ai не настроен', message: 'AI-структурирование недоступно: не задан ISAI_API_KEY' });
+    }
+
+    const { fields, warnings } = await isai.structureExercise(transcript);
+    return res.json({ data: { fields, warnings } });
+  } catch (error) {
+    console.error('Error structuring exercise:', error.code || error.message);
+    if (error.code === 'ISAI_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут is*ai', message: 'AI не ответил вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'ISAI_HTTP' || error.code === 'ISAI_EMPTY') {
+      return res.status(502).json({ error: 'Ошибка is*ai', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
+    }
+    return res.status(500).json({ error: 'Ошибка структурирования', message: 'Не удалось разобрать надиктовку' });
+  }
+});
+
+// ========================================
+// POST /api/exercises/transcribe - Распознать аудио надиктовки через Yandex SpeechKit
+// НЕ-PII. multipart: audio (файл) + опц. format (oggopus|lpcm|mp3) + sampleRateHertz.
+// Возвращает { text } — расшифровку для поля надиктовки.
+// ========================================
+
+router.post('/transcribe', authenticateToken, audioUpload.single('audio'), async (req, res) => {
+  try {
+    if (!speechkit.isConfigured()) {
+      return res.status(503).json({ error: 'SpeechKit не настроен', message: 'Распознавание недоступно: не заданы YANDEX_SPEECHKIT_*' });
+    }
+    if (!req.file || !req.file.buffer || !req.file.buffer.length) {
+      return res.status(400).json({ error: 'Нет аудио', message: 'Передайте аудио-файл (поле audio)' });
+    }
+
+    // Формат и частоту дискретизации фронт объявляет явно (multipart-поля).
+    const format = (req.body && req.body.format ? String(req.body.format) : 'oggopus').toLowerCase();
+    const sampleRateHertz = req.body && req.body.sampleRateHertz
+      ? parseInt(req.body.sampleRateHertz, 10) : undefined;
+
+    const text = await speechkit.transcribe(req.file.buffer, { format, sampleRateHertz });
+    return res.json({ data: { text } });
+  } catch (error) {
+    console.error('Error transcribing audio:', error.code || error.message);
+    if (error.code === 'STT_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут SpeechKit', message: 'Распознавание не завершилось вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'STT_HTTP' || error.code === 'STT_BAD_RESPONSE') {
+      return res.status(502).json({ error: 'Ошибка SpeechKit', message: 'Сервис распознавания вернул ошибку' });
+    }
+    return res.status(500).json({ error: 'Ошибка распознавания', message: 'Не удалось распознать аудио' });
   }
 });
 
