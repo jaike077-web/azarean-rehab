@@ -5,7 +5,8 @@
 # Итог: 41 коммит ВЛИТО в origin/main (pre-squash + docs/WIP-снимки);
 #       15 коммитов — бандл dark-theme ЛК пациента, СПАСЁН в ветку origin/wip/patient-dark-theme;
 #       1 устаревший SW-bump + 4 авто-стэша GitHub Desktop (дек 2025) — ВЫБРОШЕНЫ осознанно.
-# Заначки stash@{0..4} в этот аудит НЕ дропались (ждут отдельного решения владельца).
+# Заначки stash@{0..4} дропнуты 2026-06-14 по решению владельца: dark-theme спасён
+# в ветку wip/patient-dark-theme, остальные 4 — мусор/устарело (восстановимы fsck ~90д).
 #
 05a41c078337c16c2d6f0a8b03f9dc587c2bb570  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-19 feat(rehab): Wave 2 — pain endpoints (daily + ev
 061e12170128a44e7d2a1a41ed4ed6e34a2022fb  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-13 On wave-1/02-program-type-dashboard: dirty dark-th
@@ -23,7 +24,7 @@
 2b954f080b3ab1a7649ae0c33c1cd8f39548be27  # ВЛИТО/устарело: снимок CLAUDE.md/WIP, актуальный текст в origin/main | 2026-06-01 On feature/custom-audio-upload: audio-fixes-sostav
 30e5fd8d63f4270d292874189877f6ddd086e266  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-15 feat(admin): CRUD UI для program_templates + ph
 3c5d887b5ec15756eeb678975de7b8b49a326cf2  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-13 feat(home): program_label полностью из 
-3fd8edf936ae243c49a2296dfda79bc46a01ca36  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-06-01 @ feat(exercise-audio): EA1 — схема зву�
+3fd8edf936ae243c49a2296dfda79bc46a01ca36  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-06-01 @ feat(exercise-audio): EA1 — схема зву�
 4081ab762120ae7fe2e491351af4be6584c2e5e5  # ВЫБРОШЕНО: авто-стэш GitHub Desktop (дек 2025), мусор/устарело | 2025-12-22 On main: !!GitHub_Desktop<main>
 457a653c6e131d9c312ec41c74e8711baf84e04a  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-15 fix(invite-code): pre-filled link + улучшен
 47ad25de656e08aa7289793e69e96b1cb473495c  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-15 On main: wip: dark-theme dirty (#4 invite-code)
@@ -51,16 +52,17 @@ ad6551d77edc1b1b8cc535cef19eba1cd44d8566  # ВЛИТО: pre-squash feature-ко�
 afe45f7e51755aae6824d3175346e0031015aef1  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-15 fix(admin-content-css): доперенести 22 
 b34ad63241837e7248c9cf3e79f18786ff45e23c  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-13 feat(admin): CRUD program_types + select PhaseForm
 b3ee3f94ca19b9137537354a89c83901e7fa4c80  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-15 feat(rehab-program-modal): dual-mode (CreateWizard
-b476794c5b35d8437cbf3a91800d696a54c2875d  # ВЛИТО/устарело: снимок CLAUDE.md/WIP, актуальный текст в origin/main | 2026-06-01 WIP on main: a9ea058 merge(audio): Custom Audio �
+b476794c5b35d8437cbf3a91800d696a54c2875d  # ВЛИТО/устарело: снимок CLAUDE.md/WIP, актуальный текст в origin/main | 2026-06-01 WIP on main: a9ea058 merge(audio): Custom Audio �
 b6968d21a38270e1fce53d52634b211397b98433  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-15 On main: wip: dark-theme dirty (post-merge PR #62)
 b8d807b1af58bf85b2161bf183314d3ace162fa8  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-11 On wave-0/06-roadmap-stuck-banner: wave0_merge: da
 ba1437b39f6a351ddda6f8fee42f8394db226cca  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-15 On main: wip: dark-theme dirty (post-merge PR #64)
-c1cd188065624bc66593349d906ad6f9365f9c32  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-11 feat(home): разблокировать повт�
+c1cd188065624bc66593349d906ad6f9365f9c32  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-11 feat(home): разблокировать повт�
 c67517a702caf571d76d52f5f846df618405ed93  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-15 feat(stuck): инструкторская стор
 d4a601d8507e9e7a595d041c5b81b2134a01c03c  # ВЛИТО/устарело: снимок CLAUDE.md/WIP, актуальный текст в origin/main | 2026-05-15 docs(claude-md): Wave 1 retrospective + Bug #12 cl
 d8e93e21225d8e6ac193482302242635f363776a  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-15 On main: wip: dark-theme dirty (post-merge PR #63)
 dfd0264eedd4057b5534c36b477280f427186cbc  # DARK-THEME ЛК пациента -> спасён в ветке origin/wip/patient-dark-theme | 2026-05-15 On main: wip: dark-theme dirty files (Wave 1 hot-f
-e81e44ea2cdacbb91a5cb4c30c78e17193640b33  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-11 fix(contact): inline-flash на кнопке ко�
+e81e44ea2cdacbb91a5cb4c30c78e17193640b33  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-11 fix(contact): inline-flash на кнопке ко�
 ed8410055f58df652ab49cc54e6c5c2437394065  # ВЛИТО/устарело: снимок CLAUDE.md/WIP, актуальный текст в origin/main | 2026-05-26 WIP on main: 3907034 docs(claude.md): admin email 
 fb95661569fcfa3cd9a686c1568061c297006381  # ВЫБРОШЕНО: авто-стэш GitHub Desktop (дек 2025), мусор/устарело | 2025-12-23 On codex/find-and-fix-css-class-duplicates: !!GitH
-fdc47324c11ed4ade278c404def5f2d7d0f5cff2  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-30 feat(audio): AA2 — admin-backend пресето�
+fdc47324c11ed4ade278c404def5f2d7d0f5cff2  # ВЛИТО: pre-squash feature-коммит, контент в origin/main (squash-merge) | 2026-05-30 feat(audio): AA2 — admin-backend пресето�
+50482fb69fed7661fe0a17be813923bf893408ee  # ВЫБРОШЕНО: устаревший снимок CLAUDE.md (W-commit дропнутой заначки stash@{0}) | 2026-05-22 phase5-prep: CLAUDE.md edits
