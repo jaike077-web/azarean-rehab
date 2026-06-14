@@ -10,3 +10,5 @@ Dockerfile        text eol=lf
 # получал CRLF → sha256sum != stored (посчитанный на Linux). См. фикс migrate.sh
 # (strip-CR перед sha256) и hotfix/migration-checksum-hygiene.
 *.sql             text eol=lf
+# Git-Hygiene Kit — детектор потерянной работы + журнал разобранных сирот (LF).
+scripts/.lost-work-ack  text eol=lf
