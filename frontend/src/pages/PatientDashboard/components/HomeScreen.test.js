@@ -6,7 +6,7 @@ import React from 'react';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HomeScreen from './HomeScreen';
-import { mockDashboardData, mockDashboardDataNoProgram } from '../../../test-utils/mockData';
+import { mockDashboardData, mockDashboardDataNoProgram, mockDashboardDataMultiProgram } from '../../../test-utils/mockData';
 
 // Мок usePatientAvatarBlob — в тестах не нужны blob-fetch'и
 jest.mock('../hooks/usePatientAvatarBlob', () => ({
@@ -418,6 +418,23 @@ describe('HomeScreen v12', () => {
     it('без блоков (поля null) чипы не рендерятся', () => {
       setup({ dashboardData: { ...mockDashboardData, gymnasticsDoneToday: null, trainingDoneToday: null } });
       expect(screen.queryByTestId('home-block-chips')).not.toBeInTheDocument();
+    });
+  });
+
+  // M1 — индикатор вторичных зон под целью недели.
+  describe('M1 — индикатор «+N зон»', () => {
+    it('одна программа → индикатор не рендерится', () => {
+      setup(); // mockDashboardData без programs[] → secondaryCount=0
+      expect(screen.queryByTestId('home-zones-indicator')).not.toBeInTheDocument();
+    });
+
+    it('две программы → индикатор «Ещё 1 зона восстановления», клик → goTo(1)', () => {
+      const { props } = setup({ dashboardData: mockDashboardDataMultiProgram });
+      const indicator = screen.getByTestId('home-zones-indicator');
+      expect(indicator).toBeInTheDocument();
+      expect(indicator.textContent).toMatch(/Ещё 1 зона восстановления/);
+      fireEvent.click(indicator);
+      expect(props.goTo).toHaveBeenCalledWith(1);
     });
   });
 });

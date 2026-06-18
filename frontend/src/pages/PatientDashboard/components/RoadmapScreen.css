@@ -351,12 +351,83 @@
   margin: 0;
 }
 
+/* ===== Мультитрек: зоны как чистые разделители (M1, в стиле заголовков
+   зон «Упражнений»). Без тяжёлых боксов — лёгкий header + подчёркивание. ===== */
+.pd-rm-accordion {
+  display: flex;
+  flex-direction: column;
+}
+.pd-rm-track + .pd-rm-track {
+  margin-top: 4px;
+}
+.pd-rm-track-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 0;
+  margin: 18px 0 12px;
+  min-height: 44px; /* touch target */
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--pd-border, var(--pd-n200));
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--pd-n900);
+}
+.pd-rm-track-header--leading {
+  cursor: default;
+}
+.pd-rm-track-title {
+  flex-shrink: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-family: var(--pd-font-display);
+  color: var(--pd-text, var(--pd-n900));
+}
+.pd-rm-track-joint {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--pd-text3, var(--pd-n500));
+}
+.pd-rm-track-badge {
+  flex-shrink: 0;
+  background: var(--pd-color-accent);
+  color: var(--pd-color-white);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.pd-rm-track-status {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--pd-n500);
+}
+.pd-rm-track-chev {
+  flex-shrink: 0;
+  color: var(--pd-n400);
+  transition: transform 0.2s ease;
+}
+.pd-rm-track-chev--open {
+  transform: rotate(180deg);
+}
+.pd-rm-track-body {
+  /* timeline течёт открыто, без рамки */
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 480px) {
   .pd-rm { padding: 0 16px 20px; }
   .pd-rm-title { font-size: 1.05rem; }
   .pd-rm-row { gap: 10px; }
   .pd-rm-card { padding: 12px; }
+  .pd-rm-track-title { font-size: 1rem; }
 }
 
 @media (min-width: 769px) {

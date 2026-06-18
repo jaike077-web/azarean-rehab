@@ -229,6 +229,30 @@
   font-weight: 700;
 }
 
+/* Мультипрограммность (M1): индикатор вторичных зон (chip-кнопка на тёмном hero). */
+.pd-home-hero-zones {
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.pd-home-hero-zones > span {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ARC-CYCLE AC5: чипы «сделано сегодня» по блокам (на тёмном hero — translucent). */
 .pd-home-hero-blockchips {
   display: flex;

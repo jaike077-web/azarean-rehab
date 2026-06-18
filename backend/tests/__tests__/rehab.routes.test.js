@@ -211,11 +211,11 @@ describe('GET /api/rehab/my/exercises', () => {
   });
 
   it('should return exercise data with valid token', async () => {
-    // AC4: /my/exercises сперва ищет активную программу + блоки. Нет блоков → legacy-путь.
-    // Поля legacy дублируются на верхний уровень (обратная совместимость), + mode/gymnastics/training.
-    query.mockResolvedValueOnce({ rows: [{ id: 1, title: 'ACL Rehab' }] }); // активная программа
-    query.mockResolvedValueOnce({ rows: [] });                              // блоки — нет → legacy
-    query.mockResolvedValueOnce({ rows: [fixtures.mockExerciseRow] });      // legacy комплекс
+    // AC4/M1: /my/exercises берёт все активные программы (priority ASC). Одна программа без
+    // блоков → legacy-путь, СТАРАЯ форма ответа (поля legacy + mode/gymnastics/training).
+    query.mockResolvedValueOnce({ rows: [{ id: 1, title: 'ACL Rehab', complex_id: 10, program_type: 'acl', priority: 1 }] }); // активные программы
+    query.mockResolvedValueOnce({ rows: [] });                              // блоки prog1 — нет → legacy
+    query.mockResolvedValueOnce({ rows: [fixtures.mockExerciseRow] });      // legacy комплекс prog1
 
     const response = await request(app)
       .get('/api/rehab/my/exercises')
@@ -237,8 +237,7 @@ describe('GET /api/rehab/my/exercises', () => {
   });
 
   it('should return 404 when no active program', async () => {
-    query.mockResolvedValueOnce({ rows: [] }); // активная программа — нет (блоки пропускаются)
-    query.mockResolvedValueOnce({ rows: [] }); // legacy комплекс — нет → 404
+    query.mockResolvedValueOnce({ rows: [] }); // активных программ нет → items пуст → 404
 
     const response = await request(app)
       .get('/api/rehab/my/exercises')
@@ -247,6 +246,39 @@ describe('GET /api/rehab/my/exercises', () => {
 
     expect(response.body).toHaveProperty('error', 'Not Found');
     expect(response.body.message).toContain('не найдена');
+  });
+
+  it('M1: ≥2 активных программ (legacy) → mode:multi-blocks, programs[2], block_complex_ids union', async () => {
+    const legacyRow = (pid, cid, title) => ({
+      program_id: pid, complex_id: cid, program_title: title, complex_title: title,
+      diagnosis_name: null, diagnosis_note: null, recommendations: null, warnings: null,
+      instructor_name: null,
+      exercises: [{ id: pid, order_number: 1, sets: 3, reps: 10, exercise: { id: pid, title: `Упр ${pid}` } }],
+    });
+    // Query1: обе активные программы (priority ASC). Затем per-program: блоки=[] → legacy.
+    query.mockResolvedValueOnce({ rows: [
+      { id: 1, title: 'Колено', complex_id: 10, program_type: 'acl', program_label: 'ПКС реабилитация', program_joint: 'knee', priority: 1 },
+      { id: 2, title: 'Плечо', complex_id: 20, program_type: 'shoulder_general', program_label: 'Реабилитация плеча', program_joint: 'shoulder', priority: 2 },
+    ] });
+    query.mockResolvedValueOnce({ rows: [] });                       // блоки prog1 — нет
+    query.mockResolvedValueOnce({ rows: [legacyRow(1, 10, 'Колено')] }); // legacy prog1
+    query.mockResolvedValueOnce({ rows: [] });                       // блоки prog2 — нет
+    query.mockResolvedValueOnce({ rows: [legacyRow(2, 20, 'Плечо')] }); // legacy prog2
+
+    const response = await request(app)
+      .get('/api/rehab/my/exercises')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(response.body.data).toHaveProperty('mode', 'multi-blocks');
+    expect(Array.isArray(response.body.data.programs)).toBe(true);
+    expect(response.body.data.programs).toHaveLength(2);
+    expect(response.body.data.programs[0].program_id).toBe(1);
+    expect(response.body.data.programs[0].program_label).toBe('ПКС реабилитация');
+    expect(response.body.data.programs[1].program_id).toBe(2);
+    expect(response.body.data.programs[1].mode).toBe('legacy');
+    // union block_complex_ids обеих программ (фильтр «Другие»)
+    expect(response.body.data.block_complex_ids).toEqual(expect.arrayContaining([10, 20]));
   });
 
   it('should return 500 on database error', async () => {
@@ -305,7 +337,8 @@ describe('GET /api/rehab/my/dashboard', () => {
 
     query.mockResolvedValueOnce({ rows: [programData] }); // program
     query.mockResolvedValueOnce({ rows: [phaseData] }); // phase
-    query.mockResolvedValueOnce({ rows: [{ current_streak: 5, longest_streak: 10, total_days: 20, last_activity_date: '2026-02-10' }] }); // streak
+    // M0 мультипрограммный стрик: current = total_days (per-patient distinct days). Мок согласован.
+    query.mockResolvedValueOnce({ rows: [{ longest_streak: 10, total_days: 5, last_activity_date: '2026-02-10' }] }); // streak
     query.mockResolvedValueOnce({ rows: [fixtures.mockDiaryEntryRow] }); // last diary
     query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
     query.mockResolvedValueOnce({ rows: [] }); // today diary check
@@ -347,6 +380,48 @@ describe('GET /api/rehab/my/dashboard', () => {
     expect(response.body.data).toHaveProperty('tip');
     expect(response.body.data).toHaveProperty('diaryFilledToday', false);
     expect(response.body.data).toHaveProperty('exercisesDoneToday', false);
+  });
+
+  it('M0 мультипрограмм: programs[] = все активные по priority ASC, program = ведущая, у каждой своя фаза', async () => {
+    const lead = {
+      id: 10, title: 'Колено', diagnosis: 'ПФБС', current_phase: 1, phase_started_at: '2026-06-01',
+      surgery_date: null, status: 'active', program_type: 'knee_pfps', priority: 1,
+      program_label: 'Пателлофеморальный синдром', program_joint: 'knee', program_surgery_required: false,
+    };
+    const secondary = {
+      id: 11, title: 'ТБС', diagnosis: 'после артроскопии', current_phase: 2, phase_started_at: '2026-05-01',
+      surgery_date: '2026-03-21', status: 'active', program_type: 'hip_fai', priority: 2,
+      program_label: 'ФАИ ТБС', program_joint: 'hip', program_surgery_required: true,
+    };
+    const phaseLead = { id: 1, phase_number: 1, title: 'Колено Ф1', subtitle: '', duration_weeks: '3', description: '', icon: '', color: '', color_bg: '' };
+    const phaseSecondary = { id: 2, phase_number: 2, title: 'ТБС Ф2', subtitle: '', duration_weeks: '4', description: '', icon: '', color: '', color_bg: '' };
+
+    query.mockResolvedValueOnce({ rows: [lead, secondary] }); // programs (priority ASC)
+    query.mockResolvedValueOnce({ rows: [phaseLead] });        // phase программы 1
+    query.mockResolvedValueOnce({ rows: [phaseSecondary] });   // phase программы 2
+    query.mockResolvedValueOnce({ rows: [{ longest_streak: 0, total_days: 0, last_activity_date: null }] }); // streak
+    query.mockResolvedValueOnce({ rows: [] }); // last diary
+    query.mockResolvedValueOnce({ rows: [fixtures.mockTipRow] }); // tip
+    query.mockResolvedValueOnce({ rows: [] }); // today diary
+    query.mockResolvedValueOnce({ rows: [] }); // today progress
+    query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4
+
+    const response = await request(app)
+      .get('/api/rehab/my/dashboard')
+      .set('Authorization', `Bearer ${validToken}`)
+      .expect(200);
+
+    expect(Array.isArray(response.body.data.programs)).toBe(true);
+    expect(response.body.data.programs).toHaveLength(2);
+    // ведущая = programs[0] = top-level program
+    expect(response.body.data.program.id).toBe(10);
+    expect(response.body.data.programs[0].id).toBe(10);
+    expect(response.body.data.programs[1].id).toBe(11);
+    // у каждой программы своя резолвнутая фаза
+    expect(response.body.data.programs[0].phase.name).toBe('Колено Ф1');
+    expect(response.body.data.programs[1].phase.name).toBe('ТБС Ф2');
+    // top-level phase = фаза ведущей
+    expect(response.body.data.phase.name).toBe('Колено Ф1');
   });
 
   it('Wave 1 #1.03: program_label остаётся NULL если JOIN вернул NULL (фронт сам fallback на «Фаза N»)', async () => {
@@ -942,7 +1017,8 @@ describe('GET /api/rehab/my/streak', () => {
       .expect(200);
 
     expect(response.body).toHaveProperty('data');
-    expect(response.body.data).toHaveProperty('current_streak', 5);
+    // M0: current_streak = total_days (per-patient distinct active days)
+    expect(response.body.data).toHaveProperty('current_streak', 20);
     expect(response.body.data).toHaveProperty('longest_streak', 10);
     expect(response.body.data).toHaveProperty('total_days', 20);
     expect(response.body.data).toHaveProperty('programs');

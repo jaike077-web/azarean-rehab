@@ -152,8 +152,11 @@
 // (до 7 фаз вместо хардкода 1-4). Новый инструкторский бандл → bump для chunks.
 // v34 (2026-06-04) — D3 prehab-as-start: phase 0 выбираема как стартовая (визард
 // + EditForm динамический дропдаун + Home/Roadmap показывают фазу 0). Новый бандл.
-const CACHE_NAME = 'azarean-v34';
-const API_CACHE = 'azarean-api-v34';
+// v35 (2026-06-14) — мультипрограммный «Путь» M1: RoadmapScreen мультитрек-аккордеон
+// зон, HomeScreen индикатор «+N зон», ExercisesScreen группировка по зонам, dashboard
+// отдаёт programs[]. Новый бандл + изменилась форма /my/dashboard и /my/exercises → bump.
+const CACHE_NAME = 'azarean-v35';
+const API_CACHE = 'azarean-api-v35';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

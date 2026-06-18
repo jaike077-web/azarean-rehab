@@ -19,6 +19,17 @@ import ComplexDetailView from './ComplexDetailView';
 import ExerciseRunner from './ExerciseRunner';
 import { Card } from './ui';
 
+// M1: человекочитаемая подпись сустава для заголовка зоны (мультипрограммность).
+const JOINT_LABELS = {
+  knee: 'Колено',
+  shoulder: 'Плечо',
+  hip: 'Тазобедренный',
+  elbow: 'Локоть',
+  ankle: 'Голеностоп',
+  spine: 'Позвоночник',
+  wrist: 'Запястье',
+};
+
 const ExercisesScreen = ({ screenParams }) => {
   const toast = useToast();
   // CP1: prime AudioContext в user-gesture (тап «Начать тренировку»)
@@ -124,11 +135,23 @@ const ExercisesScreen = ({ screenParams }) => {
   // сгенерировали в openComplex). Advance дёргается из РОДИТЕЛЯ, НЕ из LOCKED раннера.
   // best-effort: при сбое advance lazy-on-GET догонит на следующем GET /my/exercises.
   const handleComplete = useCallback(async () => {
-    const training = todayComplex?.mode === 'blocks' ? todayComplex.training : null;
-    const isTrainingComplex = training?.complexes?.some((c) => c.complex_id === selectedComplexId);
-    if (training?.block_id && isTrainingComplex && sessionId) {
+    // Найти training-блок, которому принадлежит закрытый комплекс. Для multi-blocks —
+    // ищем среди ВСЕХ зон (advance в правильной программе); для blocks — в единственной.
+    let blockId = null;
+    if (todayComplex?.mode === 'multi-blocks') {
+      const owner = (todayComplex.programs || []).find(
+        (p) => p.training?.complexes?.some((c) => c.complex_id === selectedComplexId)
+      );
+      blockId = owner?.training?.block_id || null;
+    } else if (todayComplex?.mode === 'blocks') {
+      const training = todayComplex.training;
+      if (training?.complexes?.some((c) => c.complex_id === selectedComplexId)) {
+        blockId = training.block_id || null;
+      }
+    }
+    if (blockId && sessionId) {
       try {
-        await rehab.advanceTraining({ block_id: training.block_id, session_id: sessionId });
+        await rehab.advanceTraining({ block_id: blockId, session_id: sessionId });
       } catch {
         /* lazy advance-on-GET догонит */
       }
@@ -192,30 +215,37 @@ const ExercisesScreen = ({ screenParams }) => {
     );
   }
 
-  // ── ARC-CYCLE AC5: D2-разбор ответа /my/exercises ──
-  // mode='blocks' → две секции (гимнастика + тренировка). Иначе (mode='legacy' или
-  // старая плоская форма без mode) → legacy одиночный комплекс (прежнее поведение).
-  // Boolean(...) — иначе && вернёт объект блока, а не true; legacy ниже опирается на !isBlocks.
+  // ── Разбор ответа /my/exercises ──
+  // mode='multi-blocks' (M1) → несколько зон-программ, каждая со своими секциями.
+  // mode='blocks' (AC5) → две секции одной программы. Иначе → legacy одиночный комплекс.
+  // Boolean(...) — иначе && вернёт объект блока, а не true; legacy опирается на !isBlocks/!isMulti.
+  const isMulti = todayComplex?.mode === 'multi-blocks';
+  const programs = isMulti ? (todayComplex.programs || []) : [];
+
   const isBlocks = todayComplex?.mode === 'blocks' && Boolean(todayComplex.gymnastics || todayComplex.training);
   const gymnastics = isBlocks ? todayComplex.gymnastics : null;
   const training = isBlocks ? todayComplex.training : null;
-  const legacy = !isBlocks ? todayComplex : null;
+  const legacy = (!isMulti && !isBlocks) ? todayComplex : null;
 
   // «Другие комплексы» = myComplexes минус ВСЕ комплексы блоков (gym + все дни
-  // тренировки, не только текущий). Источник — backend block_complex_ids (включает
-  // будущие дни ротации, чтобы День Б/В не протекали в «Другие»). Fallback на
-  // текущий вид, если поле не пришло (старый бандл/контракт).
+  // тренировки, не только текущий) ВСЕХ активных программ. Источник — backend
+  // block_complex_ids (для multi = union по всем зонам; для blocks = одна программа).
   const blockComplexIds = new Set(
     todayComplex?.block_complex_ids || [
       ...(gymnastics?.complexes || []).map((c) => c.complex_id),
       ...(training?.complexes || []).map((c) => c.complex_id),
+      ...programs.flatMap((p) => [
+        ...(p.gymnastics?.complexes || []).map((c) => c.complex_id),
+        ...(p.training?.complexes || []).map((c) => c.complex_id),
+        ...(p.legacy?.complex_id ? [p.legacy.complex_id] : []),
+      ]),
     ]
   );
-  const otherComplexes = isBlocks
+  const otherComplexes = (isBlocks || isMulti)
     ? myComplexes.filter((c) => !blockComplexIds.has(c.id))
     : (legacy?.complex_id ? myComplexes.filter((c) => c.id !== legacy.complex_id) : myComplexes);
 
-  const hasAnything = isBlocks || Boolean(legacy?.complex_id) || myComplexes.length > 0;
+  const hasAnything = isBlocks || isMulti || Boolean(legacy?.complex_id) || myComplexes.length > 0;
 
   // ARC-CYCLE AC5+ (визуал): hero-карточка комплекса блока вместо плоской —
   // возврат «красивой» подачи (градиент + крупная кнопка «Начать»), как legacy-hero.
@@ -259,6 +289,58 @@ const ExercisesScreen = ({ screenParams }) => {
           </p>
         </div>
       )}
+
+      {/* M1 — мультипрограммность: зоны (программы) с заголовками, в каждой свои секции.
+          Порядок зон = priority (ведущая первой, backend сортирует). */}
+      {isMulti && programs.map((prog) => (
+        <section key={prog.program_id} data-testid={`program-${prog.program_id}-section`}>
+          <div className="pd-program-zone-header">
+            <span className="pd-program-zone-title">
+              {prog.program_label || prog.program_title || 'Программа'}
+            </span>
+            {prog.program_joint && JOINT_LABELS[prog.program_joint] && (
+              <span className="pd-program-zone-joint">{JOINT_LABELS[prog.program_joint]}</span>
+            )}
+          </div>
+
+          {prog.gymnastics && prog.gymnastics.complexes?.length > 0 && prog.gymnastics.complexes.map((c) =>
+            renderBlockHero(c, {
+              badge: 'Гимнастика',
+              gradient: GYM_GRADIENT,
+              testid: `gym-complex-${c.complex_id}`,
+              hint: prog.gymnastics.target?.min != null
+                ? `Цель: ${prog.gymnastics.target.min}–${prog.gymnastics.target.max} раз/день`
+                : null,
+            })
+          )}
+
+          {prog.training && prog.training.complexes?.length > 0 && (
+            <>
+              <div className="pd-block-meta" data-testid={`training-day-label-${prog.program_id}`}>
+                {prog.training.day_label ? `${prog.training.day_label} · ` : ''}
+                День {prog.training.current_day_index} из {prog.training.num_days}
+              </div>
+              {prog.training.complexes.map((c) =>
+                renderBlockHero(c, {
+                  badge: 'Тренировка сегодня',
+                  gradient: TRAIN_GRADIENT,
+                  testid: `training-complex-${c.complex_id}`,
+                  hint: prog.training.target?.min != null
+                    ? `Цель: ${prog.training.target.min}–${prog.training.target.max} раз/неделю`
+                    : null,
+                })
+              )}
+            </>
+          )}
+
+          {prog.legacy?.complex_id && renderBlockHero(prog.legacy, {
+            badge: 'Комплекс',
+            gradient: TRAIN_GRADIENT,
+            testid: `legacy-complex-${prog.legacy.complex_id}`,
+            hint: null,
+          })}
+        </section>
+      ))}
 
       {/* D2 — Гимнастика (ежедневно): hero-карточки */}
       {gymnastics && gymnastics.complexes?.length > 0 && (

@@ -47,6 +47,17 @@ const PHASE_COLORS = [
 const getPhaseColor = (phaseNumber) =>
   PHASE_COLORS[(phaseNumber - 1) % PHASE_COLORS.length] || '#0D9488';
 
+// M1: ярлык сустава для заголовка зоны (зеркало ExercisesScreen).
+const JOINT_LABELS = {
+  knee: 'Колено',
+  shoulder: 'Плечо',
+  hip: 'Тазобедренный',
+  elbow: 'Локоть',
+  ankle: 'Голеностоп',
+  spine: 'Позвоночник',
+  wrist: 'Запястье',
+};
+
 // 4 таба в expanded card текущей фазы
 const TABS = [
   { id: 'goals', label: 'Цели', field: 'goals', Icon: Target, iconTone: 'phase' },
@@ -335,41 +346,54 @@ const formatWeekRange = (phase) => {
 // сообщением при нажатии CTA в баннере застревания. goTo уже передаётся через
 // screenProps в PatientDashboard.js, не требует нового prop'а.
 export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, goTo }) {
-  const [phases, setPhases] = useState([]);
+  // Мультитрек (M1): { [programId]: phase[] } — фазы протокола каждой активной зоны.
+  const [phasesByProgram, setPhasesByProgram] = useState({});
   const [loading, setLoading] = useState(true);
-  const [expandedFutureId, setExpandedFutureId] = useState(null);
-  // Wave 0 commit 06 — застрял ли пациент на текущей фазе.
+  // Составной ключ развёрнутой future-фазы: `${programId}:${phaseId}` (одна на экран).
+  const [expandedFutureKey, setExpandedFutureKey] = useState(null);
+  // Какая ВТОРИЧНАЯ зона развёрнута (ведущая всегда развёрнута, в это состояние не входит).
+  const [expandedProgramId, setExpandedProgramId] = useState(null);
+  // Wave 0 commit 06 — застрял ли пациент на текущей фазе (ведущей зоны).
   // null до загрузки, потом объект из endpoint'а или { is_stuck: false }
   // при ошибке/отсутствии программы.
   const [stuckStatus, setStuckStatus] = useState(null);
 
+  // Активные программы пациента (мультипрограммный «Путь», M0/M1). Backend /my/dashboard
+  // отдаёт programs[] (отсортированы priority ASC, ведущая = [0]). Fallback на single
+  // program — для старого бандла/мока без programs[].
+  const programs = useMemo(
+    () => (Array.isArray(dashboardData?.programs) && dashboardData.programs.length > 0
+      ? dashboardData.programs
+      : (dashboardData?.program ? [dashboardData.program] : [])),
+    [dashboardData]
+  );
+  const leading = programs[0] || null;
 
-  // Wave 1 #1.04: program_type приходит из активной программы (JOIN с program_types в backend).
-  // Если у пациента нет программы → programType = undefined, фазы не запрашиваем,
-  // рендерим empty state (см. ниже).
-  const programType = dashboardData?.program?.program_type || null;
-
-  // Загрузка фаз — параметр обязателен (Wave 1 #1.04, дефолт 'acl' убран из api.js)
+  // Загрузка фаз per-program в phasesByProgram. getPhases на каждый program_type
+  // (разные протоколы → разные наборы фаз). program_type из rp.* (Wave 1 #1.04).
   useEffect(() => {
-    if (!programType) {
-      setPhases([]);
+    if (programs.length === 0) {
+      setPhasesByProgram({});
       setLoading(false);
       return undefined;
     }
     let alive = true;
     setLoading(true);
-    rehab.getPhases(programType)
-      .then((res) => {
-        if (!alive) return;
-        const list = Array.isArray(res?.data) ? res.data : [];
-        // Сортируем по phase_number — на всякий случай
-        list.sort((a, b) => (a.phase_number || 0) - (b.phase_number || 0));
-        setPhases(list);
-      })
-      .catch(() => { if (alive) setPhases([]); })
+    Promise.all(programs.map((p) => (
+      p.program_type
+        ? rehab.getPhases(p.program_type)
+            .then((res) => {
+              const list = Array.isArray(res?.data) ? res.data.slice() : [];
+              list.sort((a, b) => (a.phase_number || 0) - (b.phase_number || 0));
+              return [p.id, list];
+            })
+            .catch(() => [p.id, []])
+        : Promise.resolve([p.id, []])
+    )))
+      .then((pairs) => { if (alive) setPhasesByProgram(Object.fromEntries(pairs)); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [programType]);
+  }, [programs]);
 
   // Wave 0 commit 06 — статус застревания. Ошибка глушится: если бэкенд
   // недоступен, баннер просто не показывается, остальной экран рендерится.
@@ -397,33 +421,71 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
     goTo(3, { prefilledMessage: msg });
   }, [goTo, stuckStatus]);
 
-  // ?? 1 (не || 1): фаза 0 (prehab) — реальная текущая фаза, не подменяем на 1.
-  const currentPhaseNumber = dashboardData?.program?.current_phase ?? 1;
-  const currentPhase = useMemo(
-    () => phases.find((p) => p.phase_number === currentPhaseNumber) || null,
-    [phases, currentPhaseNumber]
-  );
-
   const currentWeek = useMemo(
-    () => getWeeksSinceSurgery(dashboardData?.program?.surgery_date),
-    [dashboardData?.program?.surgery_date]
+    () => getWeeksSinceSurgery(leading?.surgery_date),
+    [leading]
   );
 
-  // Subtitle под заголовком: "Диагноз · Сторона · Сейчас: N-я неделя"
+  // Текущая фаза ведущей зоны — из загруженных фаз (как в исходном коде), для subtitle.
+  const leadingPhase = useMemo(() => {
+    if (!leading) return null;
+    const list = phasesByProgram[leading.id] || [];
+    const num = leading.current_phase ?? 1;
+    return list.find((p) => p.phase_number === num) || null;
+  }, [leading, phasesByProgram]);
+
+  // Subtitle под заголовком = ведущая зона: "Диагноз · Фаза · Сейчас: N-я неделя".
   const subtitle = useMemo(() => {
     const parts = [];
-    const diag = dashboardData?.program?.diagnosis;
-    if (diag) parts.push(diag);
-    if (currentPhase?.title || currentPhase?.name) {
-      parts.push(currentPhase.title || currentPhase.name);
-    }
+    if (leading?.diagnosis) parts.push(leading.diagnosis);
+    if (leadingPhase?.title || leadingPhase?.name) parts.push(leadingPhase.title || leadingPhase.name);
     if (currentWeek != null) parts.push(`Сейчас: ${currentWeek}-я неделя`);
     return parts.join(' · ');
-  }, [dashboardData?.program?.diagnosis, currentPhase, currentWeek]);
+  }, [leading, leadingPhase, currentWeek]);
 
-  const toggleFuture = useCallback((phaseId) => {
-    setExpandedFutureId((prev) => (prev === phaseId ? null : phaseId));
+  const toggleFuture = useCallback((key) => {
+    setExpandedFutureKey((prev) => (prev === key ? null : key));
   }, []);
+
+  const toggleProgram = useCallback((programId) => {
+    setExpandedProgramId((prev) => (prev === programId ? null : programId));
+  }, []);
+
+  // Рендер timeline фаз одной зоны (программы). Past/current/future-логика и PhaseRow
+  // — 1:1 как раньше; только источник фаз и currentPhaseNumber теперь per-program.
+  const renderTimeline = useCallback((program) => {
+    const list = phasesByProgram[program.id] || [];
+    // ?? 1 (не || 1): фаза 0 (prehab, D3) — реальная текущая, не подменяем на 1.
+    const currentPhaseNumber = program.current_phase ?? 1;
+    if (list.length === 0) {
+      return <p className="pd-rm-empty">Фазы восстановления недоступны</p>;
+    }
+    return list.map((phase, idx) => {
+      const phaseNumber = phase.phase_number;
+      const isPast = phaseNumber < currentPhaseNumber;
+      const isCurrent = phaseNumber === currentPhaseNumber;
+      const isFuture = phaseNumber > currentPhaseNumber;
+      const isLast = idx === list.length - 1;
+      const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
+      const color = getPhaseColor(phaseNumber);
+      // Составной ключ: phase.id может совпадать между протоколами (acl vs shoulder).
+      const futureKey = `${program.id}:${phase.id ?? phaseNumber}`;
+      return (
+        <PhaseRow
+          key={futureKey}
+          phase={phase}
+          color={color}
+          PhaseIcon={PhaseIcon}
+          isPast={isPast}
+          isCurrent={isCurrent}
+          isFuture={isFuture}
+          isLast={isLast}
+          expanded={expandedFutureKey === futureKey}
+          onToggleExpand={() => toggleFuture(futureKey)}
+        />
+      );
+    });
+  }, [phasesByProgram, expandedFutureKey, toggleFuture]);
 
   if (loading) {
     return (
@@ -434,8 +496,9 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
     );
   }
 
-  // Wave 1 #1.04: пациент без активной программы — пустой state вместо фаз ACL по дефолту
-  if (!programType) {
+  // Wave 1 #1.04: пациент без активной программы (или ни одной зоны с program_type —
+  // путь не построить) — пустой state вместо фаз ACL по дефолту.
+  if (programs.length === 0 || !programs.some((p) => p.program_type)) {
     return (
       <div className="pd-rm pd-roadmap-screen">
         <header className="pd-rm-header">
@@ -524,36 +587,64 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
         </div>
       )}
 
-      {/* Timeline */}
-      <div className="pd-rm-timeline">
-        {phases.length === 0 && (
-          <p className="pd-rm-empty">Фазы восстановления недоступны</p>
-        )}
-        {phases.map((phase, idx) => {
-          const phaseNumber = phase.phase_number;
-          const isPast = phaseNumber < currentPhaseNumber;
-          const isCurrent = phaseNumber === currentPhaseNumber;
-          const isFuture = phaseNumber > currentPhaseNumber;
-          const isLast = idx === phases.length - 1;
-          const PhaseIcon = PHASE_ICONS[phase.icon] || Target;
-          const color = getPhaseColor(phaseNumber);
-
-          return (
-            <PhaseRow
-              key={phase.id ?? `phase-${phaseNumber}`}
-              phase={phase}
-              color={color}
-              PhaseIcon={PhaseIcon}
-              isPast={isPast}
-              isCurrent={isCurrent}
-              isFuture={isFuture}
-              isLast={isLast}
-              expanded={expandedFutureId === (phase.id ?? phaseNumber)}
-              onToggleExpand={() => toggleFuture(phase.id ?? phaseNumber)}
-            />
-          );
-        })}
-      </div>
+      {/* Timeline — мультитрек. Одна зона → как раньше (без аккордеон-хрома).
+          Несколько зон → аккордеон: ведущая [0] развёрнута + бейдж «Ведущая»,
+          вторичные свёрнуты, у каждой свой timeline и своя текущая фаза. */}
+      {programs.length === 1 ? (
+        <div className="pd-rm-timeline">
+          {renderTimeline(programs[0])}
+        </div>
+      ) : (
+        <div className="pd-rm-accordion">
+          {programs.map((program, idx) => {
+            const isLeading = idx === 0;
+            const open = isLeading || expandedProgramId === program.id;
+            const phaseLabel = program.phase?.name || program.phase?.title
+              || `Фаза ${program.current_phase ?? 1}`;
+            const zoneTitle = program.program_label || program.title || 'Программа';
+            const zoneJoint = JOINT_LABELS[program.program_joint] || null;
+            return (
+              <div
+                key={program.id}
+                className={`pd-rm-track ${isLeading ? 'pd-rm-track--leading' : ''}`}
+                data-testid={`pd-rm-track-${program.id}`}
+              >
+                {isLeading ? (
+                  <div className="pd-rm-track-header pd-rm-track-header--leading">
+                    <span className="pd-rm-track-title">{zoneTitle}</span>
+                    {zoneJoint && <span className="pd-rm-track-joint">{zoneJoint}</span>}
+                    <span className="pd-rm-track-badge">Ведущая</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="pd-rm-track-header"
+                    onClick={() => toggleProgram(program.id)}
+                    aria-expanded={open}
+                  >
+                    <span className="pd-rm-track-title">{zoneTitle}</span>
+                    {zoneJoint && <span className="pd-rm-track-joint">{zoneJoint}</span>}
+                    <span className="pd-rm-track-status">{phaseLabel}</span>
+                    <ChevronDown
+                      size={16}
+                      strokeWidth={2}
+                      className={`pd-rm-track-chev ${open ? 'pd-rm-track-chev--open' : ''}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+                {open && (
+                  <div className="pd-rm-track-body">
+                    <div className="pd-rm-timeline">
+                      {renderTimeline(program)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Info note */}
       <div className="pd-rm-info">
@@ -571,6 +662,15 @@ RoadmapScreen.propTypes = {
       current_phase: PropTypes.number,
       diagnosis: PropTypes.string,
     }),
+    programs: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.number,
+      program_type: PropTypes.string,
+      program_label: PropTypes.string,
+      program_joint: PropTypes.string,
+      current_phase: PropTypes.number,
+      priority: PropTypes.number,
+      phase: PropTypes.object,
+    })),
   }),
   patient: PropTypes.shape({
     full_name: PropTypes.string,
