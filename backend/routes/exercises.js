@@ -6,7 +6,7 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { validateTrackPresetIds } = require('../utils/exerciseAudio');
-const isai = require('../services/isai');
+const structuringLlm = require('../services/structuringLlm');
 const speechkit = require('../services/yandexSpeechKit');
 const multer = require('multer');
 
@@ -67,7 +67,7 @@ router.get('/kinescope/thumbnail/:videoId', authenticateToken, async (req, res) 
 });
 
 // ========================================
-// POST /api/exercises/structure - Надиктовка → поля упражнения через is*ai
+// POST /api/exercises/structure - Надиктовка → поля упражнения через LLM (DeepSeek/is*ai)
 // НЕ-PII (контент библиотеки). Возвращает частичный объект { fields, warnings }
 // для предзаполнения формы упражнения. Инструктор затем проверяет/правит вручную.
 // Auth = authenticateToken (уровень инструктора, НЕ admin-only — намеренно, паритет
@@ -84,19 +84,19 @@ router.post('/structure', authenticateToken, async (req, res) => {
     if (transcript.length > 8000) {
       return res.status(400).json({ error: 'Слишком длинно', message: 'Расшифровка не должна превышать 8000 символов' });
     }
-    if (!isai.isConfigured()) {
-      return res.status(503).json({ error: 'is*ai не настроен', message: 'AI-структурирование недоступно: не задан ISAI_API_KEY' });
+    if (!structuringLlm.isConfigured()) {
+      return res.status(503).json({ error: 'LLM не настроен', message: 'AI-структурирование недоступно: не задан ключ провайдера (DeepSeek/is*ai)' });
     }
 
-    const { fields, warnings } = await isai.structureExercise(transcript);
+    const { fields, warnings } = await structuringLlm.structureExercise(transcript);
     return res.json({ data: { fields, warnings } });
   } catch (error) {
     console.error('Error structuring exercise:', error.code || error.message);
-    if (error.code === 'ISAI_TIMEOUT') {
-      return res.status(504).json({ error: 'Таймаут is*ai', message: 'AI не ответил вовремя, попробуйте ещё раз' });
+    if (error.code === 'LLM_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут AI', message: 'AI не ответил вовремя, попробуйте ещё раз' });
     }
-    if (error.code === 'ISAI_HTTP' || error.code === 'ISAI_EMPTY') {
-      return res.status(502).json({ error: 'Ошибка is*ai', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
+    if (error.code === 'LLM_HTTP' || error.code === 'LLM_EMPTY') {
+      return res.status(502).json({ error: 'Ошибка AI', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
     }
     return res.status(500).json({ error: 'Ошибка структурирования', message: 'Не удалось разобрать надиктовку' });
   }

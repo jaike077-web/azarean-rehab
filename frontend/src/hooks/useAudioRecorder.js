@@ -45,6 +45,8 @@ function floatToPcm16Blob(float32) {
 
 export default function useAudioRecorder() {
   const [recording, setRecording] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState(null);
 
   const ctxRef = useRef(null);
@@ -53,8 +55,11 @@ export default function useAudioRecorder() {
   const sourceRef = useRef(null);
   const chunksRef = useRef([]);
   const sourceRateRef = useRef(TARGET_RATE);
+  const pausedRef = useRef(false);
+  const timerRef = useRef(null);
 
   const cleanup = useCallback(() => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     try { if (procRef.current) procRef.current.disconnect(); } catch (_) { /* noop */ }
     try { if (sourceRef.current) sourceRef.current.disconnect(); } catch (_) { /* noop */ }
     try { if (ctxRef.current && ctxRef.current.state !== 'closed') ctxRef.current.close(); } catch (_) { /* noop */ }
@@ -67,6 +72,9 @@ export default function useAudioRecorder() {
 
   const start = useCallback(async () => {
     setError(null);
+    pausedRef.current = false;
+    setPaused(false);
+    setElapsedSec(0);
     chunksRef.current = [];
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError('Микрофон недоступен (нужен https или localhost)');
@@ -84,20 +92,39 @@ export default function useAudioRecorder() {
       const proc = ctx.createScriptProcessor(4096, 1, 1);
       procRef.current = proc;
       proc.onaudioprocess = (e) => {
+        if (pausedRef.current) return; // на паузе звук не копим (тишина-обдумывание отбрасывается)
         chunksRef.current.push(new Float32Array(e.inputBuffer.getChannelData(0)));
       };
       source.connect(proc);
       proc.connect(ctx.destination); // нужно для срабатывания onaudioprocess; вывод тихий
       setRecording(true);
+      // Таймер реально записанного времени (на паузе не тикает).
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        if (!pausedRef.current) setElapsedSec((sec) => sec + 1);
+      }, 1000);
     } catch (err) {
       setError(err && err.name === 'NotAllowedError' ? 'Нет доступа к микрофону' : 'Не удалось включить запись');
       cleanup();
     }
   }, [cleanup]);
 
+  // Пауза/продолжение в рамках одной записи (сессия и поток с микрофона живут).
+  const pause = useCallback(() => {
+    pausedRef.current = true;
+    setPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    pausedRef.current = false;
+    setPaused(false);
+  }, []);
+
   // Остановить и вернуть { blob, sampleRateHertz } (или null, если тишина).
   const stop = useCallback(async () => {
     setRecording(false);
+    setPaused(false);
+    pausedRef.current = false;
     const sourceRate = sourceRateRef.current;
     const chunks = chunksRef.current;
     chunksRef.current = [];
@@ -119,5 +146,5 @@ export default function useAudioRecorder() {
   // cleanup стабилен (useCallback []) → эффект отрабатывает только на unmount.
   useEffect(() => cleanup, [cleanup]);
 
-  return { recording, error, start, stop, cleanup };
+  return { recording, paused, elapsedSec, error, start, pause, resume, stop, cleanup };
 }

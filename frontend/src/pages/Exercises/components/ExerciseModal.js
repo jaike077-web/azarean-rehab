@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square, CheckCircle2, Circle, Pause } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi, admin } from '../../../services/api';
 import s from './ExerciseModal.module.css';
@@ -229,14 +229,15 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     }
   };
 
-  // Микрофон: старт записи → (повторный клик) стоп + распознавание через SpeechKit →
-  // распознанный текст дописывается в поле расшифровки.
-  const handleMicToggle = async () => {
+  // Запись голосом: старт → (пауза/продолжить) → стоп + распознавание SpeechKit.
+  // Распознанный текст ДОПИСЫВАЕТСЯ к уже введённому (не затирает); сброс — только «Очистить».
+  const handleStartRecord = async () => {
     setStructureError(null);
-    if (!recorder.recording) {
-      await recorder.start();
-      return;
-    }
+    await recorder.start();
+  };
+
+  const handleStopRecognize = async () => {
+    setStructureError(null);
     setTranscribing(true);
     try {
       const result = await recorder.stop();
@@ -257,6 +258,25 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       );
     } finally {
       setTranscribing(false);
+    }
+  };
+
+  // Заполнен ли пункт чек-листа надиктовки (для галочек прогресса).
+  const isDictItemFilled = (key) => {
+    switch (key) {
+      case 'title': return title.trim() !== '';
+      case 'body_region': return bodyRegion !== '';
+      case 'exercise_type': return exerciseType !== '';
+      case 'difficulty_level': return true; // слайдер всегда 1..5
+      case 'equipment': return equipment.length > 0;
+      case 'position': return position.length > 0;
+      case 'rehab_phases': return rehabPhases.length > 0;
+      case 'description': return description.trim() !== '';
+      case 'instructions': return instructions.trim() !== '';
+      case 'cues': return cues.trim() !== '';
+      case 'tips': return tips.trim() !== '';
+      case 'contraindications': return contraindications.trim() !== '';
+      default: return false;
     }
   };
 
@@ -371,39 +391,121 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
               {showDictation && (
                 <div className={s.advancedFields}>
-                  <p className={s.fieldHint} style={{ marginTop: 0, fontSize: 12, color: 'var(--color-text-muted, #6b7280)', lineHeight: 1.5 }}>
-                    Надиктуйте микрофоном клавиатуры или вставьте текст по чек-листу:
-                    название · регион · тип · сложность · оборудование · положение ·
-                    как выполнять · подсказки · противопоказания. Затем «Разобрать» —
-                    поля заполнятся, проверьте и поправьте вручную.
+                  <p style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--color-text, #1f2937)', lineHeight: 1.5 }}>
+                    Продиктуйте голосом или впишите/вставьте текст об упражнении.
+                    Галочки ниже подсказывают, что назвать, и отмечают, что уже распознано.
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      className={s.btnSecondary}
-                      onClick={handleMicToggle}
-                      disabled={transcribing || structuring}
-                      style={recorder.recording
-                        ? { background: '#fde8e8', borderColor: '#f56565', color: '#c53030' }
-                        : undefined}
-                    >
-                      {recorder.recording && (<><Square size={15} /> Остановить и распознать</>)}
-                      {!recorder.recording && transcribing && 'Распознаю…'}
-                      {!recorder.recording && !transcribing && (<><Mic size={15} /> Записать голос</>)}
-                    </button>
-                    {recorder.recording && (
-                      <span style={{ fontSize: 12, color: '#c53030' }}>● идёт запись…</span>
+
+                  {/* Чек-лист: что продиктовать + прогресс заполнения */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                      gap: '6px 16px',
+                      padding: '12px 14px',
+                      marginBottom: 14,
+                      background: 'var(--color-surface, #fff)',
+                      border: '1px solid var(--color-border, #e5e7eb)',
+                      borderRadius: 10,
+                    }}
+                  >
+                    {DICTATION_CHECKLIST.map((item) => {
+                      const filled = isDictItemFilled(item.key);
+                      return (
+                        <div
+                          key={item.key}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 7,
+                            fontSize: 13,
+                            color: filled ? '#1a7f5a' : 'var(--color-text-muted, #6b7280)',
+                          }}
+                        >
+                          {filled
+                            ? <CheckCircle2 size={16} color="#1a7f5a" style={{ flexShrink: 0 }} />
+                            : <Circle size={16} color="#cbd5e1" style={{ flexShrink: 0 }} />}
+                          <span>{item.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Запись голосом: старт / пауза-продолжить / стоп-распознать */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                    {!recorder.recording && !transcribing && (
+                      <button
+                        type="button"
+                        className={s.btnSecondary}
+                        onClick={handleStartRecord}
+                        disabled={structuring}
+                      >
+                        <Mic size={15} /> Записать голос
+                      </button>
                     )}
+                    {recorder.recording && (
+                      <>
+                        <button
+                          type="button"
+                          className={s.btnSecondary}
+                          onClick={() => (recorder.paused ? recorder.resume() : recorder.pause())}
+                        >
+                          {recorder.paused
+                            ? (<><Play size={15} /> Продолжить</>)
+                            : (<><Pause size={15} /> Пауза</>)}
+                        </button>
+                        <button
+                          type="button"
+                          className={s.btnSecondary}
+                          onClick={handleStopRecognize}
+                          style={{ background: '#fde8e8', borderColor: '#f56565', color: '#c53030' }}
+                        >
+                          <Square size={15} /> Остановить и распознать
+                        </button>
+                      </>
+                    )}
+                    {transcribing && (
+                      <span style={{ fontSize: 13, color: 'var(--color-text-muted, #6b7280)' }}>Распознаю…</span>
+                    )}
+                    {recorder.recording && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontWeight: 700,
+                          fontSize: 15,
+                          fontVariantNumeric: 'tabular-nums',
+                          color: recorder.elapsedSec >= 28 ? '#c53030' : recorder.elapsedSec >= 22 ? '#b45309' : '#1a7f5a',
+                        }}
+                      >
+                        {recorder.paused
+                          ? <Pause size={14} />
+                          : <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#c53030', display: 'inline-block' }} />}
+                        {formatSec(recorder.elapsedSec)} / 0:30
+                      </span>
+                    )}
+                    <span style={{ fontSize: 12, color: recorder.recording && recorder.elapsedSec >= 28 ? '#c53030' : 'var(--color-text-muted, #6b7280)' }}>
+                      {!recorder.recording && !transcribing && 'распознанный текст добавится к уже введённому (не затрёт; сброс — «Очистить»)'}
+                      {recorder.recording && recorder.paused && 'на паузе'}
+                      {recorder.recording && !recorder.paused && recorder.elapsedSec >= 28 && 'пора остановить — близко к лимиту'}
+                    </span>
                   </div>
                   {recorder.error && (
                     <div className={s.errorMessage} style={{ marginBottom: 8 }}>{recorder.error}</div>
                   )}
+
+                  {/* Поле расшифровки */}
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>
+                    Текст надиктовки
+                  </label>
                   <textarea
                     value={transcript}
                     onChange={(e) => setTranscript(e.target.value)}
-                    placeholder="Например: Маятник Кодмана, плечо, мобилизация, сложность 2, без оборудования, стоя; расслабить руку и раскачивать корпусом…"
-                    rows="5"
+                    placeholder="Например: «Маятник Кодмана. Регион — плечо. Тип — мобилизация. Сложность 2. Без оборудования. Положение стоя, наклон вперёд с опорой здоровой рукой о стол. Как выполнять: расслабить больную руку, дать свободно свисать и раскачивать её корпусом вперёд-назад, затем по кругу, амплитуда маленькая. Полезно знать: движение идёт за счёт корпуса, а не плеча. Противопоказания: острая боль, свежий вывих.»"
+                    rows={7}
                     disabled={structuring || transcribing || recorder.recording}
+                    style={{ width: '100%', boxSizing: 'border-box', minHeight: 150, resize: 'vertical' }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                     <button
@@ -948,6 +1050,25 @@ const REHAB_PHASE_OPTIONS = [
   { value: 'pre_sport', label: 'Предспортивная фаза' },
   { value: 'sport', label: 'Спортивная фаза' },
   { value: 'prevention', label: 'Профилактика' },
+];
+
+// M:SS из секунд (для таймера записи).
+const formatSec = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+// Чек-лист надиктовки — что назвать (зеркало backend exerciseStructuring.CHECKLIST).
+const DICTATION_CHECKLIST = [
+  { key: 'title', label: 'Название' },
+  { key: 'body_region', label: 'Регион тела' },
+  { key: 'exercise_type', label: 'Тип упражнения' },
+  { key: 'difficulty_level', label: 'Сложность (1–5)' },
+  { key: 'equipment', label: 'Оборудование' },
+  { key: 'position', label: 'Исходное положение' },
+  { key: 'rehab_phases', label: 'Фазы реабилитации' },
+  { key: 'description', label: 'Описание' },
+  { key: 'instructions', label: 'Как выполнять' },
+  { key: 'cues', label: 'Подсказки (cues)' },
+  { key: 'tips', label: 'Полезно знать' },
+  { key: 'contraindications', label: 'Противопоказания' },
 ];
 
 export default ExerciseModal;
