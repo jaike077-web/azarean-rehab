@@ -276,6 +276,30 @@ describe('normalizeStructuredExercise — текст и безопасность
     expect(fields.cues).toBeUndefined();
   });
 
+  test('instructions «1. .. 2. .. 3.» в одну строку → переносы строк', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Т',
+      instructions: '1. Встаньте прямо. 2. Поднимитесь на носки. 3. Опуститесь.',
+    });
+    expect(fields.instructions).toBe('1. Встаньте прямо.\n2. Поднимитесь на носки.\n3. Опуститесь.');
+  });
+
+  test('instructions массивом шагов → склейка переносами строк', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Т',
+      instructions: ['1. Шаг один.', '2. Шаг два.'],
+    });
+    expect(fields.instructions).toBe('1. Шаг один.\n2. Шаг два.');
+  });
+
+  test('форматирование шагов НЕ ломает «до 90.» (не последовательность)', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Т',
+      instructions: 'Опускайтесь до угла 90. Затем встаньте за 2 счёта.',
+    });
+    expect(fields.instructions).toBe('Опускайтесь до угла 90. Затем встаньте за 2 счёта.');
+  });
+
   test('variations/progression переносятся как текст (passthrough)', () => {
     const { fields } = normalizeStructuredExercise({
       title: 'Т',
