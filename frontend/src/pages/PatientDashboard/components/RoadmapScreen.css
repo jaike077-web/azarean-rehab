@@ -351,12 +351,204 @@
   margin: 0;
 }
 
+/* ===== Мультитрек: карточка-заголовок зоны (M1, CP2) ===== */
+.pd-rm-accordion { display: flex; flex-direction: column; }
+.pd-rm-track + .pd-rm-track { margin-top: var(--pd-space-3, 12px); }
+
+/* карточка-заголовок */
+.pd-rm-track-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pd-space-3, 12px);
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--pd-color-white, #fff);
+  border: 1px solid var(--pd-n200, #E2E8F0);
+  border-radius: var(--pd-radius-lg, 16px);
+  text-align: left;
+  font: inherit;
+  color: var(--pd-text, var(--pd-n900));
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+button.pd-rm-track-header:hover {
+  border-color: var(--pd-n300, #CBD5E1);
+  transform: translateY(-1px);
+}
+.pd-rm-track-header--leading { cursor: default; }
+
+/* нода региона */
+.pd-rm-node {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--pd-radius-md, 12px);
+  display: grid;
+  place-items: center;
+  background: var(--pd-n100, #F1F5F9);
+  color: var(--pd-n500, #64748B);
+}
+
+/* центральная колонка */
+.pd-rm-track-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pd-rm-track-title {
+  font-family: var(--pd-font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--pd-text, var(--pd-n900));
+}
+.pd-rm-track-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+/* pill региона */
+.pd-rm-track-joint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--pd-radius-xs, 6px);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: var(--pd-n100, #F1F5F9);
+  color: var(--pd-n600, #475569);
+}
+.pd-rm-joint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* бейдж «Ведущая» */
+.pd-rm-track-badge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: var(--pd-radius-xs, 6px);
+  background: var(--pd-n500, #64748B);
+  color: var(--pd-color-white, #fff);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* статус текущей фазы (вторичные) */
+.pd-rm-track-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--pd-text2, var(--pd-n500));
+}
+.pd-rm-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pd-n400, #94A3B8);
+}
+
+/* шеврон в таргете */
+.pd-rm-track-chev-wrap {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+}
+button.pd-rm-track-header:hover .pd-rm-track-chev-wrap { background: var(--pd-n50, #F8FAFC); }
+.pd-rm-track-chev { color: var(--pd-n400); transition: transform 0.2s ease; }
+.pd-rm-track-chev--open { transform: rotate(180deg); }
+
+/* левый акцент-рейл ведущей (цвет задаёт модификатор региона) */
+.pd-rm-track-header--leading::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--pd-n400, #94A3B8);
+}
+
+/* тело таймлайна */
+.pd-rm-track-body { margin-top: var(--pd-space-3, 12px); }
+
+/* === цвет-код региона === */
+/* knee → teal */
+.pd-rm-track--knee .pd-rm-node { background: var(--pd-color-primary-bg, #F0FDFA); color: var(--pd-color-primary, #0D9488); }
+.pd-rm-track--knee .pd-rm-track-joint { background: var(--pd-color-primary-bg, #F0FDFA); color: var(--pd-primary-700, #0F766E); }
+.pd-rm-track--knee .pd-rm-track-badge { background: var(--pd-color-primary, #0D9488); }
+.pd-rm-track--knee .pd-rm-track-header--leading::before { background: var(--pd-color-primary, #0D9488); }
+.pd-rm-track--knee.pd-rm-track--leading .pd-rm-node { background: var(--pd-color-primary, #0D9488); color: var(--pd-color-white, #fff); }
+
+/* shoulder → coral */
+.pd-rm-track--shoulder .pd-rm-node { background: var(--pd-color-accent-bg, #FFEDD5); color: var(--pd-color-accent, #F97316); }
+.pd-rm-track--shoulder .pd-rm-track-joint { background: var(--pd-color-accent-bg, #FFEDD5); color: var(--pd-accent-warm-700, #C2410C); }
+.pd-rm-track--shoulder .pd-rm-track-badge { background: var(--pd-color-accent, #F97316); }
+.pd-rm-track--shoulder .pd-rm-track-header--leading::before { background: var(--pd-color-accent, #F97316); }
+.pd-rm-track--shoulder.pd-rm-track--leading .pd-rm-node { background: var(--pd-color-accent, #F97316); color: var(--pd-color-white, #fff); }
+
+/* === иерархия: ведущая КРУПНЕЕ + заливка региона, вторичные мельче/бледнее (Вариант B) === */
+/* ведущая — заливная региональная карточка, крупнее; рейл больше не нужен (заливка = акцент) */
+.pd-rm-track-header--leading::before { display: none; }
+.pd-rm-track--leading .pd-rm-track-header {
+  padding: 18px;
+  background: var(--pd-n50, #F8FAFC);
+}
+.pd-rm-track-header--leading .pd-rm-track-title { font-size: 1.2rem; }
+.pd-rm-track--leading .pd-rm-node { width: 48px; height: 48px; }
+.pd-rm-track--knee.pd-rm-track--leading .pd-rm-track-header {
+  background: var(--pd-color-primary-bg, #F0FDFA);
+  border-color: var(--pd-color-primary, #0D9488);
+}
+.pd-rm-track--shoulder.pd-rm-track--leading .pd-rm-track-header {
+  background: var(--pd-color-accent-bg, #FFEDD5);
+  border-color: var(--pd-color-accent, #F97316);
+}
+/* вторичные — компактнее и приглушённее (фон-тинт, мельче нода/заголовок) */
+.pd-rm-track:not(.pd-rm-track--leading) .pd-rm-track-header {
+  padding: 11px 14px;
+  background: var(--pd-n50, #F8FAFC);
+  /* border ПОЛНОСТЬЮ (вкл. style) — перебивает `.pd-rm button { border: none }` (0,1,1).
+     Цвет ниже переопределяется по региону (0,3,0). */
+  border: 2px solid var(--pd-n200, #E2E8F0);
+}
+.pd-rm-track:not(.pd-rm-track--leading) .pd-rm-node { width: 38px; height: 38px; }
+.pd-rm-track:not(.pd-rm-track--leading) .pd-rm-track-title { font-size: 0.95rem; }
+
+/* видимый контур по умолчанию (цвет = регион): ведущая толще/насыщеннее, вторичные тоньше */
+.pd-rm-track--leading .pd-rm-track-header { border-width: 2px; }
+.pd-rm-track:not(.pd-rm-track--leading) .pd-rm-track-header { border-width: 2px; }
+/* контур по умолчанию = ПОЛНЫЙ цвет региона (не светлый 400-оттенок — он был не виден) */
+.pd-rm-track--knee:not(.pd-rm-track--leading) .pd-rm-track-header { border-color: var(--pd-color-primary, #0D9488); }
+.pd-rm-track--shoulder:not(.pd-rm-track--leading) .pd-rm-track-header { border-color: var(--pd-color-accent, #F97316); }
+
 /* ===== Responsive ===== */
 @media (max-width: 480px) {
   .pd-rm { padding: 0 16px 20px; }
   .pd-rm-title { font-size: 1.05rem; }
   .pd-rm-row { gap: 10px; }
   .pd-rm-card { padding: 12px; }
+  .pd-rm-track-header { padding: 12px 14px; gap: 10px; }
+  .pd-rm-track-title { font-size: 1rem; }
+  .pd-rm-node { width: 40px; height: 40px; }
 }
 
 @media (min-width: 769px) {

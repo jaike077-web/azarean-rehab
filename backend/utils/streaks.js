@@ -102,21 +102,33 @@ async function updateStreak(patientId, programId, source = 'progress') {
  * }>}
  */
 async function getStreakSummary(patientId) {
+  // Мультипрограммный стрик (общий per-пациент): любая активность в ЛЮБОЙ программе
+  // = активный день, день засчитывается ОДИН раз (DISTINCT activity_date по всем
+  // программам). Считаем напрямую из streak_days, а не из per-program rollup
+  // `streaks` (тот хранит по программе и суммирование двойного дня дало бы перекос).
+  // current_streak = total_days = число уникальных дней активности (модель проекта);
+  // longest_streak = макс. серия подряд (gaps-and-islands по DISTINCT датам).
   const result = await query(
-    `SELECT s.current_streak,
-            s.longest_streak,
-            s.total_days,
-            s.last_activity_date::text AS last_activity_date,
-            CASE
-              WHEN s.last_activity_date IS NULL THEN NULL
-              ELSE (CURRENT_DATE - s.last_activity_date)::int
-            END AS days_since_last_activity
-       FROM streaks s
-       LEFT JOIN rehab_programs rp ON rp.id = s.program_id
-      WHERE s.patient_id = $1
-        AND (rp.status = 'active' OR rp.id IS NULL)
-      ORDER BY s.current_streak DESC
-      LIMIT 1`,
+    `WITH days AS (
+       SELECT DISTINCT activity_date
+         FROM streak_days
+        WHERE patient_id = $1
+     ),
+     ordered AS (
+       SELECT activity_date,
+              activity_date - (ROW_NUMBER() OVER (ORDER BY activity_date))::int AS grp
+         FROM days
+     )
+     SELECT
+       (SELECT COUNT(*) FROM days)::int AS total_days,
+       (SELECT COALESCE(MAX(run_length), 0)::int
+          FROM (SELECT COUNT(*) AS run_length FROM ordered GROUP BY grp) runs
+       ) AS longest_streak,
+       (SELECT MAX(activity_date)::text FROM days) AS last_activity_date,
+       (SELECT CASE WHEN MAX(activity_date) IS NULL THEN NULL
+                    ELSE (CURRENT_DATE - MAX(activity_date))::int END
+          FROM days
+       ) AS days_since_last_activity`,
     [patientId]
   );
 
@@ -133,7 +145,8 @@ async function getStreakSummary(patientId) {
   }
 
   return {
-    current_streak: row.current_streak || 0,
+    // current_streak = total_days (модель проекта: «текущий стрик» = всего активных дней)
+    current_streak: row.total_days || 0,
     longest_streak: row.longest_streak || 0,
     total_days: row.total_days || 0,
     last_activity_date: row.last_activity_date || null,

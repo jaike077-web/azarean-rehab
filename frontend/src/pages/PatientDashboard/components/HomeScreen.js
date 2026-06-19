@@ -21,7 +21,7 @@ import PropTypes from 'prop-types';
 import {
   Check, ChevronRight, Play, Target, Calendar, Info, Lightbulb,
   Smile, Meh, Frown, ClipboardList, Shield, RefreshCw, Dumbbell,
-  Activity, Zap, Trophy, AlertCircle, RotateCcw,
+  Activity, Zap, Trophy, AlertCircle, RotateCcw, Layers,
 } from 'lucide-react';
 import { IllKnee } from './ui';
 import { rehab } from '../../../services/api';
@@ -131,8 +131,15 @@ export default function HomeScreen({
     // null без блоков; boolean в blocks-режиме. Показываем только позитивные чипы (✓),
     // чтобы не вводить в заблуждение «не сделано» при отсутствующем типе блока.
     gymnasticsDoneToday, trainingDoneToday,
+    // Мультипрограммность (M1): все активные зоны. Hero — по ведущей (programs[0]),
+    // под целью недели — индикатор «+N зон» (переход на «Путь»).
+    programs,
   } = dashboardData;
   if (!program) return <EmptyState goTo={goTo} />;
+
+  const secondaryCount = Array.isArray(programs) && programs.length > 1
+    ? programs.length - 1
+    : 0;
 
   // «Готово» на hero-CTA = упражнения сделаны сегодня. После комплекса hero
   // переключается в ветку «Заполнить дневник»; после заполнения дневника —
@@ -273,6 +280,24 @@ export default function HomeScreen({
             </span>
             <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
           </button>
+
+          {/* Мультипрограммность (M1): индикатор вторичных зон под целью недели.
+              Тап → экран «Путь» (screen 1), где мультитрек-аккордеон. */}
+          {secondaryCount > 0 && (
+            <button
+              type="button"
+              className="pd-home-hero-zones"
+              onClick={() => goTo(1)}
+              data-testid="home-zones-indicator"
+            >
+              <Layers size={13} color="#fff" aria-hidden="true" />
+              <span>
+                Ещё {secondaryCount}{' '}
+                {secondaryCount === 1 ? 'зона' : (secondaryCount < 5 ? 'зоны' : 'зон')} восстановления
+              </span>
+              <ChevronRight size={12} color="rgba(255,255,255,0.45)" aria-hidden="true" />
+            </button>
+          )}
 
           {/* ARC-CYCLE AC5: чипы блоков, выполненных сегодня (позитивный сигнал, без
               «не сделано» — гимнастика и тренировка как отдельные оси, решение #7). */}
@@ -445,6 +470,7 @@ export default function HomeScreen({
 HomeScreen.propTypes = {
   dashboardData: PropTypes.shape({
     program: PropTypes.object,
+    programs: PropTypes.array,
     phase: PropTypes.object,
     streak: PropTypes.object,
     lastDiary: PropTypes.object,

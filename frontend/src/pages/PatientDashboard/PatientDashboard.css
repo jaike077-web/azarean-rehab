@@ -884,6 +884,26 @@
   margin: -2px 0 10px;
 }
 
+/* M1 мультипрограммность: заголовок зоны (программы) над её секциями. */
+.pd-program-zone-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 24px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--pd-border);
+}
+.pd-program-zone-title {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--pd-font-display);
+  color: var(--pd-text);
+}
+.pd-program-zone-joint {
+  font-size: 13px;
+  color: var(--pd-text3);
+}
+
 /* ==========================================================================
    ExercisesScreen
    ========================================================================== */

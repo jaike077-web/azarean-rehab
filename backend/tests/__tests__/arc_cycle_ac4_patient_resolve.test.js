@@ -44,7 +44,7 @@ beforeEach(() => {
 describe('GET /api/rehab/my/exercises — D2 резолв (AC4)', () => {
   it('legacy: нет блоков → mode=legacy, плоские поля + D2-ключи null', async () => {
     query
-      .mockResolvedValueOnce({ rows: [{ id: 7, title: 'Прог' }] }) // активная программа
+      .mockResolvedValueOnce({ rows: [{ id: 7, title: 'Прог', complex_id: 9, program_type: 'acl', priority: 1 }] }) // активная программа (M1: + complex_id)
       .mockResolvedValueOnce({ rows: [] })                         // блоки — нет
       .mockResolvedValueOnce({                                     // legacy комплекс
         rows: [{

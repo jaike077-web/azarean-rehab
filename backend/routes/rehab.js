@@ -418,46 +418,52 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
 
-    // 1. Активная программа + JOIN с program_types для получения label/joint/surgery_required
-    const programResult = await query(
+    // 1. Активные программы пациента (мультипрограммный «Путь», M0).
+    // ВСЕ активные, отсортированы по priority ASC (ведущая = минимальный priority),
+    // при равенстве — по created_at DESC. program = ведущая (обратная совместимость
+    // со старым фронтом), programs[] = все треки для мультитрек-«Пути» (M1).
+    const programsResult = await query(
       `SELECT rp.id, rp.title, rp.diagnosis, rp.current_phase, rp.phase_started_at,
-              rp.surgery_date, rp.status, rp.program_type,
+              rp.surgery_date, rp.status, rp.program_type, rp.priority,
               pt.label AS program_label,
               pt.joint AS program_joint,
               pt.surgery_required AS program_surgery_required
        FROM rehab_programs rp
        LEFT JOIN program_types pt ON pt.code = rp.program_type
        WHERE rp.patient_id = $1 AND rp.is_active = true AND rp.status = 'active'
-       ORDER BY rp.created_at DESC LIMIT 1`,
+       ORDER BY rp.priority ASC, rp.created_at DESC`,
       [patientId]
     );
 
-    const program = programResult.rows[0] || null;
+    const programs = programsResult.rows;
 
+    // 2. Текущая фаза КАЖДОЙ программы (для мультитрека). N+1 терпимо: активных
+    // программ у пациента 1–4. program_type из rp.* (Wave 1 retrospective, не хардкод 'acl').
+    for (const p of programs) {
+      const phaseResult = await query(
+        `SELECT id, phase_number, title, subtitle, duration_weeks, description, icon, color, color_bg
+         FROM rehab_phases
+         WHERE program_type = $1 AND phase_number = $2 AND is_active = true`,
+        [p.program_type, p.current_phase]
+      );
+      const ph = phaseResult.rows[0] || null;
+      if (ph) {
+        // Трансформация: фронтенд ожидает name, color2, duration_weeks как число
+        ph.name = ph.title;
+        ph.color2 = ph.color_bg || ph.color;
+        ph.duration_weeks = parseInt(ph.duration_weeks) || 12;
+      }
+      p.phase = ph;
+    }
+
+    // Ведущая программа + её фаза — top-level поля для обратной совместимости.
+    const program = programs[0] || null;
+    const phase = program ? program.phase : null;
     if (program) {
       program.patient_name = req.patient.full_name;
       // program_label приходит из JOIN с program_types (Wave 1 #1.02).
       // Если NULL (теоретически невозможно из-за FK), фронт сам показывает
       // «Фаза N» без префикса label — HomeScreen.js уже имеет этот fallback.
-    }
-
-    // 2. Текущая фаза (если есть программа)
-    // Wave 1 retrospective 2026-05-15: program_type из rp.*, не хардкод 'acl'
-    let phase = null;
-    if (program) {
-      const phaseResult = await query(
-        `SELECT id, phase_number, title, subtitle, duration_weeks, description, icon, color, color_bg
-         FROM rehab_phases
-         WHERE program_type = $1 AND phase_number = $2 AND is_active = true`,
-        [program.program_type, program.current_phase]
-      );
-      phase = phaseResult.rows[0] || null;
-      // Трансформация: фронтенд ожидает name, color2, duration_weeks как число
-      if (phase) {
-        phase.name = phase.title;
-        phase.color2 = phase.color_bg || phase.color;
-        phase.duration_weeks = parseInt(phase.duration_weeks) || 12;
-      }
     }
 
     // 3. Стрик — getStreakSummary возвращает поля для UI:
@@ -569,6 +575,7 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
     res.json({
       data: {
         program,
+        programs,
         phase,
         streak,
         lastDiary,
@@ -1504,11 +1511,24 @@ router.post('/programs', authenticateToken, async (req, res) => {
       }
     }
 
+    // Мультипрограммность (M0): priority — ранг зоны (1 = ведущая). Явный из body (≥1),
+    // иначе NULL → подзапрос в INSERT ставит следующий за максимумом активных программ
+    // пациента (первая программа → 1). Делаем подзапросом, чтобы не плодить round-trip.
+    // ПРИМЕЧАНИЕ: при ОДНОВРЕМЕННОМ создании двух программ одному пациенту без явного
+    // priority возможна гонка (обе получат один номер) — для последовательного создания
+    // через визард не воспроизводится; жёсткий guard (FOR UPDATE / UNIQUE) — в M3, когда
+    // появится мульти-создание в админ-UI. Дубль priority не ломает «ведущую» (priority=1
+    // у первой уникален; сортировка добивается created_at).
+    const rawPriority = parseInt(req.body.priority, 10);
+    const explicitPriority = Number.isInteger(rawPriority) && rawPriority >= 1 ? rawPriority : null;
+
     const result = await query(
       `INSERT INTO rehab_programs
        (patient_id, complex_id, title, diagnosis, surgery_date, current_phase, notes, created_by,
-        program_type, program_template_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'acl'), $10)
+        program_type, program_template_id, priority)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, 'acl'), $10,
+         COALESCE($11, (SELECT COALESCE(MAX(priority), 0) + 1 FROM rehab_programs
+                         WHERE patient_id = $1 AND is_active = true AND status = 'active')))
        RETURNING *`,
       [
         patient_id,
@@ -1521,6 +1541,7 @@ router.post('/programs', authenticateToken, async (req, res) => {
         req.user.id,
         resolvedProgramType || null,
         program_template_id || null,
+        explicitPriority,
       ]
     );
 
@@ -2335,193 +2356,246 @@ async function lazyAdvanceIfNeeded(block, patientId) {
   return { ...block, current_day_index, last_advanced_session_id: sessionId };
 }
 
+// M1: резолв «упражнений на сегодня» ОДНОЙ программы (блоки ARC-CYCLE или legacy-комплекс).
+// Возвращает per-program item { program_id, program_title, program_type, program_label,
+// program_joint, priority, mode:'blocks'|'legacy', gymnastics, training, block_complex_ids, legacy }
+// либо null, если у программы нет ни активных блоков, ни complex_id.
+// Block/legacy-логика и SQL — 1:1 как в прежнем single-эндпоинте (anti-regression решение #6),
+// изменён только scope: блоки/legacy по program.id, а не patient_id+LIMIT 1.
+async function resolveProgramExercises(program, patientId) {
+  const base = {
+    program_id: program.id,
+    program_title: program.title,
+    program_type: program.program_type,
+    program_label: program.program_label,
+    program_joint: program.program_joint,
+    priority: program.priority,
+  };
+
+  // ── ARC-CYCLE: активные блоки этой программы → gymnastics/training. ──
+  const blkRes = await query(
+    `SELECT b.id, b.block_type, b.title, b.position,
+            b.target_min, b.target_max, b.target_unit,
+            b.current_day_index, b.current_day_started_at, b.last_advanced_session_id,
+            (SELECT COUNT(DISTINCT pbc.day_index)::int
+               FROM program_block_complexes pbc WHERE pbc.block_id = b.id) AS num_days
+       FROM program_blocks b
+      WHERE b.program_id = $1 AND b.is_active = true
+      ORDER BY b.position, b.id`,
+    [program.id]
+  );
+  const blocks = blkRes.rows;
+
+  if (blocks.length > 0) {
+    const gymBlock = blocks.find((b) => b.block_type === 'gymnastics') || null;
+    let trainBlock = blocks.find((b) => b.block_type === 'training') || null;
+
+    // Lazy advance safety-net: если explicit-advance был пропущен/упал, GET догоняет день.
+    if (trainBlock) {
+      trainBlock = await lazyAdvanceIfNeeded(trainBlock, patientId);
+    }
+
+    const gymnastics = gymBlock
+      ? {
+          block_id: gymBlock.id,
+          title: gymBlock.title,
+          target: targetOf(gymBlock),
+          complexes: await resolveBlockComplexes(gymBlock.id, null),
+        }
+      : null;
+
+    let training = null;
+    if (trainBlock) {
+      const dayComplexes = await resolveBlockComplexes(trainBlock.id, trainBlock.current_day_index);
+      training = {
+        block_id: trainBlock.id,
+        title: trainBlock.title,
+        target: targetOf(trainBlock),
+        current_day_index: trainBlock.current_day_index,
+        num_days: trainBlock.num_days,
+        day_label: dayComplexes.find((c) => c.day_label)?.day_label || null,
+        complexes: dayComplexes,
+      };
+    }
+
+    // Все комплексы ВСЕХ активных блоков ЭТОЙ программы (gym + ВСЕ дни тренировки) —
+    // чтобы фронт исключил будущие дни ротации из секции «Другие комплексы».
+    const blockCxRes = await query(
+      `SELECT DISTINCT pbc.complex_id
+         FROM program_block_complexes pbc
+         JOIN program_blocks b ON b.id = pbc.block_id
+        WHERE b.program_id = $1 AND b.is_active = true`,
+      [program.id]
+    );
+    return {
+      ...base,
+      mode: 'blocks',
+      gymnastics,
+      training,
+      block_complex_ids: blockCxRes.rows.map((r) => r.complex_id),
+      legacy: null,
+    };
+  }
+
+  // ── LEGACY (нет блоков): прежний запрос — НЕ менять json_agg/JOIN/audio (решение #6).
+  // Scope по rp.id (а не patient_id+LIMIT 1), иначе для 2-й программы вернулась бы 1-я (R8).
+  if (!program.complex_id) return null;
+  const result = await query(
+    `SELECT rp.id as program_id,
+            rp.complex_id,
+            rp.title as program_title,
+            c.title as complex_title,
+            c.diagnosis_note,
+            c.recommendations,
+            c.warnings,
+            d.name as diagnosis_name,
+            u.full_name as instructor_name,
+            json_agg(
+              json_build_object(
+                'id', ce.id,
+                'order_number', ce.order_number,
+                'sets', ce.sets,
+                'reps', ce.reps,
+                'duration_seconds', ce.duration_seconds,
+                'rest_seconds', ce.rest_seconds,
+                'notes', ce.notes,
+                -- EA3: резолвнутый звук упражнения (legacy-путь тоже enrich'им).
+                'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
+                'exercise', json_build_object(
+                  'id', e.id,
+                  'title', e.title,
+                  'description', e.description,
+                  'video_url', e.video_url,
+                  'thumbnail_url', e.thumbnail_url,
+                  'kinescope_id', e.kinescope_id,
+                  'exercise_type', e.exercise_type,
+                  'difficulty_level', e.difficulty_level,
+                  'equipment', e.equipment,
+                  'instructions', e.instructions,
+                  'cues', e.cues,
+                  'tips', e.tips,
+                  'contraindications', e.contraindications,
+                  'absolute_contraindications', e.absolute_contraindications,
+                  'red_flags', e.red_flags,
+                  'safe_with_inflammation', e.safe_with_inflammation
+                )
+              ) ORDER BY ce.order_number
+            ) as exercises
+     FROM rehab_programs rp
+     JOIN complexes c ON c.id = rp.complex_id
+     LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
+     LEFT JOIN users u ON c.instructor_id = u.id
+     LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
+     LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
+     WHERE rp.id = $1 AND rp.status = 'active' AND rp.is_active = true
+       AND c.is_active = true
+     GROUP BY rp.id, rp.complex_id, rp.title, c.title, c.diagnosis_note,
+              c.recommendations, c.warnings, d.name, u.full_name`,
+    [program.id]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const row = result.rows[0];
+  // Если упражнений нет, json_agg вернёт [{... exercise: null ...}] — нормализуем
+  const exercises = Array.isArray(row.exercises) && row.exercises[0]?.exercise
+    ? row.exercises
+    : [];
+
+  const legacy = {
+    program_id: row.program_id,
+    complex_id: row.complex_id,
+    program_title: row.program_title,
+    complex_title: row.complex_title,
+    diagnosis_name: row.diagnosis_name,
+    diagnosis_note: row.diagnosis_note,
+    recommendations: row.recommendations,
+    warnings: row.warnings,
+    instructor_name: row.instructor_name,
+    exercise_count: exercises.length,
+    exercises,
+  };
+  return {
+    ...base,
+    mode: 'legacy',
+    gymnastics: null,
+    training: null,
+    block_complex_ids: [program.complex_id],
+    legacy,
+  };
+}
+
 /**
  * GET /api/rehab/my/exercises
- * Возвращает "сегодняшний" комплекс — тот, что прикреплён к активной
- * rehab_programs пациента. Включает полный список упражнений.
- * 404 если активной программы с complex_id нет.
+ * Возвращает «сегодняшние» упражнения ВСЕХ активных программ пациента (мультипрограммность M1).
+ *  - 0 программ с контентом → 404.
+ *  - 1 программа → СТАРАЯ форма ответа (mode 'blocks'|'legacy' + spread) — обратная совместимость.
+ *  - ≥2 программ → { mode:'multi-blocks', programs:[per-program item], block_complex_ids: union }.
  */
 router.get('/my/exercises', authenticatePatient, async (req, res) => {
   try {
     const patientId = req.patient.id;
 
-    // ── ARC-CYCLE AC4: есть активные блоки → D2 (две секции). Иначе ↓ legacy (один комплекс). ──
+    // Все активные программы пациента, ведущая = priority ASC (как dashboard).
     const progRes = await query(
-      `SELECT id, title FROM rehab_programs
-        WHERE patient_id = $1 AND status = 'active' AND is_active = true
-        ORDER BY created_at DESC LIMIT 1`,
-      [patientId]
-    );
-    const program = progRes.rows[0] || null;
-
-    let blocks = [];
-    if (program) {
-      const blkRes = await query(
-        `SELECT b.id, b.block_type, b.title, b.position,
-                b.target_min, b.target_max, b.target_unit,
-                b.current_day_index, b.current_day_started_at, b.last_advanced_session_id,
-                (SELECT COUNT(DISTINCT pbc.day_index)::int
-                   FROM program_block_complexes pbc WHERE pbc.block_id = b.id) AS num_days
-           FROM program_blocks b
-          WHERE b.program_id = $1 AND b.is_active = true
-          ORDER BY b.position, b.id`,
-        [program.id]
-      );
-      blocks = blkRes.rows;
-    }
-
-    if (program && blocks.length > 0) {
-      const gymBlock = blocks.find((b) => b.block_type === 'gymnastics') || null;
-      let trainBlock = blocks.find((b) => b.block_type === 'training') || null;
-
-      // Lazy advance safety-net: если explicit-advance был пропущен/упал, GET догоняет день.
-      if (trainBlock) {
-        trainBlock = await lazyAdvanceIfNeeded(trainBlock, patientId);
-      }
-
-      const gymnastics = gymBlock
-        ? {
-            block_id: gymBlock.id,
-            title: gymBlock.title,
-            target: targetOf(gymBlock),
-            complexes: await resolveBlockComplexes(gymBlock.id, null),
-          }
-        : null;
-
-      let training = null;
-      if (trainBlock) {
-        const dayComplexes = await resolveBlockComplexes(trainBlock.id, trainBlock.current_day_index);
-        training = {
-          block_id: trainBlock.id,
-          title: trainBlock.title,
-          target: targetOf(trainBlock),
-          current_day_index: trainBlock.current_day_index,
-          num_days: trainBlock.num_days,
-          day_label: dayComplexes.find((c) => c.day_label)?.day_label || null,
-          complexes: dayComplexes,
-        };
-      }
-
-      // Все комплексы ВСЕХ активных блоков (gym + ВСЕ дни тренировки, не только
-      // текущий) — чтобы фронт исключил будущие дни ротации (День Б/В…) из секции
-      // «Другие комплексы». Иначе следующий день микроцикла протекает туда как
-      // посторонний комплекс.
-      const blockCxRes = await query(
-        `SELECT DISTINCT pbc.complex_id
-           FROM program_block_complexes pbc
-           JOIN program_blocks b ON b.id = pbc.block_id
-          WHERE b.program_id = $1 AND b.is_active = true`,
-        [program.id]
-      );
-      const block_complex_ids = blockCxRes.rows.map((r) => r.complex_id);
-
-      return res.json({
-        data: {
-          mode: 'blocks',
-          program_id: program.id,
-          program_title: program.title,
-          gymnastics,
-          training,
-          block_complex_ids,
-          legacy: null,
-        },
-      });
-    }
-
-    // ── LEGACY (нет блоков): прежний запрос 1:1 — НЕ менять (anti-regression решение #6). ──
-    const result = await query(
-      `SELECT rp.id as program_id,
-              rp.complex_id,
-              rp.title as program_title,
-              c.title as complex_title,
-              c.diagnosis_note,
-              c.recommendations,
-              c.warnings,
-              d.name as diagnosis_name,
-              u.full_name as instructor_name,
-              json_agg(
-                json_build_object(
-                  'id', ce.id,
-                  'order_number', ce.order_number,
-                  'sets', ce.sets,
-                  'reps', ce.reps,
-                  'duration_seconds', ce.duration_seconds,
-                  'rest_seconds', ce.rest_seconds,
-                  'notes', ce.notes,
-                  -- EA3: резолвнутый звук упражнения (legacy-путь тоже enrich'им).
-                  'audio', ${RESOLVED_EXERCISE_AUDIO_SQL},
-                  'exercise', json_build_object(
-                    'id', e.id,
-                    'title', e.title,
-                    'description', e.description,
-                    'video_url', e.video_url,
-                    'thumbnail_url', e.thumbnail_url,
-                    'kinescope_id', e.kinescope_id,
-                    'exercise_type', e.exercise_type,
-                    'difficulty_level', e.difficulty_level,
-                    'equipment', e.equipment,
-                    'instructions', e.instructions,
-                    'cues', e.cues,
-                    'tips', e.tips,
-                    'contraindications', e.contraindications,
-                    'absolute_contraindications', e.absolute_contraindications,
-                    'red_flags', e.red_flags,
-                    'safe_with_inflammation', e.safe_with_inflammation
-                  )
-                ) ORDER BY ce.order_number
-              ) as exercises
-       FROM rehab_programs rp
-       JOIN complexes c ON c.id = rp.complex_id
-       LEFT JOIN diagnoses d ON c.diagnosis_id = d.id
-       LEFT JOIN users u ON c.instructor_id = u.id
-       LEFT JOIN complex_exercises ce ON ce.complex_id = c.id
-       LEFT JOIN exercises e ON ce.exercise_id = e.id${EXERCISE_AUDIO_JOINS}
-       WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
-         AND c.is_active = true
-       GROUP BY rp.id, rp.complex_id, rp.title, c.title, c.diagnosis_note,
-                c.recommendations, c.warnings, d.name, u.full_name, rp.created_at
-       ORDER BY rp.created_at DESC
-       LIMIT 1`,
+      `SELECT rp.id, rp.title, rp.complex_id, rp.program_type, rp.priority,
+              pt.label AS program_label, pt.joint AS program_joint
+         FROM rehab_programs rp
+         LEFT JOIN program_types pt ON pt.code = rp.program_type
+        WHERE rp.patient_id = $1 AND rp.status = 'active' AND rp.is_active = true
+        ORDER BY rp.priority ASC, rp.created_at DESC`,
       [patientId]
     );
 
-    if (result.rows.length === 0) {
+    const items = [];
+    for (const prog of progRes.rows) {
+      // Последовательно (N+1): активных программ 1–4, advance-ротация должна идти по порядку.
+      // eslint-disable-next-line no-await-in-loop
+      const item = await resolveProgramExercises(prog, patientId);
+      if (item) items.push(item);
+    }
+
+    if (items.length === 0) {
       return res.status(404).json({
         error: 'Not Found',
         message: 'Активная программа с комплексом не найдена',
       });
     }
 
-    const row = result.rows[0];
-    // Если упражнений нет, json_agg вернёт [{... exercise: null ...}] — нормализуем
-    const exercises = Array.isArray(row.exercises) && row.exercises[0]?.exercise
-      ? row.exercises
-      : [];
+    // 1 программа → старая форма (полная обратная совместимость фронта и тестов).
+    if (items.length === 1) {
+      const it = items[0];
+      if (it.mode === 'blocks') {
+        return res.json({
+          data: {
+            mode: 'blocks',
+            program_id: it.program_id,
+            program_title: it.program_title,
+            gymnastics: it.gymnastics,
+            training: it.training,
+            block_complex_ids: it.block_complex_ids,
+            legacy: null,
+          },
+        });
+      }
+      return res.json({
+        data: {
+          mode: 'legacy',
+          gymnastics: null,
+          training: null,
+          legacy: it.legacy,
+          ...it.legacy,
+        },
+      });
+    }
 
-    // Плоский legacy-объект. Дублируем его поля на верхний уровень для обратной совместимости
-    // со старым ExercisesScreen (до AC5 читает data.complex_id/exercises/exercise_count напрямую).
-    // D2-ключи gymnastics/training = null → AC5 различает legacy по их отсутствию.
-    const legacy = {
-      program_id: row.program_id,
-      complex_id: row.complex_id,
-      program_title: row.program_title,
-      complex_title: row.complex_title,
-      diagnosis_name: row.diagnosis_name,
-      diagnosis_note: row.diagnosis_note,
-      recommendations: row.recommendations,
-      warnings: row.warnings,
-      instructor_name: row.instructor_name,
-      exercise_count: exercises.length,
-      exercises,
-    };
-
-    res.json({
+    // ≥2 программ → мультипрограммная форма. block_complex_ids = union по всем (фильтр «Другие»).
+    const union = Array.from(new Set(items.flatMap((it) => it.block_complex_ids || [])));
+    return res.json({
       data: {
-        mode: 'legacy',
-        gymnastics: null,
-        training: null,
-        legacy,
-        ...legacy,
+        mode: 'multi-blocks',
+        programs: items,
+        block_complex_ids: union,
       },
     });
   } catch (error) {

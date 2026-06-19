@@ -50,6 +50,44 @@ export const mockDashboardData = {
   exercisesDoneToday: false,
 };
 
+// M1: пациент с двумя активными зонами (колено ведущая + плечо вторичная).
+// Ведущая программа повторяет поля mockDashboardData.program + priority/phase для трека.
+const multiLeadProgram = {
+  id: 1,
+  title: 'ACL Rehab',
+  diagnosis: 'Разрыв ПКС',
+  program_type: 'acl',
+  program_label: 'ПКС реабилитация',
+  program_joint: 'knee',
+  program_surgery_required: true,
+  current_phase: 1,
+  phase_started_at: '2026-01-15',
+  surgery_date: '2026-01-01',
+  status: 'active',
+  priority: 1,
+  phase: { id: 1, phase_number: 1, name: 'Защита и заживление', title: 'Защита и заживление' },
+};
+const multiSecondaryProgram = {
+  id: 2,
+  title: 'Плечо',
+  diagnosis: 'Тендинопатия манжеты',
+  program_type: 'shoulder_general',
+  program_label: 'Реабилитация плеча',
+  program_joint: 'shoulder',
+  program_surgery_required: false,
+  current_phase: 2,
+  phase_started_at: '2026-02-01',
+  surgery_date: null,
+  status: 'active',
+  priority: 2,
+  phase: { id: 22, phase_number: 2, name: 'Ранняя мобилизация плеча', title: 'Ранняя мобилизация плеча' },
+};
+export const mockDashboardDataMultiProgram = {
+  ...mockDashboardData,
+  program: multiLeadProgram,
+  programs: [multiLeadProgram, multiSecondaryProgram],
+};
+
 export const mockDashboardDataNoProgram = {
   program: null,
   phase: null,
@@ -191,6 +229,31 @@ export const mockPhases = [
     red_flags: ['Новые травмы'],
     criteria_next: ['Решение спортивного врача'],
     faq: [],
+  },
+];
+
+// M1: фазы протокола плеча (для второго трека в мультитрек-тестах).
+export const mockPhasesShoulder = [
+  {
+    id: 21, phase_number: 1, name: 'Защита плеча', icon: 'shield',
+    duration_weeks: 4, week_start: 1, week_end: 4,
+    description: 'Защита и контроль боли', goals: ['Контроль боли'],
+    restrictions: ['Подъём над головой'], allowed: ['Маятник'], pain: ['Лёд'],
+    criteria_next: ['Пассивное сгибание 90°'],
+  },
+  {
+    id: 22, phase_number: 2, name: 'Ранняя мобилизация плеча', icon: 'move',
+    duration_weeks: 6, week_start: 5, week_end: 10,
+    description: 'Восстановление ROM плеча', goals: ['Увеличение ROM'],
+    restrictions: ['Силовые жимы'], allowed: ['Резина лёгкая'], pain: ['Лёд после'],
+    criteria_next: ['Активное сгибание 120°'],
+  },
+  {
+    id: 23, phase_number: 3, name: 'Укрепление плеча', icon: 'dumbbell',
+    duration_weeks: 8, week_start: 11, week_end: 18,
+    description: 'Прогрессивная нагрузка манжеты', goals: ['Сила манжеты'],
+    restrictions: ['Резкие рывки'], allowed: ['Прогрессия веса'], pain: ['По переносимости'],
+    criteria_next: ['Сила 80% от здоровой'],
   },
 ];
 
