@@ -609,6 +609,9 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
             const open = isLeading || expandedProgramId === program.id;
             const phaseLabel = program.phase?.name || program.phase?.title
               || `Фаза ${program.current_phase ?? 1}`;
+            // Цвет точки текущей фазы вторичной зоны — из той же палитры таймлайна
+            // (getPhaseColor), чтобы статус совпадал с цветом фазы внутри трека.
+            const phaseDotColor = getPhaseColor(program.current_phase ?? 1);
             const zoneTitle = program.program_label || program.title || 'Программа';
             const zoneJoint = JOINT_LABELS[program.program_joint] || null;
             const jointMod = JOINT_MOD[program.program_joint] || '';
@@ -654,7 +657,10 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
                           </span>
                         )}
                         <span className="pd-rm-track-status">
-                          <span className="pd-rm-phase-dot" />{phaseLabel}
+                          <span
+                            className="pd-rm-phase-dot"
+                            style={{ backgroundColor: phaseDotColor }}
+                          />{phaseLabel}
                         </span>
                       </span>
                     </span>
