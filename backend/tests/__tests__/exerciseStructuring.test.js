@@ -37,6 +37,27 @@ describe('exerciseStructuring — buildStructuringPrompt', () => {
     const { user } = buildStructuringPrompt(null);
     expect(typeof user).toBe('string');
   });
+
+  test('содержит глоссарий упрощения терминов (для пациент-текста)', () => {
+    const { system } = buildStructuringPrompt('тест');
+    expect(system).toMatch(/квадрицепс/);
+    expect(system).toMatch(/передняя поверхность бедра/);
+    // глоссарий применяется только к description, не к instructions/cues
+    expect(system).toMatch(/ТОЛЬКО в description/i);
+  });
+
+  test('содержит few-shot примеры диктовка→JSON', () => {
+    const { system } = buildStructuringPrompt('тест');
+    expect(system).toMatch(/Примеры/);
+    expect(system).toContain('Маятник для плеча');
+    expect(system).toContain('"body_region":"shoulder"');
+  });
+
+  test('инструктирует нормализовать числа словами и guard на мусор', () => {
+    const { system } = buildStructuringPrompt('тест');
+    expect(system).toMatch(/словами.*цифры|цифры/i);
+    expect(system).toMatch(/needs_clarification/);
+  });
 });
 
 describe('exerciseStructuring — parseModelJson', () => {
@@ -189,5 +210,24 @@ describe('normalizeStructuredExercise — текст и безопасность
     const { fields } = normalizeStructuredExercise('{"title":"Из строки","body_region":"колено"}');
     expect(fields.title).toBe('Из строки');
     expect(fields.body_region).toBe('knee');
+  });
+
+  test('needs_clarification (только этот ключ) → пустые fields + warning, без выдумок', () => {
+    const { fields, warnings } = normalizeStructuredExercise({
+      needs_clarification: 'не названо упражнение',
+    });
+    expect(fields).toEqual({});
+    expect(warnings.join(' ')).toMatch(/не описание упражнения/i);
+    expect(warnings.join(' ')).toMatch(/не названо упражнение/);
+  });
+
+  test('needs_clarification рядом с реальными полями — НЕ блокирует разбор', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Маятник',
+      body_region: 'плечо',
+      needs_clarification: 'темп не указан',
+    });
+    expect(fields.title).toBe('Маятник');
+    expect(fields.body_region).toBe('shoulder');
   });
 });
