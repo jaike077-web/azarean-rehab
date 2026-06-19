@@ -14,6 +14,8 @@ const {
   buildReviewPrompt,
   buildFixPrompt,
   summarizeReview,
+  buildSanityPrompt,
+  summarizeSanity,
   normalizeStructuredExercise,
 } = require('../utils/exerciseStructuring');
 
@@ -103,6 +105,18 @@ async function reviewStructured(fields, rawText) {
   return summarizeReview(raw);
 }
 
+// Клинический sanity-check: оценивает безопасность/правдоподобность САМОГО
+// содержания (не верность источнику). Возвращает summarizeSanity { concerns }.
+// Только советы — поля не меняет.
+async function clinicalSanityCheck(fields) {
+  const { system, user } = buildSanityPrompt(fields);
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.1 });
+  return summarizeSanity(raw);
+}
+
 // Один автофикс по замечаниям рецензента → перенормализованные поля.
 async function fixStructured(fields, rawText, issues) {
   const { system, user } = buildFixPrompt(fields, rawText, issues);
@@ -145,6 +159,14 @@ async function structureExercise(transcript, opts = {}) {
     result.review = review.ok ? review : null;
     result.fixed = fixed;
     if (!review.ok) warnings.push('Проверка качества недоступна (некорректный ответ рецензента)');
+
+    // Клинический sanity-check финальной версии (отдельно, best-effort, только советы).
+    try {
+      const sanity = await clinicalSanityCheck(fields);
+      result.sanity = sanity.ok ? sanity.concerns : null;
+    } catch (sErr) {
+      result.sanity = null;
+    }
   } catch (err) {
     // Ревью — необязательный слой; разбор не валим.
     result.review = null;
@@ -160,5 +182,6 @@ module.exports = {
   structureExercise,
   reviewStructured,
   fixStructured,
+  clinicalSanityCheck,
   resolveProvider,
 };

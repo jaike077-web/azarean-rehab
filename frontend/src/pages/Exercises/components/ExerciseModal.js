@@ -82,6 +82,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [reviewQuality, setReviewQuality] = useState(false);
   const [structureReview, setStructureReview] = useState(null);
   const [structureFixed, setStructureFixed] = useState(false);
+  const [structureSanity, setStructureSanity] = useState(null); // клинические советы [{severity,field,message}]
 
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -230,6 +231,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     setStructureWarnings([]);
     setStructureReview(null);
     setStructureFixed(false);
+    setStructureSanity(null);
     try {
       const res = await exercisesApi.structure(text, { review: reviewQuality });
       const payload = res.data || {};
@@ -237,6 +239,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setStructureWarnings(Array.isArray(payload.warnings) ? payload.warnings : []);
       setStructureReview(payload.review || null);
       setStructureFixed(Boolean(payload.fixed));
+      setStructureSanity(Array.isArray(payload.sanity) ? payload.sanity : null);
     } catch (err) {
       setStructureError(
         err.response?.data?.message || 'Не удалось разобрать надиктовку. Попробуйте ещё раз.'
@@ -546,7 +549,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                         disabled={structuring}
                         onChange={(e) => setReviewQuality(e.target.checked)}
                       />
-                      Проверить качество (faithfulness + автофикс)
+                      Проверить качество (faithfulness + автофикс + клин. проверка)
                     </label>
                     {transcript && !structuring && (
                       <button
@@ -558,6 +561,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                           setStructureError(null);
                           setStructureReview(null);
                           setStructureFixed(false);
+                          setStructureSanity(null);
                         }}
                       >
                         Очистить
@@ -596,6 +600,25 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                           ))}
                         </ul>
                       )}
+                    </div>
+                  )}
+                  {Array.isArray(structureSanity) && structureSanity.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: '1px solid #e0a3a3', background: 'rgba(180,40,40,0.06)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        ⚕ Клиническая проверка — на ваше усмотрение (текст не изменён):
+                      </div>
+                      <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                        {structureSanity.map((c, i) => (
+                          <li key={`san-${i}`}>
+                            <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                   {structureWarnings.length > 0 && (
