@@ -261,8 +261,9 @@ export const exercises = {
   update: (id, data) => api.put(`/exercises/${id}`, data),
   delete: (id) => api.delete(`/exercises/${id}`),
 
-  // AI-надиктовка: расшифровка → { fields, warnings } для предзаполнения формы (не-PII).
-  structure: (transcript) => api.post('/exercises/structure', { transcript }),
+  // AI-надиктовка: расшифровка → { fields, warnings, review?, fixed? } для предзаполнения формы (не-PII).
+  // review=true включает проверку качества (faithfulness + автофикс) — дороже и дольше.
+  structure: (transcript, { review = false } = {}) => api.post('/exercises/structure', { transcript, review }),
 
   // Распознавание речи (Yandex SpeechKit): аудио-Blob → { text }. По умолчанию raw PCM 16кГц.
   transcribe: (blob, { format = 'lpcm', sampleRateHertz = 16000 } = {}) => {

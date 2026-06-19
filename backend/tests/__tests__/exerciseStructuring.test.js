@@ -2,6 +2,9 @@
 const {
   CHECKLIST,
   buildStructuringPrompt,
+  buildReviewPrompt,
+  buildFixPrompt,
+  summarizeReview,
   parseModelJson,
   normalizeStructuredExercise,
 } = require('../../utils/exerciseStructuring');
@@ -57,6 +60,85 @@ describe('exerciseStructuring — buildStructuringPrompt', () => {
     const { system } = buildStructuringPrompt('тест');
     expect(system).toMatch(/словами.*цифры|цифры/i);
     expect(system).toMatch(/needs_clarification/);
+  });
+});
+
+describe('exerciseStructuring — buildReviewPrompt / buildFixPrompt', () => {
+  test('reviewer видит исходную расшифровку и поля + критерий faithfulness', () => {
+    const { system, user } = buildReviewPrompt({ title: 'Маятник' }, 'Маятник для плеча, без оборудования');
+    expect(system).toMatch(/faithfulness/);
+    expect(system).toMatch(/верность источнику/i);
+    expect(user).toContain('Маятник для плеча, без оборудования'); // raw_text внутри
+    expect(user).toContain('"title":"Маятник"');
+  });
+
+  test('fix-промпт несёт исходник, текущие поля и замечания', () => {
+    const { system, user } = buildFixPrompt(
+      { title: 'Т', contraindications: 'Грыжа' },
+      'Просто наклоны',
+      [{ severity: 'critical', field: 'contraindications', message: 'не было в речи', fix: 'убрать' }],
+    );
+    expect(system).toMatch(/УБЕРИ всё, чего НЕ было/i);
+    expect(user).toContain('Просто наклоны');
+    expect(user).toContain('contraindications');
+    expect(user).toMatch(/не было в речи/);
+  });
+});
+
+describe('exerciseStructuring — summarizeReview (арифметика в коде)', () => {
+  test('высокие баллы без critical → pass=true, weighted считается в коде', () => {
+    const r = summarizeReview({
+      scores: { faithfulness: 9, safety: 9, clarity: 8, completeness: 7, language: 8 },
+      weighted_total: 1.0, // намеренно врём — код игнорирует
+      pass: false,
+      issues: [],
+      summary: 'ок',
+    });
+    // (9*3 + 9*3 + 8*2 + 7*1 + 8*1)/10 = (27+27+16+7+8)/10 = 85/10 = 8.5
+    expect(r.weighted_total).toBe(8.5);
+    expect(r.pass).toBe(true);
+    expect(r.ok).toBe(true);
+  });
+
+  test('critical issue → pass=false даже при высоких баллах', () => {
+    const r = summarizeReview({
+      scores: { faithfulness: 9, safety: 9, clarity: 9, completeness: 9, language: 9 },
+      issues: [{ severity: 'critical', field: 'contraindications', message: 'добавлено от себя' }],
+    });
+    expect(r.pass).toBe(false);
+  });
+
+  test('низкий faithfulness → pass=false', () => {
+    const r = summarizeReview({
+      scores: { faithfulness: 6, safety: 9, clarity: 9, completeness: 9, language: 9 },
+      issues: [],
+    });
+    expect(r.pass).toBe(false);
+  });
+
+  test('низкий safety → pass=false', () => {
+    const r = summarizeReview({
+      scores: { faithfulness: 9, safety: 6, clarity: 9, completeness: 9, language: 9 },
+      issues: [],
+    });
+    expect(r.pass).toBe(false);
+  });
+
+  test('баллы клампятся 0..10, severity нормализуется', () => {
+    const r = summarizeReview({
+      scores: { faithfulness: 99, safety: -5, clarity: 'x', completeness: 7, language: 8 },
+      issues: [{ severity: 'жуть', message: 'm' }],
+    });
+    expect(r.scores.faithfulness).toBe(10);
+    expect(r.scores.safety).toBe(0);
+    expect(r.scores.clarity).toBe(0);
+    expect(r.issues[0].severity).toBe('suggestion'); // невалидная severity → suggestion
+  });
+
+  test('мусор-вход → ok=false', () => {
+    const r = summarizeReview('не json');
+    expect(r.ok).toBe(false);
+    expect(r.pass).toBe(false);
   });
 });
 
