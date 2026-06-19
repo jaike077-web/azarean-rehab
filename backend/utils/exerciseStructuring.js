@@ -155,10 +155,12 @@ const CHECKLIST = [
   { key: 'cues', label: 'Ключевые подсказки (cues)', hint: 'что говорить во время выполнения' },
   { key: 'tips', label: 'Полезно знать', hint: 'на что обратить внимание' },
   { key: 'contraindications', label: 'Противопоказания', hint: 'когда НЕ делать' },
+  { key: 'variations', label: 'Вариации', hint: 'усложнение / облегчение, с весом / без' },
+  { key: 'progression', label: 'Прогрессия', hint: 'как усложнять со временем (фаза→фаза)' },
 ];
 
 // Поля свободного текста — переносятся как есть (источник = речь эксперта).
-const FREE_TEXT_FIELDS = ['title', 'short_title', 'description', 'instructions', 'cues', 'tips', 'contraindications'];
+const FREE_TEXT_FIELDS = ['title', 'short_title', 'description', 'instructions', 'cues', 'tips', 'contraindications', 'variations', 'progression'];
 
 // ──────────────────────────────────────────────────────────────────────────
 // Глоссарий упрощения терминов (термин эксперта → простыми словами). Применяется
@@ -264,7 +266,9 @@ function buildStructuringPrompt(transcript) {
     '   - шаги выполнения (+ дыхание и темп, если названы) → instructions;',
     '   - ключевые акценты «на что обратить внимание во время» → cues;',
     '   - типичные ошибки / полезные заметки → tips;',
-    '   - когда НЕ делать → contraindications.',
+    '   - когда НЕ делать → contraindications;',
+    '   - варианты упражнения (усложнение/облегчение, с весом/без, альтернативы) → variations;',
+    '   - как усложнять со временем, переход между фазами/этапами → progression.',
     '',
     'Упрощение терминов — ТОЛЬКО в description (для пациента). В instructions/cues оставляй точные термины.',
     glossaryLines,
@@ -277,9 +281,9 @@ function buildStructuringPrompt(transcript) {
     `- position (массив): ${listForPrompt(POSITIONS)}`,
     `- rehab_phases (массив): ${listForPrompt(REHAB_PHASES)}`,
     '',
-    'Текстовые поля (строки): title, short_title, description, instructions, cues, tips, contraindications.',
+    'Текстовые поля (строки): title, short_title, description, instructions, cues, tips, contraindications, variations, progression.',
     'Формат ответа — JSON с подмножеством ключей: title, short_title, description, exercise_type, body_region,',
-    'difficulty_level, equipment, position, rehab_phases, instructions, cues, tips, contraindications.',
+    'difficulty_level, equipment, position, rehab_phases, instructions, cues, tips, contraindications, variations, progression.',
     '',
     'Примеры (диктовка → JSON):',
     ...FEW_SHOT_EXAMPLES.map(

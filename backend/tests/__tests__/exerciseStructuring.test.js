@@ -21,7 +21,7 @@ describe('exerciseStructuring — CHECKLIST', () => {
 
   test('ключи чек-листа покрывают основные поля', () => {
     const keys = CHECKLIST.map((c) => c.key);
-    ['title', 'body_region', 'exercise_type', 'difficulty_level', 'equipment', 'instructions', 'contraindications']
+    ['title', 'body_region', 'exercise_type', 'difficulty_level', 'equipment', 'instructions', 'contraindications', 'variations', 'progression']
       .forEach((k) => expect(keys).toContain(k));
   });
 });
@@ -274,6 +274,16 @@ describe('normalizeStructuredExercise — текст и безопасность
     const { fields } = normalizeStructuredExercise({ title: 'Т', tips: '   ', cues: '' });
     expect(fields.tips).toBeUndefined();
     expect(fields.cues).toBeUndefined();
+  });
+
+  test('variations/progression переносятся как текст (passthrough)', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Т',
+      variations: 'С весом — продвинутый вариант; держась за опору — облегчённый.',
+      progression: 'Фаза 1: на двух ногах → фаза 2: на одной → фаза 3: с гантелями.',
+    });
+    expect(fields.variations).toMatch(/продвинутый вариант/);
+    expect(fields.progression).toMatch(/на двух ногах/);
   });
 
   test('лишние поля игнорируются', () => {

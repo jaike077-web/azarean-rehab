@@ -1769,6 +1769,8 @@ router.get('/my-complexes/:id', authenticatePatient, async (req, res) => {
                     'contraindications', e.contraindications,
                     'absolute_contraindications', e.absolute_contraindications,
                     'red_flags', e.red_flags,
+                    'variations', e.variations,
+                    'progression', e.progression,
                     'safe_with_inflammation', e.safe_with_inflammation
                   )
                 ) ORDER BY ce.order_number
