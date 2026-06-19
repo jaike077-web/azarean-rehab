@@ -8,6 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { exercises } from '../../services/api';
 import MDEditor from '@uiw/react-md-editor';
 import { AlertTriangle, ArrowLeft, Footprints, Heart, Move, User, Video, Zap } from 'lucide-react';
+import { embedFromUrl } from '../../utils/videoEmbed';
 import s from './ExerciseDetail.module.css';
 
 import {
@@ -139,11 +140,11 @@ const ExerciseDetail = () => {
       );
     }
 
-    // Простейшая попытка встроить
+    // Встраивание через общий парсер (Kinescope/YouTube/VK/Rutube/прямой файл)
     return (
       <div className={s.videoFrameWrapper}>
         <iframe
-          src={url}
+          src={embedFromUrl(url)}
           title="Видео упражнения"
           className={s.videoFrame}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
