@@ -56,6 +56,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [cues, setCues] = useState('');
   const [tips, setTips] = useState('');
   const [contraindications, setContraindications] = useState('');
+  const [variations, setVariations] = useState('');
+  const [progression, setProgression] = useState('');
 
   // ЗВУК УПРАЖНЕНИЯ (EA4) — дефолт библиотеки (длинный трек). audioPresetId
   // round-trip'ится у всех ролей (сохраняется при правке не-админом), редактируется
@@ -114,6 +116,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setCues(exercise.cues || '');
       setTips(exercise.tips || '');
       setContraindications(exercise.contraindications || '');
+      setVariations(exercise.variations || '');
+      setProgression(exercise.progression || '');
 
       // ЗВУК (EA4) — pre-fill (round-trip даже для не-админа).
       setAudioPresetId(exercise.audio_preset_id ?? null);
@@ -124,7 +128,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
         exercise.instructions ||
         exercise.cues ||
         exercise.tips ||
-        exercise.contraindications
+        exercise.contraindications ||
+        exercise.variations ||
+        exercise.progression
       ) {
         setShowAdvanced(true);
       }
@@ -208,7 +214,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     if (fields.cues != null) setCues(fields.cues);
     if (fields.tips != null) setTips(fields.tips);
     if (fields.contraindications != null) setContraindications(fields.contraindications);
-    if (fields.instructions || fields.cues || fields.tips || fields.contraindications) {
+    if (fields.variations != null) setVariations(fields.variations);
+    if (fields.progression != null) setProgression(fields.progression);
+    if (fields.instructions || fields.cues || fields.tips || fields.contraindications
+      || fields.variations || fields.progression) {
       setShowAdvanced(true);
     }
   };
@@ -284,6 +293,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       case 'cues': return cues.trim() !== '';
       case 'tips': return tips.trim() !== '';
       case 'contraindications': return contraindications.trim() !== '';
+      case 'variations': return variations.trim() !== '';
+      case 'progression': return progression.trim() !== '';
       default: return false;
     }
   };
@@ -315,6 +326,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       ...(contraindications.trim() && {
         contraindications: contraindications.trim(),
       }),
+      ...(variations.trim() && { variations: variations.trim() }),
+      ...(progression.trim() && { progression: progression.trim() }),
 
       // ЗВУК (EA4) — ВСЕГДА шлём (а не conditional spread): чтобы правка
       // упражнения не-админом не затёрла привязку (backend PUT ставит null при
@@ -973,6 +986,34 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       rows="3"
                     />
                   </div>
+
+                  {/* Вариации */}
+                  <div className={s.formGroup}>
+                    <label>
+                      Вариации
+                      <PatientHint>Видно пациенту в секции «Вариации»</PatientHint>
+                    </label>
+                    <textarea
+                      value={variations}
+                      onChange={(e) => setVariations(e.target.value)}
+                      placeholder="Усложнение / облегчение, с весом / без, альтернативные положения..."
+                      rows="3"
+                    />
+                  </div>
+
+                  {/* Прогрессия */}
+                  <div className={s.formGroup}>
+                    <label>
+                      Прогрессия
+                      <PatientHint>Видно пациенту в секции «Прогрессия»</PatientHint>
+                    </label>
+                    <textarea
+                      value={progression}
+                      onChange={(e) => setProgression(e.target.value)}
+                      placeholder="Как усложнять со временем: фаза 1 → фаза 2 → ..."
+                      rows="3"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -1121,6 +1162,8 @@ const DICTATION_CHECKLIST = [
   { key: 'cues', label: 'Подсказки (cues)' },
   { key: 'tips', label: 'Полезно знать' },
   { key: 'contraindications', label: 'Противопоказания' },
+  { key: 'variations', label: 'Вариации' },
+  { key: 'progression', label: 'Прогрессия' },
 ];
 
 export default ExerciseModal;

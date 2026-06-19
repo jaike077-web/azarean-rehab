@@ -176,6 +176,8 @@ router.get('/', authenticateToken, async (req, res) => {
         contraindications,
         absolute_contraindications,
         red_flags,
+        variations,
+        progression,
         safe_with_inflammation,  -- Wave 0 commit 05: бейдж в ExerciseCard
         audio_preset_id,         -- EA4: дефолт трек-звука (round-trip в ExerciseModal)
         audio_loop,
@@ -367,6 +369,8 @@ router.post('/', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
+      variations,        // варианты упражнения (усложнение/облегчение) — видно пациенту
+      progression,       // как прогрессировать (фаза→фаза) — видно пациенту
       safe_with_inflammation = false,
 
       // ЗВУК УПРАЖНЕНИЯ (EA3) — дефолт библиотеки (длинный трек)
@@ -491,9 +495,11 @@ router.post('/', authenticateToken, async (req, res) => {
         safe_with_inflammation,
         created_by,
         audio_preset_id,
-        audio_loop
+        audio_loop,
+        variations,
+        progression
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
       ) RETURNING *`,
       [
         title.trim(),
@@ -516,7 +522,9 @@ router.post('/', authenticateToken, async (req, res) => {
         safe_with_inflammation,
         req.user.id,
         audioPresetId,
-        audioLoop
+        audioLoop,
+        variations?.trim() || null,
+        progression?.trim() || null
       ]
     );
 
@@ -690,6 +698,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
+      variations,        // варианты упражнения — видно пациенту
+      progression,       // прогрессия — видно пациенту
       safe_with_inflammation,
 
       // ЗВУК УПРАЖНЕНИЯ (EA3)
@@ -799,6 +809,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         safe_with_inflammation = $18,
         audio_preset_id = $19,
         audio_loop = $20,
+        variations = $22,
+        progression = $23,
         updated_at = NOW()
       WHERE id = $21
       RETURNING *`,
@@ -823,7 +835,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         safe_with_inflammation || false,
         audioPresetId,
         audioLoop,
-        id
+        id,
+        variations?.trim() || null,
+        progression?.trim() || null
       ]
     );
 
