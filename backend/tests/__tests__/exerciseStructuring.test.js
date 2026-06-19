@@ -5,6 +5,8 @@ const {
   buildReviewPrompt,
   buildFixPrompt,
   summarizeReview,
+  buildSanityPrompt,
+  summarizeSanity,
   parseModelJson,
   normalizeStructuredExercise,
 } = require('../../utils/exerciseStructuring');
@@ -82,6 +84,36 @@ describe('exerciseStructuring — buildReviewPrompt / buildFixPrompt', () => {
     expect(user).toContain('Просто наклоны');
     expect(user).toContain('contraindications');
     expect(user).toMatch(/не было в речи/);
+  });
+});
+
+describe('exerciseStructuring — buildSanityPrompt / summarizeSanity', () => {
+  test('sanity-промпт: роль реабилитолога, консервативность, только советы (не правит)', () => {
+    const { system, user } = buildSanityPrompt({ title: 'Отведение', body_region: 'shoulder' });
+    expect(system).toMatch(/реабилитолог/i);
+    expect(system).toMatch(/КОНСЕРВАТИВЕН/);
+    expect(system).toMatch(/НЕ переписывай/i);
+    expect(user).toContain('"title":"Отведение"');
+  });
+
+  test('summarizeSanity: нормализует concerns, severity-whitelist, пустые message выкидывает', () => {
+    const r = summarizeSanity({
+      concerns: [
+        { severity: 'high', field: 'progression', message: 'для дельты выше плеч — риск импинджмента' },
+        { severity: 'жуть', field: 'x', message: 'm' },
+        { severity: 'low', field: 'y', message: '' },
+        'мусор',
+      ],
+    });
+    expect(r.ok).toBe(true);
+    expect(r.concerns).toHaveLength(2);
+    expect(r.concerns[0].severity).toBe('high');
+    expect(r.concerns[1].severity).toBe('medium'); // невалидная → medium
+  });
+
+  test('summarizeSanity: нет проблем → пустой массив; мусор → ok=false', () => {
+    expect(summarizeSanity({ concerns: [] }).concerns).toEqual([]);
+    expect(summarizeSanity('не json').ok).toBe(false);
   });
 });
 

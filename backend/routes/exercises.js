@@ -91,7 +91,7 @@ router.post('/structure', authenticateToken, async (req, res) => {
     // Опциональный слой проверки качества (этап 2) — тумблер на фронте.
     const review = Boolean(req.body && req.body.review);
     const out = await structuringLlm.structureExercise(transcript, { review });
-    return res.json({ data: { fields: out.fields, warnings: out.warnings, review: out.review || null, fixed: Boolean(out.fixed) } });
+    return res.json({ data: { fields: out.fields, warnings: out.warnings, review: out.review || null, fixed: Boolean(out.fixed), sanity: out.sanity || null } });
   } catch (error) {
     console.error('Error structuring exercise:', error.code || error.message);
     if (error.code === 'LLM_TIMEOUT') {

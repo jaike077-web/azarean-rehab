@@ -88,6 +88,7 @@ describe('POST /api/exercises/structure', () => {
       warnings: [],
       review: { ok: true, pass: true, weighted_total: 8.5, scores: { faithfulness: 9 }, issues: [], summary: 'ок' },
       fixed: true,
+      sanity: [{ severity: 'high', field: 'progression', message: 'выше плеч — риск импинджмента' }],
     });
     const res = await inst(request(app).post('/api/exercises/structure'))
       .send({ transcript: 'Маятник, плечо', review: true });
@@ -96,6 +97,7 @@ describe('POST /api/exercises/structure', () => {
     expect(res.body.data.review.pass).toBe(true);
     expect(res.body.data.review.weighted_total).toBe(8.5);
     expect(res.body.data.fixed).toBe(true);
+    expect(res.body.data.sanity[0].field).toBe('progression');
   });
 
   it('504 на таймаут is*ai', async () => {
