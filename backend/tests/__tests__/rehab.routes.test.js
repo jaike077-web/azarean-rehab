@@ -405,6 +405,7 @@ describe('GET /api/rehab/my/dashboard', () => {
     query.mockResolvedValueOnce({ rows: [] }); // today diary
     query.mockResolvedValueOnce({ rows: [] }); // today progress
     query.mockResolvedValueOnce({ rows: [{ has_blocks: false, gym_done: false, training_done: false }] }); // AC4
+    query.mockResolvedValueOnce({ rows: [{ zone_link_note: 'ТБС перегружает колено' }] }); // M2.1 нота связи зон (только при ≥2 зонах)
 
     const response = await request(app)
       .get('/api/rehab/my/dashboard')
@@ -413,6 +414,8 @@ describe('GET /api/rehab/my/dashboard', () => {
 
     expect(Array.isArray(response.body.data.programs)).toBe(true);
     expect(response.body.data.programs).toHaveLength(2);
+    // M2.1: нота связи зон в ответе при ≥2 зонах
+    expect(response.body.data.zone_link_note).toBe('ТБС перегружает колено');
     // ведущая = programs[0] = top-level program
     expect(response.body.data.program.id).toBe(10);
     expect(response.body.data.programs[0].id).toBe(10);

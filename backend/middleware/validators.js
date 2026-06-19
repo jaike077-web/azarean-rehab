@@ -112,6 +112,11 @@ const patientValidator = [
     .trim()
     .isLength({ max: 2000 }).withMessage('Заметки слишком длинные'),
 
+  body('zone_link_note')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 2000 }).withMessage('Заметка о связи зон слишком длинная'),
+
   handleValidationErrors
 ];
 
