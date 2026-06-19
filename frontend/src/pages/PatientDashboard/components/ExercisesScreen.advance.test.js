@@ -103,6 +103,45 @@ describe('ARC-CYCLE AC5 — advance on training completion', () => {
     expect(rehab.advanceTraining).not.toHaveBeenCalled();
   });
 
+  it('M1 multi-blocks: закрытие тренировочного комплекса зоны 2 → advance с block_id ЭТОЙ зоны', async () => {
+    // Две зоны: зона 1 training block 11 (компл 64), зона 2 training block 21 (компл 84).
+    // Закрываем компл 84 → advance должен уйти на block 21 (не 11).
+    rehab.getMyExercises.mockResolvedValue({
+      data: {
+        mode: 'multi-blocks',
+        programs: [
+          { program_id: 7, program_label: 'Колено', program_joint: 'knee',
+            gymnastics: null,
+            training: { block_id: 11, target: { min: 2, max: 3, unit: 'week' },
+              current_day_index: 1, num_days: 2, day_label: 'День А',
+              complexes: [{ complex_id: 64, complex_title: 'Колено-силовая', exercise_count: 1 }] },
+            legacy: null, block_complex_ids: [64] },
+          { program_id: 9, program_label: 'Плечо', program_joint: 'shoulder',
+            gymnastics: null,
+            training: { block_id: 21, target: { min: 1, max: 2, unit: 'week' },
+              current_day_index: 1, num_days: 2, day_label: 'День А',
+              complexes: [{ complex_id: 84, complex_title: 'Плечо-силовая', exercise_count: 1 }] },
+            legacy: null, block_complex_ids: [84] },
+        ],
+        block_complex_ids: [64, 84],
+      },
+    });
+    patientAuth.getMyComplex.mockResolvedValue({
+      data: { id: 84, exercises: [{ id: 1, exercise: { id: 200, title: 'Y' } }] },
+    });
+    render(<ExercisesScreen />);
+
+    await waitFor(() => expect(screen.getByTestId('training-complex-84')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('training-complex-84')); // openComplex(84)
+    await waitFor(() => expect(screen.getByTestId('mock-complete')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('mock-complete'));
+
+    await waitFor(() => expect(rehab.advanceTraining).toHaveBeenCalledTimes(1));
+    expect(rehab.advanceTraining).toHaveBeenCalledWith(
+      expect.objectContaining({ block_id: 21, session_id: expect.any(Number) })
+    );
+  });
+
   it('legacy (без блоков) → advanceTraining НЕ вызывается', async () => {
     rehab.getMyExercises.mockResolvedValue({
       data: {

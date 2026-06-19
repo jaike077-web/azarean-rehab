@@ -175,6 +175,50 @@ describe('ExercisesScreen v2', () => {
     });
   });
 
+  describe('M1 — multi-blocks (несколько программ-зон)', () => {
+    it('рендерит зональные секции с заголовками + герои каждой зоны + union «Другие»', async () => {
+      rehab.getMyExercises.mockResolvedValue({
+        data: {
+          mode: 'multi-blocks',
+          programs: [
+            {
+              program_id: 7, program_label: 'ПКС реабилитация', program_joint: 'knee',
+              gymnastics: { block_id: 10, target: { min: 1, max: 2, unit: 'day' },
+                complexes: [{ complex_id: 63, complex_title: 'Зарядка', exercise_count: 4 }] },
+              training: { block_id: 11, target: { min: 2, max: 3, unit: 'week' },
+                current_day_index: 1, num_days: 2, day_label: 'День А',
+                complexes: [{ complex_id: 64, complex_title: 'Силовая', exercise_count: 5 }] },
+              legacy: null, block_complex_ids: [63, 64],
+            },
+            {
+              program_id: 9, program_label: 'Реабилитация плеча', program_joint: 'shoulder',
+              gymnastics: null, training: null,
+              legacy: { complex_id: 81, complex_title: 'Плечо комплекс', exercise_count: 6 },
+              block_complex_ids: [81],
+            },
+          ],
+          block_complex_ids: [63, 64, 81],
+        },
+      });
+      patientAuth.getMyComplexes.mockResolvedValue({ data: [{ id: 81, title: 'Плечо' }, { id: 90, title: 'Сторонний' }] });
+
+      render(<ExercisesScreen />);
+
+      await waitFor(() => expect(screen.getByTestId('program-7-section')).toBeInTheDocument());
+      expect(screen.getByTestId('program-9-section')).toBeInTheDocument();
+      // заголовки зон
+      expect(screen.getByText('ПКС реабилитация')).toBeInTheDocument();
+      expect(screen.getByText('Реабилитация плеча')).toBeInTheDocument();
+      // зона 1: gym + training герои; зона 2: legacy герой
+      expect(screen.getByTestId('gym-complex-63')).toBeInTheDocument();
+      expect(screen.getByTestId('training-complex-64')).toBeInTheDocument();
+      expect(screen.getByTestId('legacy-complex-81')).toBeInTheDocument();
+      // union block_complex_ids (63,64,81) исключён из «Других»; 90 — показан
+      expect(screen.queryByTestId('complex-card-81')).not.toBeInTheDocument();
+      expect(screen.getByTestId('complex-card-90')).toBeInTheDocument();
+    });
+  });
+
   describe('State B — нет программы, есть my-complexes', () => {
     it('показывает список "Мои комплексы"', async () => {
       rehab.getMyExercises.mockResolvedValue({ data: null });

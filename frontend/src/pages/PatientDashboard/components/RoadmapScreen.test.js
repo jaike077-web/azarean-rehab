@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import RoadmapScreen from './RoadmapScreen';
-import { mockDashboardData, mockPhases } from '../../../test-utils/mockData';
+import { mockDashboardData, mockPhases, mockDashboardDataMultiProgram, mockPhasesShoulder } from '../../../test-utils/mockData';
 
 // Mock API
 jest.mock('../../../services/api', () => ({
@@ -425,6 +425,57 @@ describe('RoadmapScreen v12', () => {
       expect(document.querySelectorAll('.pd-rm-circle--past')).toHaveLength(0);
       // фазы 1..6 будущие → 6 кнопок «План этой фазы» (при коэрсинге было бы 5)
       expect(screen.getAllByText('План этой фазы')).toHaveLength(6);
+    });
+  });
+
+  // M1 — мультитрек: несколько активных программ (зон).
+  describe('M1 — мультитрек (несколько зон)', () => {
+    beforeEach(() => {
+      // getPhases возвращает разные фазы по program_type.
+      rehab.getPhases.mockImplementation((type) =>
+        Promise.resolve({ data: type === 'shoulder_general' ? mockPhasesShoulder : mockPhases })
+      );
+    });
+
+    it('рендерит трек на каждую активную программу с её program_label', async () => {
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram });
+      await waitFor(() => {
+        expect(screen.getByTestId('pd-rm-track-1')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('pd-rm-track-2')).toBeInTheDocument();
+      expect(screen.getByText('ПКС реабилитация')).toBeInTheDocument();
+      expect(screen.getByText('Реабилитация плеча')).toBeInTheDocument();
+    });
+
+    it('ведущая [0] развёрнута + бейдж «Ведущая»; вторичная свёрнута', async () => {
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram });
+      await waitFor(() => expect(screen.getByText('Ведущая')).toBeInTheDocument());
+      // фазы ведущей (колено) видны сразу
+      expect(screen.getByText('Защита и заживление')).toBeInTheDocument();
+      // фазы плеча (вторичная) НЕ в DOM до клика
+      expect(screen.queryByText('Защита плеча')).not.toBeInTheDocument();
+    });
+
+    it('клик по вторичному треку раскрывает его timeline', async () => {
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram });
+      const secondaryHeader = await screen.findByTestId('pd-rm-track-2');
+      fireEvent.click(secondaryHeader.querySelector('.pd-rm-track-header'));
+      await waitFor(() => expect(screen.getByText('Защита плеча')).toBeInTheDocument());
+    });
+
+    it('getPhases вызван для каждого program_type зоны', async () => {
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram });
+      await waitFor(() => {
+        expect(rehab.getPhases).toHaveBeenCalledWith('acl');
+        expect(rehab.getPhases).toHaveBeenCalledWith('shoulder_general');
+      });
+    });
+
+    it('одна программа → без аккордеон-хрома (нет бейджа «Ведущая»)', async () => {
+      renderScreen(); // mockDashboardData = одна программа (fallback на single track)
+      await waitFor(() => expect(screen.getByText('Путь восстановления')).toBeInTheDocument());
+      expect(screen.queryByText('Ведущая')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pd-rm-track-1')).not.toBeInTheDocument();
     });
   });
 });
