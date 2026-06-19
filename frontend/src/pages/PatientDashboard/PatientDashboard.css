@@ -2320,7 +2320,7 @@
 /* Sections */
 .pd-runner .sec{padding:0 16px 14px;border-top:0.5px solid var(--az-separator);} .pd-runner .sec-t{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;color:var(--az-secondary);padding:14px 0 10px;display:flex;justify-content:space-between;align-items:center;}
 .pd-runner .sec-t--danger{color:var(--az-red);}
-.pd-runner .sec-body{font-size:14px;color:var(--az-secondary);line-height:1.5;margin:0 0 8px 0;}
+.pd-runner .sec-body{font-size:14px;color:var(--az-secondary);line-height:1.5;margin:0 0 8px 0;white-space:pre-line;}
 /* Details toggle */
 .pd-runner .details-toggle{background:none;border:none;padding:14px 0 8px;font-size:13px;font-weight:600;color:var(--az-blue);cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;}
 .pd-runner .details-body{padding-bottom:6px;}
