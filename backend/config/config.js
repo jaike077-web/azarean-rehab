@@ -112,6 +112,18 @@ const config = {
     model: process.env.ISAI_MODEL || 'qwen3:latest',
   },
 
+  // DeepSeek (OpenAI-совместимый, https://api.deepseek.com) — ОСНОВНОЙ LLM для
+  // структурирования надиктовки (качественнее бесплатных is*hosting-моделей).
+  // Контент упражнений = не-PII. Модели: deepseek-v4-flash (быстрая) / deepseek-v4-pro.
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY || '',
+    baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
+    model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+  },
+
+  // Провайдер для структурирования надиктовки: 'deepseek' (по умолчанию) | 'isai'.
+  structureLlmProvider: process.env.STRUCTURE_LLM_PROVIDER || 'deepseek',
+
   // Yandex SpeechKit (STT) — распознавание надиктовки. Каталог cloud-jaike077 (РФ).
   // Контент упражнений = не PII. Short audio recognize (до ~30с / 1 МБ на запрос).
   speechkit: {
