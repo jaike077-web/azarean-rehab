@@ -11,6 +11,9 @@
 const config = require('../config/config');
 const {
   buildStructuringPrompt,
+  buildReviewPrompt,
+  buildFixPrompt,
+  summarizeReview,
   normalizeStructuredExercise,
 } = require('../utils/exerciseStructuring');
 
@@ -88,15 +91,74 @@ async function chatCompletion(messages, { timeoutMs = 90000, temperature = 0.2 }
   }
 }
 
-// Высокоуровневое: расшифровка надиктовки → { fields, warnings, raw, provider }.
-async function structureExercise(transcript) {
+// Ревью качества: модель видит исходную расшифровку + извлечённые поля и оценивает
+// faithfulness/safety/clarity/completeness/language. Возвращает нормализованный
+// объект summarizeReview (веса и pass считаются в коде). temperature низкая.
+async function reviewStructured(fields, rawText) {
+  const { system, user } = buildReviewPrompt(fields, rawText);
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.1 });
+  return summarizeReview(raw);
+}
+
+// Один автофикс по замечаниям рецензента → перенормализованные поля.
+async function fixStructured(fields, rawText, issues) {
+  const { system, user } = buildFixPrompt(fields, rawText, issues);
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.2 });
+  return normalizeStructuredExercise(raw);
+}
+
+// Высокоуровневое: расшифровка надиктовки → { fields, warnings, raw, provider, review?, fixed? }.
+// opts.review=true → дополнительный цикл: review → при pass=false один fix → re-review
+// (показанная оценка отражает финальную версию полей). Ревью best-effort: его сбой не
+// валит разбор — отдаём fields + review:null + warning.
+async function structureExercise(transcript, opts = {}) {
   const { system, user } = buildStructuringPrompt(transcript);
   const raw = await chatCompletion([
     { role: 'system', content: system },
     { role: 'user', content: user },
   ]);
-  const { fields, warnings } = normalizeStructuredExercise(raw);
-  return { fields, warnings, raw, provider: resolveProvider().provider };
+  let { fields, warnings } = normalizeStructuredExercise(raw);
+  const result = { fields, warnings, raw, provider: resolveProvider().provider };
+
+  if (!opts.review) return result;
+
+  try {
+    let review = await reviewStructured(fields, transcript);
+    let fixed = false;
+    if (review.ok && !review.pass) {
+      const fix = await fixStructured(fields, transcript, review.issues);
+      if (fix && fix.fields && Object.keys(fix.fields).length) {
+        fields = fix.fields;
+        warnings = fix.warnings;
+        fixed = true;
+        review = await reviewStructured(fields, transcript); // re-review финальной версии
+      }
+    }
+    result.fields = fields;
+    result.warnings = warnings;
+    result.review = review.ok ? review : null;
+    result.fixed = fixed;
+    if (!review.ok) warnings.push('Проверка качества недоступна (некорректный ответ рецензента)');
+  } catch (err) {
+    // Ревью — необязательный слой; разбор не валим.
+    result.review = null;
+    result.warnings.push('Проверка качества недоступна (ошибка AI-рецензента)');
+  }
+
+  return result;
 }
 
-module.exports = { isConfigured, chatCompletion, structureExercise, resolveProvider };
+module.exports = {
+  isConfigured,
+  chatCompletion,
+  structureExercise,
+  reviewStructured,
+  fixStructured,
+  resolveProvider,
+};

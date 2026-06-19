@@ -76,6 +76,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [structureWarnings, setStructureWarnings] = useState([]);
   const [structureError, setStructureError] = useState(null);
   const [transcribing, setTranscribing] = useState(false);
+  // Проверка качества (faithfulness + автофикс) — опция, дольше/дороже.
+  const [reviewQuality, setReviewQuality] = useState(false);
+  const [structureReview, setStructureReview] = useState(null);
+  const [structureFixed, setStructureFixed] = useState(false);
 
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -215,11 +219,15 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     setStructuring(true);
     setStructureError(null);
     setStructureWarnings([]);
+    setStructureReview(null);
+    setStructureFixed(false);
     try {
-      const res = await exercisesApi.structure(text);
+      const res = await exercisesApi.structure(text, { review: reviewQuality });
       const payload = res.data || {};
       applyStructured(payload.fields);
       setStructureWarnings(Array.isArray(payload.warnings) ? payload.warnings : []);
+      setStructureReview(payload.review || null);
+      setStructureFixed(Boolean(payload.fixed));
     } catch (err) {
       setStructureError(
         err.response?.data?.message || 'Не удалось разобрать надиктовку. Попробуйте ещё раз.'
@@ -514,8 +522,19 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       onClick={handleStructure}
                       disabled={structuring || transcript.trim().length < 3}
                     >
-                      {structuring ? 'Разбираю… (~30–60 сек)' : 'Разобрать в поля'}
+                      {structuring
+                        ? (reviewQuality ? 'Разбираю и проверяю… (~1–2 мин)' : 'Разбираю… (~30–60 сек)')
+                        : 'Разобрать в поля'}
                     </button>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={reviewQuality}
+                        disabled={structuring}
+                        onChange={(e) => setReviewQuality(e.target.checked)}
+                      />
+                      Проверить качество (faithfulness + автофикс)
+                    </label>
                     {transcript && !structuring && (
                       <button
                         type="button"
@@ -524,6 +543,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                           setTranscript('');
                           setStructureWarnings([]);
                           setStructureError(null);
+                          setStructureReview(null);
+                          setStructureFixed(false);
                         }}
                       >
                         Очистить
@@ -532,6 +553,37 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   </div>
                   {structureError && (
                     <div className={s.errorMessage} style={{ marginTop: 8 }}>{structureError}</div>
+                  )}
+                  {structureReview && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: `1px solid ${structureReview.pass ? '#9FE1CB' : '#f0c36d'}`,
+                        background: structureReview.pass ? 'rgba(15,110,86,0.06)' : 'rgba(180,120,0,0.06)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        Проверка качества: {structureReview.pass ? '✓ принято' : '⚠ требует внимания'}
+                        {' · '}оценка {structureReview.weighted_total}/10
+                        {structureFixed && ' · применён автофикс'}
+                      </div>
+                      {structureReview.scores && (
+                        <div style={{ color: 'var(--color-text-muted, #6b7280)', marginBottom: structureReview.issues?.length ? 4 : 0 }}>
+                          верность {structureReview.scores.faithfulness}/10 · безопасность {structureReview.scores.safety}/10
+                          {' · '}понятность {structureReview.scores.clarity}/10 · полнота {structureReview.scores.completeness}/10
+                        </div>
+                      )}
+                      {Array.isArray(structureReview.issues) && structureReview.issues.length > 0 && (
+                        <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                          {structureReview.issues.map((it, i) => (
+                            <li key={`iss-${i}`}>
+                              <b>[{it.severity}]</b> {it.field ? `${it.field}: ` : ''}{it.message}
+                              {it.fix ? ` — ${it.fix}` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   )}
                   {structureWarnings.length > 0 && (
                     <ul style={{ marginTop: 8, paddingLeft: 18, color: 'var(--color-text-muted, #6b7280)', fontSize: 12 }}>

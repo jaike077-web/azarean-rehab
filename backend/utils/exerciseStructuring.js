@@ -292,6 +292,139 @@ function buildStructuringPrompt(transcript) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// РЕВЬЮ КАЧЕСТВА (этап 2). Reviewer ВИДИТ raw_text → может проверить главный
+// инвариант — faithfulness (структурированные поля не добавляют клинику сверх
+// сказанного). Веса критериев в коде (summarizeReview), не доверяем арифметике LLM.
+// ──────────────────────────────────────────────────────────────────────────
+
+// Веса критериев (сумма = 10) → weighted_total в 10-балльной шкале.
+const REVIEW_WEIGHTS = { faithfulness: 3, safety: 3, clarity: 2, completeness: 1, language: 1 };
+const REVIEW_CRITERIA = Object.keys(REVIEW_WEIGHTS);
+const REVIEW_SEVERITIES = ['critical', 'warning', 'suggestion'];
+
+function buildReviewPrompt(fields, rawText) {
+  const system = [
+    'Ты — старший реабилитолог, рецензент структурированных описаний упражнений студии Azarean.',
+    'Тебе дают (1) ИСХОДНУЮ расшифровку надиктовки инструктора и (2) структурированные поля,',
+    'которые из неё извлёк ассистент. Оцени КАЖДЫЙ критерий по шкале 1..10:',
+    '',
+    '1. faithfulness (верность источнику) — ГЛАВНОЕ: в полях НЕТ клинических утверждений,',
+    '   углов, противопоказаний, подходов, дыхания/темпа, которых НЕ было в расшифровке.',
+    '   Любой добавленный от себя факт = critical issue и низкий балл faithfulness.',
+    '2. safety (безопасность) — нет опасных упущений; предупреждения и противопоказания из речи отражены.',
+    '3. clarity (понятность) — поля понятны без видео, нет двусмысленностей.',
+    '4. completeness (полнота) — то, что прозвучало (исходное положение, шаги, акценты), не потеряно.',
+    '5. language (язык) — аккуратно, без слов-паразитов; в description простой язык для пациента.',
+    '',
+    'СТРОГО: НЕ снижай completeness за отсутствие того, чего НЕ было в расшифровке (подходы, темп и т.п.).',
+    'НЕ предлагай добавить клинику от себя. Лучшее описание = точное, а не максимально полное.',
+    '',
+    'Формат ответа — ТОЛЬКО валидный JSON (без markdown):',
+    '{',
+    '  "scores": { "faithfulness": 0-10, "safety": 0-10, "clarity": 0-10, "completeness": 0-10, "language": 0-10 },',
+    '  "issues": [ { "severity": "critical|warning|suggestion", "field": "имя поля", "message": "проблема", "fix": "как исправить" } ],',
+    '  "summary": "краткий вердикт"',
+    '}',
+    'severity: critical — нарушение faithfulness/безопасности; warning — неполнота/двусмысленность; suggestion — стилистика.',
+  ].join('\n');
+
+  const user = [
+    'ИСХОДНАЯ РАСШИФРОВКА:',
+    '"""',
+    String(rawText || '').trim(),
+    '"""',
+    '',
+    'СТРУКТУРИРОВАННЫЕ ПОЛЯ (JSON):',
+    JSON.stringify(fields || {}, null, 0),
+  ].join('\n');
+
+  return { system, user };
+}
+
+// Промпт автофикса: дать модели исходник + текущие поля + замечания → исправить
+// (в первую очередь убрать невёрные источнику добавления), вывод в ТОТ ЖЕ контракт.
+function buildFixPrompt(fields, rawText, issues) {
+  const issuesText = (Array.isArray(issues) ? issues : [])
+    .map((i) => `- [${i.severity}] ${i.field || ''}: ${i.message || ''}${i.fix ? ` → ${i.fix}` : ''}`)
+    .join('\n') || '(без явных замечаний)';
+
+  const system = [
+    'Ты — ассистент-структуризатор. Тебе дают исходную расшифровку, текущие структурированные',
+    'поля и замечания рецензента. Исправь поля по замечаниям. СТРОГИЕ ПРАВИЛА:',
+    '1. В первую очередь УБЕРИ всё, чего НЕ было в исходной расшифровке (невёрные источнику факты).',
+    '2. НИЧЕГО НЕ ВЫДУМЫВАЙ заново. Источник правды — только исходная расшифровка.',
+    '3. Контракт ответа НЕ меняется: те же ключи и те же разрешённые enum-коды, что были.',
+    '4. Упрощение терминов — только в description; в instructions/cues точные термины.',
+    '5. Ответ — ТОЛЬКО валидный JSON-объект, без markdown и текста вокруг.',
+  ].join('\n');
+
+  const user = [
+    'ИСХОДНАЯ РАСШИФРОВКА:',
+    '"""',
+    String(rawText || '').trim(),
+    '"""',
+    '',
+    'ТЕКУЩИЕ ПОЛЯ (JSON):',
+    JSON.stringify(fields || {}, null, 0),
+    '',
+    'ЗАМЕЧАНИЯ РЕЦЕНЗЕНТА:',
+    issuesText,
+  ].join('\n');
+
+  return { system, user };
+}
+
+// Разбор ответа рецензента в нормализованный объект. Веса и pass считаются В КОДЕ
+// (правило проекта: арифметика только через код), вердикт LLM игнорируется.
+//   pass = нет critical И faithfulness>=8 И safety>=7 И weighted_total>=7.0
+function clampScore(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(10, Math.max(0, Math.round(n)));
+}
+
+function summarizeReview(raw) {
+  const data = parseModelJson(raw);
+  if (!data || typeof data !== 'object') {
+    return { ok: false, scores: {}, weighted_total: 0, pass: false, issues: [], summary: '' };
+  }
+
+  const src = (data.scores && typeof data.scores === 'object') ? data.scores : {};
+  const scores = {};
+  for (const crit of REVIEW_CRITERIA) scores[crit] = clampScore(src[crit]);
+
+  let weightSum = 0;
+  let acc = 0;
+  for (const crit of REVIEW_CRITERIA) {
+    acc += scores[crit] * REVIEW_WEIGHTS[crit];
+    weightSum += REVIEW_WEIGHTS[crit];
+  }
+  const weighted = weightSum ? Math.round((acc / weightSum) * 10) / 10 : 0;
+
+  const issues = (Array.isArray(data.issues) ? data.issues : [])
+    .map((i) => (i && typeof i === 'object' ? i : null))
+    .filter(Boolean)
+    .map((i) => ({
+      severity: REVIEW_SEVERITIES.includes(i.severity) ? i.severity : 'suggestion',
+      field: i.field == null ? '' : String(i.field),
+      message: i.message == null ? '' : String(i.message),
+      fix: i.fix == null ? '' : String(i.fix),
+    }));
+
+  const hasCritical = issues.some((i) => i.severity === 'critical');
+  const pass = !hasCritical && scores.faithfulness >= 8 && scores.safety >= 7 && weighted >= 7.0;
+
+  return {
+    ok: true,
+    scores,
+    weighted_total: weighted,
+    pass,
+    issues,
+    summary: data.summary == null ? '' : String(data.summary),
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // Парсинг JSON из ответа модели (на случай ```json … ``` или текста вокруг).
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -433,8 +566,13 @@ module.exports = {
   REHAB_PHASES,
   FREE_TEXT_FIELDS,
   TERM_GLOSSARY,
+  REVIEW_WEIGHTS,
+  REVIEW_CRITERIA,
   // функции
   buildStructuringPrompt,
+  buildReviewPrompt,
+  buildFixPrompt,
+  summarizeReview,
   parseModelJson,
   normalizeStructuredExercise,
 };

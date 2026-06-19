@@ -64,7 +64,7 @@ describe('POST /api/exercises/structure', () => {
     expect(structuringLlm.structureExercise).not.toHaveBeenCalled();
   });
 
-  it('200 → { fields, warnings } проброшены', async () => {
+  it('200 → { fields, warnings } проброшены (review по умолчанию выкл)', async () => {
     authOk();
     structuringLlm.structureExercise.mockResolvedValueOnce({
       fields: { title: 'Маятник', body_region: 'shoulder' },
@@ -76,7 +76,26 @@ describe('POST /api/exercises/structure', () => {
     expect(res.body.data.fields.title).toBe('Маятник');
     expect(res.body.data.fields.body_region).toBe('shoulder');
     expect(res.body.data.warnings).toContain('equipment: не распознано «палка»');
-    expect(structuringLlm.structureExercise).toHaveBeenCalledWith('Маятник, плечо');
+    expect(res.body.data.review).toBeNull();
+    expect(res.body.data.fixed).toBe(false);
+    expect(structuringLlm.structureExercise).toHaveBeenCalledWith('Маятник, плечо', { review: false });
+  });
+
+  it('200 с review:true → флаг проброшен в сервис, review/fixed в ответе', async () => {
+    authOk();
+    structuringLlm.structureExercise.mockResolvedValueOnce({
+      fields: { title: 'Маятник' },
+      warnings: [],
+      review: { ok: true, pass: true, weighted_total: 8.5, scores: { faithfulness: 9 }, issues: [], summary: 'ок' },
+      fixed: true,
+    });
+    const res = await inst(request(app).post('/api/exercises/structure'))
+      .send({ transcript: 'Маятник, плечо', review: true });
+    expect(res.status).toBe(200);
+    expect(structuringLlm.structureExercise).toHaveBeenCalledWith('Маятник, плечо', { review: true });
+    expect(res.body.data.review.pass).toBe(true);
+    expect(res.body.data.review.weighted_total).toBe(8.5);
+    expect(res.body.data.fixed).toBe(true);
   });
 
   it('504 на таймаут is*ai', async () => {

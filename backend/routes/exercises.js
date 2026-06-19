@@ -88,8 +88,10 @@ router.post('/structure', authenticateToken, async (req, res) => {
       return res.status(503).json({ error: 'LLM не настроен', message: 'AI-структурирование недоступно: не задан ключ провайдера (DeepSeek/is*ai)' });
     }
 
-    const { fields, warnings } = await structuringLlm.structureExercise(transcript);
-    return res.json({ data: { fields, warnings } });
+    // Опциональный слой проверки качества (этап 2) — тумблер на фронте.
+    const review = Boolean(req.body && req.body.review);
+    const out = await structuringLlm.structureExercise(transcript, { review });
+    return res.json({ data: { fields: out.fields, warnings: out.warnings, review: out.review || null, fixed: Boolean(out.fixed) } });
   } catch (error) {
     console.error('Error structuring exercise:', error.code || error.message);
     if (error.code === 'LLM_TIMEOUT') {
