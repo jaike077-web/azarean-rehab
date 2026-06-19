@@ -22,7 +22,7 @@ import PropTypes from 'prop-types';
 import {
   Shield, Sprout, Dumbbell, Activity, Zap, Trophy,
   Target, Ban, CheckCircle2, Snowflake, Check, ChevronDown,
-  Info, AlertTriangle, Clock,
+  Info, AlertTriangle, Clock, Bone,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
 import './RoadmapScreen.css';
@@ -56,6 +56,13 @@ const JOINT_LABELS = {
   ankle: 'Голеностоп',
   spine: 'Позвоночник',
   wrist: 'Запястье',
+};
+
+// M1: модификатор цвет-кода региона на карточке зоны. Ключи = коды program_joint.
+const JOINT_MOD = {
+  knee: 'pd-rm-track--knee',
+  shoulder: 'pd-rm-track--shoulder',
+  // hip / spine / прочие → без модификатора → нейтральная тема
 };
 
 // 4 таба в expanded card текущей фазы
@@ -603,17 +610,29 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
               || `Фаза ${program.current_phase ?? 1}`;
             const zoneTitle = program.program_label || program.title || 'Программа';
             const zoneJoint = JOINT_LABELS[program.program_joint] || null;
+            const jointMod = JOINT_MOD[program.program_joint] || '';
             return (
               <div
                 key={program.id}
-                className={`pd-rm-track ${isLeading ? 'pd-rm-track--leading' : ''}`}
+                className={`pd-rm-track ${isLeading ? 'pd-rm-track--leading' : ''} ${jointMod}`}
                 data-testid={`pd-rm-track-${program.id}`}
               >
                 {isLeading ? (
                   <div className="pd-rm-track-header pd-rm-track-header--leading">
-                    <span className="pd-rm-track-title">{zoneTitle}</span>
-                    {zoneJoint && <span className="pd-rm-track-joint">{zoneJoint}</span>}
-                    <span className="pd-rm-track-badge">Ведущая</span>
+                    <span className="pd-rm-node" aria-hidden="true">
+                      <Bone size={20} strokeWidth={2} />
+                    </span>
+                    <span className="pd-rm-track-main">
+                      <span className="pd-rm-track-title">{zoneTitle}</span>
+                      <span className="pd-rm-track-meta">
+                        {zoneJoint && (
+                          <span className="pd-rm-track-joint">
+                            <span className="pd-rm-joint-dot" />{zoneJoint}
+                          </span>
+                        )}
+                        <span className="pd-rm-track-badge">Ведущая</span>
+                      </span>
+                    </span>
                   </div>
                 ) : (
                   <button
@@ -622,15 +641,30 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
                     onClick={() => toggleProgram(program.id)}
                     aria-expanded={open}
                   >
-                    <span className="pd-rm-track-title">{zoneTitle}</span>
-                    {zoneJoint && <span className="pd-rm-track-joint">{zoneJoint}</span>}
-                    <span className="pd-rm-track-status">{phaseLabel}</span>
-                    <ChevronDown
-                      size={16}
-                      strokeWidth={2}
-                      className={`pd-rm-track-chev ${open ? 'pd-rm-track-chev--open' : ''}`}
-                      aria-hidden="true"
-                    />
+                    <span className="pd-rm-node" aria-hidden="true">
+                      <Bone size={20} strokeWidth={2} />
+                    </span>
+                    <span className="pd-rm-track-main">
+                      <span className="pd-rm-track-title">{zoneTitle}</span>
+                      <span className="pd-rm-track-meta">
+                        {zoneJoint && (
+                          <span className="pd-rm-track-joint">
+                            <span className="pd-rm-joint-dot" />{zoneJoint}
+                          </span>
+                        )}
+                        <span className="pd-rm-track-status">
+                          <span className="pd-rm-phase-dot" />{phaseLabel}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="pd-rm-track-chev-wrap">
+                      <ChevronDown
+                        size={18}
+                        strokeWidth={2}
+                        className={`pd-rm-track-chev ${open ? 'pd-rm-track-chev--open' : ''}`}
+                        aria-hidden="true"
+                      />
+                    </span>
                   </button>
                 )}
                 {open && (
