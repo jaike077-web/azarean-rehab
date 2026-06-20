@@ -155,8 +155,9 @@
 // v35 (2026-06-14) — мультипрограммный «Путь» M1: RoadmapScreen мультитрек-аккордеон
 // зон, HomeScreen индикатор «+N зон», ExercisesScreen группировка по зонам, dashboard
 // отдаёт programs[]. Новый бандл + изменилась форма /my/dashboard и /my/exercises → bump.
-const CACHE_NAME = 'azarean-v35';
-const API_CACHE = 'azarean-api-v35';
+// v36 (2026-06-20) — поле «диагноз от врача» в карточке пациента (новый бандл Patients) → bump.
+const CACHE_NAME = 'azarean-v36';
+const API_CACHE = 'azarean-api-v36';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
