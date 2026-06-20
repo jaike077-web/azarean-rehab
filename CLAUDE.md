@@ -454,6 +454,7 @@ locked_until TIMESTAMP, created_at TIMESTAMP, updated_at TIMESTAMP
 ```sql
 id SERIAL PK, full_name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE (partial index, WHERE email IS NOT NULL),
 phone VARCHAR(50), birth_date DATE, diagnosis TEXT, notes TEXT,
+doctor_diagnosis TEXT,  -- миграция 20260620: внешнее заключение «со слов пациента/по направлению», справочно, НЕ ЭМК
 created_by INT REFERENCES users(id) ON DELETE SET NULL,
 is_active BOOLEAN DEFAULT true,
 password_hash VARCHAR(255), email_verified BOOLEAN DEFAULT false,

@@ -21,7 +21,7 @@ router.get('/', authenticateToken, async (req, res) => {
     // инструктор не пометит resolved, UI для resolve — backlog).
     const result = await query(
       `SELECT p.id, p.full_name, p.email, p.phone, p.birth_date,
-              p.diagnosis, p.notes, p.is_active, p.avatar_url,
+              p.diagnosis, p.doctor_diagnosis, p.notes, p.is_active, p.avatar_url,
               p.last_login_at, p.telegram_chat_id,
               p.created_at, p.updated_at,
               (p.password_hash IS NOT NULL OR p.last_login_at IS NOT NULL) as is_registered,
@@ -65,7 +65,7 @@ router.get('/trash', authenticateToken, async (req, res) => {
   try {
     const result = await query(
       `SELECT p.id, p.full_name, p.email, p.phone, p.birth_date,
-              p.diagnosis, p.notes, p.is_active, p.avatar_url,
+              p.diagnosis, p.doctor_diagnosis, p.notes, p.is_active, p.avatar_url,
               p.last_login_at, p.telegram_chat_id,
               p.created_at, p.updated_at,
               (p.password_hash IS NOT NULL OR p.last_login_at IS NOT NULL) as is_registered,
@@ -152,7 +152,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 
     // Получаем пациента (без password_hash)
     const patientResult = await query(
-      `SELECT id, full_name, email, phone, birth_date, diagnosis, notes,
+      `SELECT id, full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes,
               is_active, avatar_url, last_login_at, telegram_chat_id,
               created_at, updated_at,
               (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered
@@ -205,8 +205,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Создать нового пациента
 router.post('/', authenticateToken, patientValidator, async (req, res) => {
   try {
-    // ИЗМЕНЕНО: добавлен diagnosis
-    const { full_name, email, phone, birth_date, diagnosis, notes } = req.body;
+    // ИЗМЕНЕНО: добавлен diagnosis + doctor_diagnosis (диагноз от внешнего врача)
+    const { full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes } = req.body;
 
     // Валидация
     if (!full_name || !full_name.trim()) {
@@ -220,6 +220,7 @@ router.post('/', authenticateToken, patientValidator, async (req, res) => {
     const emailValue = email && email.trim() ? email.trim() : null;
     const birthDateValue = birth_date && birth_date.trim() ? birth_date.trim() : null;
     const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null;
+    const doctorDiagnosisValue = doctor_diagnosis && doctor_diagnosis.trim() ? doctor_diagnosis.trim() : null;
     const notesValue = notes && notes.trim() ? notes.trim() : null;
 
     // Phone нормализуем в E.164 (для phone-match при OAuth)
@@ -235,13 +236,13 @@ router.post('/', authenticateToken, patientValidator, async (req, res) => {
     }
 
     const result = await query(
-      `INSERT INTO patients (full_name, email, phone, birth_date, diagnosis, notes, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
+      `INSERT INTO patients (full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes,
                  is_active, avatar_url, last_login_at, telegram_chat_id,
                  created_at, updated_at,
                  (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered`,
-      [full_name.trim(), emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, req.user.id]
+      [full_name.trim(), emailValue, phoneValue, birthDateValue, diagnosisValue, doctorDiagnosisValue, notesValue, req.user.id]
     );
 
     res.status(201).json({
@@ -262,14 +263,15 @@ router.post('/', authenticateToken, patientValidator, async (req, res) => {
 router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
   try {
     const { id } = req.params;
-    // ИЗМЕНЕНО: добавлен diagnosis
-    const { full_name, email, phone, birth_date, diagnosis, notes } = req.body;
+    // ИЗМЕНЕНО: добавлен diagnosis + doctor_diagnosis (диагноз от внешнего врача)
+    const { full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes } = req.body;
 
     // Преобразуем пустые строки в null
     const fullNameValue = full_name && full_name.trim() ? full_name.trim() : null;
     const emailValue = email && email.trim() ? email.trim() : null;
     const birthDateValue = birth_date && birth_date.trim() ? birth_date.trim() : null;
     const diagnosisValue = diagnosis && diagnosis.trim() ? diagnosis.trim() : null;
+    const doctorDiagnosisValue = doctor_diagnosis && doctor_diagnosis.trim() ? doctor_diagnosis.trim() : null;
     const notesValue = notes && notes.trim() ? notes.trim() : null;
 
     // Phone нормализуем в E.164
@@ -292,14 +294,15 @@ router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
            phone = $3,
            birth_date = $4,
            diagnosis = $5,
-           notes = $6,
+           doctor_diagnosis = $6,
+           notes = $7,
            updated_at = NOW()
-       WHERE id = $7 AND created_by = $8 AND is_active = true
-       RETURNING id, full_name, email, phone, birth_date, diagnosis, notes,
+       WHERE id = $8 AND created_by = $9 AND is_active = true
+       RETURNING id, full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes,
                  is_active, avatar_url, last_login_at, telegram_chat_id,
                  created_at, updated_at,
                  (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered`,
-      [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, notesValue, id, req.user.id]
+      [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, doctorDiagnosisValue, notesValue, id, req.user.id]
     );
 
     if (result.rows.length === 0) {
