@@ -63,6 +63,7 @@ function Patients() {
     phone: '',
     birth_date: '',
     diagnosis: '',
+    doctor_diagnosis: '',
     notes: '',
   });
 
@@ -217,6 +218,7 @@ function Patients() {
       phone: '',
       birth_date: '',
       diagnosis: '',
+      doctor_diagnosis: '',
       notes: '',
     });
     setError('');
@@ -234,6 +236,7 @@ function Patients() {
         ? patient.birth_date.split('T')[0]
         : '',
         diagnosis: patient.diagnosis || '',
+      doctor_diagnosis: patient.doctor_diagnosis || '',
       notes: patient.notes || '',
     });
     setError('');
@@ -284,6 +287,7 @@ function Patients() {
           phone: 'Телефон',
           birth_date: 'Дата рождения',
           diagnosis: 'Диагноз',
+          doctor_diagnosis: 'Диагноз врача',
           notes: 'Заметки',
         };
         const lines = details.map((d) => {
@@ -557,6 +561,14 @@ function Patients() {
     </div>
   )}
 
+  {/* 2️⃣b ДИАГНОЗ ОТ ВРАЧА (справочно, со слов пациента / по направлению — НЕ ЭМК) */}
+  {patient.doctor_diagnosis && (
+    <div className={s.detailRow}>
+      <span className={s.detailLabel}>Диагноз от врача (со слов пациента):</span>
+      <span className={s.detailValue}>{patient.doctor_diagnosis}</span>
+    </div>
+  )}
+
   {/* 3️⃣ КОМПЛЕКСОВ */}
   <div className={s.detailRow}>
     <span className={s.detailLabel}>Комплексов:</span>
@@ -762,6 +774,22 @@ function Patients() {
     placeholder="Грыжа межпозвоночного диска, Боль в пояснице..."
   />
 </div>
+
+              <div className={s.formGroup}>
+                <label htmlFor="doctor_diagnosis">Диагноз от врача (со слов пациента / по направлению)</label>
+                <textarea
+                  id="doctor_diagnosis"
+                  name="doctor_diagnosis"
+                  value={formData.doctor_diagnosis}
+                  onChange={handleInputChange}
+                  placeholder="Например: со слов пациента, в направлении указано «гонартроз 2 ст.»"
+                  rows="3"
+                />
+                <small className={s.fieldHint}>
+                  Справочно, со слов пациента или из направления. Не является
+                  медицинским заключением.
+                </small>
+              </div>
 
               <div className={s.formGroup}>
                 <label htmlFor="notes">Заметки</label>

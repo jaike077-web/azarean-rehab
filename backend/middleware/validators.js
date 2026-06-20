@@ -102,6 +102,11 @@ const patientValidator = [
     .trim()
     .isLength({ max: 500 }).withMessage('Диагноз слишком длинный'),
 
+  body('doctor_diagnosis')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 2000 }).withMessage('Диагноз врача слишком длинный'),
+
   body('notes')
     .optional({ nullable: true })
     .trim()

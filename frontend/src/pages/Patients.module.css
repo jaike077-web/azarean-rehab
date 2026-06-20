@@ -886,6 +886,15 @@
   gap: 4px;
 }
 
+/* Подсказка под полем формы (дисклеймер doctor_diagnosis и т.п.) */
+.fieldHint {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
 /* ERROR MESSAGE */
 .errorMessage {
   background: #fed7d7;
