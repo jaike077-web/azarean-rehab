@@ -433,6 +433,70 @@
   color: var(--color-warning, #c87000);
 }
 
+.cardEvidence {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.evidenceBox {
+  margin: 4px 0 16px;
+  padding: 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.evidenceHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.evidenceSummary {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+.evidenceSummary + .evidenceSummary {
+  margin-top: 8px;
+}
+
+.evidenceSources {
+  margin: 8px 0 0;
+}
+
+.evidenceSourcesSummary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.evidenceSourcesList {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.evidenceSourcesList li {
+  margin-bottom: 3px;
+}
+
 .emptyTemplates {
   font-style: italic;
   color: var(--color-text-muted);

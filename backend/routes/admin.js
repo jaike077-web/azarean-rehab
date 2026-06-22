@@ -714,7 +714,7 @@ router.get('/program-types', async (req, res) => {
   try {
     const result = await query(
       `SELECT code, label, joint, body_side_relevant, surgery_required,
-              is_active, position, created_at, updated_at
+              is_active, position, evidence_summary, evidence_sources, created_at, updated_at
        FROM program_types
        ORDER BY position ASC, code ASC`
     );
@@ -728,7 +728,8 @@ router.get('/program-types', async (req, res) => {
 // POST /api/admin/program-types — создать новый тип
 router.post('/program-types', async (req, res) => {
   try {
-    const { code, label, joint, body_side_relevant, surgery_required, position } = req.body;
+    const { code, label, joint, body_side_relevant, surgery_required, position,
+            evidence_summary, evidence_sources } = req.body;
 
     if (!code || !label) {
       return res.status(400).json({ error: 'Validation Error', message: 'code и label обязательны' });
@@ -741,8 +742,9 @@ router.post('/program-types', async (req, res) => {
     }
 
     const result = await query(
-      `INSERT INTO program_types (code, label, joint, body_side_relevant, surgery_required, position)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO program_types (code, label, joint, body_side_relevant, surgery_required, position,
+                                  evidence_summary, evidence_sources)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         code,
@@ -751,6 +753,8 @@ router.post('/program-types', async (req, res) => {
         body_side_relevant === undefined ? true : !!body_side_relevant,
         surgery_required === undefined ? false : !!surgery_required,
         position === undefined ? 0 : parseInt(position, 10) || 0,
+        evidence_summary || null,
+        evidence_sources || null,
       ]
     );
 
@@ -770,7 +774,8 @@ router.post('/program-types', async (req, res) => {
 router.put('/program-types/:code', async (req, res) => {
   try {
     const { code } = req.params;
-    const fields = ['label', 'joint', 'body_side_relevant', 'surgery_required', 'position', 'is_active'];
+    const fields = ['label', 'joint', 'body_side_relevant', 'surgery_required', 'position', 'is_active',
+                    'evidence_summary', 'evidence_sources'];
     const updates = [];
     const params = [code];
     let p = 2;

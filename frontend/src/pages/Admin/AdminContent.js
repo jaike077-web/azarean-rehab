@@ -857,6 +857,8 @@ function ProgramTypeForm({ initial, onSave, onClose }) {
     surgery_required: false,
     position: 0,
     is_active: true,
+    evidence_summary: '',
+    evidence_sources: '',
   });
 
   useEffect(() => {
@@ -869,6 +871,8 @@ function ProgramTypeForm({ initial, onSave, onClose }) {
         surgery_required: !!initial.surgery_required,
         position: initial.position ?? 0,
         is_active: !!initial.is_active,
+        evidence_summary: initial.evidence_summary || '',
+        evidence_sources: initial.evidence_sources || '',
       });
     }
   }, [initial]);
@@ -949,6 +953,24 @@ function ProgramTypeForm({ initial, onSave, onClose }) {
               </label>
             </div>
           )}
+          <div className={s.adminFormGroup}>
+            <label>Доказательная база — для пациента</label>
+            <textarea
+              value={form.evidence_summary}
+              onChange={(e) => set('evidence_summary', e.target.value)}
+              rows={4}
+              placeholder="На основе чего эта программа (простым языком, без аббревиатур и ссылок)"
+            />
+          </div>
+          <div className={s.adminFormGroup}>
+            <label>Источники — для инструктора</label>
+            <textarea
+              value={form.evidence_sources}
+              onChange={(e) => set('evidence_sources', e.target.value)}
+              rows={3}
+              placeholder="Ключевые исследования/гайдлайны (имена, годы)"
+            />
+          </div>
           <div className={s.adminModalActions}>
             <button className={s.adminBtnSecondary} onClick={onClose} disabled={saving}>Отмена</button>
             <button

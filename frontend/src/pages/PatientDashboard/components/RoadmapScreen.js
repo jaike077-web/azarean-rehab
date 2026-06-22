@@ -25,6 +25,7 @@ import {
   Info, AlertTriangle, Clock, Bone,
 } from 'lucide-react';
 import { rehab } from '../../../services/api';
+import RichText from '../../../components/RichText';
 import './RoadmapScreen.css';
 
 // Маппинг seed-иконок на lucide компоненты
@@ -591,6 +592,26 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
               Связаться с куратором
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Доказательная база ведущей программы — «на основе чего эта программа» (Part B). */}
+      {programs[0]?.evidence_summary && (
+        <div
+          className="pd-rm-evidence"
+          data-testid="pd-rm-evidence"
+          style={{
+            margin: '0 0 16px',
+            padding: '12px 14px',
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 12,
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
+            На основе чего эта программа
+          </div>
+          <RichText text={programs[0].evidence_summary} />
         </div>
       )}
 

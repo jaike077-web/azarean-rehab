@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { rehab, rehabPrograms } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { BookOpen } from 'lucide-react';
 import ComplexSelector from './ComplexSelector';
+import RichText, { stripMarkdown } from '../RichText';
 import s from './RehabProgramModal.module.css';
 
 /**
@@ -51,6 +53,27 @@ export function pluralPhases(n) {
   if (m10 === 1 && m100 !== 11) return `${n} фаза`;
   if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return `${n} фазы`;
   return `${n} фаз`;
+}
+
+// Разбивает строку источников доказательной базы по «;» НА ВЕРХНЕМ уровне —
+// точка с запятой ВНУТРИ скобок (напр. «FIDELITY (Sihvonen, NEJM 2013; 5-летн.
+// BJSM 2020; 10-летн. NEJM 2026)») разделителем НЕ считается. → массив строк.
+export function splitSources(str) {
+  const out = [];
+  let buf = '';
+  let depth = 0;
+  for (const ch of String(str || '')) {
+    if (ch === '(') depth += 1;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+    if (ch === ';' && depth === 0) {
+      if (buf.trim()) out.push(buf.trim());
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  if (buf.trim()) out.push(buf.trim());
+  return out;
 }
 
 // Опции дропдауна «Текущая фаза» из реальных фаз протокола. Включаем phase 0
@@ -107,6 +130,9 @@ function Step1Template({ templates, loading, onSelect, onSkip }) {
                 >
                   <strong>{t.title}</strong>
                   {t.description && <p>{t.description}</p>}
+                  {t.evidence_summary && (
+                    <span className={s.cardEvidence} data-testid="card-evidence">{stripMarkdown(t.evidence_summary)}</span>
+                  )}
                   {t.surgery_required && <span className={s.badgeSurgery}>с операцией</span>}
                 </button>
               ))}
@@ -195,6 +221,24 @@ function Step2Details({ patient, template, programTypes, complexes, form, setFor
       {template && (
         <div className={s.templateBadge}>
           <span>Шаблон: <strong>{template.title}</strong></span>
+        </div>
+      )}
+
+      {template?.evidence_summary && (
+        <div className={s.evidenceBox} data-testid="evidence-box">
+          <div className={s.evidenceHead}><BookOpen size={14} strokeWidth={1.8} /> Доказательная база</div>
+          <RichText text={template.evidence_summary} />
+          {template.evidence_sources && (() => {
+            const srcs = splitSources(template.evidence_sources);
+            return (
+              <details className={s.evidenceSources} data-testid="evidence-sources">
+                <summary className={s.evidenceSourcesSummary}>Источники ({srcs.length})</summary>
+                <ul className={s.evidenceSourcesList}>
+                  {srcs.map((src, i) => <li key={i}>{src}</li>)}
+                </ul>
+              </details>
+            );
+          })()}
         </div>
       )}
 
