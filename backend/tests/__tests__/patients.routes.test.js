@@ -110,10 +110,11 @@ describe('PUT /api/patients/:id — zone_link_note (M2.1)', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.zone_link_note).toBe('Слабость ТБС перегружает колено');
 
-    // UPDATE SQL содержит колонку + значение передано параметром (index 6 = $7)
+    // UPDATE SQL содержит колонку + значение передано параметром (index 7 = $8;
+    // после мержа с doctor_diagnosis #88 он занял $6, notes → $7, zone_link_note → $8)
     const updateCall = query.mock.calls[1];
-    expect(updateCall[0]).toMatch(/zone_link_note = \$7/);
-    expect(updateCall[1][6]).toBe('Слабость ТБС перегружает колено');
+    expect(updateCall[0]).toMatch(/zone_link_note = \$8/);
+    expect(updateCall[1][7]).toBe('Слабость ТБС перегружает колено');
   });
 
   it('пустая/пробельная zone_link_note → null', async () => {
@@ -126,6 +127,6 @@ describe('PUT /api/patients/:id — zone_link_note (M2.1)', () => {
       .set('Authorization', `Bearer ${instructorToken}`)
       .send({ full_name: 'Тест', zone_link_note: '   ' });
 
-    expect(query.mock.calls[1][1][6]).toBeNull();
+    expect(query.mock.calls[1][1][7]).toBeNull();
   });
 });
