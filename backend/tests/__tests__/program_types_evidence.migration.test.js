@@ -1,7 +1,12 @@
 // =====================================================
 // TEST: доказательная база program_types (Part B)
-//   20260622_program_types_evidence.sql       — ALTER (2 колонки)
+//   20260622_program_types_evidence_col.sql   — ALTER (2 колонки)
 //   20260622_program_types_evidence_seed.sql  — seed 15 колено-протоколов
+//
+// Имя ALTER = «..._col», а не «..._evidence.sql»: под UTF-8-локалью прода
+// `sort` игнорирует пунктуацию в коллации → «evidence_seed» сортировался
+// ПЕРЕД «evidence.sql» → seed бежал до ALTER → колонки нет → деплой падал.
+// «_col» (буква c < s) сортируется перед «_seed» в любой локали.
 //
 // Sanity-тест SQL как текста. Реальное поведение — idempotency cycle
 // (createdb → schema → миграции → мои×2 → SELECT: колонки=2, 15 knee с evidence).
@@ -12,7 +17,7 @@ const path = require('path');
 const DIR = path.join(__dirname, '../../database/migrations');
 const read = (f) => fs.readFileSync(path.join(DIR, f), 'utf8');
 
-const ALTER = read('20260622_program_types_evidence.sql');
+const ALTER = read('20260622_program_types_evidence_col.sql');
 const SEED = read('20260622_program_types_evidence_seed.sql');
 
 const KNEE15 = [
