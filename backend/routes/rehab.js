@@ -574,6 +574,18 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
       }
     }
 
+    // M2.1: нота связи зон (как одна зона влияет на другую). Показывается
+    // пациенту карточкой вверху «Пути» только при ≥2 активных зонах — для
+    // одиночной программы лишний запрос не делаем.
+    let zoneLinkNote = null;
+    if (programs.length >= 2) {
+      const noteResult = await query(
+        'SELECT zone_link_note FROM patients WHERE id = $1',
+        [patientId]
+      );
+      zoneLinkNote = noteResult.rows[0]?.zone_link_note || null;
+    }
+
     res.json({
       data: {
         program,
@@ -586,6 +598,7 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
         exercisesDoneToday,
         gymnasticsDoneToday,
         trainingDoneToday,
+        zone_link_note: zoneLinkNote,
       }
     });
   } catch (error) {

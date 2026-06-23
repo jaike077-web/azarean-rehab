@@ -595,6 +595,55 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
         </div>
       )}
 
+      {/* M2.1 — связь зон. Авторская инструктор-нота «как одна зона влияет на
+          другую». Только при ≥2 активных зонах и непустой ноте. Inline-стили —
+          universal-reset `.pd-rm *` зануляет padding/border (как у stuck-баннера). */}
+      {programs.length >= 2 && dashboardData?.zone_link_note && (
+        <div
+          data-testid="pd-rm-zone-link-note"
+          style={{
+            display: 'flex',
+            gap: 12,
+            padding: '14px 16px',
+            margin: '0 0 16px 0',
+            borderRadius: 12,
+            background: 'var(--pd-color-primary-bg, #F0FDFA)',
+            border: '1px solid color-mix(in srgb, var(--pd-color-primary, #0D9488) 30%, transparent)',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'var(--pd-color-primary, #0D9488)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Info size={18} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: '0.9rem', fontWeight: 700,
+              color: 'var(--pd-n800, #1c1917)', marginBottom: 4,
+            }}>
+              Как связаны ваши зоны
+            </div>
+            <div style={{
+              fontSize: '0.82rem', lineHeight: 1.5,
+              color: 'var(--pd-n700, #44403c)', whiteSpace: 'pre-wrap',
+            }}>
+              {dashboardData.zone_link_note}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Timeline — мультитрек. Одна зона → как раньше (без аккордеон-хрома).
           Несколько зон → аккордеон: ведущая [0] развёрнута + бейдж «Ведущая»,
           вторичные свёрнуты, у каждой свой timeline и своя текущая фаза. */}
@@ -732,6 +781,7 @@ RoadmapScreen.propTypes = {
       priority: PropTypes.number,
       phase: PropTypes.object,
     })),
+    zone_link_note: PropTypes.string,
   }),
   patient: PropTypes.shape({
     full_name: PropTypes.string,

@@ -79,4 +79,54 @@ describe('GET /api/patients — is_stuck_on_phase', () => {
     expect(selectCall[0]).toMatch(/is_stuck_on_phase/);
     expect(selectCall[0]).toMatch(/resolved_at IS NULL/);
   });
+
+  it('SELECT включает zone_link_note (M2.1)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    await request(app)
+      .get('/api/patients')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(query.mock.calls[1][0]).toMatch(/zone_link_note/);
+  });
+});
+
+describe('PUT /api/patients/:id — zone_link_note (M2.1)', () => {
+  it('сохраняет zone_link_note и возвращает его', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })            // auth
+      .mockResolvedValueOnce({                                           // UPDATE RETURNING
+        rows: [{ id: 14, full_name: 'Тест', zone_link_note: 'Слабость ТБС перегружает колено' }],
+      });
+
+    const res = await request(app)
+      .put('/api/patients/14')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ full_name: 'Тест', zone_link_note: 'Слабость ТБС перегружает колено' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.zone_link_note).toBe('Слабость ТБС перегружает колено');
+
+    // UPDATE SQL содержит колонку + значение передано параметром (index 7 = $8;
+    // после мержа с doctor_diagnosis #88 он занял $6, notes → $7, zone_link_note → $8)
+    const updateCall = query.mock.calls[1];
+    expect(updateCall[0]).toMatch(/zone_link_note = \$8/);
+    expect(updateCall[1][7]).toBe('Слабость ТБС перегружает колено');
+  });
+
+  it('пустая/пробельная zone_link_note → null', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 14, zone_link_note: null }] });
+
+    await request(app)
+      .put('/api/patients/14')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ full_name: 'Тест', zone_link_note: '   ' });
+
+    expect(query.mock.calls[1][1][7]).toBeNull();
+  });
 });

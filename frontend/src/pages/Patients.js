@@ -65,6 +65,7 @@ function Patients() {
     diagnosis: '',
     doctor_diagnosis: '',
     notes: '',
+    zone_link_note: '',
   });
 
   const [error, setError] = useState('');
@@ -220,6 +221,7 @@ function Patients() {
       diagnosis: '',
       doctor_diagnosis: '',
       notes: '',
+      zone_link_note: '',
     });
     setError('');
     setFieldErrors({ full_name: '', email: '', phone: '', birth_date: '' });
@@ -238,6 +240,7 @@ function Patients() {
         diagnosis: patient.diagnosis || '',
       doctor_diagnosis: patient.doctor_diagnosis || '',
       notes: patient.notes || '',
+      zone_link_note: patient.zone_link_note || '',
     });
     setError('');
     setFieldErrors({ full_name: '', email: '', phone: '', birth_date: '' });
@@ -801,6 +804,22 @@ function Patients() {
                   placeholder="Жалобы, особенности, противопоказания..."
                   rows="4"
                 />
+              </div>
+
+              {/* M2.1 — связь зон. Показывается пациенту вверху «Пути» при ≥2 активных зонах. */}
+              <div className={s.formGroup}>
+                <label htmlFor="zone_link_note">Связь зон (для пациента)</label>
+                <textarea
+                  id="zone_link_note"
+                  name="zone_link_note"
+                  value={formData.zone_link_note}
+                  onChange={handleInputChange}
+                  placeholder="Как зоны влияют друг на друга, напр.: слабость ягодичных перегружает колено — поэтому важны обе зоны."
+                  rows="3"
+                />
+                <small className={s.fieldHint}>
+                  Видно пациенту вверху «Пути», когда у него несколько активных зон.
+                </small>
               </div>
 
               <div className={s.modalActions}>
