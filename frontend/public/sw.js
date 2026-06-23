@@ -156,8 +156,10 @@
 // зон, HomeScreen индикатор «+N зон», ExercisesScreen группировка по зонам, dashboard
 // отдаёт programs[]. Новый бандл + изменилась форма /my/dashboard и /my/exercises → bump.
 // v36 (2026-06-20) — поле «диагноз от врача» в карточке пациента (новый бандл Patients) → bump.
-const CACHE_NAME = 'azarean-v36';
-const API_CACHE = 'azarean-api-v36';
+// v37 (2026-06-23) — протоколы мениска (K1) + доказательная база программ: новый бандл
+// (RichText, RoadmapScreen evidence-блок, AdminContent, CreateWizard) → bump.
+const CACHE_NAME = 'azarean-v37';
+const API_CACHE = 'azarean-api-v37';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [
