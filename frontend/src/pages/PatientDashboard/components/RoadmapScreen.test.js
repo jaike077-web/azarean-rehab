@@ -471,6 +471,15 @@ describe('RoadmapScreen v12', () => {
       });
     });
 
+    it('точка фазы вторичной зоны окрашена по цвету текущей фазы (#3.2)', async () => {
+      // multiSecondaryProgram.current_phase = 2 → getPhaseColor(2) = #38BDF8
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram });
+      const secondaryTrack = await screen.findByTestId('pd-rm-track-2');
+      const dot = secondaryTrack.querySelector('.pd-rm-phase-dot');
+      expect(dot).toBeInTheDocument();
+      expect(dot).toHaveStyle({ backgroundColor: '#38BDF8' });
+    });
+
     it('одна программа → без аккордеон-хрома (нет бейджа «Ведущая»)', async () => {
       renderScreen(); // mockDashboardData = одна программа (fallback на single track)
       await waitFor(() => expect(screen.getByText('Путь восстановления')).toBeInTheDocument());

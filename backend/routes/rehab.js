@@ -226,7 +226,8 @@ router.get('/program-templates', async (req, res) => {
              pt.surgery_required, pt.default_phase_count, pt.variant_of,
              pt.position, pt.is_active,
              types.label AS program_type_label,
-             types.joint AS program_joint
+             types.joint AS program_joint,
+             types.evidence_summary, types.evidence_sources
       FROM program_templates pt
       LEFT JOIN program_types types ON types.code = pt.program_type
       WHERE pt.is_active = true
@@ -427,7 +428,8 @@ router.get('/my/dashboard', authenticatePatient, async (req, res) => {
               rp.surgery_date, rp.status, rp.program_type, rp.priority,
               pt.label AS program_label,
               pt.joint AS program_joint,
-              pt.surgery_required AS program_surgery_required
+              pt.surgery_required AS program_surgery_required,
+              pt.evidence_summary
        FROM rehab_programs rp
        LEFT JOIN program_types pt ON pt.code = rp.program_type
        WHERE rp.patient_id = $1 AND rp.is_active = true AND rp.status = 'active'
