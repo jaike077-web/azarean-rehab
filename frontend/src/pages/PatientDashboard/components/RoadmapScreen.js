@@ -595,26 +595,6 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
         </div>
       )}
 
-      {/* Доказательная база ведущей программы — «на основе чего эта программа» (Part B). */}
-      {programs[0]?.evidence_summary && (
-        <div
-          className="pd-rm-evidence"
-          data-testid="pd-rm-evidence"
-          style={{
-            margin: '0 0 16px',
-            padding: '12px 14px',
-            background: 'var(--color-surface-2)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 12,
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
-            На основе чего эта программа
-          </div>
-          <RichText text={programs[0].evidence_summary} />
-        </div>
-      )}
-
       {/* Timeline — мультитрек. Одна зона → как раньше (без аккордеон-хрома).
           Несколько зон → аккордеон: ведущая [0] развёрнута + бейдж «Ведущая»,
           вторичные свёрнуты, у каждой свой timeline и своя текущая фаза. */}
@@ -706,6 +686,26 @@ export default function RoadmapScreen({ dashboardData, patient, onOpenProfile, g
         <Info size={14} color="var(--pd-n400)" aria-hidden="true" />
         <p>Сроки ориентировочные. Переход по решению специалиста при достижении критериев.</p>
       </div>
+
+      {/* Доказательная база ведущей программы — сноска внизу «Пути» (Part B).
+          Без заголовка: текст «Программа опирается на…» говорит сам за себя.
+          Акцентная рамка выделяет блок как отдельную врезку-сноску. */}
+      {programs[0]?.evidence_summary && (
+        <div
+          className="pd-rm-evidence"
+          data-testid="pd-rm-evidence"
+          style={{
+            margin: '20px 0 0',
+            padding: '14px 16px',
+            background: 'var(--color-surface-2)',
+            border: '1px solid var(--color-border)',
+            borderLeft: '4px solid var(--color-primary)',
+            borderRadius: 12,
+          }}
+        >
+          <RichText text={programs[0].evidence_summary} />
+        </div>
+      )}
     </div>
   );
 }
