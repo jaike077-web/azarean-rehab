@@ -486,5 +486,33 @@ describe('RoadmapScreen v12', () => {
       expect(screen.queryByText('Ведущая')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pd-rm-track-1')).not.toBeInTheDocument();
     });
+
+    // M2.1 — карточка-нота связи зон.
+    it('показывает ноту связи зон при ≥2 зонах + непустой zone_link_note', async () => {
+      renderScreen({
+        dashboardData: {
+          ...mockDashboardDataMultiProgram,
+          zone_link_note: 'Слабость ТБС перегружает колено — важны обе зоны.',
+        },
+      });
+      const note = await screen.findByTestId('pd-rm-zone-link-note');
+      expect(note).toBeInTheDocument();
+      expect(note).toHaveTextContent('Как связаны ваши зоны');
+      expect(note).toHaveTextContent('Слабость ТБС перегружает колено');
+    });
+
+    it('НЕ показывает ноту при одной программе (даже если zone_link_note есть)', async () => {
+      renderScreen({
+        dashboardData: { ...mockDashboardData, zone_link_note: 'нота' },
+      });
+      await waitFor(() => expect(screen.getByText('Путь восстановления')).toBeInTheDocument());
+      expect(screen.queryByTestId('pd-rm-zone-link-note')).not.toBeInTheDocument();
+    });
+
+    it('НЕ показывает ноту при ≥2 зонах, но пустом zone_link_note', async () => {
+      renderScreen({ dashboardData: mockDashboardDataMultiProgram }); // без zone_link_note
+      await screen.findByTestId('pd-rm-track-2');
+      expect(screen.queryByTestId('pd-rm-zone-link-note')).not.toBeInTheDocument();
+    });
   });
 });

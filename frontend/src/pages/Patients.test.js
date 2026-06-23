@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 // react-router-dom мокается глобально в src/__mocks__/react-router-dom.js
 // (useNavigate возвращает jest.fn). MemoryRouter недоступен — не используем.
 
@@ -129,5 +129,22 @@ describe('Patients — stuck-on-phase badge', () => {
     await waitFor(() => expect(patients.getAll).toHaveBeenCalled());
     expect(await screen.findByText(/Иван Тест/i)).toBeInTheDocument();
     expect(screen.queryByText(/застрял на фазе/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('Patients — поле «Связь зон» (M2.1)', () => {
+  it('форма редактирования содержит zone_link_note, преподгруженный из пациента', async () => {
+    patients.getAll.mockResolvedValue({
+      data: [{ ...BASE_PATIENT, zone_link_note: 'Слабость ТБС перегружает колено' }],
+    });
+
+    renderPatients();
+    await screen.findByText(/Иван Тест/i);
+
+    fireEvent.click(screen.getByText('Редактировать'));
+
+    const textarea = await screen.findByLabelText(/Связь зон/i);
+    expect(textarea).toBeInTheDocument();
+    expect(textarea).toHaveValue('Слабость ТБС перегружает колено');
   });
 });

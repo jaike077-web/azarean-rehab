@@ -160,8 +160,10 @@
 // (RichText, RoadmapScreen evidence-блок, AdminContent, CreateWizard) → bump.
 // v38 (2026-06-23) — #3.2: точка текущей фазы вторичной зоны «Пути» окрашена по
 // цвету фазы (getPhaseColor). Новый бандл RoadmapScreen → bump для инвалидации кеша.
-const CACHE_NAME = 'azarean-v38';
-const API_CACHE = 'azarean-api-v38';
+// v39 (2026-06-23) — M2.1 связь зон: карточка-нота вверху «Пути» при ≥2 зонах
+// (`patients.zone_link_note`, dashboard отдаёт поле). Новый бандл → bump.
+const CACHE_NAME = 'azarean-v39';
+const API_CACHE = 'azarean-api-v39';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

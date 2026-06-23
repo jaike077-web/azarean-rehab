@@ -886,7 +886,7 @@
   gap: 4px;
 }
 
-/* Подсказка под полем формы (дисклеймер doctor_diagnosis и т.п.) */
+/* Подсказка под полем формы (дисклеймер doctor_diagnosis, нота «Связь зон» M2.1 и т.п.) */
 .fieldHint {
   display: block;
   margin-top: 6px;
