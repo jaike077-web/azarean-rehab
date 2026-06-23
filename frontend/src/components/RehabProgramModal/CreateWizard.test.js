@@ -37,7 +37,7 @@ jest.mock('./ComplexSelector', () => (props) => (
 ));
 
 const { rehab, rehabPrograms } = require('../../services/api');
-import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices, phaseFromForm } from './CreateWizard';
+import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices, phaseFromForm, splitSources } from './CreateWizard';
 
 const TEMPLATES = [
   { id: 1, code: 'tpl_acl', program_type: 'acl', program_type_label: 'ПКС реабилитация', program_joint: 'knee', title: 'ПКС', surgery_required: true },
@@ -89,6 +89,22 @@ describe('pluralPhases (pure)', () => {
     [22, '22 фазы'],
   ])('%i → %s', (n, expected) => {
     expect(pluralPhases(n)).toBe(expected);
+  });
+});
+
+describe('splitSources (pure)', () => {
+  it('делит источники по «;» на верхнем уровне', () => {
+    expect(splitSources('A; B; C')).toEqual(['A', 'B', 'C']);
+  });
+  it('НЕ делит «;» внутри скобок (FIDELITY с под-годами = один пункт)', () => {
+    expect(splitSources('FIDELITY (NEJM 2013; BJSM 2020); ESCAPE (JAMA 2018)')).toEqual([
+      'FIDELITY (NEJM 2013; BJSM 2020)',
+      'ESCAPE (JAMA 2018)',
+    ]);
+  });
+  it('пусто/null → []', () => {
+    expect(splitSources('')).toEqual([]);
+    expect(splitSources(null)).toEqual([]);
   });
 });
 
