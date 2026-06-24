@@ -37,7 +37,7 @@ jest.mock('./ComplexSelector', () => (props) => (
 ));
 
 const { rehab, rehabPrograms } = require('../../services/api');
-import CreateWizard, { groupTemplatesByJoint, pluralPhases, buildPhaseChoices, phaseFromForm, splitSources } from './CreateWizard';
+import CreateWizard, { groupTemplatesByJoint, getZones, filterTemplates, pluralPhases, buildPhaseChoices, phaseFromForm, splitSources } from './CreateWizard';
 
 const TEMPLATES = [
   { id: 1, code: 'tpl_acl', program_type: 'acl', program_type_label: 'ПКС реабилитация', program_joint: 'knee', title: 'ПКС', surgery_required: true },
@@ -73,6 +73,57 @@ describe('groupTemplatesByJoint (pure)', () => {
 
   it('пустой вход → пустой массив групп', () => {
     expect(groupTemplatesByJoint([])).toEqual([]);
+  });
+});
+
+describe('getZones (pure)', () => {
+  it('distinct зоны из mixed-набора: Колено (2) + Плечо (1), порядок JOINT_GROUP_LABELS', () => {
+    const zones = getZones(TEMPLATES);
+    expect(zones).toEqual([
+      { key: 'knee', label: 'Колено', count: 2 },
+      { key: 'shoulder', label: 'Плечо', count: 1 },
+    ]);
+  });
+
+  it('неизвестный joint → в конец под program_type_label', () => {
+    const zones = getZones([
+      { id: 1, program_joint: 'shoulder', program_type_label: 'Плечо', title: 'A' },
+      { id: 2, program_joint: null, program_type: 'mystery', program_type_label: 'Загадка', title: 'B' },
+      { id: 3, program_joint: 'knee', program_type_label: 'Колено', title: 'C' },
+    ]);
+    // knee и shoulder известны (по порядку JOINT_GROUP_LABELS knee<shoulder), Загадка в конец
+    expect(zones.map((z) => z.label)).toEqual(['Колено', 'Плечо', 'Загадка']);
+  });
+
+  it('пустой вход → []', () => {
+    expect(getZones([])).toEqual([]);
+  });
+});
+
+describe('filterTemplates (pure)', () => {
+  it('zone=all → все', () => {
+    expect(filterTemplates(TEMPLATES, { zone: 'all' })).toHaveLength(3);
+  });
+
+  it('zone=knee → только колено (2)', () => {
+    const r = filterTemplates(TEMPLATES, { zone: 'knee' });
+    expect(r.map((t) => t.id)).toEqual([1, 2]);
+  });
+
+  it('query фильтрует по title (case-insensitive, trim)', () => {
+    const r = filterTemplates(TEMPLATES, { query: '  гонартроз ' });
+    expect(r.map((t) => t.id)).toEqual([2]);
+  });
+
+  it('зона + query комбинируются (поиск в пределах зоны)', () => {
+    // в колене ищем «плечо» → ничего (плечо в другой зоне)
+    expect(filterTemplates(TEMPLATES, { zone: 'knee', query: 'плечо' })).toHaveLength(0);
+    // в колене ищем «пкс» → id=1
+    expect(filterTemplates(TEMPLATES, { zone: 'knee', query: 'пкс' }).map((t) => t.id)).toEqual([1]);
+  });
+
+  it('пустой query/zone по умолчанию → все', () => {
+    expect(filterTemplates(TEMPLATES)).toHaveLength(3);
   });
 });
 
@@ -185,6 +236,40 @@ describe('CreateWizard — шаг 1 (группировка) + превью фа
     const labels = screen.getAllByTestId('template-group-label').map((e) => e.textContent);
     expect(labels).toEqual(['Колено', 'Плечо']);
     expect(screen.getAllByTestId('template-card')).toHaveLength(3);
+  });
+
+  it('клик по табу зоны «Плечо» → только её карточка, без заголовков групп', async () => {
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    const shoulderTab = screen.getAllByTestId('zone-tab').find((b) => /Плечо/.test(b.textContent));
+    fireEvent.click(shoulderTab);
+
+    expect(screen.getAllByTestId('template-card')).toHaveLength(1);
+    expect(screen.getByText('Плечо', { selector: 'strong' })).toBeInTheDocument();
+    // в конкретной зоне заголовки-разделители групп не рендерятся
+    expect(screen.queryByTestId('template-group-label')).not.toBeInTheDocument();
+  });
+
+  it('поиск фильтрует карточки по названию', async () => {
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    fireEvent.change(screen.getByTestId('template-search'), { target: { value: 'гонартроз' } });
+
+    expect(screen.getAllByTestId('template-card')).toHaveLength(1);
+    expect(screen.getByText('Гонартроз', { selector: 'strong' })).toBeInTheDocument();
+  });
+
+  it('поиск без совпадений → дружелюбная пустышка, no-templates не ломается', async () => {
+    render(<CreateWizard patient={patient} complexes={complexes} onCreated={jest.fn()} onClose={jest.fn()} />);
+    await waitFor(() => expect(screen.getAllByTestId('template-card').length).toBe(3));
+
+    fireEvent.change(screen.getByTestId('template-search'), { target: { value: 'ничего-такого' } });
+
+    expect(screen.queryAllByTestId('template-card')).toHaveLength(0);
+    expect(screen.getByTestId('template-empty-search')).toBeInTheDocument();
+    expect(screen.queryByTestId('no-templates')).not.toBeInTheDocument();
   });
 
   it('выбор шаблона грузит и показывает превью фаз протокола', async () => {
