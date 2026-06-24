@@ -732,7 +732,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       }}
                     >
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                        ≡ Единообразие — привести к единому виду (текст не изменён):
+                        ≡ Стиль и обращение — на ваше усмотрение (текст не изменён):
                       </div>
                       <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                         {structureConsistency.map((c, i) => (

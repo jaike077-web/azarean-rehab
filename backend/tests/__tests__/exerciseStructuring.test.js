@@ -162,10 +162,11 @@ describe('exerciseStructuring — buildCompletenessPrompt (агент №5) / bu
     expect(user).toContain('"title":"Изометрия"');
   });
 
-  test('consistency: единообразие/форма «вы»/термины, не переписывает, формат concerns', () => {
+  test('consistency: форма «вы», стиль; СИНОНИМЫ разрешены (не флагать как разнобой)', () => {
     const { system } = buildConsistencyPrompt({ title: 'X' });
-    expect(system).toMatch(/ЕДИНООБРАЗИЕ/);
     expect(system).toMatch(/«вы»/);
+    expect(system).toMatch(/СИНОНИМЫ/);
+    expect(system).toMatch(/НЕ флагуй\s+разные синонимы|УМЕСТНА и ЖЕЛАТЕЛЬНА/i);
     expect(system).toMatch(/НЕ переписывай/i);
     expect(system).toMatch(/concerns/);
   });
