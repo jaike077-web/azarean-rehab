@@ -147,6 +147,12 @@
   max-width: 560px;
 }
 
+/* Шире только на шаге 1 (выбор шаблона — grid карточек). Специфичность (0,2,0)
+   перебивает и .modalContent, и .rehabProgramModal. На мобайле 95vw держит. */
+.rehabProgramModal.wide {
+  max-width: min(1080px, 95vw);
+}
+
 .rehabProgramModalBody {
   padding: 0 24px 8px;
 }
@@ -387,8 +393,65 @@
 
 .templateCards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 10px;
+}
+
+/* Табы зон (Все / Колено / Плечо / …) над списком шаблонов */
+.zoneTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+
+.zoneTab,
+.zoneTabActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.zoneTab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.zoneTabActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.zoneTabCount {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+/* Поиск по названию шаблона */
+.templateSearch {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.templateSearch:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .templateCard {

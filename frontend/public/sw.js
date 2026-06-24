@@ -162,8 +162,10 @@
 // цвету фазы (getPhaseColor). Новый бандл RoadmapScreen → bump для инвалидации кеша.
 // v39 (2026-06-23) — M2.1 связь зон: карточка-нота вверху «Пути» при ≥2 зонах
 // (`patients.zone_link_note`, dashboard отдаёт поле). Новый бандл → bump.
-const CACHE_NAME = 'azarean-v39';
-const API_CACHE = 'azarean-api-v39';
+// v40 (2026-06-23) — Part A визарда: шаг «Шаблон» шире (1080px) + табы зон +
+// поиск по названию. Новый бандл CreateWizard/RehabProgramModal → bump.
+const CACHE_NAME = 'azarean-v40';
+const API_CACHE = 'azarean-api-v40';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

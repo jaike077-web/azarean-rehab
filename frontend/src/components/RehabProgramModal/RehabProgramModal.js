@@ -28,6 +28,10 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
   const [program, setProgram] = useState(null);
   const [complexes, setComplexes] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Текущий шаг create-визарда (зеркалится из CreateVizard) — модалка шире
+  // только на шаге 1 (выбор шаблона, grid карточек).
+  const [wizardStep, setWizardStep] = useState(1);
+  const wide = mode === 'create' && wizardStep === 1;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -63,7 +67,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
   return (
     <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>
         <div
-          className={`${s.modalContent} ${s.rehabProgramModal}`}
+          className={`${s.modalContent} ${s.rehabProgramModal}${wide ? ` ${s.wide}` : ''}`}
         >
           <div className={s.modalHeader}>
             <h2>
@@ -102,6 +106,7 @@ function RehabProgramModal({ patient, onClose, onSaved }) {
                 complexes={complexes}
                 onCreated={onSaved}
                 onClose={onClose}
+                onStepChange={setWizardStep}
               />
             )}
 

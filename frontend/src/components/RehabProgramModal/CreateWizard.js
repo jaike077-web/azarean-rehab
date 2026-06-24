@@ -46,6 +46,54 @@ export function groupTemplatesByJoint(templates) {
   return order.map((label) => ({ label, templates: byLabel.get(label) }));
 }
 
+// Ключ зоны для табов/фильтра: program_joint, иначе program_type_label/type.
+// getZones и filterTemplates используют ОДИН и тот же ключ → консистентность
+// (таб «Колено» key='knee' фильтрует ровно те же карточки).
+function zoneKey(t) {
+  return t.program_joint || t.program_type_label || t.program_type || 'other';
+}
+
+// Зоны для табов: distinct по zoneKey. Известные program_joint — в порядке
+// JOINT_GROUP_LABELS, неизвестные — в конец (порядок первого появления).
+// → [{ key, label, count }]. Pure (юнит-тест без DOM).
+export function getZones(templates) {
+  const known = Object.keys(JOINT_GROUP_LABELS);
+  const seen = new Map();
+  for (const t of templates || []) {
+    const key = zoneKey(t);
+    if (!seen.has(key)) {
+      const label =
+        JOINT_GROUP_LABELS[t.program_joint] || t.program_type_label || t.program_type || 'Прочее';
+      seen.set(key, { key, label, count: 0 });
+    }
+    seen.get(key).count += 1;
+  }
+  const arr = [...seen.values()];
+  arr.sort((a, b) => {
+    const ia = known.indexOf(a.key);
+    const ib = known.indexOf(b.key);
+    if (ia === -1 && ib === -1) return 0; // оба неизвестные → стабильно (порядок появления)
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return arr;
+}
+
+// Фильтр шаблонов по зоне ('all' = без фильтра) + строке поиска (title+description,
+// case-insensitive, trim). Зона и query КОМБИНИРУЮТСЯ — поиск в пределах зоны. Pure.
+export function filterTemplates(templates, { zone = 'all', query = '' } = {}) {
+  const q = String(query || '').trim().toLowerCase();
+  return (templates || []).filter((t) => {
+    if (zone !== 'all' && zoneKey(t) !== zone) return false;
+    if (q) {
+      const hay = `${t.title || ''} ${t.description || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
 // Русская плюрализация счётчика фаз (1 фаза / 2 фазы / 5 фаз).
 export function pluralPhases(n) {
   const m10 = n % 10;
@@ -98,10 +146,37 @@ export function phaseFromForm(value) {
   return Number.isFinite(n) ? n : 1;
 }
 
+// Одна карточка-шаблон. Выносить из map не обязательно, но так не дублируется
+// между режимом «Все» (с заголовками групп) и режимом конкретной зоны (плоский grid).
+function TemplateCard({ t, onSelect }) {
+  return (
+    <button
+      type="button"
+      className={s.templateCard}
+      data-testid="template-card"
+      onClick={() => onSelect(t)}
+    >
+      <strong>{t.title}</strong>
+      {t.description && <p>{t.description}</p>}
+      {t.evidence_summary && (
+        <span className={s.cardEvidence} data-testid="card-evidence">{stripMarkdown(t.evidence_summary)}</span>
+      )}
+      {t.surgery_required && <span className={s.badgeSurgery}>с операцией</span>}
+    </button>
+  );
+}
+
 function Step1Template({ templates, loading, onSelect, onSkip }) {
+  // Зона (таб) + строка поиска. Сбрасываются при размонтировании модалки.
+  const [zone, setZone] = useState('all');
+  const [queryStr, setQueryStr] = useState('');
+
   if (loading) return <p>Загрузка шаблонов…</p>;
 
-  const groups = groupTemplatesByJoint(templates);
+  const zones = getZones(templates);
+  const filtered = filterTemplates(templates, { zone, query: queryStr });
+  // Режим «Все» → лёгкие заголовки-разделители зон; конкретная зона → плоский grid.
+  const groups = zone === 'all' ? groupTemplatesByJoint(filtered) : null;
 
   return (
     <div className={s.wizardSection}>
@@ -110,35 +185,76 @@ function Step1Template({ templates, loading, onSelect, onSkip }) {
         Шаблон задаст тип программы и подскажет рекомендованные комплексы. Можно пропустить и настроить вручную.
       </p>
 
-      {groups.length === 0 ? (
+      {templates.length === 0 ? (
         <p className={s.emptyTemplates} data-testid="no-templates">
           Нет доступных шаблонов. Создайте их в админ-панели (вкладка «Шаблоны программ»)
           или продолжите вручную.
         </p>
       ) : (
-        groups.map((group) => (
-          <div key={group.label} className={s.templateGroup} data-testid="template-group">
-            <h4 data-testid="template-group-label">{group.label}</h4>
-            <div className={s.templateCards}>
-              {group.templates.map((t) => (
+        <>
+          {zones.length > 1 && (
+            <div className={s.zoneTabs} role="tablist" aria-label="Зоны">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={zone === 'all'}
+                data-testid="zone-tab"
+                className={zone === 'all' ? s.zoneTabActive : s.zoneTab}
+                onClick={() => setZone('all')}
+              >
+                Все
+              </button>
+              {zones.map((z) => (
                 <button
-                  key={t.id}
+                  key={z.key}
                   type="button"
-                  className={s.templateCard}
-                  data-testid="template-card"
-                  onClick={() => onSelect(t)}
+                  role="tab"
+                  aria-selected={zone === z.key}
+                  data-testid="zone-tab"
+                  className={zone === z.key ? s.zoneTabActive : s.zoneTab}
+                  onClick={() => setZone(z.key)}
                 >
-                  <strong>{t.title}</strong>
-                  {t.description && <p>{t.description}</p>}
-                  {t.evidence_summary && (
-                    <span className={s.cardEvidence} data-testid="card-evidence">{stripMarkdown(t.evidence_summary)}</span>
-                  )}
-                  {t.surgery_required && <span className={s.badgeSurgery}>с операцией</span>}
+                  {z.label} <span className={s.zoneTabCount}>{z.count}</span>
                 </button>
               ))}
             </div>
-          </div>
-        ))
+          )}
+
+          <input
+            type="search"
+            className={s.templateSearch}
+            data-testid="template-search"
+            placeholder="Поиск по названию"
+            aria-label="Поиск шаблона по названию"
+            value={queryStr}
+            onChange={(e) => setQueryStr(e.target.value)}
+          />
+
+          {filtered.length === 0 ? (
+            <p className={s.emptyTemplates} data-testid="template-empty-search">
+              {queryStr.trim()
+                ? `Ничего не найдено по запросу «${queryStr.trim()}».`
+                : 'В этой зоне пока нет шаблонов.'}
+            </p>
+          ) : zone === 'all' ? (
+            groups.map((group) => (
+              <div key={group.label} className={s.templateGroup} data-testid="template-group">
+                <h4 data-testid="template-group-label">{group.label}</h4>
+                <div className={s.templateCards}>
+                  {group.templates.map((t) => (
+                    <TemplateCard key={t.id} t={t} onSelect={onSelect} />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={s.templateCards}>
+              {filtered.map((t) => (
+                <TemplateCard key={t.id} t={t} onSelect={onSelect} />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div className={s.rehabProgramFooter}>
@@ -405,9 +521,15 @@ const EMPTY_FORM = {
   program_type: null,
 };
 
-function CreateWizard({ patient, complexes, onCreated, onClose }) {
+function CreateWizard({ patient, complexes, onCreated, onClose, onStepChange }) {
   const toast = useToast();
   const [step, setStep] = useState(1);
+
+  // Зеркалим текущий шаг наверх (RehabProgramModal) — модалка шире только на шаге 1
+  // (выбор шаблона: grid карточек), на шагах 2/3 (формы) остаётся 560px.
+  useEffect(() => {
+    if (onStepChange) onStepChange(step);
+  }, [step, onStepChange]);
   const [templates, setTemplates] = useState([]);
   const [programTypes, setProgramTypes] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
