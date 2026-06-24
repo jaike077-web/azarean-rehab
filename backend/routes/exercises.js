@@ -6,6 +6,7 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { validateTrackPresetIds } = require('../utils/exerciseAudio');
+const { toBodyRegionArray } = require('../utils/bodyRegion');
 const structuringLlm = require('../services/structuringLlm');
 const speechkit = require('../services/yandexSpeechKit');
 const multer = require('multer');
@@ -240,11 +241,11 @@ router.get('/', authenticateToken, async (req, res) => {
       values.push(`%${search}%`);
     }
 
-    // Фильтр по региону тела
+    // Фильтр по региону тела (массив TEXT[]): упражнение содержит выбранный регион.
     if (body_region) {
       paramCount++;
-      queryText += ` AND body_region = $${paramCount}`;
-      values.push(body_region);
+      queryText += ` AND body_region @> $${paramCount}::text[]`;
+      values.push([body_region]);
     }
 
     // Фильтр по сложности
@@ -304,8 +305,8 @@ router.get('/', authenticateToken, async (req, res) => {
     }
     if (body_region) {
       countParamCount++;
-      countQueryText += ` AND body_region = $${countParamCount}`;
-      countValues.push(body_region);
+      countQueryText += ` AND body_region @> $${countParamCount}::text[]`;
+      countValues.push([body_region]);
     }
     if (difficulty) {
       countParamCount++;
@@ -340,10 +341,10 @@ router.get('/stats/summary', authenticateToken, async (req, res) => {
     const stats = await query(`
       SELECT 
         COUNT(*) as total,
-        COUNT(CASE WHEN body_region = 'shoulder' THEN 1 END) as shoulder_count,
-        COUNT(CASE WHEN body_region = 'knee' THEN 1 END) as knee_count,
-        COUNT(CASE WHEN body_region = 'spine' THEN 1 END) as spine_count,
-        COUNT(CASE WHEN body_region = 'hip' THEN 1 END) as hip_count,
+        COUNT(CASE WHEN 'shoulder' = ANY(body_region) THEN 1 END) as shoulder_count,
+        COUNT(CASE WHEN 'knee' = ANY(body_region) THEN 1 END) as knee_count,
+        COUNT(CASE WHEN 'spine' = ANY(body_region) THEN 1 END) as spine_count,
+        COUNT(CASE WHEN 'hip' = ANY(body_region) THEN 1 END) as hip_count,
         AVG(difficulty_level) as avg_difficulty
       FROM exercises
       WHERE is_active = true
@@ -550,7 +551,7 @@ router.post('/', authenticateToken, async (req, res) => {
         video_url.trim(),
         finalThumbnailUrl,
         exercise_type || null,
-        body_region || null,
+        toBodyRegionArray(body_region),  // TEXT[] (нативный pg-массив, не JSONB)
         difficulty_level,
         JSON.stringify(equipment),      // JSONB
         JSON.stringify(position),        // JSONB
@@ -674,7 +675,7 @@ router.post('/bulk', authenticateToken, async (req, res) => {
             video_url.trim(),
             thumbnail_url?.trim() || null,
             exercise_type || null,
-            body_region || null,
+            toBodyRegionArray(body_region),  // TEXT[]
             difficulty_level,
             JSON.stringify(Array.isArray(equipment) ? equipment : []),
             JSON.stringify(Array.isArray(position) ? position : []),
@@ -863,7 +864,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         video_url.trim(),
         finalThumbnailUrl,
         exercise_type || null,
-        body_region || null,
+        toBodyRegionArray(body_region),  // TEXT[]
         difficulty_level || 1,
         JSON.stringify(equipment || []),
         JSON.stringify(position || []),

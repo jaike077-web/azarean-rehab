@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import {
   getExerciseTypeLabel,
-  getBodyRegionLabel,
+  formatBodyRegions,
   getDifficultyLabel,
   getEquipmentLabel,
   getPositionLabel,
@@ -171,7 +171,7 @@ function ExerciseViewModal({ exercise, onClose, onAdd }) {
                     <MapPin size={14} />
                     Регион:
                   </span>
-                  <span className={s.value}>{getBodyRegionLabel(exercise.body_region)}</span>
+                  <span className={s.value}>{formatBodyRegions(exercise.body_region)}</span>
                 </div>
                 {exercise.exercise_type && (
                   <div className={s.infoItem}>

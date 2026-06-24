@@ -232,6 +232,20 @@ export const getLabel = (value, constantsObj) => {
 // Хелперы для каждого типа
 export const getExerciseTypeLabel = (value) => getLabel(value, EXERCISE_TYPES);
 export const getBodyRegionLabel = (value) => getLabel(value, BODY_REGIONS);
+
+// body_region теперь массив кодов (мультивыбор). Хелперы принимают массив | скаляр (back-compat) | null.
+// Первый код — для иконки.
+export const firstBodyRegion = (value) =>
+  Array.isArray(value) ? value[0] || null : value || null;
+// Человекочитаемые метки региона(ов): ["knee","hip"] → "Колено, Тазобедренный сустав"; пусто → "—".
+export const formatBodyRegions = (value) => {
+  const arr = Array.isArray(value) ? value : value != null && value !== '' ? [value] : [];
+  if (!arr.length) return '—';
+  return arr.map((v) => getLabel(v, BODY_REGIONS)).join(', ');
+};
+// Содержит ли body_region упражнения данный код (для фильтров). Back-compat: массив | скаляр.
+export const bodyRegionMatches = (value, code) =>
+  Array.isArray(value) ? value.includes(code) : value === code;
 export const getDifficultyLabel = (value) => getLabel(value, DIFFICULTY_LEVELS);
 export const getEquipmentLabel = (value) => getLabel(value, EQUIPMENT_OPTIONS);
 export const getPositionLabel = (value) => getLabel(value, POSITION_OPTIONS);

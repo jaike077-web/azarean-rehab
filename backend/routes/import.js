@@ -4,6 +4,7 @@ const { query, getClient } = require('../database/db');
 const kinescopeService = require('../services/kinescopeService');
 const csvImportService = require('../services/csvImportService');
 const { authenticateToken } = require('../middleware/auth');
+const { toBodyRegionArray } = require('../utils/bodyRegion');
 
 const router = express.Router();
 
@@ -162,7 +163,7 @@ router.post('/kinescope/execute', async (req, res) => {
           exerciseData.thumbnail_url,
           exerciseData.kinescope_id,
           exerciseData.duration_seconds,
-          exerciseData.body_region,
+          toBodyRegionArray(exerciseData.body_region),  // TEXT[]
           exerciseData.exercise_type,
           exerciseData.difficulty_level,
           toJsonOrNull(exerciseData.equipment),
@@ -273,7 +274,7 @@ router.post('/csv', upload.single('file'), async (req, res) => {
           await client.query(updateQuery, [
             exercise.title,
             exercise.description,
-            exercise.body_region,
+            toBodyRegionArray(exercise.body_region),  // TEXT[] (COALESCE: null → keep existing)
             exercise.exercise_type,
             exercise.difficulty_level,
             toJsonOrNull(exercise.equipment),
@@ -309,7 +310,7 @@ router.post('/csv', upload.single('file'), async (req, res) => {
             exercise.thumbnail_url || null,
             exercise.kinescope_id || null,
             exercise.description,
-            exercise.body_region,
+            toBodyRegionArray(exercise.body_region),  // TEXT[]
             exercise.exercise_type,
             exercise.difficulty_level || 2,
             toJsonOrNull(exercise.equipment),

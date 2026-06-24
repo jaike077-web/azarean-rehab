@@ -43,7 +43,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
   // ОПЦИОНАЛЬНЫЕ классификация
   const [exerciseType, setExerciseType] = useState('');
-  const [bodyRegion, setBodyRegion] = useState('');
+  const [bodyRegion, setBodyRegion] = useState([]);  // массив кодов (мультивыбор региона)
   const [difficultyLevel, setDifficultyLevel] = useState(1);
 
   // МНОЖЕСТВЕННЫЙ ВЫБОР
@@ -113,7 +113,14 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setDescription(exercise.description || '');
       setThumbnailUrl(exercise.thumbnail_url || '');
       setExerciseType(exercise.exercise_type || '');
-      setBodyRegion(exercise.body_region || '');
+      // body_region теперь массив; back-compat: старая запись могла прийти скаляром.
+      setBodyRegion(
+        Array.isArray(exercise.body_region)
+          ? exercise.body_region
+          : exercise.body_region
+            ? [exercise.body_region]
+            : []
+      );
       setDifficultyLevel(exercise.difficulty_level || 1);
 
       // МНОЖЕСТВЕННЫЙ ВЫБОР (из JSONB)
@@ -215,7 +222,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     if (fields.short_title != null) setShortTitle(fields.short_title);
     if (fields.description != null) setDescription(fields.description);
     if (fields.exercise_type != null) setExerciseType(fields.exercise_type);
-    if (fields.body_region != null) setBodyRegion(fields.body_region);
+    if (Array.isArray(fields.body_region)) setBodyRegion(fields.body_region);
     if (fields.difficulty_level != null) setDifficultyLevel(fields.difficulty_level);
     if (Array.isArray(fields.equipment)) setEquipment(fields.equipment);
     if (Array.isArray(fields.position)) setPosition(fields.position);
@@ -324,7 +331,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     try {
       const res = await exercisesApi.planScript({
         title,
-        body_region: bodyRegion || '',
+        body_region: bodyRegion.join(', '),  // планировщику — подсказка строкой
         exercise_type: exerciseType || '',
         notes: draft, // планировщик ОПИРАЕТСЯ на черновик/надиктовку, не отбрасывает
       });
@@ -377,7 +384,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const isDictItemFilled = (key) => {
     switch (key) {
       case 'title': return title.trim() !== '';
-      case 'body_region': return bodyRegion !== '';
+      case 'body_region': return bodyRegion.length > 0;
       case 'exercise_type': return exerciseType !== '';
       case 'difficulty_level': return true; // слайдер всегда 1..5
       case 'equipment': return equipment.length > 0;
@@ -405,7 +412,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       ...(description.trim() && { description: description.trim() }),
       ...(thumbnailUrl.trim() && { thumbnail_url: thumbnailUrl.trim() }),
       ...(exerciseType && { exercise_type: exerciseType }),
-      ...(bodyRegion && { body_region: bodyRegion }),
+      ...(bodyRegion.length > 0 && { body_region: bodyRegion }),
 
       difficulty_level: Number(difficultyLevel) || 1,
 
@@ -916,23 +923,44 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   </select>
                 </div>
 
-                {/* Регион тела */}
+                {/* Регион тела (мультивыбор: многосуставные — присед = колено + ТБС) */}
                 <div className={s.formGroup}>
-                  <label>Регион тела</label>
-                  <select
-                    value={bodyRegion}
-                    onChange={(e) => setBodyRegion(e.target.value)}
-                  >
-                    <option value="">Не выбрано</option>
-                    <option value="shoulder">Плечо</option>
-                    <option value="knee">Колено</option>
-                    <option value="spine">Позвоночник</option>
-                    <option value="hip">Тазобедренный сустав</option>
-                    <option value="ankle">Голеностоп</option>
-                    <option value="elbow">Локоть</option>
-                    <option value="wrist">Запястье</option>
-                    <option value="full_body">Все тело</option>
-                  </select>
+                  <label>Регион тела (можно выбрать несколько)</label>
+                  <div className={s.checkboxGroup}>
+                    {BODY_REGION_OPTIONS.map((option) => (
+                      <label key={option.value} className={s.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={bodyRegion.includes(option.value)}
+                          onChange={() =>
+                            toggleArrayValue(bodyRegion, setBodyRegion, option.value)
+                          }
+                        />
+                        <span>{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {bodyRegion.length > 0 && (
+                    <div className={s.selectedTags}>
+                      {bodyRegion.map((item) => {
+                        const opt = BODY_REGION_OPTIONS.find((o) => o.value === item);
+                        return (
+                          <span key={item} className={s.tag}>
+                            {opt?.label || item}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleArrayValue(bodyRegion, setBodyRegion, item)
+                              }
+                              aria-label="Удалить регион"
+                            >
+                              <X size={14} />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1300,6 +1328,17 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 // ========================================
 // КОНСТАНТЫ ДЛЯ МНОЖЕСТВЕННОГО ВЫБОРА
 // ========================================
+
+const BODY_REGION_OPTIONS = [
+  { value: 'shoulder', label: 'Плечо' },
+  { value: 'knee', label: 'Колено' },
+  { value: 'spine', label: 'Позвоночник' },
+  { value: 'hip', label: 'Тазобедренный сустав' },
+  { value: 'ankle', label: 'Голеностоп' },
+  { value: 'elbow', label: 'Локоть' },
+  { value: 'wrist', label: 'Запястье' },
+  { value: 'full_body', label: 'Всё тело' },
+];
 
 const EQUIPMENT_OPTIONS = [
   { value: 'no-equipment', label: 'Без оборудования' },

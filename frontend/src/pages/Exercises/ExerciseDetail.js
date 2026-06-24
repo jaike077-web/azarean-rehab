@@ -12,7 +12,8 @@ import { embedFromUrl } from '../../utils/videoEmbed';
 import s from './ExerciseDetail.module.css';
 
 import {
-  getBodyRegionLabel,
+  firstBodyRegion,
+  formatBodyRegions,
   getExerciseTypeLabel,
   getDifficultyLabel,
   getEquipmentLabel,
@@ -211,11 +212,13 @@ const ExerciseDetail = () => {
     contraindications,
   } = exercise;
 
-  const regionLabel = body_region ? getBodyRegionLabel(body_region) : 'Не указан';
+  // body_region — массив кодов (мультивыбор); firstBodyRegion/formatBodyRegions back-compat со скаляром.
+  const region0 = firstBodyRegion(body_region);
+  const regionLabel = region0 ? formatBodyRegions(body_region) : 'Не указан';
   const typeLabel = exercise_type ? getExerciseTypeLabel(exercise_type) : 'Не указан';
   const difficultyLabel = getDifficultyLabel(difficulty_level || 1);
   const difficultyColor = getDifficultyColor(difficulty_level || 1);
-  const regionIcon = body_region ? getBodyRegionIcon(body_region) : null;
+  const regionIcon = region0 ? getBodyRegionIcon(region0) : null;
 
   return (
     <div className={s.exerciseDetailPage}>

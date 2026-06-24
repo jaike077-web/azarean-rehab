@@ -68,7 +68,9 @@ function SortableExercise({ exercise, onRemove, onUpdate }) {
         <strong>{exercise.title}</strong>
         {(exercise.body_region || exercise.category) && (
           <span className={s.exerciseMeta}>
-            {exercise.body_region || exercise.category}
+            {(Array.isArray(exercise.body_region)
+              ? exercise.body_region.join(', ')
+              : exercise.body_region) || exercise.category}
           </span>
         )}
       </div>

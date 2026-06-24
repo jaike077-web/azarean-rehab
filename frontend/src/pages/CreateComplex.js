@@ -7,6 +7,7 @@ import useAudioPreview from '../hooks/useAudioPreview';
 import ComplexCueSounds from '../components/ComplexCueSounds';
 import ExerciseAudioControl from '../components/ExerciseAudioControl';
 import { emptyCueState, buildCueSoundsPayload } from '../utils/audioCues';
+import { bodyRegionMatches } from '../utils/exerciseConstants';
 import {
   DndContext,
   closestCenter,
@@ -77,7 +78,11 @@ const SortableExercise = React.memo(function SortableExercise({ exercise, errors
       <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
         {(exercise.body_region || exercise.category) && (
-          <span className={s.exerciseMeta}>{exercise.body_region || exercise.category}</span>
+          <span className={s.exerciseMeta}>
+            {(Array.isArray(exercise.body_region)
+              ? exercise.body_region.join(', ')
+              : exercise.body_region) || exercise.category}
+          </span>
         )}
       </div>
       <div className={s.exerciseParams}>
@@ -325,7 +330,7 @@ function CreateComplex() {
       const matchesSearch = !searchTerm ||
         ex.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'all' ||
-        ex.body_region === categoryFilter ||
+        bodyRegionMatches(ex.body_region, categoryFilter) ||
         ex.category === categoryFilter;
       return matchesSearch && matchesCategory;
     });
@@ -815,7 +820,11 @@ function CreateComplex() {
     <div key={exercise.id} className={`${s.exerciseItem} ${isAdded ? s.isAdded : ''}`}>
       <div className={s.exerciseInfo}>
         <strong>{exercise.title}</strong>
-        <span className={s.exerciseMeta}>{exercise.body_region || exercise.category}</span>
+        <span className={s.exerciseMeta}>
+          {(Array.isArray(exercise.body_region)
+            ? exercise.body_region.join(', ')
+            : exercise.body_region) || exercise.category}
+        </span>
       </div>
       {isAdded ? (
         <button className={s.btnAdded} disabled>
