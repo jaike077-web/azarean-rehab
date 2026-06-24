@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square, CheckCircle2, Circle, Pause } from 'lucide-react';
+import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square, CheckCircle2, Circle, Pause, Loader2 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi, admin } from '../../../services/api';
 import s from './ExerciseModal.module.css';
@@ -534,10 +534,11 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      className={s.btnPrimary}
+                      className={`${s.btnPrimary}${structuring ? ` ${s.btnLoading}` : ''}`}
                       onClick={handleStructure}
                       disabled={structuring || transcript.trim().length < 3}
                     >
+                      {structuring && <Loader2 size={16} className={s.spinIcon} aria-hidden="true" />}
                       {structuring
                         ? (reviewQuality ? 'Разбираю и проверяю… (~1–2 мин)' : 'Разбираю… (~30–60 сек)')
                         : 'Разобрать в поля'}
