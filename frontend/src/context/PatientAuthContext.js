@@ -35,6 +35,19 @@ export function PatientAuthProvider({ children }) {
     refresh();
   }, [refresh]);
 
+  // Сессия истекла/инвалидирована (refresh пациента упал) — api.js диспатчит
+  // 'patient-auth-expired'. Сбрасываем пациента в null → PatientRoute сделает
+  // <Navigate to="/patient-login">. Без этого слушателя истёкшая сессия (смена
+  // пароля, долгая вкладка) оставляла вечный скелетон без редиректа.
+  useEffect(() => {
+    const onExpired = () => {
+      setPatient(null);
+      setLoading(false);
+    };
+    window.addEventListener('patient-auth-expired', onExpired);
+    return () => window.removeEventListener('patient-auth-expired', onExpired);
+  }, []);
+
   // Вызывается PatientLogin/PatientRegister после успешного API-ответа.
   // Backend уже поставил cookie, нам остаётся только обновить локальный state.
   const login = useCallback((patientData) => {

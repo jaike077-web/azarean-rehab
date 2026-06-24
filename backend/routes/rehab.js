@@ -23,6 +23,7 @@ const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
 const { sendOpsAlert } = require('../utils/opsAlert');
+const { instructorCanAccessPatient } = require('../utils/patientAccess');
 // Exercise Audio (EA3): резолв трек-звука упражнения (complex override → library → нет).
 const { RESOLVED_EXERCISE_AUDIO_SQL, EXERCISE_AUDIO_JOINS } = require('../utils/exerciseAudio');
 
@@ -2717,7 +2718,9 @@ router.post('/my/training/advance', authenticatePatient, async (req, res) => {
  * Helper: trigger red-flag pain alert.
  * - await sendOpsAlert(title, body) — fire-and-forget, дедуп+hourly cap в utils
  * - INSERT в ops_alerts с source_entity_id=pain_entry.id для admin триажа
- * Возвращает ops_alert.id или null если INSERT упал (Telegram уже ушёл — независимо).
+ * Возвращает { opsAlertId, delivered }: opsAlertId — id записи ops_alerts (или null
+ * если INSERT упал); delivered — реально ли алерт ушёл куратору (Telegram). delivered
+ * нужен чтобы НЕ обещать пациенту доставку red-flag, которой не было (клин. безопасность).
  */
 async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_event }) {
   const modeLabel = is_event ? 'Pain Event' : 'Daily diary';
@@ -2743,8 +2746,10 @@ async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_even
     `\n\nДействие: связаться с пациентом, оценить состояние.\n` +
     `Pain entry ID: ${pain_entry.id} (${new Date(pain_entry.created_at).toLocaleString('ru-RU')})`;
 
+  let delivered = false;
   try {
-    await sendOpsAlert(title, body);
+    const alertResult = await sendOpsAlert(title, body);
+    delivered = !!(alertResult && alertResult.delivered);
   } catch (err) {
     console.error('[triggerRedFlagAlert] sendOpsAlert threw:', err.message);
   }
@@ -2764,16 +2769,17 @@ async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_even
           notes: pain_entry.notes,
           trigger_type: pain_entry.trigger_type,
           is_event,
+          delivered,
           red_flag_locations: red_flag_locs.map(l => ({
             code: l.code, label: l.label, reason: l.red_flag_reason
           }))
         })
       ]
     );
-    return rows[0].id;
+    return { opsAlertId: rows[0].id, delivered };
   } catch (err) {
     console.error('[triggerRedFlagAlert] ops_alerts INSERT failed:', err.message);
-    return null;
+    return { opsAlertId: null, delivered };
   }
 }
 
@@ -2950,17 +2956,20 @@ router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
 
     // Red-flag automation — после COMMIT, не откатывает pain_entry при failure
     let opsAlertId = null;
+    let alertDelivered = false;
     if (newRedFlag) {
       const patRes = await query(
         `SELECT id, full_name, phone, email FROM patients WHERE id = $1`,
         [patientId]
       );
-      opsAlertId = await triggerRedFlagAlert({
+      const alertOutcome = await triggerRedFlagAlert({
         patient: patRes.rows[0],
         pain_entry: painEntry,
         red_flag_locs: redFlagLocs,
         is_event: false
       });
+      opsAlertId = alertOutcome.opsAlertId;
+      alertDelivered = alertOutcome.delivered;
 
       if (opsAlertId) {
         await query(
@@ -2978,8 +2987,12 @@ router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
         })),
         ops_alert_id: opsAlertId
       },
+      // Честное сообщение: обещаем уведомление куратора ТОЛЬКО если оно реально
+      // доставлено. Иначе — без ложного обещания + клиническая инструкция.
       message: newRedFlag
-        ? 'Запись в дневнике сохранена. Куратор получит уведомление о красном флаге.'
+        ? (alertDelivered
+            ? 'Запись в дневнике сохранена. Куратор получил уведомление. При усилении боли или тревожных симптомах свяжитесь с ним или обратитесь за медицинской помощью.'
+            : 'Запись в дневнике сохранена. ВАЖНО: при усилении боли или тревожных симптомах свяжитесь с куратором или обратитесь за медицинской помощью.')
         : 'Запись в дневнике сохранена'
     });
   } catch (err) {
@@ -3108,17 +3121,20 @@ router.post('/my/pain/event', authenticatePatient, async (req, res) => {
     await client.query('COMMIT');
 
     let opsAlertId = null;
+    let alertDelivered = false;
     if (newRedFlag) {
       const patRes = await query(
         `SELECT id, full_name, phone, email FROM patients WHERE id = $1`,
         [patientId]
       );
-      opsAlertId = await triggerRedFlagAlert({
+      const alertOutcome = await triggerRedFlagAlert({
         patient: patRes.rows[0],
         pain_entry: painEntry,
         red_flag_locs: redFlagLocs,
         is_event: true
       });
+      opsAlertId = alertOutcome.opsAlertId;
+      alertDelivered = alertOutcome.delivered;
 
       if (opsAlertId) {
         await query(
@@ -3136,8 +3152,12 @@ router.post('/my/pain/event', authenticatePatient, async (req, res) => {
         })),
         ops_alert_id: opsAlertId
       },
+      // Честное сообщение: обещаем уведомление куратора ТОЛЬКО если оно реально
+      // доставлено. Иначе — без ложного обещания + клиническая инструкция.
       message: newRedFlag
-        ? 'Запись о боли сохранена. Куратор получит уведомление о красном флаге.'
+        ? (alertDelivered
+            ? 'Запись о боли сохранена. Куратор получил уведомление. При усилении боли или тревожных симптомах свяжитесь с ним или обратитесь за медицинской помощью.'
+            : 'Запись о боли сохранена. ВАЖНО: при усилении боли или тревожных симптомах свяжитесь с куратором или обратитесь за медицинской помощью.')
         : 'Запись о боли сохранена'
     });
   } catch (err) {
@@ -3166,6 +3186,11 @@ router.get('/my/pain', authenticatePatientOrInstructor, async (req, res) => {
           error: 'ValidationError',
           message: 'patient_id обязателен для инструктора'
         });
+      }
+      // Ownership — инструктор только свои/назначенные пациенты (иначе IDOR на
+      // историю боли: VAS/локации/red-flag). 404 чтобы не раскрывать существование.
+      if (!(await instructorCanAccessPatient(patientId, req.user))) {
+        return res.status(404).json({ error: 'NotFound', message: 'Пациент не найден' });
       }
     }
 
@@ -3729,6 +3754,11 @@ router.get('/my/rom/:id/photo', authenticatePatientOrInstructor, async (req, res
           error: 'VALIDATION_ERROR',
           message: 'patient_id обязателен для инструктора',
         });
+      }
+      // Ownership — инструктор только свои/назначенные пациенты (иначе IDOR на
+      // ROM-фото = биометрику). 404 чтобы не раскрывать существование пациента.
+      if (!(await instructorCanAccessPatient(patientId, req.user))) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: 'Measurement not found' });
       }
     }
 

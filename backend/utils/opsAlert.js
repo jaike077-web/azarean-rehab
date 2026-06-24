@@ -67,10 +67,13 @@ async function postToTelegram(token, chatId, text) {
       const body = await r.text().catch(() => '');
       // eslint-disable-next-line no-console
       console.error(`[ops-alert] Telegram API ${r.status}: ${body.slice(0, 200)}`);
+      return false;
     }
+    return true;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[ops-alert] send failed:', err.message);
+    return false;
   } finally {
     clearTimeout(timer);
   }
@@ -80,6 +83,12 @@ async function postToTelegram(token, chatId, text) {
  * Отправить alert в ops-bot.
  * @param {string} title — короткий заголовок (1 строка, попадает в дедуп-ключ)
  * @param {string} [body] — детали (stack trace, контекст). Опционально.
+ * @returns {Promise<{delivered:boolean, reason:string}>} реальный исход доставки.
+ *   reason ∈ 'not_configured' | 'deduped' | 'rate_capped' | 'send_failed' | 'ok'.
+ *   delivered=true только когда сообщение реально ушло в Telegram (или было
+ *   доставлено идентичное в последние 10 мин — deduped). Нужно для клинически
+ *   важного red-flag, чтобы НЕ обещать пациенту доставку, которой не было.
+ *   Существующие fire-and-forget вызовы игнорируют возврат (обратная совместимость).
  */
 async function sendOpsAlert(title, body = '') {
   const { token, chatId } = config.opsBot;
@@ -87,7 +96,7 @@ async function sendOpsAlert(title, body = '') {
     // dev/test — просто в консоль
     // eslint-disable-next-line no-console
     console.log(`[ops-alert dry-run] ${title}\n${body}`);
-    return;
+    return { delivered: false, reason: 'not_configured' };
   }
 
   const now = Date.now();
@@ -100,12 +109,13 @@ async function sendOpsAlert(title, body = '') {
 
   pruneExpired();
 
-  // dedup — title + первая строка body
+  // dedup — title + первая строка body. Идентичный алерт был отправлен в
+  // последние 10 мин → считаем доставленным (куратор уже уведомлён).
   const firstBodyLine = (body || '').split('\n', 1)[0] || '';
   const key = hash(title + '|' + firstBodyLine);
   if (seenHashes.has(key)) {
     suppressedCount++;
-    return;
+    return { delivered: true, reason: 'deduped' };
   }
 
   // hourly cap
@@ -118,7 +128,7 @@ async function sendOpsAlert(title, body = '') {
       postToTelegram(token, chatId, notice);
       suppressedCount = 0;
     }
-    return;
+    return { delivered: false, reason: 'rate_capped' };
   }
 
   seenHashes.set(key, now + DEDUP_WINDOW_MS);
@@ -126,7 +136,8 @@ async function sendOpsAlert(title, body = '') {
 
   const env = config.nodeEnv === 'production' ? 'PROD' : config.nodeEnv.toUpperCase();
   const text = `🚨 [${env}] ${title}\n\n${body}`.trim();
-  await postToTelegram(token, chatId, text);
+  const ok = await postToTelegram(token, chatId, text);
+  return { delivered: ok, reason: ok ? 'ok' : 'send_failed' };
 }
 
 // =====================================================

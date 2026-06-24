@@ -401,10 +401,10 @@ describe('GET /api/rehab/my/rom/:id/photo', () => {
     expect(res.status).toBe(401);
   });
 
-  it('instructor GET с ?patient_id → 200', async () => {
-    // is_active check для instructor middleware
+  it('instructor GET со СВОИМ ?patient_id → 200', async () => {
     query
-      .mockResolvedValueOnce({ rows: [{ is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // is_active (middleware)
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] }) // instructorCanAccessPatient → владеет
       .mockResolvedValueOnce({ rows: [{ photo_url: `/uploads/measurements/${testFilename}` }] });
 
     const res = await request(app)
@@ -413,6 +413,21 @@ describe('GET /api/rehab/my/rom/:id/photo', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/image\/jpeg/);
+  });
+
+  it('IDOR: instructor GET с ?patient_id ЧУЖОГО пациента → 404 (нет ownership)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // is_active (middleware)
+      .mockResolvedValueOnce({ rows: [] }); // instructorCanAccessPatient → НЕ владеет
+
+    const res = await request(app)
+      .get('/api/rehab/my/rom/60/photo?patient_id=999')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(404);
+    // основной SELECT фото НЕ должен был выполниться (биометрика не утекла)
+    const photoQuery = query.mock.calls.find(c => /FROM rom_measurements WHERE id/.test(c[0]));
+    expect(photoQuery).toBeUndefined();
   });
 
   it('instructor без ?patient_id → 400', async () => {

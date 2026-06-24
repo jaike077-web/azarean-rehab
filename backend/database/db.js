@@ -19,10 +19,13 @@ console.log(
   `Database connected to ${config.database.host}:${config.database.port}/${config.database.database}`
 );
 
-// Обработка ошибок подключения
-pool.on('error', (err, client) => {
-  console.error('Неожиданная ошибка подключения к БД:', err);
-  process.exit(-1);
+// Обработка ошибок idle-клиента пула.
+// НЕ делаем process.exit — pg сам пересоздаёт битые соединения, а активные
+// запросы отвалятся через try/catch в query(). Раньше process.exit(-1) при
+// кратком сетевом блипе БД в связке с PM2 max_restarts (исчерпание за <30с)
+// давал ПЕРМАНЕНТНЫЙ аутаж всего кабинета. Резервный канал алерта — Этап 2.
+pool.on('error', (err) => {
+  console.error('Неожиданная ошибка пула БД (idle client):', err.message);
 });
 
 // Функция для выполнения запросов
