@@ -8,6 +8,8 @@ const {
   summarizeReview,
   buildSanityPrompt,
   summarizeSanity,
+  buildCompletenessPrompt,
+  buildConsistencyPrompt,
   parseModelJson,
   normalizeStructuredExercise,
 } = require('../../utils/exerciseStructuring');
@@ -147,6 +149,31 @@ describe('exerciseStructuring — buildSanityPrompt / summarizeSanity', () => {
   test('summarizeSanity: нет проблем → пустой массив; мусор → ok=false', () => {
     expect(summarizeSanity({ concerns: [] }).concerns).toEqual([]);
     expect(summarizeSanity('не json').ok).toBe(false);
+  });
+});
+
+describe('exerciseStructuring — buildCompletenessPrompt (агент №5) / buildConsistencyPrompt (№6)', () => {
+  test('completeness: проверяет полноту, не выдумывает, формат concerns', () => {
+    const { system, user } = buildCompletenessPrompt({ title: 'Изометрия', instructions: 'напрягите' });
+    expect(system).toMatch(/ПОЛНОТУ/);
+    expect(system).toMatch(/НЕ выдумывай значения/i);
+    expect(system).toMatch(/concerns/);
+    expect(system).toMatch(/только валидный json/i);
+    expect(user).toContain('"title":"Изометрия"');
+  });
+
+  test('consistency: единообразие/форма «вы»/термины, не переписывает, формат concerns', () => {
+    const { system } = buildConsistencyPrompt({ title: 'X' });
+    expect(system).toMatch(/ЕДИНООБРАЗИЕ/);
+    expect(system).toMatch(/«вы»/);
+    expect(system).toMatch(/НЕ переписывай/i);
+    expect(system).toMatch(/concerns/);
+  });
+
+  test('оба выхода совместимы с summarizeSanity (тот же контракт concerns)', () => {
+    const r = summarizeSanity({ concerns: [{ severity: 'low', field: 'instructions', message: 'нет дыхания' }] });
+    expect(r.ok).toBe(true);
+    expect(r.concerns[0].field).toBe('instructions');
   });
 });
 

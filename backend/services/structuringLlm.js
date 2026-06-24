@@ -17,6 +17,8 @@ const {
   summarizeReview,
   buildSanityPrompt,
   summarizeSanity,
+  buildCompletenessPrompt,
+  buildConsistencyPrompt,
   parseModelJson,
   normalizeStructuredExercise,
 } = require('../utils/exerciseStructuring');
@@ -119,6 +121,26 @@ async function clinicalSanityCheck(fields) {
   return summarizeSanity(raw);
 }
 
+// Критик полноты (агент №5): целостность описания для пациента. Тот же {concerns}.
+async function completenessCheck(fields) {
+  const { system, user } = buildCompletenessPrompt(fields);
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.1 });
+  return summarizeSanity(raw);
+}
+
+// Критик консистентности (агент №6): единообразие/стиль. Тот же {concerns}.
+async function consistencyCheck(fields) {
+  const { system, user } = buildConsistencyPrompt(fields);
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.1 });
+  return summarizeSanity(raw);
+}
+
 // Один автофикс по замечаниям рецензента → перенормализованные поля.
 async function fixStructured(fields, rawText, issues) {
   const { system, user } = buildFixPrompt(fields, rawText, issues);
@@ -162,13 +184,18 @@ async function structureExercise(transcript, opts = {}) {
     result.fixed = fixed;
     if (!review.ok) warnings.push('Проверка качества недоступна (некорректный ответ рецензента)');
 
-    // Клинический sanity-check финальной версии (отдельно, best-effort, только советы).
-    try {
-      const sanity = await clinicalSanityCheck(fields);
-      result.sanity = sanity.ok ? sanity.concerns : null;
-    } catch (sErr) {
-      result.sanity = null;
-    }
+    // Три advisory-критика финальной версии ПАРАЛЛЕЛЬНО (клин. sanity + полнота №5 +
+    // консистентность №6) — независимы, читают финальные поля. Best-effort: сбой одного
+    // не валит остальные и не валит разбор. Латентность ≈ один вызов, а не три.
+    const [sanityR, complR, consR] = await Promise.allSettled([
+      clinicalSanityCheck(fields),
+      completenessCheck(fields),
+      consistencyCheck(fields),
+    ]);
+    const pick = (r) => (r.status === 'fulfilled' && r.value && r.value.ok ? r.value.concerns : null);
+    result.sanity = pick(sanityR);
+    result.completeness = pick(complR);
+    result.consistency = pick(consR);
   } catch (err) {
     // Ревью — необязательный слой; разбор не валим.
     result.review = null;
@@ -211,5 +238,7 @@ module.exports = {
   reviewStructured,
   fixStructured,
   clinicalSanityCheck,
+  completenessCheck,
+  consistencyCheck,
   resolveProvider,
 };

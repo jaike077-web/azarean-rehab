@@ -83,6 +83,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [structureReview, setStructureReview] = useState(null);
   const [structureFixed, setStructureFixed] = useState(false);
   const [structureSanity, setStructureSanity] = useState(null); // клинические советы [{severity,field,message}]
+  const [structureCompleteness, setStructureCompleteness] = useState(null); // полнота (агент №5)
+  const [structureConsistency, setStructureConsistency] = useState(null); // единообразие (агент №6)
   // Планировщик скрипта (этап 4): черновое название → готовый скрипт надиктовки + пункты под вычитку.
   const [planTitle, setPlanTitle] = useState('');
   const [planning, setPlanning] = useState(false);
@@ -236,6 +238,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     setStructureReview(null);
     setStructureFixed(false);
     setStructureSanity(null);
+    setStructureCompleteness(null);
+    setStructureConsistency(null);
     try {
       const res = await exercisesApi.structure(text, { review: reviewQuality });
       const payload = res.data || {};
@@ -244,6 +248,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setStructureReview(payload.review || null);
       setStructureFixed(Boolean(payload.fixed));
       setStructureSanity(Array.isArray(payload.sanity) ? payload.sanity : null);
+      setStructureCompleteness(Array.isArray(payload.completeness) ? payload.completeness : null);
+      setStructureConsistency(Array.isArray(payload.consistency) ? payload.consistency : null);
     } catch (err) {
       setStructureError(
         err.response?.data?.message || 'Не удалось разобрать надиктовку. Попробуйте ещё раз.'
@@ -624,7 +630,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                         disabled={structuring}
                         onChange={(e) => setReviewQuality(e.target.checked)}
                       />
-                      Проверить качество (faithfulness + автофикс + клин. проверка)
+                      Проверить качество (верность + автофикс + клиника + полнота + единообразие)
                     </label>
                     {transcript && !structuring && (
                       <button
@@ -637,6 +643,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                           setStructureReview(null);
                           setStructureFixed(false);
                           setStructureSanity(null);
+                          setStructureCompleteness(null);
+                          setStructureConsistency(null);
+                          setPlanReviewPoints([]);
                         }}
                       >
                         Очистить
@@ -690,6 +699,44 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                         {structureSanity.map((c, i) => (
                           <li key={`san-${i}`}>
+                            <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(structureCompleteness) && structureCompleteness.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: '1px solid #e0c08a', background: 'rgba(200,140,30,0.07)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        ◍ Полнота — чего не хватает (на ваше усмотрение, текст не изменён):
+                      </div>
+                      <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                        {structureCompleteness.map((c, i) => (
+                          <li key={`compl-${i}`}>
+                            <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(structureConsistency) && structureConsistency.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: '1px solid #a3bce0', background: 'rgba(40,90,180,0.06)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        ≡ Единообразие — привести к единому виду (текст не изменён):
+                      </div>
+                      <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                        {structureConsistency.map((c, i) => (
+                          <li key={`cons-${i}`}>
                             <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
                           </li>
                         ))}
