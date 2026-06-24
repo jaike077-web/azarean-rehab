@@ -160,6 +160,11 @@ if (config.nodeEnv === 'production') {
   if (!config.kinescope.apiKey) {
     console.warn('⚠️  KINESCOPE_API_KEY не задан — интеграция с Kinescope недоступна');
   }
+  if (!config.opsBot.token || !config.opsBot.chatId) {
+    // КРИТИЧНО: без ops-бота red-flag алерты боли (ТГВ/ТЭЛА) куратору НЕ
+    // доставляются (уходят только в console.log). См. utils/opsAlert.js.
+    console.warn('🚨 OPS_BOT_TOKEN/OPS_CHAT_ID не заданы — red-flag алерты куратору НЕ доставляются! Клиническая безопасность под угрозой.');
+  }
 }
 
 module.exports = config;

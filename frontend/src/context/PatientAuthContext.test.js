@@ -87,6 +87,26 @@ describe('PatientAuthContext', () => {
     expect(screen.getByTestId('patient')).toHaveTextContent('Новый');
   });
 
+  it('событие patient-auth-expired сбрасывает patient в null (редирект на логин)', async () => {
+    patientAuth.getMe.mockResolvedValue({ data: { id: 14, full_name: 'Вадим' } });
+
+    render(
+      <PatientAuthProvider>
+        <Probe />
+      </PatientAuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('patient')).toHaveTextContent('Вадим'));
+
+    // api.js диспатчит это событие когда refresh пациента упал (сессия истекла)
+    act(() => {
+      window.dispatchEvent(new CustomEvent('patient-auth-expired'));
+    });
+
+    expect(screen.getByTestId('patient')).toHaveTextContent('none');
+    expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
+  });
+
   it('logout вызывает api.logout и очищает state', async () => {
     patientAuth.getMe.mockResolvedValue({ data: { id: 14, full_name: 'Вадим' } });
     patientAuth.logout.mockResolvedValue({});

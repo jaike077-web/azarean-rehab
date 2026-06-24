@@ -15,9 +15,12 @@ jest.mock('../../database/db', () => ({
   getClient: jest.fn(),
 }));
 
-// Мокаем utils/opsAlert чтобы не дёргать реальный Telegram в тестах
+// Мокаем utils/opsAlert чтобы не дёргать реальный Telegram в тестах.
+// По умолчанию — доставлено (delivered:true), чтобы red-flag тесты happy-path
+// получали сообщение «Куратор получил уведомление». Тест недоставки
+// переопределяет через mockResolvedValueOnce({ delivered: false }).
 jest.mock('../../utils/opsAlert', () => ({
-  sendOpsAlert: jest.fn().mockResolvedValue(undefined),
+  sendOpsAlert: jest.fn().mockResolvedValue({ delivered: true, reason: 'ok' }),
 }));
 
 const request = require('supertest');
@@ -266,10 +269,52 @@ describe('POST /api/rehab/my/pain/daily', () => {
     expect(body).toMatch(/Daily diary/);
     expect(body).toMatch(/8\/10/);
     expect(res.body.data.ops_alert_id).toBe(200);
-    expect(res.body.message).toMatch(/уведомление о красном флаге/);
+    // delivered=true (mock по умолчанию) → честное сообщение об уведомлении куратора
+    expect(res.body.message).toMatch(/Куратор получил уведомление/);
 
     const setSentAt = query.mock.calls.find(c => /ops_alert_sent_at\s*=\s*NOW/.test(c[0]));
     expect(setSentAt).toBeDefined();
+  });
+
+  it('red-flag НЕ доставлен (OPS_BOT не настроен) — пациенту честное сообщение БЕЗ ложного «уведомлён»', async () => {
+    // Клиническая безопасность: при недоставке red-flag не обещаем пациенту
+    // уведомление куратора, а даём инструкцию обратиться за помощью.
+    sendOpsAlert.mockResolvedValueOnce({ delivered: false, reason: 'not_configured' });
+
+    const mc = makeMockClient();
+    getClient.mockResolvedValueOnce(mc);
+    mc.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ code: 'calf_posterior', label: 'Икроножная', position: 80, is_red_flag: true, red_flag_reason: 'ТГВ' }],
+      }) // locations
+      .mockResolvedValueOnce({ rows: [] }) // FOR UPDATE — нет existing
+      .mockResolvedValueOnce({
+        rows: [{
+          id: 102, patient_id: 14, vas_score: 9, is_event: false,
+          entry_date: '2026-05-18', created_at: new Date(), red_flag_triggered: true,
+        }],
+      }) // INSERT pain_entries
+      .mockResolvedValueOnce(undefined) // DELETE locations
+      .mockResolvedValueOnce(undefined) // INSERT pain_entry_locations
+      .mockResolvedValueOnce(undefined); // COMMIT
+
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 14, full_name: 'Тест', phone: '+7900' }] }) // patient lookup
+      .mockResolvedValueOnce({ rows: [{ id: 201 }] }) // ops_alerts INSERT (запись остаётся для триажа)
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE ops_alert_sent_at
+
+    const res = await request(app)
+      .post('/api/rehab/my/pain/daily')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ vas_score: 9, location_codes: ['calf_posterior'] });
+
+    expect(res.status).toBe(201);
+    // ops_alerts запись создана (для admin-триажа), но пациенту НЕ обещаем доставку
+    expect(res.body.data.ops_alert_id).toBe(201);
+    expect(res.body.message).not.toMatch(/Куратор получил уведомление/);
+    expect(res.body.message).toMatch(/ВАЖНО/);
+    expect(res.body.message).toMatch(/обратитесь за медицинской помощью/);
   });
 
   it('sticky red_flag — UPDATE сохраняет prev=true даже если новый submit без red-flag', async () => {
@@ -587,6 +632,39 @@ describe('GET /api/rehab/my/pain', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/patient_id обязателен/);
+  });
+
+  it('IDOR: инструктор с patient_id ЧУЖОГО пациента — 404 (нет ownership)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // auth is_active
+      .mockResolvedValueOnce({ rows: [] }); // instructorCanAccessPatient → не владеет
+
+    const res = await request(app)
+      .get('/api/rehab/my/pain?patient_id=999')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(404);
+    // основной SELECT истории НЕ должен был выполниться
+    const historyQuery = query.mock.calls.find(c => /FROM pain_entries pe/.test(c[0]));
+    expect(historyQuery).toBeUndefined();
+  });
+
+  it('инструктор со СВОИМ пациентом (created_by/assigned) — 200', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // auth is_active
+      .mockResolvedValueOnce({ rows: [{ ok: 1 }] }) // instructorCanAccessPatient → владеет
+      .mockResolvedValueOnce({ rows: [{ id: 1, vas_score: 5, is_event: false, locations: [] }] }) // история
+      .mockResolvedValueOnce({ rows: [{ cnt: 1 }] }); // count
+
+    const res = await request(app)
+      .get('/api/rehab/my/pain?patient_id=14')
+      .set('Authorization', `Bearer ${instructorToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+    // ownership-запрос содержит предикат created_by/assigned_instructor_id
+    const ownQuery = query.mock.calls.find(c => /assigned_instructor_id/.test(c[0]));
+    expect(ownQuery).toBeDefined();
   });
 
   it('limit/offset передаются в SQL', async () => {

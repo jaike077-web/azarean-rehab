@@ -50,8 +50,54 @@ describe('sendOpsAlert', () => {
     jest.dontMock('../../config/config');
   });
 
-  it('не падает на пустом body', async () => {
-    await expect(sendOpsAlert('only title')).resolves.toBeUndefined();
+  it('не падает на пустом body — возвращает статус доставки', async () => {
+    const r = await sendOpsAlert('only title');
+    expect(r).toHaveProperty('delivered');
+    expect(typeof r.delivered).toBe('boolean');
+  });
+
+  it('dry-run (token не задан) → { delivered:false, reason:"not_configured" }', async () => {
+    jest.resetModules();
+    jest.doMock('../../config/config', () => ({
+      nodeEnv: 'test',
+      opsBot: { token: '', chatId: '' },
+    }));
+    const { sendOpsAlert: fresh } = require('../../utils/opsAlert');
+
+    const r = await fresh('red flag', 'тело');
+    expect(r).toEqual({ delivered: false, reason: 'not_configured' });
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    jest.dontMock('../../config/config');
+  });
+
+  it('успешная отправка → { delivered:true, reason:"ok" }', async () => {
+    jest.resetModules();
+    process.env.OPS_BOT_TOKEN = 'fake-token';
+    process.env.OPS_CHAT_ID = '12345';
+    const { sendOpsAlert: fresh, _resetState: freshReset } = require('../../utils/opsAlert');
+    freshReset();
+
+    const r = await fresh('title ok', 'body');
+    expect(r).toEqual({ delivered: true, reason: 'ok' });
+
+    delete process.env.OPS_BOT_TOKEN;
+    delete process.env.OPS_CHAT_ID;
+  });
+
+  it('Telegram вернул не-2xx → { delivered:false, reason:"send_failed" }', async () => {
+    jest.resetModules();
+    process.env.OPS_BOT_TOKEN = 'fake-token';
+    process.env.OPS_CHAT_ID = '12345';
+    global.fetch = jest.fn(async () => ({ ok: false, status: 500, text: async () => 'err' }));
+    const { sendOpsAlert: fresh, _resetState: freshReset } = require('../../utils/opsAlert');
+    freshReset();
+
+    const r = await fresh('title fail', 'body');
+    expect(r).toEqual({ delivered: false, reason: 'send_failed' });
+
+    delete process.env.OPS_BOT_TOKEN;
+    delete process.env.OPS_CHAT_ID;
   });
 
   it('дедуп: одинаковый title+первая строка не шлётся повторно', async () => {
