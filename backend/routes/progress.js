@@ -148,7 +148,7 @@ router.get('/complex/:complex_id', authenticatePatientOrInstructor, async (req, 
     const result = await query(
       `SELECT pl.*,
               e.title as exercise_title,
-              e.body_region as exercise_category
+              (e.body_region)[1] as exercise_category  -- body_region теперь TEXT[]; сохраняем скалярный контракт поля
        FROM progress_logs pl
        JOIN exercises e ON pl.exercise_id = e.id
        WHERE pl.complex_id = $1

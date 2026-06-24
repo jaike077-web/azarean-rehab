@@ -7,7 +7,10 @@ import {
   getExerciseTypeLabel,
   getBodyRegionLabel,
   getDifficultyLabel,
-  objectToOptions
+  objectToOptions,
+  formatBodyRegions,
+  firstBodyRegion,
+  bodyRegionMatches
 } from './exerciseConstants';
 
 describe('Exercise Constants', () => {
@@ -71,6 +74,35 @@ describe('Exercise Constants', () => {
 
     test('getBodyRegionLabel works correctly', () => {
       expect(getBodyRegionLabel('knee')).toBe('Колено');
+    });
+
+    describe('body_region массив-хелперы (мультивыбор региона)', () => {
+      test('formatBodyRegions: массив → метки через запятую', () => {
+        expect(formatBodyRegions(['knee', 'hip'])).toBe('Колено, Тазобедренный сустав');
+      });
+      test('formatBodyRegions: скаляр (back-compat) → одна метка', () => {
+        expect(formatBodyRegions('shoulder')).toBe('Плечо');
+      });
+      test('formatBodyRegions: пусто/null → «—»', () => {
+        expect(formatBodyRegions([])).toBe('—');
+        expect(formatBodyRegions(null)).toBe('—');
+        expect(formatBodyRegions('')).toBe('—');
+      });
+      test('formatBodyRegions: неизвестный код отдаётся как есть', () => {
+        expect(formatBodyRegions(['knee', 'Бедро'])).toBe('Колено, Бедро');
+      });
+      test('firstBodyRegion: первый код массива | скаляр | null', () => {
+        expect(firstBodyRegion(['knee', 'hip'])).toBe('knee');
+        expect(firstBodyRegion('shoulder')).toBe('shoulder');
+        expect(firstBodyRegion([])).toBeNull();
+        expect(firstBodyRegion(null)).toBeNull();
+      });
+      test('bodyRegionMatches: содержит код (массив) либо равен (скаляр)', () => {
+        expect(bodyRegionMatches(['knee', 'hip'], 'hip')).toBe(true);
+        expect(bodyRegionMatches(['knee'], 'hip')).toBe(false);
+        expect(bodyRegionMatches('knee', 'knee')).toBe(true);
+        expect(bodyRegionMatches(null, 'knee')).toBe(false);
+      });
     });
 
     test('getDifficultyLabel works correctly', () => {

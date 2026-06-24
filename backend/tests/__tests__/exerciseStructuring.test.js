@@ -58,7 +58,14 @@ describe('exerciseStructuring — buildStructuringPrompt', () => {
     const { system } = buildStructuringPrompt('тест');
     expect(system).toMatch(/Примеры/);
     expect(system).toContain('Маятник для плеча');
-    expect(system).toContain('"body_region":"shoulder"');
+    expect(system).toContain('"body_region":["shoulder"]');
+  });
+
+  test('body_region — массив; есть многосуставный пример (присед = колено+ТБС)', () => {
+    const { system } = buildStructuringPrompt('тест');
+    expect(system).toMatch(/body_region \(МАССИВ\)/);
+    expect(system).toMatch(/перечисляй ВСЕ задействованные суставы/i);
+    expect(system).toContain('"body_region":["knee","hip"]');
   });
 
   test('инструктирует нормализовать числа словами и guard на мусор', () => {
@@ -271,7 +278,7 @@ describe('normalizeStructuredExercise — коды', () => {
       rehab_phases: ['acute'],
     });
     expect(fields.exercise_type).toBe('mobilization');
-    expect(fields.body_region).toBe('shoulder');
+    expect(fields.body_region).toEqual(['shoulder']);  // body_region — массив
     expect(fields.equipment).toEqual(['no-equipment']);
     expect(fields.position).toEqual(['standing']);
     expect(fields.rehab_phases).toEqual(['acute']);
@@ -287,10 +294,27 @@ describe('normalizeStructuredExercise — коды', () => {
       rehab_phases: ['острая'],
     });
     expect(fields.exercise_type).toBe('mobilization');
-    expect(fields.body_region).toBe('shoulder');
+    expect(fields.body_region).toEqual(['shoulder']);  // скаляр-вход коэрсится в 1-эл. массив
     expect(fields.equipment).toEqual(['resistance-band', 'swiss-ball']);
     expect(fields.position).toEqual(['supine']);
     expect(fields.rehab_phases).toEqual(['acute']);
+  });
+
+  test('body_region — массив: многосуставное (присед) + синонимы внутри массива', () => {
+    const { fields } = normalizeStructuredExercise({
+      title: 'Присед',
+      body_region: ['knee', 'тазобедренный сустав'],
+    });
+    expect(fields.body_region).toEqual(['knee', 'hip']);  // синоним «тазобедренный сустав» → hip
+  });
+
+  test('body_region: дубликаты схлопываются, мусор → warning + отброшен', () => {
+    const { fields, warnings } = normalizeStructuredExercise({
+      title: 'Т',
+      body_region: ['колено', 'knee', 'волшебный сустав'],
+    });
+    expect(fields.body_region).toEqual(['knee']);
+    expect(warnings.join(' ')).toMatch(/волшебный сустав/);
   });
 
   test('неизвестное оборудование → warning, отброшено', () => {
@@ -418,7 +442,7 @@ describe('normalizeStructuredExercise — текст и безопасность
   test('строка с JSON разбирается', () => {
     const { fields } = normalizeStructuredExercise('{"title":"Из строки","body_region":"колено"}');
     expect(fields.title).toBe('Из строки');
-    expect(fields.body_region).toBe('knee');
+    expect(fields.body_region).toEqual(['knee']);
   });
 
   test('needs_clarification (только этот ключ) → пустые fields + warning, без выдумок', () => {
@@ -437,6 +461,6 @@ describe('normalizeStructuredExercise — текст и безопасность
       needs_clarification: 'темп не указан',
     });
     expect(fields.title).toBe('Маятник');
-    expect(fields.body_region).toBe('shoulder');
+    expect(fields.body_region).toEqual(['shoulder']);
   });
 });

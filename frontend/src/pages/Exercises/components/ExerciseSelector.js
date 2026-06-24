@@ -12,7 +12,9 @@ import ExerciseViewModal from '../../Exercises/components/ExerciseViewModal';
 import {
   BODY_REGIONS,
   EXERCISE_TYPES,
-  DIFFICULTY_LEVELS
+  DIFFICULTY_LEVELS,
+  bodyRegionMatches,
+  formatBodyRegions
 } from '../../../utils/exerciseConstants';
 import s from './ExerciseSelector.module.css';
 
@@ -63,7 +65,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
     }
 
     if (bodyRegion) {
-      filtered = filtered.filter(ex => ex.body_region === bodyRegion);
+      filtered = filtered.filter(ex => bodyRegionMatches(ex.body_region, bodyRegion));
     }
 
     if (exerciseType) {
@@ -197,7 +199,7 @@ function ExerciseSelector({ onSelect, selectedIds = [] }) {
                 
                 <div className={s.itemMeta}>
                   <span className={`${s.metaBadge} ${s.region}`}>
-                    {BODY_REGIONS[exercise.body_region]}
+                    {formatBodyRegions(exercise.body_region)}
                   </span>
                   
                   {exercise.exercise_type && (

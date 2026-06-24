@@ -6,14 +6,16 @@
 // Использование: BODY_REGIONS[exercise.body_region]
 // =====================================================
 
+// Порядок — анатомический по группам (верхняя конечность → позвоночник →
+// нижняя конечность → общее), чтобы родственные суставы были рядом.
 export const BODY_REGIONS = {
   shoulder: 'Плечо',
-  knee: 'Колено',
-  hip: 'Тазобедренный сустав',
-  spine: 'Позвоночник',
-  ankle: 'Голеностоп',
   elbow: 'Локоть',
   wrist: 'Кисть',
+  spine: 'Позвоночник',
+  hip: 'Тазобедренный сустав',
+  knee: 'Колено',
+  ankle: 'Голеностоп',
   full_body: 'Всё тело'
 };
 
@@ -126,14 +128,15 @@ export const JOINT_OPTIONS = {
 // Использование: в <select> для генерации <option>
 // =====================================================
 
+// Порядок синхронизирован с BODY_REGIONS (группы: верх → позвоночник → низ → общее).
 export const BODY_REGIONS_OPTIONS = [
   { value: 'shoulder', label: 'Плечо' },
-  { value: 'knee', label: 'Колено' },
-  { value: 'hip', label: 'Тазобедренный сустав' },
-  { value: 'spine', label: 'Позвоночник' },
-  { value: 'ankle', label: 'Голеностоп' },
   { value: 'elbow', label: 'Локоть' },
   { value: 'wrist', label: 'Кисть' },
+  { value: 'spine', label: 'Позвоночник' },
+  { value: 'hip', label: 'Тазобедренный сустав' },
+  { value: 'knee', label: 'Колено' },
+  { value: 'ankle', label: 'Голеностоп' },
   { value: 'full_body', label: 'Всё тело' }
 ];
 
@@ -232,6 +235,20 @@ export const getLabel = (value, constantsObj) => {
 // Хелперы для каждого типа
 export const getExerciseTypeLabel = (value) => getLabel(value, EXERCISE_TYPES);
 export const getBodyRegionLabel = (value) => getLabel(value, BODY_REGIONS);
+
+// body_region теперь массив кодов (мультивыбор). Хелперы принимают массив | скаляр (back-compat) | null.
+// Первый код — для иконки.
+export const firstBodyRegion = (value) =>
+  Array.isArray(value) ? value[0] || null : value || null;
+// Человекочитаемые метки региона(ов): ["knee","hip"] → "Колено, Тазобедренный сустав"; пусто → "—".
+export const formatBodyRegions = (value) => {
+  const arr = Array.isArray(value) ? value : value != null && value !== '' ? [value] : [];
+  if (!arr.length) return '—';
+  return arr.map((v) => getLabel(v, BODY_REGIONS)).join(', ');
+};
+// Содержит ли body_region упражнения данный код (для фильтров). Back-compat: массив | скаляр.
+export const bodyRegionMatches = (value, code) =>
+  Array.isArray(value) ? value.includes(code) : value === code;
 export const getDifficultyLabel = (value) => getLabel(value, DIFFICULTY_LEVELS);
 export const getEquipmentLabel = (value) => getLabel(value, EQUIPMENT_OPTIONS);
 export const getPositionLabel = (value) => getLabel(value, POSITION_OPTIONS);

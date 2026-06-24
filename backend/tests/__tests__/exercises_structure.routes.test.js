@@ -67,14 +67,14 @@ describe('POST /api/exercises/structure', () => {
   it('200 → { fields, warnings } проброшены (review по умолчанию выкл)', async () => {
     authOk();
     structuringLlm.structureExercise.mockResolvedValueOnce({
-      fields: { title: 'Маятник', body_region: 'shoulder' },
+      fields: { title: 'Маятник', body_region: ['shoulder'] },
       warnings: ['equipment: не распознано «палка»'],
     });
     const res = await inst(request(app).post('/api/exercises/structure'))
       .send({ transcript: 'Маятник, плечо' });
     expect(res.status).toBe(200);
     expect(res.body.data.fields.title).toBe('Маятник');
-    expect(res.body.data.fields.body_region).toBe('shoulder');
+    expect(res.body.data.fields.body_region).toEqual(['shoulder']);
     expect(res.body.data.warnings).toContain('equipment: не распознано «палка»');
     expect(res.body.data.review).toBeNull();
     expect(res.body.data.fixed).toBe(false);

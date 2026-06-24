@@ -30,14 +30,15 @@ const EXERCISE_TYPES = {
   stretching: 'Растяжка',
 };
 
+// Порядок — анатомический по группам (верх → позвоночник → низ → общее).
 const BODY_REGIONS = {
   shoulder: 'Плечо',
-  knee: 'Колено',
+  elbow: 'Локоть',
+  wrist: 'Кисть',
   spine: 'Позвоночник',
   hip: 'Тазобедренный сустав',
+  knee: 'Колено',
   ankle: 'Голеностоп',
-  elbow: 'Локоть',
-  wrist: 'Запястье',
   full_body: 'Всё тело',
 };
 
@@ -144,7 +145,7 @@ const REHAB_PHASE_SYNONYMS = {
 const CHECKLIST = [
   { key: 'title', label: 'Название упражнения', hint: 'полное, как в библиотеке' },
   { key: 'short_title', label: 'Короткое название', hint: 'для списков (необязательно)' },
-  { key: 'body_region', label: 'Регион тела', hint: 'плечо / колено / позвоночник / …' },
+  { key: 'body_region', label: 'Регион тела', hint: 'плечо / колено / … (можно несколько — присед = колено + ТБС)' },
   { key: 'exercise_type', label: 'Тип упражнения', hint: 'силовое / мобилизация / стабилизация / …' },
   { key: 'difficulty_level', label: 'Сложность', hint: 'от 1 (легко) до 5 (сложно)' },
   { key: 'equipment', label: 'Оборудование', hint: 'резинка / гантель / без оборудования / …' },
@@ -207,7 +208,7 @@ const FEW_SHOT_EXAMPLES = [
       + 'Это мобилизация, ранняя фаза после операции. Дыши свободно. Не делать при острой боли.',
     json: {
       title: 'Маятник для плеча',
-      body_region: 'shoulder',
+      body_region: ['shoulder'],
       exercise_type: 'mobilization',
       equipment: ['no-equipment'],
       position: ['standing'],
@@ -228,7 +229,7 @@ const FEW_SHOT_EXAMPLES = [
       + 'Три подхода по пятнадцать повторений.',
     json: {
       title: 'Разгибание колена сидя с резинкой',
-      body_region: 'knee',
+      body_region: ['knee'],
       exercise_type: 'strength',
       equipment: ['resistance-band'],
       position: ['sitting'],
@@ -237,6 +238,26 @@ const FEW_SHOT_EXAMPLES = [
       description:
         'Силовое упражнение на разгибание колена сидя с сопротивлением резиновой ленты.',
       instructions: 'Разгибайте колено, преодолевая сопротивление резинки. 3 подхода по 15 повторений.',
+    },
+  },
+  {
+    // Многосуставное: перечисляем ВСЕ задействованные суставы, а не один-«главный».
+    transcript:
+      'Приседание без веса, силовое. Работают колени и тазобедренные суставы. Стоя, ноги на '
+      + 'ширине плеч, опускаешься до параллели бедра с полом, спина прямая. Функциональная фаза.',
+    json: {
+      title: 'Приседание без веса',
+      body_region: ['knee', 'hip'],
+      exercise_type: 'strength',
+      equipment: ['no-equipment'],
+      position: ['standing'],
+      rehab_phases: ['functional'],
+      description:
+        'Базовое приседание с собственным весом: работают передняя поверхность бедра и тазобедренные суставы.',
+      instructions:
+        '1. Встаньте, ноги на ширине плеч.\n'
+        + '2. Опускайтесь до параллели бедра с полом, спина прямая.\n'
+        + '3. Поднимитесь в исходное положение.',
     },
   },
 ];
@@ -285,7 +306,9 @@ function buildStructuringPrompt(transcript) {
     '',
     'Разрешённые коды:',
     `- exercise_type (один): ${listForPrompt(EXERCISE_TYPES)}`,
-    `- body_region (один): ${listForPrompt(BODY_REGIONS)}`,
+    `- body_region (МАССИВ): ${listForPrompt(BODY_REGIONS)}`,
+    '  Для многосуставных упражнений перечисляй ВСЕ задействованные суставы '
+      + '(приседание → ["knee","hip"], выпад → ["knee","hip"]), а не один «главный».',
     '- difficulty_level: целое 1..5',
     `- equipment (массив): ${listForPrompt(EQUIPMENT)}`,
     `- position (массив): ${listForPrompt(POSITIONS)}`,
@@ -741,18 +764,17 @@ function normalizeStructuredExercise(raw) {
     if (v) fields[key] = v;
   }
 
-  // exercise_type / body_region — скаляры на whitelist.
+  // exercise_type — скаляр на whitelist.
   const et = mapScalar(data.exercise_type, EXERCISE_TYPES, EXERCISE_TYPE_SYNONYMS);
   if (et) fields.exercise_type = et;
   else if (data.exercise_type != null && String(data.exercise_type).trim()) {
     warnings.push(`exercise_type: не распознано «${String(data.exercise_type).trim()}»`);
   }
 
-  const br = mapScalar(data.body_region, BODY_REGIONS, BODY_REGION_SYNONYMS);
-  if (br) fields.body_region = br;
-  else if (data.body_region != null && String(data.body_region).trim()) {
-    warnings.push(`body_region: не распознано «${String(data.body_region).trim()}»`);
-  }
+  // body_region — МАССИВ кодов на whitelist (многосуставные: ["knee","hip"]). Модель
+  // может вернуть строку (старый формат) — mapArray принимает и скаляр, и массив.
+  const bodyRegions = mapArray(data.body_region, BODY_REGIONS, BODY_REGION_SYNONYMS, warnings, 'body_region');
+  if (bodyRegions.length) fields.body_region = bodyRegions;
 
   // difficulty_level — целое 1..5 (clamp). Включаем только если задано числом.
   if (data.difficulty_level != null && data.difficulty_level !== '') {

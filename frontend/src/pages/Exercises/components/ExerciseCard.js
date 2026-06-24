@@ -17,9 +17,10 @@ import {
   Zap
 } from 'lucide-react';
 import {
-  BODY_REGIONS,
   EXERCISE_TYPES,
-  EQUIPMENT_OPTIONS
+  EQUIPMENT_OPTIONS,
+  firstBodyRegion,
+  formatBodyRegions
 } from '../../../utils/exerciseConstants';
 import { toThumbnailUrl } from '../../../utils/videoEmbed';
 import s from './ExerciseCard.module.css';
@@ -147,7 +148,7 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
           style={{ display: thumbnail ? 'none' : 'flex' }}
         >
           <span className={s.placeholderIcon}>
-            {getBodyRegionIcon(exercise.body_region)}
+            {getBodyRegionIcon(firstBodyRegion(exercise.body_region))}
           </span>
         </div>
         
@@ -195,9 +196,9 @@ function ExerciseCard({ exercise, onEdit, onDelete, onView }) {
         <div className={s.cardMeta}>
           <span className={s.metaItem}>
             <span className={s.metaIcon}>
-              {getBodyRegionIcon(exercise.body_region)}
+              {getBodyRegionIcon(firstBodyRegion(exercise.body_region))}
             </span>
-            {BODY_REGIONS[exercise.body_region] || exercise.body_region || 'Не указано'}
+            {formatBodyRegions(exercise.body_region)}
           </span>
           
           {exercise.exercise_type && (

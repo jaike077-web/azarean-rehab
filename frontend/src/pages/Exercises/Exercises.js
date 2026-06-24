@@ -8,6 +8,7 @@ import {
   Search
 } from 'lucide-react';
 import { exercises } from '../../services/api';
+import { bodyRegionMatches } from '../../utils/exerciseConstants';
 import ExerciseFilters from './components/ExerciseFilters';
 import ExerciseCard from './components/ExerciseCard';
 import ExerciseModal from './components/ExerciseModal';
@@ -88,7 +89,7 @@ function Exercises() {
 
     // Регион тела
     if (filters.body_region) {
-      filtered = filtered.filter(ex => ex.body_region === filters.body_region);
+      filtered = filtered.filter(ex => bodyRegionMatches(ex.body_region, filters.body_region));
     }
 
     // Тип упражнения
