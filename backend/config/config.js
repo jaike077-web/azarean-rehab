@@ -119,6 +119,9 @@ const config = {
     apiKey: process.env.DEEPSEEK_API_KEY || '',
     baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
     model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+    // Более сильная модель под ГЕНЕРАЦИЮ (планировщик скрипта, этап 4). Дефолт есть
+    // → нового прод-секрета не требует. На ключе доступны и flash, и pro.
+    modelPro: process.env.DEEPSEEK_MODEL_PRO || 'deepseek-v4-pro',
   },
 
   // Провайдер для структурирования надиктовки: 'deepseek' (по умолчанию) | 'isai'.

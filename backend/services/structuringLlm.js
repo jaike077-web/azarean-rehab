@@ -11,11 +11,13 @@
 const config = require('../config/config');
 const {
   buildStructuringPrompt,
+  buildScriptPlannerPrompt,
   buildReviewPrompt,
   buildFixPrompt,
   summarizeReview,
   buildSanityPrompt,
   summarizeSanity,
+  parseModelJson,
   normalizeStructuredExercise,
 } = require('../utils/exerciseStructuring');
 
@@ -35,7 +37,7 @@ function endpointUrl(baseUrl) {
 }
 
 // Низкоуровневый OpenAI-совместимый вызов. Возвращает строку content первого choice.
-async function chatCompletion(messages, { timeoutMs = 90000, temperature = 0.2 } = {}) {
+async function chatCompletion(messages, { timeoutMs = 90000, temperature = 0.2, model: modelOverride } = {}) {
   const { provider, baseUrl, apiKey, model } = resolveProvider();
   if (!apiKey) {
     const e = new Error(`LLM не сконфигурирован (провайдер ${provider})`);
@@ -46,7 +48,7 @@ async function chatCompletion(messages, { timeoutMs = 90000, temperature = 0.2 }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const body = { model, messages, temperature, stream: false };
+    const body = { model: modelOverride || model, messages, temperature, stream: false };
     // DeepSeek: гарантированный валидный JSON (нативной json_schema нет, есть json_object).
     // Требует слова "json" в промпте — оно есть в системном промпте структурирования.
     if (provider === 'deepseek') {
@@ -176,10 +178,36 @@ async function structureExercise(transcript, opts = {}) {
   return result;
 }
 
+// Планировщик скрипта (этап 4): черновой ввод → { script, review_points }. Генерация
+// на сильной модели (deepseek-v4-pro для провайдера deepseek; для isai — дефолтная).
+// best-effort парсинг JSON; пустой script → ошибка (роут отдаст 502).
+async function planExerciseScript(input) {
+  const { system, user } = buildScriptPlannerPrompt(input);
+  const provider = resolveProvider().provider;
+  const modelOverride = provider === 'deepseek' ? config.deepseek.modelPro : undefined;
+  const raw = await chatCompletion([
+    { role: 'system', content: system },
+    { role: 'user', content: user },
+  ], { temperature: 0.4, model: modelOverride });
+
+  const parsed = parseModelJson(raw);
+  const script = parsed && typeof parsed.script === 'string' ? parsed.script.trim() : '';
+  const reviewPoints = parsed && Array.isArray(parsed.review_points)
+    ? parsed.review_points.map((p) => String(p == null ? '' : p).trim()).filter(Boolean).slice(0, 20)
+    : [];
+  if (!script) {
+    const e = new Error('Планировщик вернул пустой скрипт');
+    e.code = 'LLM_EMPTY';
+    throw e;
+  }
+  return { script, review_points: reviewPoints, provider };
+}
+
 module.exports = {
   isConfigured,
   chatCompletion,
   structureExercise,
+  planExerciseScript,
   reviewStructured,
   fixStructured,
   clinicalSanityCheck,

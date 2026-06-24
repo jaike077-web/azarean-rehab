@@ -265,6 +265,10 @@ export const exercises = {
   // review=true включает проверку качества (faithfulness + автофикс) — дороже и дольше.
   structure: (transcript, { review = false } = {}) => api.post('/exercises/structure', { transcript, review }),
 
+  // Планировщик скрипта (этап 4): черновые данные → { script, review_points } (не-PII).
+  // Генерация на deepseek-v4-pro — оператор вычитывает скрипт и затем диктует/разбирает.
+  planScript: (input) => api.post('/exercises/plan-script', input || {}),
+
   // Распознавание речи (Yandex SpeechKit): аудио-Blob → { text }. По умолчанию raw PCM 16кГц.
   transcribe: (blob, { format = 'lpcm', sampleRateHertz = 16000 } = {}) => {
     const fd = new FormData();

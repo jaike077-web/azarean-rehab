@@ -2,6 +2,7 @@
 const {
   CHECKLIST,
   buildStructuringPrompt,
+  buildScriptPlannerPrompt,
   buildReviewPrompt,
   buildFixPrompt,
   summarizeReview,
@@ -62,6 +63,37 @@ describe('exerciseStructuring — buildStructuringPrompt', () => {
     const { system } = buildStructuringPrompt('тест');
     expect(system).toMatch(/словами.*цифры|цифры/i);
     expect(system).toMatch(/needs_clarification/);
+  });
+
+  test('фиксирует форму обращения «вы» + правило удержания без выдумки длительности', () => {
+    const { system } = buildStructuringPrompt('тест');
+    expect(system).toMatch(/на «ВЫ»/);
+    expect(system).toMatch(/УДЕРЖАНИЕ/i);
+    expect(system).toMatch(/НЕ придумывай\s+число|не выдумывай/i);
+  });
+});
+
+describe('exerciseStructuring — buildScriptPlannerPrompt (этап 4)', () => {
+  test('включает черновое название и инструкцию JSON-вывода', () => {
+    const { system, user } = buildScriptPlannerPrompt({ title: 'Маятник Кодмана', body_region: 'плечо' });
+    expect(user).toContain('Маятник Кодмана');
+    expect(user).toContain('плечо');
+    expect(system).toMatch(/script/);
+    expect(system).toMatch(/review_points/);
+    expect(system).toMatch(/только валидный json/i);
+  });
+
+  test('требует выносить клинические предположения в review_points под вычитку', () => {
+    const { system } = buildScriptPlannerPrompt({ title: 'X' });
+    expect(system).toMatch(/ЧЕРНОВИК ПОД ВЫЧИТКУ/i);
+    expect(system).toMatch(/review_points/);
+    expect(system).toMatch(/НЕ выдавай\s+догадку за факт/i);
+  });
+
+  test('устойчив к пустому вводу', () => {
+    const { system, user } = buildScriptPlannerPrompt(null);
+    expect(typeof system).toBe('string');
+    expect(typeof user).toBe('string');
   });
 });
 

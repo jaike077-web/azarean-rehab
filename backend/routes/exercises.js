@@ -105,6 +105,46 @@ router.post('/structure', authenticateToken, async (req, res) => {
 });
 
 // ========================================
+// POST /api/exercises/plan-script - Планировщик скрипта (этап 4): черновые данные →
+// полный скрипт надиктовки по чек-листу + список клинических пунктов под вычитку.
+// НЕ-PII (контент библиотеки). Генерация на deepseek-v4-pro. Инструктор-уровень.
+// ========================================
+
+router.post('/plan-script', authenticateToken, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const title = typeof b.title === 'string' ? b.title.trim() : '';
+    if (title.length < 2) {
+      return res.status(400).json({ error: 'Нет названия', message: 'Укажите хотя бы черновое название упражнения' });
+    }
+    if (!structuringLlm.isConfigured()) {
+      return res.status(503).json({ error: 'LLM не настроен', message: 'Генерация недоступна: не задан ключ провайдера (DeepSeek/is*ai)' });
+    }
+    const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+    const input = {
+      title: title.slice(0, 300),
+      body_region: str(b.body_region, 100),
+      exercise_type: str(b.exercise_type, 100),
+      goal: str(b.goal, 1000),
+      phase: str(b.phase, 100),
+      video_url: str(b.video_url, 500),
+      notes: str(b.notes, 2000),
+    };
+    const out = await structuringLlm.planExerciseScript(input);
+    return res.json({ data: { script: out.script, review_points: out.review_points } });
+  } catch (error) {
+    console.error('Error planning script:', error.code || error.message);
+    if (error.code === 'LLM_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут AI', message: 'AI не ответил вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'LLM_HTTP' || error.code === 'LLM_EMPTY') {
+      return res.status(502).json({ error: 'Ошибка AI', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
+    }
+    return res.status(500).json({ error: 'Ошибка генерации', message: 'Не удалось сгенерировать скрипт' });
+  }
+});
+
+// ========================================
 // POST /api/exercises/transcribe - Распознать аудио надиктовки через Yandex SpeechKit
 // НЕ-PII. multipart: audio (файл) + опц. format (oggopus|lpcm|mp3) + sampleRateHertz.
 // Возвращает { text } — расшифровку для поля надиктовки.

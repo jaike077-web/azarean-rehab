@@ -83,6 +83,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [structureReview, setStructureReview] = useState(null);
   const [structureFixed, setStructureFixed] = useState(false);
   const [structureSanity, setStructureSanity] = useState(null); // клинические советы [{severity,field,message}]
+  // Планировщик скрипта (этап 4): черновое название → готовый скрипт надиктовки + пункты под вычитку.
+  const [planTitle, setPlanTitle] = useState('');
+  const [planning, setPlanning] = useState(false);
+  const [planReviewPoints, setPlanReviewPoints] = useState([]);
 
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -246,6 +250,33 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       );
     } finally {
       setStructuring(false);
+    }
+  };
+
+  // Планировщик скрипта: черновое название (+ опц. регион/тип из формы) → скрипт-черновик
+  // надиктовки. Скрипт ДОПИСЫВАЕТСЯ в поле надиктовки (оператор правит и затем диктует/
+  // разбирает); review_points — что проверить перед сохранением.
+  const handlePlanScript = async () => {
+    const title = planTitle.trim();
+    if (title.length < 2 || planning) return;
+    setPlanning(true);
+    setStructureError(null);
+    setPlanReviewPoints([]);
+    try {
+      const res = await exercisesApi.planScript({
+        title,
+        body_region: bodyRegion || '',
+        exercise_type: exerciseType || '',
+      });
+      const payload = res.data || {};
+      if (payload.script) {
+        setTranscript((prev) => (prev.trim() ? `${prev.trim()}\n\n${payload.script}` : payload.script));
+      }
+      setPlanReviewPoints(Array.isArray(payload.review_points) ? payload.review_points : []);
+    } catch (err) {
+      setStructureError(err.response?.data?.message || 'Не удалось сгенерировать скрипт. Попробуйте ещё раз.');
+    } finally {
+      setPlanning(false);
     }
   };
 
@@ -453,6 +484,44 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Планировщик скрипта (этап 4): черновое название → скрипт-черновик по чек-листу */}
+                  <div style={{ marginBottom: 12, padding: 12, background: 'var(--color-surface-2, #f8fafc)', border: '1px solid var(--color-border, #e2e8f0)', borderRadius: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                      Нет готового текста? Сгенерируйте скрипт-черновик
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        value={planTitle}
+                        onChange={(e) => setPlanTitle(e.target.value)}
+                        placeholder="Черновое название упражнения"
+                        disabled={planning || structuring}
+                        style={{ flex: 1, minWidth: 200, boxSizing: 'border-box', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border, #cbd5e1)' }}
+                      />
+                      <button
+                        type="button"
+                        className={s.btnSecondary}
+                        onClick={handlePlanScript}
+                        disabled={planning || structuring || planTitle.trim().length < 2}
+                      >
+                        {planning
+                          ? (<><Loader2 size={15} className={s.spinIcon} /> Генерирую… (~30–60 сек)</>)
+                          : (<><Sparkles size={15} /> Сгенерировать скрипт</>)}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted, #6b7280)', margin: '6px 0 0' }}>
+                      Черновик для вычитки: проверьте клинические пункты, поправьте под себя — текст ляжет в поле надиктовки ниже.
+                    </p>
+                    {planReviewPoints.length > 0 && (
+                      <div style={{ marginTop: 8, padding: 10, background: 'var(--color-warning-bg, rgba(255,165,0,0.12))', borderRadius: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Проверьте перед сохранением:</div>
+                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.5 }}>
+                          {planReviewPoints.map((p, idx) => <li key={idx}>{p}</li>)}
+                        </ul>
+                      </div>
+                    )}
                   </div>
 
                   {/* Запись голосом: старт / пауза-продолжить / стоп-распознать */}
