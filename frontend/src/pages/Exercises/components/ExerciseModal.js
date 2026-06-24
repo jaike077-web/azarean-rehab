@@ -83,6 +83,11 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   const [structureReview, setStructureReview] = useState(null);
   const [structureFixed, setStructureFixed] = useState(false);
   const [structureSanity, setStructureSanity] = useState(null); // клинические советы [{severity,field,message}]
+  const [structureCompleteness, setStructureCompleteness] = useState(null); // полнота (агент №5)
+  const [structureConsistency, setStructureConsistency] = useState(null); // единообразие (агент №6)
+  // Ответы оператора на пункты полноты / review_points планировщика (ключ «префикс-индекс»).
+  // Оператор сам отвечает (его слова → в текст надиктовки), AI не выдумывает.
+  const [pointAnswers, setPointAnswers] = useState({});
   // Планировщик скрипта (этап 4): черновое название → готовый скрипт надиктовки + пункты под вычитку.
   const [planTitle, setPlanTitle] = useState('');
   const [planning, setPlanning] = useState(false);
@@ -236,6 +241,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
     setStructureReview(null);
     setStructureFixed(false);
     setStructureSanity(null);
+    setStructureCompleteness(null);
+    setStructureConsistency(null);
+    setPointAnswers({});
     try {
       const res = await exercisesApi.structure(text, { review: reviewQuality });
       const payload = res.data || {};
@@ -244,6 +252,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setStructureReview(payload.review || null);
       setStructureFixed(Boolean(payload.fixed));
       setStructureSanity(Array.isArray(payload.sanity) ? payload.sanity : null);
+      setStructureCompleteness(Array.isArray(payload.completeness) ? payload.completeness : null);
+      setStructureConsistency(Array.isArray(payload.consistency) ? payload.consistency : null);
     } catch (err) {
       setStructureError(
         err.response?.data?.message || 'Не удалось разобрать надиктовку. Попробуйте ещё раз.'
@@ -252,6 +262,53 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
       setStructuring(false);
     }
   };
+
+  // Ответы оператора на пункты полноты / review_points: его слова дописываются в
+  // текст надиктовки → он пересобирает, и AI вставляет ИМЕННО ответ (не выдумывает).
+  const setPointAnswer = (id, val) => setPointAnswers((prev) => ({ ...prev, [id]: val }));
+
+  const applyPointAnswers = (keyPrefix, count) => {
+    const lines = [];
+    for (let i = 0; i < count; i += 1) {
+      const a = (pointAnswers[`${keyPrefix}-${i}`] || '').trim();
+      if (a) lines.push(a);
+    }
+    if (!lines.length) return;
+    setTranscript((prev) => (prev.trim() ? `${prev.trim()}\n${lines.join('\n')}` : lines.join('\n')));
+  };
+
+  // Список пунктов с полем ответа на каждый + кнопка «вписать ответы в надиктовку».
+  const renderAnswerablePoints = (points, keyPrefix, getText) => (
+    <>
+      <ul style={{ margin: '4px 0 0', padding: 0, listStyle: 'none' }}>
+        {points.map((p, i) => {
+          const id = `${keyPrefix}-${i}`;
+          return (
+            <li key={id} style={{ marginBottom: 8 }}>
+              <div>{getText(p)}</div>
+              <input
+                type="text"
+                value={pointAnswers[id] || ''}
+                onChange={(e) => setPointAnswer(id, e.target.value)}
+                placeholder="ваш ответ (полной фразой, напр. «удержание 5 секунд»)"
+                disabled={structuring}
+                style={{ width: '100%', boxSizing: 'border-box', marginTop: 3, padding: '4px 8px', fontSize: 12, borderRadius: 6, border: '1px solid var(--color-border, #cbd5e1)' }}
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <button
+        type="button"
+        className={s.btnSecondary}
+        style={{ marginTop: 6, fontSize: 12, padding: '6px 12px' }}
+        onClick={() => applyPointAnswers(keyPrefix, points.length)}
+        disabled={structuring}
+      >
+        Вписать ответы в текст надиктовки
+      </button>
+    </>
+  );
 
   // Планировщик скрипта: черновое название (+ опц. регион/тип из формы) → скрипт-черновик
   // надиктовки. Скрипт ДОПИСЫВАЕТСЯ в поле надиктовки (оператор правит и затем диктует/
@@ -521,10 +578,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                     </p>
                     {planReviewPoints.length > 0 && (
                       <div style={{ marginTop: 8, padding: 10, background: 'var(--color-warning-bg, rgba(255,165,0,0.12))', borderRadius: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Проверьте перед сохранением:</div>
-                        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, lineHeight: 1.5 }}>
-                          {planReviewPoints.map((p, idx) => <li key={idx}>{p}</li>)}
-                        </ul>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Проверьте перед сохранением (ответьте — впишется в текст):</div>
+                        {renderAnswerablePoints(planReviewPoints, 'plan', (p) => p)}
                       </div>
                     )}
                   </div>
@@ -624,7 +679,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                         disabled={structuring}
                         onChange={(e) => setReviewQuality(e.target.checked)}
                       />
-                      Проверить качество (faithfulness + автофикс + клин. проверка)
+                      Проверить качество (верность + автофикс + клиника + полнота + единообразие)
                     </label>
                     {transcript && !structuring && (
                       <button
@@ -637,6 +692,10 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                           setStructureReview(null);
                           setStructureFixed(false);
                           setStructureSanity(null);
+                          setStructureCompleteness(null);
+                          setStructureConsistency(null);
+                          setPlanReviewPoints([]);
+                          setPointAnswers({});
                         }}
                       >
                         Очистить
@@ -690,6 +749,40 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                         {structureSanity.map((c, i) => (
                           <li key={`san-${i}`}>
+                            <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(structureCompleteness) && structureCompleteness.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: '1px solid #e0c08a', background: 'rgba(200,140,30,0.07)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        ◍ Полнота — чего не хватает (ответьте на пункт — впишется в текст для пересборки):
+                      </div>
+                      {renderAnswerablePoints(structureCompleteness, 'compl', (c) => (
+                        <span><b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}</span>
+                      ))}
+                    </div>
+                  )}
+                  {Array.isArray(structureConsistency) && structureConsistency.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 10, padding: 10, borderRadius: 8, fontSize: 12,
+                        border: '1px solid #a3bce0', background: 'rgba(40,90,180,0.06)',
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                        ≡ Стиль и обращение — на ваше усмотрение (текст не изменён):
+                      </div>
+                      <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                        {structureConsistency.map((c, i) => (
+                          <li key={`cons-${i}`}>
                             <b>[{c.severity}]</b> {c.field ? `${c.field}: ` : ''}{c.message}
                           </li>
                         ))}
