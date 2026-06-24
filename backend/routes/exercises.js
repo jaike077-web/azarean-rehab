@@ -114,8 +114,10 @@ router.post('/plan-script', authenticateToken, async (req, res) => {
   try {
     const b = req.body || {};
     const title = typeof b.title === 'string' ? b.title.trim() : '';
-    if (title.length < 2) {
-      return res.status(400).json({ error: 'Нет названия', message: 'Укажите хотя бы черновое название упражнения' });
+    const notes = typeof b.notes === 'string' ? b.notes.trim() : '';
+    // Нужно хоть что-то: черновое название ИЛИ уже введённый текст надиктовки/записи.
+    if (title.length < 2 && notes.length < 10) {
+      return res.status(400).json({ error: 'Нет данных', message: 'Укажите черновое название или впишите текст надиктовки' });
     }
     if (!structuringLlm.isConfigured()) {
       return res.status(503).json({ error: 'LLM не настроен', message: 'Генерация недоступна: не задан ключ провайдера (DeepSeek/is*ai)' });

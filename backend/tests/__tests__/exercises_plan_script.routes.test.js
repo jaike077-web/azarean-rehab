@@ -42,11 +42,22 @@ describe('POST /api/exercises/plan-script', () => {
     expect(structuringLlm.planExerciseScript).not.toHaveBeenCalled();
   });
 
-  it('400 без названия (короче 2 символов)', async () => {
+  it('400 без названия И без текста надиктовки', async () => {
     authOk();
-    const res = await inst(request(app).post('/api/exercises/plan-script')).send({ title: 'я' });
+    const res = await inst(request(app).post('/api/exercises/plan-script')).send({ title: 'я', notes: '' });
     expect(res.status).toBe(400);
     expect(structuringLlm.planExerciseScript).not.toHaveBeenCalled();
+  });
+
+  it('200 по одному тексту надиктовки (без названия) — notes доходят как черновик', async () => {
+    authOk();
+    structuringLlm.planExerciseScript.mockResolvedValueOnce({ script: 'Полный скрипт ...', review_points: [] });
+    const res = await inst(request(app).post('/api/exercises/plan-script'))
+      .send({ title: '', notes: 'разгибание голени лёжа, изометрия квадрицепса, ранняя фаза' });
+    expect(res.status).toBe(200);
+    expect(structuringLlm.planExerciseScript).toHaveBeenCalledWith(
+      expect.objectContaining({ notes: expect.stringContaining('разгибание голени') }),
+    );
   });
 
   it('503 когда LLM не настроен', async () => {

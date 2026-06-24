@@ -258,7 +258,9 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
   // разбирает); review_points — что проверить перед сохранением.
   const handlePlanScript = async () => {
     const title = planTitle.trim();
-    if (title.length < 2 || planning) return;
+    const draft = transcript.trim(); // уже введённый/надиктованный текст — опора для расширения
+    // Нужно хоть что-то: черновое название ИЛИ текст в поле надиктовки.
+    if ((title.length < 2 && draft.length < 10) || planning) return;
     setPlanning(true);
     setStructureError(null);
     setPlanReviewPoints([]);
@@ -267,10 +269,12 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
         title,
         body_region: bodyRegion || '',
         exercise_type: exerciseType || '',
+        notes: draft, // планировщик ОПИРАЕТСЯ на черновик/надиктовку, не отбрасывает
       });
       const payload = res.data || {};
       if (payload.script) {
-        setTranscript((prev) => (prev.trim() ? `${prev.trim()}\n\n${payload.script}` : payload.script));
+        // Полный скрипт включает черновик (модель на него опиралась) → заменяем поле.
+        setTranscript(payload.script);
       }
       setPlanReviewPoints(Array.isArray(payload.review_points) ? payload.review_points : []);
     } catch (err) {
@@ -489,7 +493,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   {/* Планировщик скрипта (этап 4): черновое название → скрипт-черновик по чек-листу */}
                   <div style={{ marginBottom: 12, padding: 12, background: 'var(--color-surface-2, #f8fafc)', border: '1px solid var(--color-border, #e2e8f0)', borderRadius: 10 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                      Нет готового текста? Сгенерируйте скрипт-черновик
+                      Сгенерировать скрипт-черновик (по названию или вашему тексту ниже)
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       <input
@@ -504,7 +508,7 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                         type="button"
                         className={s.btnSecondary}
                         onClick={handlePlanScript}
-                        disabled={planning || structuring || planTitle.trim().length < 2}
+                        disabled={planning || structuring || (planTitle.trim().length < 2 && transcript.trim().length < 10)}
                       >
                         {planning
                           ? (<><Loader2 size={15} className={s.spinIcon} /> Генерирую… (~30–60 сек)</>)
@@ -512,7 +516,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                       </button>
                     </div>
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted, #6b7280)', margin: '6px 0 0' }}>
-                      Черновик для вычитки: проверьте клинические пункты, поправьте под себя — текст ляжет в поле надиктовки ниже.
+                      Возьмёт название и ваш текст из поля ниже (если есть), расширит до полного скрипта по чек-листу.
+                      Черновик для вычитки — проверьте клинические пункты, поправьте под себя.
                     </p>
                     {planReviewPoints.length > 0 && (
                       <div style={{ marginTop: 8, padding: 10, background: 'var(--color-warning-bg, rgba(255,165,0,0.12))', borderRadius: 8 }}>
