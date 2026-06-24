@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, X, Info, Play, Sparkles, Mic, Square, CheckCircle2, Circle, Pause, Loader2 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { exercises as exercisesApi, admin } from '../../../services/api';
+import { BODY_REGIONS_OPTIONS } from '../../../utils/exerciseConstants';
 import s from './ExerciseModal.module.css';
 import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
 import { useAuth } from '../../../context/AuthContext';
@@ -905,62 +906,42 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                 Классификация <span className={s.optional}>(необязательно)</span>
               </h3>
 
-              <div className={s.formRow}>
-                {/* Тип упражнения */}
-                <div className={s.formGroup}>
-                  <label>Тип упражнения</label>
-                  <select
-                    value={exerciseType}
-                    onChange={(e) => setExerciseType(e.target.value)}
-                  >
-                    <option value="">Не выбрано</option>
-                    <option value="strength">Силовое</option>
-                    <option value="activation">Активация</option>
-                    <option value="mobilization">Мобилизация</option>
-                    <option value="stability">Стабилизация</option>
-                    <option value="proprioception">Проприоцепция</option>
-                    <option value="stretching">Растяжка</option>
-                  </select>
-                </div>
+              {/* Тип упражнения */}
+              <div className={s.formGroup}>
+                <label>Тип упражнения</label>
+                <select
+                  value={exerciseType}
+                  onChange={(e) => setExerciseType(e.target.value)}
+                >
+                  <option value="">Не выбрано</option>
+                  <option value="strength">Силовое</option>
+                  <option value="activation">Активация</option>
+                  <option value="mobilization">Мобилизация</option>
+                  <option value="stability">Стабилизация</option>
+                  <option value="proprioception">Проприоцепция</option>
+                  <option value="stretching">Растяжка</option>
+                </select>
+              </div>
 
-                {/* Регион тела (мультивыбор: многосуставные — присед = колено + ТБС) */}
-                <div className={s.formGroup}>
-                  <label>Регион тела (можно выбрать несколько)</label>
-                  <div className={s.checkboxGroup}>
-                    {BODY_REGION_OPTIONS.map((option) => (
-                      <label key={option.value} className={s.checkboxLabel}>
-                        <input
-                          type="checkbox"
-                          checked={bodyRegion.includes(option.value)}
-                          onChange={() =>
-                            toggleArrayValue(bodyRegion, setBodyRegion, option.value)
-                          }
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {bodyRegion.length > 0 && (
-                    <div className={s.selectedTags}>
-                      {bodyRegion.map((item) => {
-                        const opt = BODY_REGION_OPTIONS.find((o) => o.value === item);
-                        return (
-                          <span key={item} className={s.tag}>
-                            {opt?.label || item}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                toggleArrayValue(bodyRegion, setBodyRegion, item)
-                              }
-                              aria-label="Удалить регион"
-                            >
-                              <X size={14} />
-                            </button>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
+              {/* Регион тела — мультивыбор пилюлями (многосуставные: присед = колено + ТБС).
+                  Порядок групп: верх → позвоночник → низ → общее (BODY_REGIONS_OPTIONS). */}
+              <div className={s.formGroup}>
+                <label>Регион тела (можно выбрать несколько)</label>
+                <div className={s.regionPills}>
+                  {BODY_REGIONS_OPTIONS.map((option) => {
+                    const active = bodyRegion.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${s.regionPill} ${active ? s.regionPillActive : ''}`}
+                        aria-pressed={active}
+                        onClick={() => toggleArrayValue(bodyRegion, setBodyRegion, option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1327,18 +1308,8 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
 
 // ========================================
 // КОНСТАНТЫ ДЛЯ МНОЖЕСТВЕННОГО ВЫБОРА
+// (Регион тела — канонический BODY_REGIONS_OPTIONS из exerciseConstants, единый источник)
 // ========================================
-
-const BODY_REGION_OPTIONS = [
-  { value: 'shoulder', label: 'Плечо' },
-  { value: 'knee', label: 'Колено' },
-  { value: 'spine', label: 'Позвоночник' },
-  { value: 'hip', label: 'Тазобедренный сустав' },
-  { value: 'ankle', label: 'Голеностоп' },
-  { value: 'elbow', label: 'Локоть' },
-  { value: 'wrist', label: 'Запястье' },
-  { value: 'full_body', label: 'Всё тело' },
-];
 
 const EQUIPMENT_OPTIONS = [
   { value: 'no-equipment', label: 'Без оборудования' },

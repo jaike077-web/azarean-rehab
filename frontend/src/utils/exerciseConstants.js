@@ -6,14 +6,16 @@
 // Использование: BODY_REGIONS[exercise.body_region]
 // =====================================================
 
+// Порядок — анатомический по группам (верхняя конечность → позвоночник →
+// нижняя конечность → общее), чтобы родственные суставы были рядом.
 export const BODY_REGIONS = {
   shoulder: 'Плечо',
-  knee: 'Колено',
-  hip: 'Тазобедренный сустав',
-  spine: 'Позвоночник',
-  ankle: 'Голеностоп',
   elbow: 'Локоть',
   wrist: 'Кисть',
+  spine: 'Позвоночник',
+  hip: 'Тазобедренный сустав',
+  knee: 'Колено',
+  ankle: 'Голеностоп',
   full_body: 'Всё тело'
 };
 
@@ -126,14 +128,15 @@ export const JOINT_OPTIONS = {
 // Использование: в <select> для генерации <option>
 // =====================================================
 
+// Порядок синхронизирован с BODY_REGIONS (группы: верх → позвоночник → низ → общее).
 export const BODY_REGIONS_OPTIONS = [
   { value: 'shoulder', label: 'Плечо' },
-  { value: 'knee', label: 'Колено' },
-  { value: 'hip', label: 'Тазобедренный сустав' },
-  { value: 'spine', label: 'Позвоночник' },
-  { value: 'ankle', label: 'Голеностоп' },
   { value: 'elbow', label: 'Локоть' },
   { value: 'wrist', label: 'Кисть' },
+  { value: 'spine', label: 'Позвоночник' },
+  { value: 'hip', label: 'Тазобедренный сустав' },
+  { value: 'knee', label: 'Колено' },
+  { value: 'ankle', label: 'Голеностоп' },
   { value: 'full_body', label: 'Всё тело' }
 ];
 
