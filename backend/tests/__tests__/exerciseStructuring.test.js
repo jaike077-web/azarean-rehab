@@ -83,11 +83,12 @@ describe('exerciseStructuring — buildScriptPlannerPrompt (этап 4)', () => 
     expect(system).toMatch(/только валидный json/i);
   });
 
-  test('требует выносить клинические предположения в review_points под вычитку', () => {
+  test('требует выносить «уточните» ТОЛЬКО в review_points (script — чистый пациент-текст)', () => {
     const { system } = buildScriptPlannerPrompt({ title: 'X' });
     expect(system).toMatch(/ЧЕРНОВИК ПОД ВЫЧИТКУ/i);
     expect(system).toMatch(/review_points/);
-    expect(system).toMatch(/НЕ выдавай\s+догадку за факт/i);
+    expect(system).toMatch(/НЕ пиши «уточните/i);
+    expect(system).toMatch(/чистый пациентский текст/i);
   });
 
   test('устойчив к пустому вводу', () => {
