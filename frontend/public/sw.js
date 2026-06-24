@@ -164,8 +164,11 @@
 // (`patients.zone_link_note`, dashboard отдаёт поле). Новый бандл → bump.
 // v40 (2026-06-23) — Part A визарда: шаг «Шаблон» шире (1080px) + табы зон +
 // поиск по названию. Новый бандл CreateWizard/RehabProgramModal → bump.
-const CACHE_NAME = 'azarean-v40';
-const API_CACHE = 'azarean-api-v40';
+// v41 (2026-06-23) — надиктовка упражнений (STT→DeepSeek→поля) + ревью/sanity +
+// поля «Вариации»/«Прогрессия» (показ пациенту в ExerciseRunner) + videoEmbed.
+// Новый бандл ExerciseModal/ExerciseRunner/api → bump.
+const CACHE_NAME = 'azarean-v41';
+const API_CACHE = 'azarean-api-v41';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

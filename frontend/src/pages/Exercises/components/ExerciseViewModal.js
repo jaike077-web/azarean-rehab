@@ -38,31 +38,13 @@ import {
   getPresetGoalLabel
 } from '../../../utils/exerciseConstants';
 import { useModalOverlayClose } from '../../../hooks/useModalOverlayClose';
+import { embedFromUrl } from '../../../utils/videoEmbed';
 import s from './ExerciseViewModal.module.css';
 
 function ExerciseViewModal({ exercise, onClose, onAdd }) {
   const [currentTab, setCurrentTab] = useState('video');
 
-  const getVideoUrl = (url) => {
-    if (!url) return null;
-    
-    // Kinescope
-    if (url.includes('kinescope.io/embed/')) {
-      return url;
-    }
-    const kinescopeMatch = url.match(/kinescope\.io\/(?:watch\/)?([a-zA-Z0-9]+)/);
-    if (kinescopeMatch) {
-      return `https://kinescope.io/embed/${kinescopeMatch[1]}`;
-    }
-    
-    // YouTube
-    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-    if (ytMatch) {
-      return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    }
-    
-    return url;
-  };
+  const getVideoUrl = (url) => embedFromUrl(url);
 
   return (
     <div className={s.modalOverlay} {...useModalOverlayClose(onClose)}>

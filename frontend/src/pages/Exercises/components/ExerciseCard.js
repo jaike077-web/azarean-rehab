@@ -21,36 +21,11 @@ import {
   EXERCISE_TYPES,
   EQUIPMENT_OPTIONS
 } from '../../../utils/exerciseConstants';
+import { toThumbnailUrl } from '../../../utils/videoEmbed';
 import s from './ExerciseCard.module.css';
 
-// Вспомогательные функции вынесены за пределы компонента для оптимизации
-const getVideoThumbnail = (exercise) => {
-  // Сначала проверяем, есть ли сохранённый thumbnail
-  if (exercise.thumbnail_url) {
-    return exercise.thumbnail_url;
-  }
-
-  if (!exercise.video_url) return null;
-
-  // Kinescope - правильный формат для превью
-  // Формат URL: https://kinescope.io/5mMZxKZzxAQ7f1hJnAxa7x
-  // Превью: https://kinescope.io/preview/5mMZxKZzxAQ7f1hJnAxa7x/poster
-  const kinescopeMatch = exercise.video_url.match(/kinescope\.io\/(?:watch\/|embed\/)?([a-zA-Z0-9]+)/);
-  if (kinescopeMatch) {
-    return `https://kinescope.io/preview/${kinescopeMatch[1]}/poster`;
-  }
-
-  // YouTube
-  const ytMatch = exercise.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-  if (ytMatch) {
-    return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
-  }
-
-  // Vimeo
-  // Для Vimeo нужен API, поэтому просто возвращаем null
-
-  return null;
-};
+// Постер-превью через общий парсер (Kinescope/YouTube; VK/Rutube → null).
+const getVideoThumbnail = (exercise) => toThumbnailUrl(exercise);
 
 const getBodyRegionIcon = (regionKey) => {
   const icons = {

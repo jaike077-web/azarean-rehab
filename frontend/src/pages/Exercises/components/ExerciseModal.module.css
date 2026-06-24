@@ -435,7 +435,33 @@
     cursor: not-allowed;
     transform: none;
   }
-  
+
+  /* Состояние разбора надиктовки: кнопка «дышит» бегущим бликом + spin-иконка,
+     чтобы долгое ожидание (~1–2 мин) не выглядело зависшим. Перебивает :disabled
+     (та же специфичность 0,2,0, но правило ниже по каскаду). */
+  .btnPrimary.btnLoading {
+    opacity: 1;
+    cursor: progress;
+    gap: 8px;
+    background: linear-gradient(100deg, #6366f1 0%, #a78bfa 45%, #6366f1 90%);
+    background-size: 220% 100%;
+    animation: azShimmer 1.5s linear infinite;
+  }
+  .btnPrimary.btnLoading:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+  @keyframes azShimmer {
+    0% { background-position: 220% 0; }
+    100% { background-position: -220% 0; }
+  }
+  .spinIcon {
+    animation: azSpin 0.9s linear infinite;
+  }
+  @keyframes azSpin {
+    to { transform: rotate(360deg); }
+  }
+
   /* =====================================================
      MODAL OVERLAY & CONTENT
      ===================================================== */

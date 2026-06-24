@@ -6,6 +6,18 @@ const router = express.Router();
 const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { validateTrackPresetIds } = require('../utils/exerciseAudio');
+const structuringLlm = require('../services/structuringLlm');
+const speechkit = require('../services/yandexSpeechKit');
+const multer = require('multer');
+
+// Аудио надиктовки держим в памяти (не пишем на диск) — сразу шлём в SpeechKit. До 5 МБ.
+// fileFilter: только audio/* (рекордер шлёт audio/l16; телефоны — audio/ogg|wav|mpeg).
+// Не-аудио отсекается → req.file пуст → роут отвечает 400.
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /^audio\//i.test(file.mimetype || '')),
+});
 
 // ========================================
 // GET /api/exercises/kinescope/thumbnail/:videoId - Получение превью из Kinescope
@@ -55,6 +67,120 @@ router.get('/kinescope/thumbnail/:videoId', authenticateToken, async (req, res) 
 });
 
 // ========================================
+// POST /api/exercises/structure - Надиктовка → поля упражнения через LLM (DeepSeek/is*ai)
+// НЕ-PII (контент библиотеки). Возвращает частичный объект { fields, warnings }
+// для предзаполнения формы упражнения. Инструктор затем проверяет/правит вручную.
+// Auth = authenticateToken (уровень инструктора, НЕ admin-only — намеренно, паритет
+// с POST/PUT /exercises: кто создаёт упражнения, тот пользуется надиктовкой).
+// ========================================
+
+router.post('/structure', authenticateToken, async (req, res) => {
+  try {
+    const transcript = (req.body && req.body.transcript) || '';
+
+    if (typeof transcript !== 'string' || transcript.trim().length < 3) {
+      return res.status(400).json({ error: 'Пустая расшифровка', message: 'Передайте текст надиктовки (поле transcript)' });
+    }
+    if (transcript.length > 8000) {
+      return res.status(400).json({ error: 'Слишком длинно', message: 'Расшифровка не должна превышать 8000 символов' });
+    }
+    if (!structuringLlm.isConfigured()) {
+      return res.status(503).json({ error: 'LLM не настроен', message: 'AI-структурирование недоступно: не задан ключ провайдера (DeepSeek/is*ai)' });
+    }
+
+    // Опциональный слой проверки качества (этап 2) — тумблер на фронте.
+    const review = Boolean(req.body && req.body.review);
+    const out = await structuringLlm.structureExercise(transcript, { review });
+    return res.json({ data: { fields: out.fields, warnings: out.warnings, review: out.review || null, fixed: Boolean(out.fixed), sanity: out.sanity || null } });
+  } catch (error) {
+    console.error('Error structuring exercise:', error.code || error.message);
+    if (error.code === 'LLM_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут AI', message: 'AI не ответил вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'LLM_HTTP' || error.code === 'LLM_EMPTY') {
+      return res.status(502).json({ error: 'Ошибка AI', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
+    }
+    return res.status(500).json({ error: 'Ошибка структурирования', message: 'Не удалось разобрать надиктовку' });
+  }
+});
+
+// ========================================
+// POST /api/exercises/plan-script - Планировщик скрипта (этап 4): черновые данные →
+// полный скрипт надиктовки по чек-листу + список клинических пунктов под вычитку.
+// НЕ-PII (контент библиотеки). Генерация на deepseek-v4-pro. Инструктор-уровень.
+// ========================================
+
+router.post('/plan-script', authenticateToken, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const title = typeof b.title === 'string' ? b.title.trim() : '';
+    const notes = typeof b.notes === 'string' ? b.notes.trim() : '';
+    // Нужно хоть что-то: черновое название ИЛИ уже введённый текст надиктовки/записи.
+    if (title.length < 2 && notes.length < 10) {
+      return res.status(400).json({ error: 'Нет данных', message: 'Укажите черновое название или впишите текст надиктовки' });
+    }
+    if (!structuringLlm.isConfigured()) {
+      return res.status(503).json({ error: 'LLM не настроен', message: 'Генерация недоступна: не задан ключ провайдера (DeepSeek/is*ai)' });
+    }
+    const str = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
+    const input = {
+      title: title.slice(0, 300),
+      body_region: str(b.body_region, 100),
+      exercise_type: str(b.exercise_type, 100),
+      goal: str(b.goal, 1000),
+      phase: str(b.phase, 100),
+      video_url: str(b.video_url, 500),
+      notes: str(b.notes, 2000),
+    };
+    const out = await structuringLlm.planExerciseScript(input);
+    return res.json({ data: { script: out.script, review_points: out.review_points } });
+  } catch (error) {
+    console.error('Error planning script:', error.code || error.message);
+    if (error.code === 'LLM_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут AI', message: 'AI не ответил вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'LLM_HTTP' || error.code === 'LLM_EMPTY') {
+      return res.status(502).json({ error: 'Ошибка AI', message: 'AI-сервис вернул ошибку, попробуйте ещё раз' });
+    }
+    return res.status(500).json({ error: 'Ошибка генерации', message: 'Не удалось сгенерировать скрипт' });
+  }
+});
+
+// ========================================
+// POST /api/exercises/transcribe - Распознать аудио надиктовки через Yandex SpeechKit
+// НЕ-PII. multipart: audio (файл) + опц. format (oggopus|lpcm|mp3) + sampleRateHertz.
+// Возвращает { text } — расшифровку для поля надиктовки.
+// ========================================
+
+router.post('/transcribe', authenticateToken, audioUpload.single('audio'), async (req, res) => {
+  try {
+    if (!speechkit.isConfigured()) {
+      return res.status(503).json({ error: 'SpeechKit не настроен', message: 'Распознавание недоступно: не заданы YANDEX_SPEECHKIT_*' });
+    }
+    if (!req.file || !req.file.buffer || !req.file.buffer.length) {
+      return res.status(400).json({ error: 'Нет аудио', message: 'Передайте аудио-файл (поле audio)' });
+    }
+
+    // Формат и частоту дискретизации фронт объявляет явно (multipart-поля).
+    const format = (req.body && req.body.format ? String(req.body.format) : 'oggopus').toLowerCase();
+    const sampleRateHertz = req.body && req.body.sampleRateHertz
+      ? parseInt(req.body.sampleRateHertz, 10) : undefined;
+
+    const text = await speechkit.transcribe(req.file.buffer, { format, sampleRateHertz });
+    return res.json({ data: { text } });
+  } catch (error) {
+    console.error('Error transcribing audio:', error.code || error.message);
+    if (error.code === 'STT_TIMEOUT') {
+      return res.status(504).json({ error: 'Таймаут SpeechKit', message: 'Распознавание не завершилось вовремя, попробуйте ещё раз' });
+    }
+    if (error.code === 'STT_HTTP' || error.code === 'STT_BAD_RESPONSE') {
+      return res.status(502).json({ error: 'Ошибка SpeechKit', message: 'Сервис распознавания вернул ошибку' });
+    }
+    return res.status(500).json({ error: 'Ошибка распознавания', message: 'Не удалось распознать аудио' });
+  }
+});
+
+// ========================================
 // GET /api/exercises - Список упражнений с фильтрацией
 // ========================================
 
@@ -92,6 +218,8 @@ router.get('/', authenticateToken, async (req, res) => {
         contraindications,
         absolute_contraindications,
         red_flags,
+        variations,
+        progression,
         safe_with_inflammation,  -- Wave 0 commit 05: бейдж в ExerciseCard
         audio_preset_id,         -- EA4: дефолт трек-звука (round-trip в ExerciseModal)
         audio_loop,
@@ -283,6 +411,8 @@ router.post('/', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
+      variations,        // варианты упражнения (усложнение/облегчение) — видно пациенту
+      progression,       // как прогрессировать (фаза→фаза) — видно пациенту
       safe_with_inflammation = false,
 
       // ЗВУК УПРАЖНЕНИЯ (EA3) — дефолт библиотеки (длинный трек)
@@ -407,9 +537,11 @@ router.post('/', authenticateToken, async (req, res) => {
         safe_with_inflammation,
         created_by,
         audio_preset_id,
-        audio_loop
+        audio_loop,
+        variations,
+        progression
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23
       ) RETURNING *`,
       [
         title.trim(),
@@ -432,7 +564,9 @@ router.post('/', authenticateToken, async (req, res) => {
         safe_with_inflammation,
         req.user.id,
         audioPresetId,
-        audioLoop
+        audioLoop,
+        variations?.trim() || null,
+        progression?.trim() || null
       ]
     );
 
@@ -606,6 +740,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       contraindications,
       absolute_contraindications,
       red_flags,
+      variations,        // варианты упражнения — видно пациенту
+      progression,       // прогрессия — видно пациенту
       safe_with_inflammation,
 
       // ЗВУК УПРАЖНЕНИЯ (EA3)
@@ -715,6 +851,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         safe_with_inflammation = $18,
         audio_preset_id = $19,
         audio_loop = $20,
+        variations = $22,
+        progression = $23,
         updated_at = NOW()
       WHERE id = $21
       RETURNING *`,
@@ -739,7 +877,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
         safe_with_inflammation || false,
         audioPresetId,
         audioLoop,
-        id
+        id,
+        variations?.trim() || null,
+        progression?.trim() || null
       ]
     );
 

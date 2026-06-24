@@ -97,8 +97,42 @@ const config = {
   kinescope: {
     apiKey: process.env.KINESCOPE_API_KEY,
     projectId: process.env.KINESCOPE_PROJECT_ID,
-    folderId: process.env.KINESCOPE_FOLDER_ID || null, 
+    folderId: process.env.KINESCOPE_FOLDER_ID || null,
     apiUrl: 'https://api.kinescope.io/v1',
+  },
+
+  // is*ai (LLM хостера is*hosting, OpenAI-совместимый, Open WebUI + Ollama).
+  // Используется ТОЛЬКО для НЕ-PII задач (структурирование надиктовки упражнений).
+  // Данные пациентов сюда НЕ отправляем — is*ai физически вне РФ (Гонконг).
+  // baseUrl/model в env: точный путь подтверждается эмпирически по живому инстансу.
+  // Пусто → сервис в noop (эндпоинт вернёт 503).
+  isai: {
+    apiKey: process.env.ISAI_API_KEY || '',
+    baseUrl: process.env.ISAI_BASE_URL || 'https://ai.ishosting.com/api',
+    model: process.env.ISAI_MODEL || 'qwen3:latest',
+  },
+
+  // DeepSeek (OpenAI-совместимый, https://api.deepseek.com) — ОСНОВНОЙ LLM для
+  // структурирования надиктовки (качественнее бесплатных is*hosting-моделей).
+  // Контент упражнений = не-PII. Модели: deepseek-v4-flash (быстрая) / deepseek-v4-pro.
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY || '',
+    baseUrl: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com',
+    model: process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash',
+    // Более сильная модель под ГЕНЕРАЦИЮ (планировщик скрипта, этап 4). Дефолт есть
+    // → нового прод-секрета не требует. На ключе доступны и flash, и pro.
+    modelPro: process.env.DEEPSEEK_MODEL_PRO || 'deepseek-v4-pro',
+  },
+
+  // Провайдер для структурирования надиктовки: 'deepseek' (по умолчанию) | 'isai'.
+  structureLlmProvider: process.env.STRUCTURE_LLM_PROVIDER || 'deepseek',
+
+  // Yandex SpeechKit (STT) — распознавание надиктовки. Каталог cloud-jaike077 (РФ).
+  // Контент упражнений = не PII. Short audio recognize (до ~30с / 1 МБ на запрос).
+  speechkit: {
+    apiKey: process.env.YANDEX_SPEECHKIT_API_KEY || '',
+    folderId: process.env.YANDEX_SPEECHKIT_FOLDER_ID || '',
+    lang: process.env.YANDEX_SPEECHKIT_LANG || 'ru-RU',
   },
 };
 

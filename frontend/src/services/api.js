@@ -261,6 +261,25 @@ export const exercises = {
   update: (id, data) => api.put(`/exercises/${id}`, data),
   delete: (id) => api.delete(`/exercises/${id}`),
 
+  // AI-надиктовка: расшифровка → { fields, warnings, review?, fixed? } для предзаполнения формы (не-PII).
+  // review=true включает проверку качества (faithfulness + автофикс) — дороже и дольше.
+  structure: (transcript, { review = false } = {}) => api.post('/exercises/structure', { transcript, review }),
+
+  // Планировщик скрипта (этап 4): черновые данные → { script, review_points } (не-PII).
+  // Генерация на deepseek-v4-pro — оператор вычитывает скрипт и затем диктует/разбирает.
+  planScript: (input) => api.post('/exercises/plan-script', input || {}),
+
+  // Распознавание речи (Yandex SpeechKit): аудио-Blob → { text }. По умолчанию raw PCM 16кГц.
+  transcribe: (blob, { format = 'lpcm', sampleRateHertz = 16000 } = {}) => {
+    const fd = new FormData();
+    fd.append('audio', blob, 'speech.pcm');
+    fd.append('format', format);
+    fd.append('sampleRateHertz', String(sampleRateHertz));
+    return api.post('/exercises/transcribe', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
   getMuscleGroups: (category = null) => {
     const params = category ? `?category=${category}` : '';
     return api.get(`/exercises/muscle-groups/all${params}`);

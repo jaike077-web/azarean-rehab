@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { progressPatient } from '../../../services/api';
+import { toEmbedUrl } from '../../../utils/videoEmbed';
 import { useToast } from '../../../context/ToastContext';
 import { useAudioCue, useExerciseAudio, useAudioSettings } from '../context/AudioContext';
 import { PainScale, DifficultyScale, RestTimer, CelebrationOverlay, PhaseRing } from './ui';
@@ -305,12 +306,9 @@ const ExerciseRunner = ({
   const goTo = (i) => { if (i !== index && i >= 0 && i < total) { setDir(i > index ? 'f' : 'b'); setIndex(i); } };
 
   // --- Хелперы ---
-  const getEmbedUrl = () => {
-    if (exercise.kinescope_id) return `https://kinescope.io/embed/${exercise.kinescope_id}`;
-    if (exercise.video_url) return exercise.video_url.replace('/watch/', '/embed/');
-    return null;
-  };
-  const embedUrl = getEmbedUrl();
+  // Видео-эмбед через общий парсер (Kinescope/YouTube/VK/Rutube/прямой файл) —
+  // тот же, что у инструктора, чтобы пациент видел ровно то же видео.
+  const embedUrl = toEmbedUrl(exercise);
 
   const paramLine = () => {
     const parts = [];
@@ -392,7 +390,8 @@ const ExerciseRunner = ({
               .details-toggle/.details-body — НЕ ТРОНУТЫ (LOCKED). Новые
               классы добавлены рядом, не заменяют старые. */}
           {(exercise.description || exercise.instructions || exercise.cues
-            || exercise.tips || exercise.contraindications
+            || exercise.tips || exercise.variations || exercise.progression
+            || exercise.contraindications
             || exercise.absolute_contraindications || exercise.red_flags
             || exercise.safe_with_inflammation) && (
             <div className="sec">
@@ -430,6 +429,22 @@ const ExerciseRunner = ({
                     <>
                       <div className="sec-t">Полезно знать</div>
                       <p className="sec-body">{exercise.tips}</p>
+                    </>
+                  )}
+
+                  {/* 3a. Вариации */}
+                  {exercise.variations && (
+                    <>
+                      <div className="sec-t">Вариации</div>
+                      <p className="sec-body">{exercise.variations}</p>
+                    </>
+                  )}
+
+                  {/* 3b. Прогрессия */}
+                  {exercise.progression && (
+                    <>
+                      <div className="sec-t">Прогрессия</div>
+                      <p className="sec-body">{exercise.progression}</p>
                     </>
                   )}
 
