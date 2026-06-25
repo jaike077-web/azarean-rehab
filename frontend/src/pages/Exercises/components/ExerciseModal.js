@@ -927,14 +927,14 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
                   Порядок групп: верх → позвоночник → низ → общее (BODY_REGIONS_OPTIONS). */}
               <div className={s.formGroup}>
                 <label>Регион тела (можно выбрать несколько)</label>
-                <div className={s.regionPills}>
+                <div className={s.pillGroup}>
                   {BODY_REGIONS_OPTIONS.map((option) => {
                     const active = bodyRegion.includes(option.value);
                     return (
                       <button
                         key={option.value}
                         type="button"
-                        className={`${s.regionPill} ${active ? s.regionPillActive : ''}`}
+                        className={`${s.pill} ${active ? s.pillActive : ''}`}
                         aria-pressed={active}
                         onClick={() => toggleArrayValue(bodyRegion, setBodyRegion, option.value)}
                       >
@@ -977,139 +977,64 @@ const ExerciseModal = ({ exercise, onClose, onSave }) => {
               {/* Оборудование */}
               <div className={s.formGroup}>
                 <label>Оборудование (можно выбрать несколько)</label>
-                <div className={s.checkboxGroup}>
-                  {EQUIPMENT_OPTIONS.map((option) => (
-                    <label key={option.value} className={s.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={equipment.includes(option.value)}
-                        onChange={() =>
-                          toggleArrayValue(equipment, setEquipment, option.value)
-                        }
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
+                <div className={s.pillGroup}>
+                  {EQUIPMENT_OPTIONS.map((option) => {
+                    const active = equipment.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${s.pill} ${active ? s.pillActive : ''}`}
+                        aria-pressed={active}
+                        onClick={() => toggleArrayValue(equipment, setEquipment, option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {equipment.length > 0 && (
-                  <div className={s.selectedTags}>
-                    {equipment.map((item) => {
-                      const opt = EQUIPMENT_OPTIONS.find(
-                        (o) => o.value === item
-                      );
-                      return (
-                        <span key={item} className={s.tag}>
-                          {opt?.label}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toggleArrayValue(
-                                equipment,
-                                setEquipment,
-                                item
-                              )
-                            }
-                            aria-label="Удалить оборудование"
-                          >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Положение */}
               <div className={s.formGroup}>
                 <label>Положение тела (можно выбрать несколько)</label>
-                <div className={s.checkboxGroup}>
-                  {POSITION_OPTIONS.map((option) => (
-                    <label key={option.value} className={s.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={position.includes(option.value)}
-                        onChange={() =>
-                          toggleArrayValue(position, setPosition, option.value)
-                        }
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
+                <div className={s.pillGroup}>
+                  {POSITION_OPTIONS.map((option) => {
+                    const active = position.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${s.pill} ${active ? s.pillActive : ''}`}
+                        aria-pressed={active}
+                        onClick={() => toggleArrayValue(position, setPosition, option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {position.length > 0 && (
-                  <div className={s.selectedTags}>
-                    {position.map((item) => {
-                      const opt = POSITION_OPTIONS.find(
-                        (o) => o.value === item
-                      );
-                      return (
-                        <span key={item} className={s.tag}>
-                          {opt?.label}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toggleArrayValue(position, setPosition, item)
-                            }
-                            aria-label="Удалить позицию"
-                          >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Фазы реабилитации */}
               <div className={s.formGroup}>
                 <label>Фазы реабилитации (можно выбрать несколько)</label>
-                <div className={s.checkboxGroup}>
-                  {REHAB_PHASE_OPTIONS.map((option) => (
-                    <label key={option.value} className={s.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={rehabPhases.includes(option.value)}
-                        onChange={() =>
-                          toggleArrayValue(
-                            rehabPhases,
-                            setRehabPhases,
-                            option.value
-                          )
-                        }
-                      />
-                      <span>{option.label}</span>
-                    </label>
-                  ))}
+                <div className={s.pillGroup}>
+                  {REHAB_PHASE_OPTIONS.map((option) => {
+                    const active = rehabPhases.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${s.pill} ${active ? s.pillActive : ''}`}
+                        aria-pressed={active}
+                        onClick={() => toggleArrayValue(rehabPhases, setRehabPhases, option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
-                {rehabPhases.length > 0 && (
-                  <div className={s.selectedTags}>
-                    {rehabPhases.map((item) => {
-                      const opt = REHAB_PHASE_OPTIONS.find(
-                        (o) => o.value === item
-                      );
-                      return (
-                        <span key={item} className={s.tag}>
-                          {opt?.label}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              toggleArrayValue(
-                                rehabPhases,
-                                setRehabPhases,
-                                item
-                              )
-                            }
-                            aria-label="Удалить фазу реабилитации"
-                          >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
 
