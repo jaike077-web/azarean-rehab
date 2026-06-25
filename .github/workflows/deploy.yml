@@ -212,6 +212,12 @@ jobs:
             cd "\$APP_DIR/backend"
             npm ci --omit=dev --no-audit --no-fund
 
+            # Pre-migration snapshot — точка отката ровно на состояние ДО релиза
+            # (DR Этап 3). Запускается УЖЕ новый backup.sh (deploy/ скопирован выше):
+            # дамп БД + tar фото + off-site. Non-fatal: сбой бэкапа не блокирует
+            # деплой (есть суточный fallback), но логируем громко.
+            bash "\$APP_DIR/deploy/backup.sh" || echo "::warning::pre-deploy backup упал — деплой БЕЗ свежей точки отката"
+
             # Миграции
             bash "\$APP_DIR/deploy/migrate.sh"
 
@@ -243,7 +249,34 @@ jobs:
           curl -fsSL -o /dev/null -w "Frontend: HTTP %{http_code}\n" "https://${{ env.DOMAIN }}/"
           curl -fsSL -o /dev/null -w "API: HTTP %{http_code}\n" "https://${{ env.DOMAIN }}/api/rehab/phases?type=acl"
 
-      - name: Notify on failure
+      - name: Auto-rollback on failure
         if: failure()
         run: |
-          echo "::warning::Deploy failed — проверьте SSH логи и pm2 status"
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} bash -s <<EOF
+            set -uo pipefail
+            APP_DIR="${{ env.APP_DIR }}"
+            cd "\$APP_DIR" || exit 1
+            LAST_BE=\$(ls -1dt backend.old.* 2>/dev/null | head -1 || true)
+            LAST_FE=\$(ls -1dt frontend.old.* 2>/dev/null | head -1 || true)
+            if [ -z "\$LAST_BE" ]; then
+              echo "Нет backend.old.* — авто-откат невозможен, нужен ручной разбор"
+              exit 1
+            fi
+            echo "Откат на предыдущий релиз: \$LAST_BE\${LAST_FE:+ + \$LAST_FE}"
+            # Сломанный релиз сохраняем для разбора (не удаляем)
+            mv "\$APP_DIR/backend" "\$APP_DIR/backend.failed.\$(date +%s)"
+            mv "\$LAST_BE" "\$APP_DIR/backend"
+            if [ -n "\$LAST_FE" ]; then
+              mv "\$APP_DIR/frontend" "\$APP_DIR/frontend.failed.\$(date +%s)"
+              mv "\$LAST_FE" "\$APP_DIR/frontend"
+            fi
+            # Восстанавливаем uploads-symlink (на новый backend каталог)
+            rm -rf "\$APP_DIR/backend/uploads"
+            ln -sfn "\$APP_DIR/data/uploads" "\$APP_DIR/backend/uploads"
+            pm2 reload ${{ env.PM2_NAME }} --update-env || pm2 restart ${{ env.PM2_NAME }}
+            pm2 save
+            echo "✅ Откат выполнен. ВНИМАНИЕ: код откатан, но миграции БД НЕ откатываются"
+            echo "   автоматически — для не-аддитивной миграции восстанови БД из"
+            echo "   pre-deploy дампа в backups/ вручную."
+          EOF
+          echo "::warning::Deploy failed → выполнен авто-откат на предыдущий релиз. Проверьте pm2 status и backend.failed.*"
