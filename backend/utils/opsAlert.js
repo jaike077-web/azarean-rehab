@@ -51,7 +51,10 @@ async function postToTelegram(token, chatId, text) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TG_API_TIMEOUT_MS);
   try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    // Через тот же прокси, что и бот (config.telegram.apiUrl) — обход DPI-блокировки
+    // api.telegram.org. Пусто/дефолт → напрямую на api.telegram.org.
+    const base = (config.telegram && config.telegram.apiUrl) || 'https://api.telegram.org';
+    const r = await fetch(`${base}/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
