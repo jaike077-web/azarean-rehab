@@ -63,11 +63,23 @@ router.post('/', authenticatePatientOrInstructor, progressValidator, async (req,
       });
     }
 
-    // Добавляем запись о выполнении
+    // Добавляем запись о выполнении.
+    // Идемпотентность (миграция 20260625_progress_idempotency): повторный POST с
+    // тем же (complex_id, exercise_id, session_id) — напр. ретрай после потери
+    // ответа — НЕ создаёт дубль, а обновляет запись (last-write-wins). Для
+    // session_id IS NULL partial-индекс не действует → как раньше всегда INSERT.
     const result = await query(
       `INSERT INTO progress_logs
        (complex_id, exercise_id, completed, pain_level, difficulty_rating, session_id, session_comment, notes, completed_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (complex_id, exercise_id, session_id) WHERE session_id IS NOT NULL
+       DO UPDATE SET
+         completed = EXCLUDED.completed,
+         pain_level = EXCLUDED.pain_level,
+         difficulty_rating = EXCLUDED.difficulty_rating,
+         session_comment = EXCLUDED.session_comment,
+         notes = EXCLUDED.notes,
+         completed_at = EXCLUDED.completed_at
        RETURNING *`,
       [
         complex_id,
