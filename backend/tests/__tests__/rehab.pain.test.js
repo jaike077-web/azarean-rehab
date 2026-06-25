@@ -23,10 +23,17 @@ jest.mock('../../utils/opsAlert', () => ({
   sendOpsAlert: jest.fn().mockResolvedValue({ delivered: true, reason: 'ok' }),
 }));
 
+// Резервный email-канал red-flag. По умолчанию выключен (no_ops_email) — тест
+// fallback'а переопределяет на success через mockResolvedValueOnce.
+jest.mock('../../utils/email', () => ({
+  sendOpsAlertEmail: jest.fn().mockResolvedValue({ success: false, skipped: 'no_ops_email' }),
+}));
+
 const request = require('supertest');
 const app = require('../../server');
 const { query, getClient } = require('../../database/db');
 const { sendOpsAlert } = require('../../utils/opsAlert');
+const { sendOpsAlertEmail } = require('../../utils/email');
 const jwt = require('jsonwebtoken');
 
 const testPatient = { id: 14, email: 'avi707@mail.ru', full_name: 'Тест Пациент' };
@@ -315,6 +322,41 @@ describe('POST /api/rehab/my/pain/daily', () => {
     expect(res.body.message).not.toMatch(/Куратор получил уведомление/);
     expect(res.body.message).toMatch(/ВАЖНО/);
     expect(res.body.message).toMatch(/обратитесь за медицинской помощью/);
+  });
+
+  it('red-flag не доставлен в Telegram, но email-fallback успешен → «куратор получил уведомление»', async () => {
+    // Telegram не доставил → резервный email-канал успешен → пациенту честно
+    // обещаем уведомление (оно реально ушло, только другим каналом).
+    sendOpsAlert.mockResolvedValueOnce({ delivered: false, reason: 'not_configured' });
+    sendOpsAlertEmail.mockResolvedValueOnce({ success: true, provider: 'y360' });
+
+    const mc = makeMockClient();
+    getClient.mockResolvedValueOnce(mc);
+    mc.query
+      .mockResolvedValueOnce(undefined) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ code: 'calf_posterior', label: 'Икроножная', position: 80, is_red_flag: true, red_flag_reason: 'ТГВ' }],
+      }) // locations
+      .mockResolvedValueOnce({ rows: [] }) // FOR UPDATE
+      .mockResolvedValueOnce({
+        rows: [{ id: 103, patient_id: 14, vas_score: 8, is_event: false, entry_date: '2026-05-18', created_at: new Date(), red_flag_triggered: true }],
+      }) // INSERT
+      .mockResolvedValueOnce(undefined) // DELETE locations
+      .mockResolvedValueOnce(undefined) // INSERT location
+      .mockResolvedValueOnce(undefined); // COMMIT
+    query
+      .mockResolvedValueOnce({ rows: [{ id: 14, full_name: 'Тест', phone: '+7900' }] }) // patient lookup
+      .mockResolvedValueOnce({ rows: [{ id: 202 }] }) // ops_alerts INSERT
+      .mockResolvedValueOnce({ rows: [] }); // UPDATE ops_alert_sent_at
+
+    const res = await request(app)
+      .post('/api/rehab/my/pain/daily')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ vas_score: 8, location_codes: ['calf_posterior'] });
+
+    expect(res.status).toBe(201);
+    expect(sendOpsAlertEmail).toHaveBeenCalledTimes(1); // резервный канал задействован
+    expect(res.body.message).toMatch(/Куратор получил уведомление/);
   });
 
   it('sticky red_flag — UPDATE сохраняет prev=true даже если новый submit без red-flag', async () => {

@@ -4,7 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { query } = require('../database/db');
+const { query, getClient } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 
 // Все роуты защищены
@@ -89,15 +89,19 @@ router.get('/:id', async (req, res) => {
 // POST /api/templates - Создать шаблон
 // =====================================================
 router.post('/', async (req, res) => {
+  const { name, description, diagnosis_id, exercises } = req.body;
+
+  if (!name || !exercises || exercises.length === 0) {
+    return res.status(400).json({ error: 'Validation Error', message: 'Название и упражнения обязательны' });
+  }
+
+  // Транзакция: шаблон + упражнения атомарно — иначе при сбое в середине цикла
+  // (напр. битый exercise_id) шаблон создаётся с частичным набором упражнений.
+  const client = await getClient();
   try {
-    const { name, description, diagnosis_id, exercises } = req.body;
+    await client.query('BEGIN');
 
-    if (!name || !exercises || exercises.length === 0) {
-      return res.status(400).json({ error: 'Validation Error', message: 'Название и упражнения обязательны' });
-    }
-
-    // Создаём шаблон
-    const templateResult = await query(`
+    const templateResult = await client.query(`
       INSERT INTO templates (name, description, diagnosis_id, created_by)
       VALUES ($1, $2, $3, $4)
       RETURNING *
@@ -105,11 +109,10 @@ router.post('/', async (req, res) => {
 
     const template = templateResult.rows[0];
 
-    // Добавляем упражнения
     for (let i = 0; i < exercises.length; i++) {
       const ex = exercises[i];
-      await query(`
-        INSERT INTO template_exercises 
+      await client.query(`
+        INSERT INTO template_exercises
         (template_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `, [
@@ -124,13 +127,14 @@ router.post('/', async (req, res) => {
       ]);
     }
 
-    res.status(201).json({
-      data: template,
-      message: 'Шаблон создан'
-    });
+    await client.query('COMMIT');
+    res.status(201).json({ data: template, message: 'Шаблон создан' });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Ошибка создания шаблона:', err);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
+  } finally {
+    client.release();
   }
 });
 
@@ -138,37 +142,37 @@ router.post('/', async (req, res) => {
 // PUT /api/templates/:id - Обновить шаблон
 // =====================================================
 router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, description, diagnosis_id, exercises } = req.body;
+  const { id } = req.params;
+  const { name, description, diagnosis_id, exercises } = req.body;
 
-    // Проверяем владельца
-    const checkResult = await query(
+  // Транзакция: UPDATE шаблона + DELETE старых + INSERT новых упражнений атомарно.
+  // Без неё сбой в середине цикла оставляет шаблон БЕЗ старых упражнений и с
+  // частичным новым набором (потеря данных).
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const checkResult = await client.query(
       'SELECT id FROM templates WHERE id = $1 AND created_by = $2',
       [id, req.user.id]
     );
-
     if (checkResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Not Found', message: 'Шаблон не найден' });
     }
 
-    // Обновляем шаблон
-    await query(`
-      UPDATE templates 
+    await client.query(`
+      UPDATE templates
       SET name = $1, description = $2, diagnosis_id = $3, updated_at = NOW()
       WHERE id = $4
     `, [name, description || null, diagnosis_id || null, id]);
 
-    // Если переданы упражнения — обновляем их
     if (exercises && exercises.length > 0) {
-      // Удаляем старые
-      await query('DELETE FROM template_exercises WHERE template_id = $1', [id]);
-
-      // Добавляем новые
+      await client.query('DELETE FROM template_exercises WHERE template_id = $1', [id]);
       for (let i = 0; i < exercises.length; i++) {
         const ex = exercises[i];
-        await query(`
-          INSERT INTO template_exercises 
+        await client.query(`
+          INSERT INTO template_exercises
           (template_id, exercise_id, order_number, sets, reps, duration_seconds, rest_seconds, notes)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `, [
@@ -184,10 +188,14 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    await client.query('COMMIT');
     res.json({ message: 'Шаблон обновлён' });
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
     console.error('Ошибка обновления шаблона:', err);
     res.status(500).json({ error: 'Server Error', message: 'Ошибка сервера' });
+  } finally {
+    client.release();
   }
 });
 

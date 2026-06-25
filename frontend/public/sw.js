@@ -167,10 +167,10 @@
 // v41 (2026-06-23) — надиктовка упражнений (STT→DeepSeek→поля) + ревью/sanity +
 // поля «Вариации»/«Прогрессия» (показ пациенту в ExerciseRunner) + videoEmbed.
 // Новый бандл ExerciseModal/ExerciseRunner/api → bump.
-// v43 (2026-06-24) — мультивыбор «Регион тела» (body_region TEXT[]): чекбоксы в
-// ExerciseModal + массив-aware отображение/фильтры. Новый бандл → bump.
-const CACHE_NAME = 'azarean-v43';
-const API_CACHE = 'azarean-api-v43';
+// v44 (2026-06-25) — ExerciseModal: Оборудование/Положение/Фазы переведены на
+// пилюли-тоглы (единый вид со «Регион тела», вместо чекбоксов-карточек). Новый бандл → bump.
+const CACHE_NAME = 'azarean-v44';
+const API_CACHE = 'azarean-api-v44';
 
 // Файлы для предкэширования (app shell)
 const PRECACHE_URLS = [

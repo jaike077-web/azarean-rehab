@@ -5,6 +5,7 @@ const { authenticateToken, authenticatePatientOrInstructor } = require('../middl
 const { progressValidator } = require('../middleware/validators');
 const { logAudit } = require('../utils/audit');
 const { updateStreak } = require('../utils/streaks');
+const { instructorCanAccessPatient } = require('../utils/patientAccess');
 
 // Отметить выполнение упражнения (JWT инструктора или JWT пациента через cookie/Bearer)
 router.post('/', authenticatePatientOrInstructor, progressValidator, async (req, res) => {
@@ -253,13 +254,8 @@ router.get('/patient/:patientId', authenticateToken, async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    // Проверяем что пациент принадлежит инструктору
-    const patientCheck = await query(
-      'SELECT id FROM patients WHERE id = $1 AND created_by = $2',
-      [patientId, req.user.id]
-    );
-
-    if (patientCheck.rows.length === 0) {
+    // Доступ: админ — любой; инструктор — свой (created_by) ИЛИ назначенный пациент
+    if (!(await instructorCanAccessPatient(patientId, req.user))) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'Нет доступа к данным этого пациента'

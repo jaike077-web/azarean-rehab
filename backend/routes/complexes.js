@@ -154,10 +154,11 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: cueValid.error });
     }
 
-    // Проверяем что пациент принадлежит этому инструктору (FOR UPDATE предотвращает race condition)
+    // Доступ к пациенту: админ — любой; инструктор — свой/назначенный (FOR UPDATE
+    // предотвращает race condition при параллельном создании).
     const patientCheck = await client.query(
-      'SELECT id FROM patients WHERE id = $1 AND created_by = $2 FOR UPDATE',
-      [patient_id, req.user.id]
+      `SELECT id FROM patients WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2) FOR UPDATE`,
+      [patient_id, req.user.id, req.user.role]
     );
 
     if (patientCheck.rows.length === 0) {
@@ -569,6 +570,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({
         error: 'Not Found',
         message: 'Комплекс не найден'
+      });
+    }
+
+    // Guard: exercises обязателен и непуст (как в POST). Без него пустой/отсутствующий
+    // массив прошёл бы DELETE ниже (стёр все упражнения), а цикл вставки ничего бы не
+    // добавил — комплекс остался бы пустым (потеря данных) либо TypeError на undefined.
+    if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Список упражнений обязателен'
       });
     }
 

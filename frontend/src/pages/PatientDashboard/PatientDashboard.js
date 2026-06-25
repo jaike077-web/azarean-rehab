@@ -70,6 +70,9 @@ export default function PatientDashboard() {
   const [screenParams, setScreenParams] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Ошибка загрузки дашборда — отдельно от loading, иначе при 500/сети HomeScreen
+  // вечно рендерит скелетон (dashboardData===null трактуется как «грузится»).
+  const [loadError, setLoadError] = useState(false);
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   // Profile теперь не таб, а full-screen overlay поверх любого экрана.
   const [profileOpen, setProfileOpen] = useState(false);
@@ -114,8 +117,10 @@ export default function PatientDashboard() {
       if (!silent) setLoading(true);
       const response = await rehab.getDashboard();
       setDashboardData(response.data);
+      setLoadError(false);
     } catch (error) {
       console.error('Failed to fetch dashboard:', error);
+      setLoadError(true);
       if (!silent) toast.error('Ошибка загрузки', 'Не удалось загрузить данные панели');
     } finally {
       if (!silent) setLoading(false);
@@ -155,6 +160,31 @@ export default function PatientDashboard() {
           <div className="pd-skeleton pd-skeleton-header"></div>
           <div className="pd-skeleton pd-skeleton-card"></div>
           <div className="pd-skeleton pd-skeleton-card"></div>
+        </div>
+      );
+    }
+
+    // Ошибка загрузки дашборда (а не «ещё грузится») — показываем «Повторить»
+    // вместо вечного скелетона. Только для Home (screen 0) — остальные экраны
+    // грузят свои данные сами. Если данные уже есть (фейл silent-рефреша) —
+    // не сбрасываем их (условие dashboardData === null).
+    if (screen === 0 && loadError && dashboardData === null) {
+      return (
+        <div
+          className="pd-loading"
+          data-testid="dashboard-error"
+          style={{ textAlign: 'center', padding: '48px 24px' }}
+        >
+          <p style={{ color: '#64748b', marginBottom: 16 }}>
+            Не удалось загрузить данные. Проверьте соединение.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setLoadError(false); fetchDashboard(); }}
+            style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Повторить
+          </button>
         </div>
       );
     }

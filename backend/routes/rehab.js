@@ -23,6 +23,7 @@ const { logAudit } = require('../utils/audit');
 const { updateStreak, getStreakSummary } = require('../utils/streaks');
 const { parseDurationWeeksUpper } = require('../utils/phaseDuration');
 const { sendOpsAlert } = require('../utils/opsAlert');
+const { sendOpsAlertEmail } = require('../utils/email');
 const { instructorCanAccessPatient } = require('../utils/patientAccess');
 // Exercise Audio (EA3): резолв трек-звука упражнения (complex override → library → нет).
 const { RESOLVED_EXERCISE_AUDIO_SQL, EXERCISE_AUDIO_JOINS } = require('../utils/exerciseAudio');
@@ -1453,9 +1454,12 @@ router.get('/programs', authenticateToken, async (req, res) => {
       sql += ` AND rp.status = $${params.length}`;
     }
 
-    // Инструктор видит только своих пациентов
+    // Доступ: админ — все программы; инструктор — программы своих (created_by)
+    // ИЛИ назначенных (assigned_instructor_id) пациентов. p — LEFT JOIN patients выше.
     params.push(req.user.id);
-    sql += ` AND rp.created_by = $${params.length}`;
+    const meIdx = params.length;
+    params.push(req.user.role);
+    sql += ` AND ($${params.length} = 'admin' OR p.created_by = $${meIdx} OR p.assigned_instructor_id = $${meIdx})`;
 
     sql += ` ORDER BY rp.created_at DESC`;
 
@@ -1499,10 +1503,11 @@ router.post('/programs', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: 'ID пациента и название обязательны' });
     }
 
-    // Проверяем что пациент принадлежит инструктору
+    // Доступ: админ — любой; инструктор — свой/назначенный пациент; либо
+    // бесхозный (created_by IS NULL — самозарегистрированный без куратора)
     const patientCheck = await query(
-      `SELECT id FROM patients WHERE id = $1 AND (created_by = $2 OR created_by IS NULL)`,
-      [patient_id, req.user.id]
+      `SELECT id FROM patients WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2 OR created_by IS NULL)`,
+      [patient_id, req.user.id, req.user.role]
     );
     if (patientCheck.rows.length === 0) {
       return res.status(403).json({ error: 'Forbidden', message: 'Нет доступа к этому пациенту' });
@@ -1593,10 +1598,14 @@ router.put('/programs/:id', authenticateToken, async (req, res) => {
       complex_id
     } = req.body;
 
-    // Проверяем доступ
+    // Доступ: админ — любая программа; инструктор — программа своего/назначенного пациента
     const checkResult = await query(
-      `SELECT id, current_phase FROM rehab_programs WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+      `SELECT id, current_phase FROM rehab_programs rp
+        WHERE rp.id = $1
+          AND ($3 = 'admin' OR EXISTS (
+            SELECT 1 FROM patients pat WHERE pat.id = rp.patient_id
+              AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))`,
+      [id, req.user.id, req.user.role]
     );
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
@@ -1647,9 +1656,12 @@ router.delete('/programs/:id', authenticateToken, async (req, res) => {
 
     const result = await query(
       `UPDATE rehab_programs SET is_active = false, updated_at = NOW()
-       WHERE id = $1 AND created_by = $2
+       WHERE id = $1
+         AND ($3 = 'admin' OR EXISTS (
+           SELECT 1 FROM patients pat WHERE pat.id = rehab_programs.patient_id
+             AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))
        RETURNING id`,
-      [id, req.user.id]
+      [id, req.user.id, req.user.role]
     );
 
     if (result.rows.length === 0) {
@@ -1666,7 +1678,8 @@ router.delete('/programs/:id', authenticateToken, async (req, res) => {
 // =====================================================
 // ARC-CYCLE AC2: CRUD блоков программы (микроцикл-слой)
 // program_blocks (gymnastics плоский / training микроцикл) + program_block_complexes (дни).
-// Инструктор (authenticateToken, Bearer JWT). Ownership через rehab_programs.created_by.
+// Инструктор (authenticateToken, Bearer JWT). Ownership = владение пациентом
+// программы (admin OR patients.created_by OR patients.assigned_instructor_id).
 // Цель живёт на блоке (write-path). Без requireSameOrigin (Bearer, не cookie).
 // =====================================================
 
@@ -1773,8 +1786,12 @@ router.get('/programs/:id/blocks', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: 'Некорректный id программы' });
     }
     const owner = await query(
-      'SELECT id FROM rehab_programs WHERE id = $1 AND created_by = $2',
-      [programId, req.user.id]
+      `SELECT id, patient_id FROM rehab_programs
+        WHERE id = $1
+          AND ($3 = 'admin' OR EXISTS (
+            SELECT 1 FROM patients pat WHERE pat.id = rehab_programs.patient_id
+              AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))`,
+      [programId, req.user.id, req.user.role]
     );
     if (owner.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
@@ -1838,8 +1855,12 @@ router.post('/programs/:id/blocks', authenticateToken, async (req, res) => {
   try {
     // Ownership программы + patient_id (через query, ДО транзакции — ранние return без ROLLBACK).
     const owner = await query(
-      'SELECT id, patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2',
-      [programId, req.user.id]
+      `SELECT id, patient_id FROM rehab_programs
+        WHERE id = $1
+          AND ($3 = 'admin' OR EXISTS (
+            SELECT 1 FROM patients pat WHERE pat.id = rehab_programs.patient_id
+              AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))`,
+      [programId, req.user.id, req.user.role]
     );
     if (owner.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
@@ -1921,8 +1942,11 @@ router.put('/blocks/:blockId', authenticateToken, async (req, res) => {
       `SELECT b.id, b.block_type, b.current_day_index, p.patient_id
          FROM program_blocks b
          JOIN rehab_programs p ON p.id = b.program_id
-        WHERE b.id = $1 AND p.created_by = $2 AND b.is_active = true`,
-      [blockId, req.user.id]
+        WHERE b.id = $1 AND b.is_active = true
+          AND ($3 = 'admin' OR EXISTS (
+            SELECT 1 FROM patients pat WHERE pat.id = p.patient_id
+              AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))`,
+      [blockId, req.user.id, req.user.role]
     );
     if (owner.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
@@ -2018,9 +2042,12 @@ router.delete('/blocks/:blockId', authenticateToken, async (req, res) => {
       `UPDATE program_blocks b
           SET is_active = false, updated_at = NOW()
          FROM rehab_programs p
-        WHERE b.id = $1 AND b.program_id = p.id AND p.created_by = $2 AND b.is_active = true
+        WHERE b.id = $1 AND b.program_id = p.id AND b.is_active = true
+          AND ($3 = 'admin' OR EXISTS (
+            SELECT 1 FROM patients pat WHERE pat.id = p.patient_id
+              AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))
         RETURNING b.id, p.patient_id`,
-      [blockId, req.user.id]
+      [blockId, req.user.id, req.user.role]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Not Found', message: 'Блок не найден' });
@@ -2041,7 +2068,7 @@ router.delete('/blocks/:blockId', authenticateToken, async (req, res) => {
  * Wave 1 #1.09: инструкторская сторона stuck detection.
  * yellow=true при > 1.3×duration_weeks_upper, red=true при > 1.7×.
  * Open-ended фазы («36+») → { yellow: false, red: false }.
- * Только для программ, созданных текущим инструктором (created_by check).
+ * Доступ: программы пациентов, которых ведёт инструктор (created_by/assigned) + админ.
  */
 router.get('/programs/:id/stuck-status', authenticateToken, async (req, res) => {
   try {
@@ -2054,8 +2081,11 @@ router.get('/programs/:id/stuck-status', authenticateToken, async (req, res) => 
     const programResult = await query(
       `SELECT id, program_type, current_phase, phase_started_at, created_at
        FROM rehab_programs
-       WHERE id = $1 AND created_by = $2 AND is_active = true`,
-      [id, req.user.id]
+       WHERE id = $1 AND is_active = true
+         AND ($3 = 'admin' OR EXISTS (
+           SELECT 1 FROM patients pat WHERE pat.id = rehab_programs.patient_id
+             AND (pat.created_by = $2 OR pat.assigned_instructor_id = $2)))`,
+      [id, req.user.id, req.user.role]
     );
 
     if (programResult.rows.length === 0) {
@@ -2085,12 +2115,12 @@ router.get('/programs/:id/diary', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { from, to } = req.query;
 
-    // Проверяем доступ
+    // Доступ: админ — любая; инструктор — программа своего/назначенного пациента
     const checkResult = await query(
-      `SELECT patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+      `SELECT patient_id FROM rehab_programs WHERE id = $1`,
+      [id]
     );
-    if (checkResult.rows.length === 0) {
+    if (checkResult.rows.length === 0 || !(await instructorCanAccessPatient(checkResult.rows[0].patient_id, req.user))) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
     }
 
@@ -2137,12 +2167,12 @@ router.get('/programs/:id/messages', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
-    // Проверяем доступ + достаём patient_id для аудит-лога
+    // Доступ: админ — любая; инструктор — программа своего/назначенного пациента
     const checkResult = await query(
-      `SELECT id, patient_id FROM rehab_programs WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+      `SELECT id, patient_id FROM rehab_programs WHERE id = $1`,
+      [id]
     );
-    if (checkResult.rows.length === 0) {
+    if (checkResult.rows.length === 0 || !(await instructorCanAccessPatient(checkResult.rows[0].patient_id, req.user))) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
     }
     const msgPatientId = checkResult.rows[0].patient_id;
@@ -2195,12 +2225,12 @@ router.post('/programs/:id/messages', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Validation Error', message: 'Текст сообщения обязателен' });
     }
 
-    // Проверяем доступ
+    // Доступ: админ — любая; инструктор — программа своего/назначенного пациента
     const checkResult = await query(
-      `SELECT id FROM rehab_programs WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+      `SELECT id, patient_id FROM rehab_programs WHERE id = $1`,
+      [id]
     );
-    if (checkResult.rows.length === 0) {
+    if (checkResult.rows.length === 0 || !(await instructorCanAccessPatient(checkResult.rows[0].patient_id, req.user))) {
       return res.status(404).json({ error: 'Not Found', message: 'Программа не найдена' });
     }
 
@@ -2754,6 +2784,18 @@ async function triggerRedFlagAlert({ patient, pain_entry, red_flag_locs, is_even
     console.error('[triggerRedFlagAlert] sendOpsAlert threw:', err.message);
   }
 
+  // Резервный канал: если Telegram не доставил red-flag (токен не задан / DPI /
+  // ошибка) — email куратору (OPS_EMAIL через utils/email.js). Доставка по email
+  // тоже считается delivered (пациенту честно «куратор получил уведомление»).
+  if (!delivered) {
+    try {
+      const emailRes = await sendOpsAlertEmail(title, body);
+      if (emailRes && emailRes.success && !emailRes.stub) delivered = true;
+    } catch (err) {
+      console.error('[triggerRedFlagAlert] email fallback failed:', err.message);
+    }
+  }
+
   try {
     const { rows } = await query(
       `INSERT INTO ops_alerts
@@ -2865,6 +2907,20 @@ router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
   }
 
   const patientId = req.patient.id;
+
+  // Ownership: program_id (если передан) должен принадлежать пациенту — иначе
+  // запись о боли мис-атрибутируется чужой зоне.
+  if (program_id != null && program_id !== '') {
+    const pidDaily = parseInt(program_id, 10);
+    if (!Number.isFinite(pidDaily) || pidDaily <= 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id должен быть положительным целым' });
+    }
+    const ownsDaily = await query('SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2', [pidDaily, patientId]);
+    if (ownsDaily.rows.length === 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id не принадлежит пациенту' });
+    }
+  }
+
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -3042,6 +3098,18 @@ router.post('/my/pain/event', authenticatePatient, async (req, res) => {
   if (photo_url !== undefined && photo_url !== null) {
     if (typeof photo_url !== 'string' || photo_url.length > 500) {
       return res.status(400).json({ error: 'ValidationError', message: 'photo_url ≤ 500 символов' });
+    }
+  }
+  // Ownership: program_id (если передан) должен принадлежать пациенту — иначе
+  // запись о боли мис-атрибутируется чужой зоне.
+  if (program_id != null && program_id !== '') {
+    const pidEvt = parseInt(program_id, 10);
+    if (!Number.isFinite(pidEvt) || pidEvt <= 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id должен быть положительным целым' });
+    }
+    const ownsEvt = await query('SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2', [pidEvt, req.patient.id]);
+    if (ownsEvt.rows.length === 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id не принадлежит пациенту' });
     }
   }
   // Wave 2 HF#9 v2 — pain_character теперь массив (TEXT[] в БД).
@@ -3369,6 +3437,18 @@ router.post('/my/measurements/rom', authenticatePatient, async (req, res) => {
           message: 'program_id must be a positive integer or null',
         });
       }
+      // Ownership: program_id должен принадлежать пациенту — иначе замер
+      // мис-атрибутируется чужой зоне. FK-проверка существования это не ловит.
+      const ownsProgram = await query(
+        'SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2',
+        [programIdParam, patientId]
+      );
+      if (ownsProgram.rows.length === 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id does not belong to patient',
+        });
+      }
     }
 
     // 5. Optional measurement_session_id (INTEGER без FK — grouping ID для L+R пары)
@@ -3468,6 +3548,18 @@ router.post('/my/measurements/girth', authenticatePatient, async (req, res) => {
         return res.status(400).json({
           error: 'VALIDATION_ERROR',
           message: 'program_id must be a positive integer or null',
+        });
+      }
+      // Ownership: program_id должен принадлежать пациенту — иначе замер
+      // мис-атрибутируется чужой зоне. FK-проверка существования это не ловит.
+      const ownsProgram = await query(
+        'SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2',
+        [programIdParam, patientId]
+      );
+      if (ownsProgram.rows.length === 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id does not belong to patient',
         });
       }
     }

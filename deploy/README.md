@@ -14,7 +14,8 @@
 | `ecosystem.config.js` | PM2 fork-mode конфиг, `NODE_OPTIONS=--dns-result-order=ipv4first` |
 | `setup.sh` | **Одноразовая** инициализация VDS (БД, юзер, nginx, certbot, cron) |
 | `migrate.sh` | Прогон всех миграций + seeds на prod БД |
-| `backup.sh` | Ежедневный `pg_dump` в 03:15 Екб, 14 копий |
+| `backup.sh` | Ежедневный бэкап: `pg_dump` + tar фото (`data/uploads`) + off-site Timeweb S3, 14 копий локально |
+| `restore.sh` | Учебное восстановление пары БД+фото в тест-цель (DR drill) |
 | `healthcheck.sh` | Каждые 5 минут — PM2 status + HTTP ping |
 | `../backend/.env.production.example` | Шаблон .env (секреты подставляются вручную) |
 | `../.github/workflows/deploy.yml` | CI/CD pipeline |
@@ -241,14 +242,55 @@ PM2 процесс не отвечает. `pm2 logs azarean-rehab --lines 100`, 
 ### certbot
 `certbot renew --dry-run` — проверить renewal. Auto-renew уже в cron от certbot-пакета.
 
-### БД бэкапы
-`ls -lh /opt/azarean-rehab/backups/` — 14 последних.
+### Бэкапы (БД + фото пациентов + off-site)
+`backup.sh` делает три вещи: дамп БД (`azarean_rehab-*.sql.gz`), tar фото
+пациентов из `data/uploads` (`azarean_uploads-*.tar.gz` — биометрика ROM,
+дневниковые фото, аватары), и off-site выгрузку обоих в Timeweb S3.
+Локально 14 копий: `ls -lh /opt/azarean-rehab/backups/`.
 
-Восстановление:
+Запускается: cron (ежедневно) + автоматически перед каждым деплоем (pre-migration
+точка отката, см. deploy.yml).
+
+#### Off-site на Timeweb S3 (152-ФЗ — RU-хранилище, НЕ зарубежный сервер)
+Спецкатегория ПДн (данные о здоровье) обязана храниться в РФ → off-site = Timeweb
+(российский), финский сервер для бэкапов НЕ используем.
+
+Активация на VDS (один раз):
 ```bash
-gunzip -c /opt/azarean-rehab/backups/azarean_rehab-20260423-221500.sql.gz | \
-  psql -h localhost -U azarean_user -d azarean_rehab
+# 1. В панели Timeweb Cloud создать S3-бакет (напр. azarean-backups) + ключи доступа
+# 2. Установить rclone:  curl https://rclone.org/install.sh | sudo bash
+# 3. Настроить remote (endpoint/ключи из панели Timeweb — секреты в rclone.conf, НЕ в .env):
+rclone config   # type=s3, provider=Other, endpoint=<из панели Timeweb>, access_key/secret
+# 4. В /opt/azarean-rehab/backend/.env задать:
+#    OFFSITE_RCLONE_REMOTE=timeweb:azarean-backups
+#    OFFSITE_KEEP_DAYS=30
+# 5. Проверка:  bash /opt/azarean-rehab/deploy/backup.sh  (в логе «Off-site OK»)
 ```
+Без `OFFSITE_RCLONE_REMOTE` backup.sh громко предупреждает, что копий вне VDS нет.
+
+#### Учебное восстановление (DR drill — делать регулярно)
+```bash
+# Восстанавливает последний бэкап в ОТДЕЛЬНУЮ тест-БД (прод не трогается):
+bash /opt/azarean-rehab/deploy/restore.sh
+# → печатает число таблиц, строк ключевых таблиц, число восстановленных фото
+```
+
+#### Восстановление прода (вручную, осознанно)
+```bash
+# БД:
+gunzip -c /opt/azarean-rehab/backups/azarean_rehab-YYYYMMDD-HHMMSS.sql.gz | \
+  psql -h localhost -U azarean_user -d azarean_rehab
+# Фото:
+tar -xzf /opt/azarean-rehab/backups/azarean_uploads-YYYYMMDD-HHMMSS.tar.gz \
+  -C /opt/azarean-rehab/data
+```
+
+### Авто-откат деплоя
+При красном smoke-тесте (или сбое деплоя) workflow автоматически возвращает
+предыдущий релиз (`backend.old.*`/`frontend.old.*`) + `pm2 reload`. Сломанный
+релиз сохраняется как `backend.failed.*` для разбора. **Код откатывается, БД —
+нет**: для не-аддитивной миграции восстанови БД из pre-deploy дампа вручную
+(аддитивные миграции совместимы со старым кодом — откат безопасен).
 
 ### PG14 совместимость
 Проверено в deploy-setup ветке — ни одна из 20 миграций не использует PG15+ фичи (MERGE, GENERATED, `gen_random_uuid()`). Всё штатно работает.
