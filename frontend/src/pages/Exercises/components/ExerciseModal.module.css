@@ -323,17 +323,18 @@
   }
 
   /* =====================================================
-     REGION PILLS (мультивыбор региона тела — кликабельные тоглы)
+     PILL TOGGLES (мультивыбор: регион / оборудование / положение / фазы)
+     Единый компактный стиль вместо чекбоксов-карточек.
      ===================================================== */
 
-  .regionPills {
+  .pillGroup {
     display: flex;
     flex-wrap: wrap;
     gap: clamp(8px, 1.5vw, 10px);
     margin-top: clamp(8px, 1.5vw, 12px);
   }
 
-  .regionPill {
+  .pill {
     appearance: none;
     display: inline-flex;
     align-items: center;
@@ -349,13 +350,13 @@
     transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
   }
 
-  .regionPill:hover {
+  .pill:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
   }
 
-  .regionPillActive,
-  .regionPillActive:hover {
+  .pillActive,
+  .pillActive:hover {
     background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     border-color: transparent;
     color: #fff;
