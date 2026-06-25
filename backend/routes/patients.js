@@ -35,10 +35,10 @@ router.get('/', authenticateToken, async (req, res) => {
               ) as is_stuck_on_phase
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id AND c.is_active = true
-       WHERE p.created_by = $1 AND p.is_active = true
+       WHERE ($2 = 'admin' OR p.created_by = $1 OR p.assigned_instructor_id = $1) AND p.is_active = true
        GROUP BY p.id
        ORDER BY p.created_at DESC`,
-      [req.user.id]
+      [req.user.id, req.user.role]
     );
 
     res.json({
@@ -72,10 +72,10 @@ router.get('/trash', authenticateToken, async (req, res) => {
               COUNT(DISTINCT c.id) as complexes_count
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id
-       WHERE p.created_by = $1 AND p.is_active = false
+       WHERE ($2 = 'admin' OR p.created_by = $1 OR p.assigned_instructor_id = $1) AND p.is_active = false
        GROUP BY p.id
        ORDER BY p.updated_at DESC`,
-      [req.user.id]
+      [req.user.id, req.user.role]
     );
 
     res.json({
@@ -115,10 +115,10 @@ router.get('/with-progress', authenticateToken, async (req, res) => {
        FROM patients p
        LEFT JOIN complexes c ON p.id = c.patient_id
        LEFT JOIN progress_logs pl ON c.id = pl.complex_id
-       WHERE p.created_by = $1
+       WHERE ($2 = 'admin' OR p.created_by = $1 OR p.assigned_instructor_id = $1)
        GROUP BY p.id
        ORDER BY last_activity DESC NULLS LAST, p.created_at DESC`,
-      [instructorId]
+      [instructorId, req.user.role]
     );
 
     const patients = result.rows.map((row) => ({
@@ -157,8 +157,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
               created_at, updated_at,
               (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered
        FROM patients
-       WHERE id = $1 AND created_by = $2 AND is_active = true`,
-      [id, req.user.id]
+       WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2) AND is_active = true`,
+      [id, req.user.id, req.user.role]
     );
 
     if (patientResult.rows.length === 0) {
@@ -300,12 +300,12 @@ router.put('/:id', authenticateToken, patientValidator, async (req, res) => {
            notes = $7,
            zone_link_note = $8,
            updated_at = NOW()
-       WHERE id = $9 AND created_by = $10 AND is_active = true
+       WHERE id = $9 AND ($11 = 'admin' OR created_by = $10 OR assigned_instructor_id = $10) AND is_active = true
        RETURNING id, full_name, email, phone, birth_date, diagnosis, doctor_diagnosis, notes, zone_link_note,
                  is_active, avatar_url, last_login_at, telegram_chat_id,
                  created_at, updated_at,
                  (password_hash IS NOT NULL OR last_login_at IS NOT NULL) as is_registered`,
-      [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, doctorDiagnosisValue, notesValue, zoneLinkNoteValue, id, req.user.id]
+      [fullNameValue, emailValue, phoneValue, birthDateValue, diagnosisValue, doctorDiagnosisValue, notesValue, zoneLinkNoteValue, id, req.user.id, req.user.role]
     );
 
     if (result.rows.length === 0) {
@@ -336,10 +336,10 @@ router.patch('/:id/restore', authenticateToken, async (req, res) => {
 
     const result = await query(
       `UPDATE patients 
-       SET is_active = true, updated_at = NOW() 
-       WHERE id = $1 AND created_by = $2 
+       SET is_active = true, updated_at = NOW()
+       WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2)
        RETURNING id`,
-      [id, req.user.id]
+      [id, req.user.id, req.user.role]
     );
 
     if (result.rows.length === 0) {
@@ -370,10 +370,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
     const result = await query(
       `UPDATE patients 
-       SET is_active = false, updated_at = NOW() 
-       WHERE id = $1 AND created_by = $2 
+       SET is_active = false, updated_at = NOW()
+       WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2)
        RETURNING id`,
-      [id, req.user.id]
+      [id, req.user.id, req.user.role]
     );
 
     if (result.rows.length === 0) {
@@ -408,8 +408,8 @@ router.delete('/:id/permanent', authenticateToken, async (req, res) => {
 
     // Проверяем ownership до любых удалений
     const patientCheck = await client.query(
-      'SELECT id FROM patients WHERE id = $1 AND created_by = $2',
-      [id, req.user.id]
+      `SELECT id FROM patients WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2)`,
+      [id, req.user.id, req.user.role]
     );
 
     if (patientCheck.rows.length === 0) {
@@ -475,8 +475,8 @@ router.post('/:id/invite-code', authenticateToken, async (req, res) => {
     const patientResult = await query(
       `SELECT id, full_name, password_hash, is_active
          FROM patients
-        WHERE id = $1 AND created_by = $2`,
-      [id, req.user.id]
+        WHERE id = $1 AND ($3 = 'admin' OR created_by = $2 OR assigned_instructor_id = $2)`,
+      [id, req.user.id, req.user.role]
     );
 
     if (patientResult.rows.length === 0) {

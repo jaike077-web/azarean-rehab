@@ -42,7 +42,11 @@ if [ "$PM2_STATUS" != "online" ]; then
 fi
 
 # ─── 2. /api/health отвечает? ───
-HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" -m 10 "http://127.0.0.1:${PORT}/api/health" || echo "000")
+# Берём тело + HTTP-код: при 503 с db.alive=false рестарт процесса не поможет
+# (это деградация БД, а не отказ ноды) — только алертим, счётчик не копим.
+HEALTH=$(curl -s -m 10 -w $'\n%{http_code}' "http://127.0.0.1:${PORT}/api/health" 2>/dev/null || printf '\n000')
+HTTP_CODE=$(printf '%s' "$HEALTH" | tail -n1)
+HEALTH_BODY=$(printf '%s' "$HEALTH" | sed '$d')
 
 if [ "$HTTP_CODE" = "200" ]; then
   # Reset счётчика при success
@@ -52,6 +56,11 @@ if [ "$HTTP_CODE" = "200" ]; then
   if [ "$MIN" -le 5 ]; then
     echo "$TIMESTAMP OK: PM2=online HTTP=200"
   fi
+elif printf '%s' "$HEALTH_BODY" | grep -q '"alive":false'; then
+  # БД недоступна — нода жива и честно отдаёт 503. Рестарт PM2 не вылечит БД и
+  # только усугубит (death-spiral). Алертим, счётчик НЕ инкрементируем.
+  echo "0" > "$FAIL_COUNT_FILE"
+  echo "$TIMESTAMP WARN: БД недоступна (db.alive=false), HTTP $HTTP_CODE — НЕ рестартим (деградация зависимости, не отказ ноды)"
 else
   CURRENT=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || echo "0")
   CURRENT=$((CURRENT + 1))

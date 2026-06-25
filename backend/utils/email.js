@@ -108,6 +108,17 @@ ${resetLink}
 Если вы не запрашивали сброс — просто проигнорируйте это письмо.`,
 });
 
+// Экранирование для вставки произвольного текста алерта в HTML.
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+// Шаблон критического (red-flag) алерта — резервный канал к Telegram.
+const opsAlertTemplate = (title, body) => ({
+  subject: `🚨 ${title}`.slice(0, 200),
+  html: `<pre style="font-family:monospace;white-space:pre-wrap;font-size:14px">${escapeHtml(title)}\n\n${escapeHtml(body)}</pre>`,
+  text: `${title}\n\n${body}`,
+});
+
 const verificationTemplate = (verifyLink) => ({
   subject: 'Azarean — подтвердите email',
   html: `<!DOCTYPE html>
@@ -239,11 +250,21 @@ const sendVerificationEmail = async (email, verificationToken) => {
   return send(email, verificationTemplate(verifyLink));
 };
 
+// Резервный канал для критических алертов (red-flag), когда Telegram не доставил.
+// Получатель — config.opsBot.email (OPS_EMAIL). Не задан → skipped (fallback выключен).
+const sendOpsAlertEmail = async (title, body) => {
+  const to = config.opsBot && config.opsBot.email;
+  if (!to) return { success: false, skipped: 'no_ops_email' };
+  return send(to, opsAlertTemplate(title, body));
+};
+
 module.exports = {
   sendPasswordResetEmail,
   sendVerificationEmail,
+  sendOpsAlertEmail,
   // экспортированы для тестов
   send,
   passwordResetTemplate,
   verificationTemplate,
+  opsAlertTemplate,
 };
