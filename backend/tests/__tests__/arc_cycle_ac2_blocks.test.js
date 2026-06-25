@@ -78,9 +78,11 @@ describe('ARC-CYCLE AC2 — CRUD блоков программы', () => {
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
       expect(res.body.data).toHaveLength(2);
-      // ownership через created_by (anti-regression)
+      // ownership = владение пациентом (admin OR created_by OR assigned_instructor_id)
+      // — Этап 2: переназначенный куратор управляет блоками своего пациента.
       const ownerSql = query.mock.calls[1][0];
-      expect(ownerSql).toMatch(/rehab_programs WHERE id = \$1 AND created_by = \$2/);
+      expect(ownerSql).toMatch(/rehab_programs/);
+      expect(ownerSql).toMatch(/assigned_instructor_id/);
     });
   });
 
