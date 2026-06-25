@@ -41,6 +41,16 @@ describe('ExercisesScreen v2', () => {
     progressPatient.getByExercise.mockResolvedValue({ data: [] });
   });
 
+  it('500 при загрузке → ошибка с «Повторить», НЕ ложное «Комплекс не назначен»', async () => {
+    rehab.getMyExercises.mockRejectedValue({ response: { status: 500 } });
+    patientAuth.getMyComplexes.mockRejectedValue({ response: { status: 500 } });
+
+    render(<ExercisesScreen />);
+
+    await waitFor(() => expect(screen.getByTestId('exercises-load-error')).toBeInTheDocument());
+    expect(screen.queryByText('Комплекс не назначен')).not.toBeInTheDocument();
+  });
+
   describe('State A — активная программа + доп. комплексы', () => {
     it('показывает карточку "Ваш комплекс на сегодня"', async () => {
       rehab.getMyExercises.mockResolvedValue({

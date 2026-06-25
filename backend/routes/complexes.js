@@ -573,6 +573,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
+    // Guard: exercises обязателен и непуст (как в POST). Без него пустой/отсутствующий
+    // массив прошёл бы DELETE ниже (стёр все упражнения), а цикл вставки ничего бы не
+    // добавил — комплекс остался бы пустым (потеря данных) либо TypeError на undefined.
+    if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Список упражнений обязателен'
+      });
+    }
+
     // AA3: структурная валидация cue_sounds (если передан).
     const cueValid = validateCueSoundsStructure(cue_sounds);
     if (!cueValid.ok) {
