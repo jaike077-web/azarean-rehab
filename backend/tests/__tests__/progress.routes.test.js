@@ -112,6 +112,26 @@ describe('POST /api/progress — patient JWT', () => {
 
     expect(res.status).toBe(400);
   });
+
+  it('INSERT использует ON CONFLICT DO UPDATE (идемпотентность ретрая, Этап 4)', async () => {
+    query.mockResolvedValue({ rows: [] }); // default для streak-пути
+    query.mockResolvedValueOnce({ rows: [{ '?column?': 1 }] }); // 1. ownership
+    query.mockResolvedValueOnce({ rows: [{ id: 50 }] });        // 2. complex_exercises
+    query.mockResolvedValueOnce({                                // 3. INSERT
+      rows: [{ id: 1, complex_id: 1, exercise_id: 100, session_id: 12345 }],
+    });
+
+    await request(app)
+      .post('/api/progress')
+      .set('Authorization', `Bearer ${patientToken}`)
+      .send({ complex_id: 1, exercise_id: 100, completed: true, session_id: 12345 });
+
+    const insertCall = query.mock.calls.find(([sql]) => /INSERT INTO progress_logs/i.test(sql));
+    expect(insertCall).toBeDefined();
+    expect(insertCall[0]).toMatch(/ON CONFLICT \(complex_id, exercise_id, session_id\)/i);
+    expect(insertCall[0]).toMatch(/WHERE session_id IS NOT NULL/i);
+    expect(insertCall[0]).toMatch(/DO UPDATE SET/i);
+  });
 });
 
 describe('POST /api/progress — instructor JWT', () => {
