@@ -45,6 +45,9 @@ const config = {
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     botUsername: process.env.TELEGRAM_BOT_USERNAME || 'azarean_rehab_bot',
     loginEnabled: process.env.TELEGRAM_LOGIN_ENABLED === 'true',
+    // Bot API base — тот же прокси-fallback, что у бота (обход DPI-блокировки
+    // api.telegram.org по SNI). Используется и ботом, и opsAlert. Пусто → напрямую.
+    apiUrl: process.env.TELEGRAM_API_URL || 'https://api.telegram.org',
   },
 
   // Telegram OIDC (BotFather → Login Widget → Switch to OpenID Connect Login).
@@ -91,6 +94,9 @@ const config = {
   opsBot: {
     token: process.env.OPS_BOT_TOKEN || '',
     chatId: process.env.OPS_CHAT_ID || '',
+    // Резервный канал для критических (red-flag) алертов — email куратору/админу,
+    // когда Telegram-доставка не удалась. Пусто → email-fallback выключен.
+    email: process.env.OPS_EMAIL || '',
   },
 
   // Kinescope
