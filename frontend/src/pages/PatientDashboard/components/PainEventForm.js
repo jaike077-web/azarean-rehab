@@ -8,7 +8,7 @@
 //   - TriggerSelect single-select — опциональный
 //   - PainCharacterSelect multi-select (HF#9 v2) — опциональный
 //   - notes textarea — опциональная
-//   - photo upload (camera+gallery через accept="image/*")
+//   (фото-пикер скрыт до готовности upload-эндпоинта — не вводим в заблуждение)
 //
 // При submit: createPainEvent → toast c учётом dedup state +
 // red-flag → real Telegram alert (через utils/opsAlert.js).
@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { Camera, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import PatientModal from './PatientModal';
 import LocationsMultiSelect from './LocationsMultiSelect';
 import TriggerSelect from './TriggerSelect';
@@ -25,7 +25,7 @@ import RecentRedFlagBanner from './RecentRedFlagBanner';
 import { PainScale } from './ui';
 import { rehab } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { NOTES_MAX_LEN, MAX_LOCATIONS_PER_ENTRY, PHOTO_MAX_SIZE_MB } from '../constants/pain';
+import { NOTES_MAX_LEN, MAX_LOCATIONS_PER_ENTRY } from '../constants/pain';
 
 const EMPTY_FORM = {
   vas_score: null,
@@ -33,7 +33,6 @@ const EMPTY_FORM = {
   trigger_type: '',
   pain_character: [], // HF#9 v2: array (multi-select)
   notes: '',
-  photo_file: null,
 };
 
 export default function PainEventForm({ isOpen, onClose, onSubmitted }) {
@@ -89,10 +88,9 @@ export default function PainEventForm({ isOpen, onClose, onSubmitted }) {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      // Photo upload — пока MVP. Backend pain_entries.photo_url принимает строку,
-      // upload infrastructure появится в 2.06 (полноценный multer endpoint).
-      // Если есть file — кладём имя файла в notes (placeholder) либо пропускаем.
-      // TODO 2.06: photo_url = await uploadPainPhoto(form.photo_file)
+      // Фото к pain event пока не загружается (нет endpoint'а) — пикер скрыт,
+      // чтобы не вводить пациента в заблуждение. Реализация — по паттерну
+      // ROM-фото (/my/rom/:id/photo), когда дойдут руки (2.06+).
       const payload = {
         vas_score: form.vas_score,
         location_codes: form.location_codes,
@@ -123,17 +121,6 @@ export default function PainEventForm({ isOpen, onClose, onSubmitted }) {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > PHOTO_MAX_SIZE_MB * 1024 * 1024) {
-      toast.error(`Фото больше ${PHOTO_MAX_SIZE_MB} МБ`);
-      e.target.value = '';
-      return;
-    }
-    setForm({ ...form, photo_file: file });
   };
 
   return (
@@ -193,24 +180,6 @@ export default function PainEventForm({ isOpen, onClose, onSubmitted }) {
           {errors.notes && <div className="pd-pain-error">{errors.notes}</div>}
         </div>
 
-        <div className="pd-pain-event-form__group">
-          <label className="pd-pain-event-form__label" htmlFor="pain-photo">
-            <Camera size={16} /> Фото (опционально)
-          </label>
-          <input
-            id="pain-photo"
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="pd-pain-event-form__file"
-          />
-          {form.photo_file && (
-            <div className="pd-pain-event-form__photo-name">{form.photo_file.name}</div>
-          )}
-          <div className="pd-pain-event-form__hint">
-            До {PHOTO_MAX_SIZE_MB} МБ. Полноценная загрузка фото — в следующем обновлении.
-          </div>
-        </div>
 
         <div className="pd-pain-event-form__actions">
           <button

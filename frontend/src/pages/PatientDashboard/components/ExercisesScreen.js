@@ -41,6 +41,9 @@ const ExercisesScreen = ({ screenParams }) => {
   const [todayComplex, setTodayComplex] = useState(null); // из rehab.getMyExercises
   const [myComplexes, setMyComplexes] = useState([]); // из patientAuth.getMyComplexes
   const [loading, setLoading] = useState(true);
+  // Ошибка загрузки (не 404) — чтобы НЕ показывать ложное «Комплекс не назначен»
+  // при 500/сети, когда комплекс на самом деле есть.
+  const [loadError, setLoadError] = useState(false);
 
   // Навигация подэкранов
   const [view, setView] = useState('list'); // 'list' | 'complex' | 'runner'
@@ -67,7 +70,9 @@ const ExercisesScreen = ({ screenParams }) => {
       const all = allRes?.data || [];
       setTodayComplex(td);
       setMyComplexes(all);
+      setLoadError(false);
     } catch (err) {
+      setLoadError(true);
       toast.error('Ошибка', 'Не удалось загрузить комплексы');
     } finally {
       setLoading(false);
@@ -277,8 +282,23 @@ const ExercisesScreen = ({ screenParams }) => {
     <div className="pd-exercises-screen">
       <h1 className="pd-screen-title">Упражнения</h1>
 
-      {!hasAnything && (
-        // State C — ничего нет
+      {loadError && !hasAnything && (
+        // Ошибка загрузки — НЕ ложное «не назначен», а «Повторить»
+        <div className="pd-empty-state" data-testid="exercises-load-error">
+          <h2 className="pd-empty-state-title">Не удалось загрузить</h2>
+          <p className="pd-empty-state-text">Проверьте соединение и попробуйте снова.</p>
+          <button
+            type="button"
+            onClick={loadAll}
+            style={{ marginTop: 12, padding: '12px 24px', borderRadius: 10, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {!hasAnything && !loadError && (
+        // State C — ничего нет (успешно загрузили, но комплексов реально нет)
         <div className="pd-empty-state">
           <div className="pd-empty-state-icon">
             <Dumbbell size={36} />

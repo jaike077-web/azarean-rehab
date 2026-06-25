@@ -364,6 +364,27 @@ describe('PUT /api/complexes/:id — title в payload', () => {
     expect(updateCall[0]).toMatch(/\btitle\b/i);
   });
 
+  it('пустой exercises → 400 (guard до DELETE — не стирает упражнения)', async () => {
+    const client = makeMockClient();
+    client.query.mockImplementation((sql) => {
+      if (sql === 'BEGIN' || sql === 'ROLLBACK') return Promise.resolve();
+      if (/SELECT id FROM complexes/i.test(sql)) return Promise.resolve({ rows: [{ id: 50 }] });
+      return Promise.resolve({ rows: [] });
+    });
+    getClient.mockResolvedValueOnce(client);
+
+    const res = await request(app)
+      .put('/api/complexes/50')
+      .set('Authorization', `Bearer ${instructorToken}`)
+      .send({ title: 'X', exercises: [] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/упражнений обязателен/i);
+    // DELETE FROM complex_exercises НЕ должен был выполниться (guard раньше)
+    const del = client.query.mock.calls.find(([sql]) => /DELETE FROM complex_exercises/i.test(sql));
+    expect(del).toBeUndefined();
+  });
+
   it('пустой title → NULL в БД', async () => {
     const client = makeMockClient();
     let updatedTitle;

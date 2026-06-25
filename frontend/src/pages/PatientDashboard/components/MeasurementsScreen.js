@@ -20,13 +20,18 @@ import './MeasurementsScreen.css';
 export default function MeasurementsScreen() {
   const [history, setHistory] = useState({ rom: [], girth: [] });
   const [loading, setLoading] = useState(true);
+  // Ошибка загрузки — чтобы не показывать ПУСТУЮ историю при 500/сети как будто
+  // замеров нет (на самом деле просто не загрузилось).
+  const [loadError, setLoadError] = useState(false);
   const toast = useToast();
 
   const reloadHistory = useCallback(async () => {
     try {
       const res = await rehab.getMeasurements({ type: 'all', limit: 20 });
       setHistory(res.data || { rom: [], girth: [] });
+      setLoadError(false);
     } catch (err) {
+      setLoadError(true);
       toast.error('Не удалось загрузить историю замеров');
     } finally {
       setLoading(false);
@@ -61,6 +66,17 @@ export default function MeasurementsScreen() {
         <h2 className="pd-measurements-history-section__heading">История</h2>
         {loading ? (
           <div className="pd-measurements-history-section__loading">Загрузка…</div>
+        ) : loadError ? (
+          <div className="pd-measurements-history-section__loading" data-testid="measurements-load-error">
+            Не удалось загрузить историю.{' '}
+            <button
+              type="button"
+              onClick={reloadHistory}
+              style={{ marginLeft: 8, padding: '6px 16px', borderRadius: 8, border: 'none', background: '#14b8a6', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Повторить
+            </button>
+          </div>
         ) : (
           <MeasurementHistoryList items={history} onReload={reloadHistory} />
         )}

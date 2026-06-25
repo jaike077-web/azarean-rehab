@@ -2865,6 +2865,20 @@ router.post('/my/pain/daily', authenticatePatient, async (req, res) => {
   }
 
   const patientId = req.patient.id;
+
+  // Ownership: program_id (если передан) должен принадлежать пациенту — иначе
+  // запись о боли мис-атрибутируется чужой зоне.
+  if (program_id != null && program_id !== '') {
+    const pidDaily = parseInt(program_id, 10);
+    if (!Number.isFinite(pidDaily) || pidDaily <= 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id должен быть положительным целым' });
+    }
+    const ownsDaily = await query('SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2', [pidDaily, patientId]);
+    if (ownsDaily.rows.length === 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id не принадлежит пациенту' });
+    }
+  }
+
   const client = await getClient();
   try {
     await client.query('BEGIN');
@@ -3042,6 +3056,18 @@ router.post('/my/pain/event', authenticatePatient, async (req, res) => {
   if (photo_url !== undefined && photo_url !== null) {
     if (typeof photo_url !== 'string' || photo_url.length > 500) {
       return res.status(400).json({ error: 'ValidationError', message: 'photo_url ≤ 500 символов' });
+    }
+  }
+  // Ownership: program_id (если передан) должен принадлежать пациенту — иначе
+  // запись о боли мис-атрибутируется чужой зоне.
+  if (program_id != null && program_id !== '') {
+    const pidEvt = parseInt(program_id, 10);
+    if (!Number.isFinite(pidEvt) || pidEvt <= 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id должен быть положительным целым' });
+    }
+    const ownsEvt = await query('SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2', [pidEvt, req.patient.id]);
+    if (ownsEvt.rows.length === 0) {
+      return res.status(400).json({ error: 'ValidationError', message: 'program_id не принадлежит пациенту' });
     }
   }
   // Wave 2 HF#9 v2 — pain_character теперь массив (TEXT[] в БД).
@@ -3369,6 +3395,18 @@ router.post('/my/measurements/rom', authenticatePatient, async (req, res) => {
           message: 'program_id must be a positive integer or null',
         });
       }
+      // Ownership: program_id должен принадлежать пациенту — иначе замер
+      // мис-атрибутируется чужой зоне. FK-проверка существования это не ловит.
+      const ownsProgram = await query(
+        'SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2',
+        [programIdParam, patientId]
+      );
+      if (ownsProgram.rows.length === 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id does not belong to patient',
+        });
+      }
     }
 
     // 5. Optional measurement_session_id (INTEGER без FK — grouping ID для L+R пары)
@@ -3468,6 +3506,18 @@ router.post('/my/measurements/girth', authenticatePatient, async (req, res) => {
         return res.status(400).json({
           error: 'VALIDATION_ERROR',
           message: 'program_id must be a positive integer or null',
+        });
+      }
+      // Ownership: program_id должен принадлежать пациенту — иначе замер
+      // мис-атрибутируется чужой зоне. FK-проверка существования это не ловит.
+      const ownsProgram = await query(
+        'SELECT 1 FROM rehab_programs WHERE id = $1 AND patient_id = $2',
+        [programIdParam, patientId]
+      );
+      if (ownsProgram.rows.length === 0) {
+        return res.status(400).json({
+          error: 'VALIDATION_ERROR',
+          message: 'program_id does not belong to patient',
         });
       }
     }

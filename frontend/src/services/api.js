@@ -47,6 +47,10 @@ const processQueue = (error, token = null) => {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  // Таймаут — иначе при подвисшем (half-open) соединении запрос ждёт вечно
+  // и UI висит в спиннере без ошибки. 30с покрывает медленную сеть, но не
+  // даёт зависнуть навсегда; на таймаут axios кидает error.code==='ECONNABORTED'.
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -361,6 +365,9 @@ export const patientAuth = {};
 // Нет ни Authorization header, ни localStorage. withCredentials обязателен.
 const patientApi = axios.create({
   baseURL: API_BASE_URL,
+  // Таймаут (см. api выше) — критично для пациента: без него «Сохранение…» в
+  // ExerciseRunner висит вечно при подвисшей мобильной сети (метро/лифт).
+  timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
