@@ -5,6 +5,14 @@
 
 ## Текущее состояние (июнь 2026)
 
+### 🟢 Плечевые протоколы batch2 (артропластика + 13) — LIVE на проде (2026-06-25). ИТОГО плечо 24 / колено 15
+
+**PR #100 (merge `48a07c1`), CI 3/3, прод-verify: 25 плечевых типов / 24 шаблона, `BAD measurement=0`, 19 миграций `20260625_shoulder_{arthroplasty_01..04,batch2_01..15}` в прод-`_migrations`, `/api/health` ok.** Достройка к первой плечевой партии (9 протоколов, блок ниже). **Бэкенд-only → SW-бамп не нужен** (новые типы фронт-визард подхватывает динамически через `/program-templates`). **Партия необратимая (много INSERT) → pre-deploy бэкап** `azarean_rehab-20260625-131356.sql.gz` + ручной `pre-shoulder-batch2-…131001` (точки отката).
+
+- **15 новых типов:** артропластика — `shoulder_tsa` (анатомическое эндопротезирование) + `shoulder_rsa` (реверсивное); batch2 (13) — `latarjet`, `bankart`, `instability_conservative`, `biceps_tenodesis`, `biceps_tenotomy`, `phf_orif`, `phf_conservative`, `clavicle_orif`, `ac_repair`, `ac_conservative`, `frozen`, `oa`, `slap`. Каждому — свой `program_template`.
+- **Метрики новой партии (dev-verify):** **76 фаз** + **319 критериев**, `measurement=vas_score+pain ТОЛЬКО` (bad_measurement=0). **Итог по плечу: 24 реальных протокола / 24 шаблона** (+ легаси-seed `shoulder_general` без шаблона = 25-й тип). **Колено: 15** (+ `knee_general`).
+- **Сборка:** Workflow «автор→адверсариальный ревью» (контент из `PROTOCOLS/.../_extractions_newbatch.json`). Ревью нашло+исправило: `frozen` — 1 blocker (`instructor_check` с `threshold_operator` — дыра проверки, закрыта в sanity-тесте); `oa`/`phf_orif`/`bankart`/`instability` — major (рассинхрон `duration`↔`subtitle`, open-ended терминальные фазы, жаргон «ремплиссаж»). Точка входа: [[project-protocols-new-batch-staged]].
+
 ### 🟢 Мультивыбор «Регион тела» (body_region VARCHAR→TEXT[]) + пилюли ExerciseModal — LIVE на проде (2026-06-25, SW v43→v44)
 
 **PR #96 (merge `9fe236e`), CI run `28127514127` Test/Build/Deploy все success, SW v43 LIVE** (curl прода: `azarean-v43` + `/api/health` ok; прод-БД 14.20: `body_region`=`ARRAY`, миграция `20260624_exercise_body_region_to_array.sql` в `_migrations`, GIN-индекс + CHECK на месте, `TOTAL_WITH_REGION=10`/`MULTI_COUNT=0`). Многосуставные упражнения (присед = колено+ТБС) больше не теряют регион — AI и инструктор перечисляют ВСЕ суставы. Коммиты `0c34825` (фича) + `edec637` (пилюли). **Бэкап прода перед необратимой миграцией:** `azarean_rehab-pre-bodyregion-20260624-202653.sql.gz` (точка отката).
